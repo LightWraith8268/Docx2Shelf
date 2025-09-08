@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
-import uuid as _uuid
 import re
-
+import uuid as _uuid
 from importlib import resources
+from pathlib import Path
+
 from .metadata import BuildOptions, EpubMetadata
 
 
@@ -103,6 +103,95 @@ def _inject_heading_ids(html: str, chap_idx: int) -> tuple[str, str, list[tuple[
     if m:
         h1_id = m.group(1)
     return html3, h1_id, h2_items
+
+
+def _find_chapter_starts(html_chunks: list[str], chapter_starts: list[str]) -> list[tuple[str, str]]:
+    """Find user-defined chapter starts in HTML chunks.
+    
+    Returns list of (chapter_title, chunk_index) tuples.
+    Falls back to generic titles if patterns not found.
+    """
+    import re
+    found_chapters = []
+    
+    for pattern in chapter_starts:
+        pattern_found = False
+        # Try to find this pattern in any chunk
+        for i, chunk in enumerate(html_chunks):
+            # Remove HTML tags for text matching
+            text_content = re.sub(r'<[^>]+>', '', chunk)
+            
+            # Try both exact match and regex-style matching
+            if pattern.lower() in text_content.lower():
+                found_chapters.append((pattern.strip(), i))
+                pattern_found = True
+                break
+            
+            # Try as a regex pattern
+            try:
+                if re.search(pattern, text_content, re.IGNORECASE):
+                    # Extract the actual matched text for a better title
+                    match = re.search(pattern, text_content, re.IGNORECASE)
+                    if match:
+                        title = match.group(0).strip()
+                        found_chapters.append((title, i))
+                        pattern_found = True
+                        break
+            except re.error:
+                pass  # Invalid regex, skip
+        
+        # If pattern not found, create a generic chapter name
+        if not pattern_found:
+            chunk_idx = min(len(found_chapters), len(html_chunks) - 1)
+            found_chapters.append((f"Chapter {len(found_chapters) + 1}", chunk_idx))
+    
+    return found_chapters
+
+
+def _inject_manual_chapter_ids(html: str, chap_idx: int, chapter_title: str) -> tuple[str, str, list[tuple[str, str]]]:
+    """Inject IDs for manually defined chapters, similar to _inject_heading_ids."""
+    import re
+    
+    # Create a unique ID for this chapter
+    h1_id = f"ch{chap_idx:03d}"
+    
+    # Look for existing h1/h2 headings to preserve them
+    h2_items = []
+    
+    # Ensure h2 have ids; collect titles + ids  
+    sec_idx = 0
+    def h2_repl(match):
+        nonlocal sec_idx
+        sec_idx += 1
+        tag_open = match.group(1)
+        inside = match.group(2)
+        if re.search(r"\bid=\"[^\"]+\"", tag_open):
+            return f"<h2{tag_open}>{inside}</h2>"
+        hid = f"{h1_id}-s{sec_idx:02d}"
+        return f"<h2{tag_open} id=\"{hid}\">{inside}</h2>"
+    
+    html_with_h2_ids = re.sub(r"<h2([^>]*)>(.*?)</h2>", h2_repl, html, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Extract h2 titles and IDs for TOC
+    titles = re.findall(r"<h2[^>]*>(.*?)</h2>", html_with_h2_ids, flags=re.IGNORECASE | re.DOTALL)
+    ids = re.findall(r"<h2[^>]*id=\"([^\"]+)\"[^>]*>", html_with_h2_ids, flags=re.IGNORECASE)
+    h2_items = [(re.sub(r"<[^>]+>", "", t), ids[i]) for i, t in enumerate(titles) if i < len(ids)]
+    
+    # Add chapter anchor at the beginning if no h1 exists
+    if not re.search(r"<h1[^>]*>", html_with_h2_ids, re.IGNORECASE):
+        html_with_h2_ids = f'<div id="{h1_id}"></div>' + html_with_h2_ids
+    else:
+        # Add ID to existing h1
+        def h1_repl(match):
+            tag_open = match.group(1)
+            inside = match.group(2)
+            if re.search(r"\bid=\"[^\"]+\"", tag_open):
+                return f"<h1{tag_open}>{inside}</h1>"
+            return f"<h1{tag_open} id=\"{h1_id}\">{inside}</h1>"
+        
+        html_with_h2_ids = re.sub(r"<h1([^>]*)>(.*?)</h1>", h1_repl, html_with_h2_ids, count=1, flags=re.IGNORECASE | re.DOTALL)
+    
+    return html_with_h2_ids, h1_id, h2_items
 
 
 def plan_build(
@@ -254,20 +343,63 @@ def assemble_epub(
     chapters = []
     chapter_links = []
     chapter_sub_links = []
-    for i, chunk in enumerate(html_chunks, start=1):
-        chunk2, h1_id, subs = _inject_heading_ids(chunk, i)
-        chap_fn = f"text/chap_{i:03d}.xhtml"
-        chap = _html_item(f"Chapter {i}", chap_fn, chunk2, meta.language)
-        chap.add_item(style_item)
-        book.add_item(chap)
-        chapters.append(chap)
-        # Build links for TOC
-        chap_link = epub.Link(chap_fn + f"#{h1_id}", f"Chapter {i}", f"chap{i:03d}")
-        chapter_links.append(chap_link)
-        sub_links = []
-        for idx, (title, hid) in enumerate(subs):
-            sub_links.append(epub.Link(chap_fn + f"#{hid}", title, f"chap{i:03d}-{idx+1:02d}"))
-        chapter_sub_links.append(sub_links)
+    
+    # Determine chapter processing mode
+    if opts.chapter_start_mode == "manual" and opts.chapter_starts:
+        # Manual mode: use user-defined chapter starts
+        manual_chapters = _find_chapter_starts(html_chunks, opts.chapter_starts)
+        
+        for chap_num, (chapter_title, chunk_idx) in enumerate(manual_chapters, start=1):
+            if chunk_idx < len(html_chunks):
+                chunk = html_chunks[chunk_idx]
+                chunk2, h1_id, subs = _inject_manual_chapter_ids(chunk, chap_num, chapter_title)
+                chap_fn = f"text/chap_{chap_num:03d}.xhtml"
+                chap = _html_item(chapter_title, chap_fn, chunk2, meta.language)
+                chap.add_item(style_item)
+                book.add_item(chap)
+                chapters.append(chap)
+                # Build links for TOC using custom title
+                chap_link = epub.Link(chap_fn + f"#{h1_id}", chapter_title, f"chap{chap_num:03d}")
+                chapter_links.append(chap_link)
+                sub_links = []
+                if opts.toc_depth > 1:  # Include subheadings in manual mode too
+                    for idx, (title, hid) in enumerate(subs):
+                        sub_links.append(epub.Link(chap_fn + f"#{hid}", title, f"chap{chap_num:03d}-{idx+1:02d}"))
+                chapter_sub_links.append(sub_links)
+        
+        # Add remaining chunks as additional chapters if there are more chunks than defined chapters
+        for i in range(len(manual_chapters), len(html_chunks)):
+            chunk = html_chunks[i]
+            chap_num = i + 1
+            chunk2, h1_id, subs = _inject_heading_ids(chunk, chap_num)
+            chap_fn = f"text/chap_{chap_num:03d}.xhtml"
+            chap = _html_item(f"Chapter {chap_num}", chap_fn, chunk2, meta.language)
+            chap.add_item(style_item)
+            book.add_item(chap)
+            chapters.append(chap)
+            chap_link = epub.Link(chap_fn + f"#{h1_id}", f"Chapter {chap_num}", f"chap{chap_num:03d}")
+            chapter_links.append(chap_link)
+            sub_links = []
+            for idx, (title, hid) in enumerate(subs):
+                sub_links.append(epub.Link(chap_fn + f"#{hid}", title, f"chap{chap_num:03d}-{idx+1:02d}"))
+            chapter_sub_links.append(sub_links)
+            
+    else:
+        # Auto mode (default): scan headings as before
+        for i, chunk in enumerate(html_chunks, start=1):
+            chunk2, h1_id, subs = _inject_heading_ids(chunk, i)
+            chap_fn = f"text/chap_{i:03d}.xhtml"
+            chap = _html_item(f"Chapter {i}", chap_fn, chunk2, meta.language)
+            chap.add_item(style_item)
+            book.add_item(chap)
+            chapters.append(chap)
+            # Build links for TOC
+            chap_link = epub.Link(chap_fn + f"#{h1_id}", f"Chapter {i}", f"chap{i:03d}")
+            chapter_links.append(chap_link)
+            sub_links = []
+            for idx, (title, hid) in enumerate(subs):
+                sub_links.append(epub.Link(chap_fn + f"#{hid}", title, f"chap{i:03d}-{idx+1:02d}"))
+            chapter_sub_links.append(sub_links)
 
     # TOC and spine
     # TOC by depth
@@ -314,7 +446,7 @@ def assemble_epub(
             "<li><a epub:type='titlepage' href='text/title.xhtml'>Title Page</a></li>"
             "<li><a epub:type='toc' href='nav.xhtml'>Table of Contents</a></li>"
             "<li><a epub:type='cover' href='cover.xhtml'>Cover</a></li>"
-            f"<li><a epub:type='bodymatter' href='text/chap_001.xhtml#ch001'>Start Reading</a></li>"
+            "<li><a epub:type='bodymatter' href='text/chap_001.xhtml#ch001'>Start Reading</a></li>"
             "</ol></nav>"
             "</body></html>"
         )
@@ -365,7 +497,6 @@ def assemble_epub(
         try:
             import shutil
             import subprocess
-            import re as _re
 
             cmd = shutil.which("epubcheck")
             if cmd:

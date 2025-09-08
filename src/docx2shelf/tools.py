@@ -240,7 +240,8 @@ def install_epubcheck(version: str = DEFAULT_EPUBCHECK_VERSION) -> Path:
     if os.name == "nt":
         wrapper.write_text(f"@echo off\njava -jar \"{jar}\" %*\n", encoding="utf-8")
     else:
-        wrapper.write_text(f"#!/usr/bin/env sh\nexec java -jar \"{jar}\" "$@"\n", encoding="utf-8")
+        # Use single-quoted f-string to avoid escaping inner double quotes
+        wrapper.write_text(f'#!/usr/bin/env sh\nexec java -jar "{jar}" "$@"\n', encoding="utf-8")
         try:
             wrapper.chmod(0o755)
         except Exception:

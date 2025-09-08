@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import List, Optional
-import re
 
 
 @dataclass
@@ -34,16 +34,18 @@ class BuildOptions:
     hyphenate: bool
     justify: bool
     toc_depth: int
-    page_list: bool
-    extra_css: Optional[Path]
-    page_numbers: bool
-    epub_version: str
-    cover_scale: str  # contain|cover
-    dedication_txt: Optional[Path]
-    ack_txt: Optional[Path]
-    inspect: bool
-    dry_run: bool
-    epubcheck: bool
+    chapter_start_mode: str = "auto"  # auto|manual|mixed
+    chapter_starts: Optional[List[str]] = None
+    page_list: bool = False
+    extra_css: Optional[Path] = None
+    page_numbers: bool = False
+    epub_version: str = "3"
+    cover_scale: str = "contain"  # contain|cover
+    dedication_txt: Optional[Path] = None
+    ack_txt: Optional[Path] = None
+    inspect: bool = False
+    dry_run: bool = False
+    epubcheck: bool = True
     font_size: Optional[str] = None
     line_height: Optional[str] = None
     quiet: bool = False

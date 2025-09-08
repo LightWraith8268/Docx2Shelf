@@ -6,23 +6,22 @@ from pathlib import Path
 from typing import Optional
 
 from .metadata import BuildOptions, EpubMetadata, build_output_filename, parse_date
+from .tools import (
+    epubcheck_cmd,
+    install_epubcheck,
+    install_pandoc,
+    pandoc_path,
+    tools_dir,
+    uninstall_all_tools,
+    uninstall_epubcheck,
+    uninstall_pandoc,
+)
 from .utils import (
+    parse_kv_file,
     prompt,
-    prompt_choice,
     prompt_bool,
     prompt_select,
     sanitize_filename,
-    parse_kv_file,
-)
-from .tools import (
-    tools_dir,
-    install_pandoc,
-    install_epubcheck,
-    uninstall_pandoc,
-    uninstall_epubcheck,
-    uninstall_all_tools,
-    pandoc_path,
-    epubcheck_cmd,
 )
 
 
@@ -67,6 +66,17 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--hyphenate", choices=["on", "off"], default="on")
     b.add_argument("--justify", choices=["on", "off"], default="on")
     b.add_argument("--toc-depth", type=int, default=2)
+    b.add_argument(
+        "--chapter-start-mode",
+        choices=["auto", "manual", "mixed"],
+        default="auto",
+        help="TOC chapter detection mode: auto (scan headings), manual (user-defined), mixed (both)",
+    )
+    b.add_argument(
+        "--chapter-starts",
+        type=str,
+        help="Comma-separated list of chapter start text patterns for manual TOC mode",
+    )
     b.add_argument("--page-list", choices=["on", "off"], default="off")
     b.add_argument("--css", type=str, help="Path to extra CSS to merge (optional)")
     b.add_argument("--page-numbers", choices=["on", "off"], default="off")
@@ -177,6 +187,11 @@ def _apply_metadata_dict(args: argparse.Namespace, md: dict, base_dir: Path | No
     if (getattr(args, "toc_depth", None) in (None, 2)) and get("toc_depth"):
         try: args.toc_depth = int(get("toc_depth"))
         except Exception: pass
+    # Chapter start mode and patterns
+    if (getattr(args, "chapter_start_mode", None) in (None, "auto")) and (get("chapter_start_mode") or get("chapter-start-mode")):
+        setattr(args, "chapter_start_mode", get("chapter_start_mode") or get("chapter-start-mode"))
+    if (getattr(args, "chapter_starts", None) in (None, "")) and (get("chapter_starts") or get("chapter-starts")):
+        setattr(args, "chapter_starts", get("chapter_starts") or get("chapter-starts"))
     if (args.page_list in (None, "", "off")) and (get("page_list") or get("page-list")):
         args.page_list = get("page_list") or get("page-list")
     if (args.page_numbers in (None, "", "off")) and (get("page_numbers") or get("page-numbers")):
@@ -359,6 +374,22 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
         default_idx = 1 if int(args.toc_depth) == 1 else 2
         sel = prompt_select("ToC depth:", ["1", "2"], default_index=default_idx)
         args.toc_depth = int(sel)
+        
+        # Chapter start mode selection
+        mode_default = {"auto": 1, "manual": 2, "mixed": 3}.get(getattr(args, "chapter_start_mode", "auto"), 1)
+        mode_sel = prompt_select("Chapter detection:", ["auto (scan headings)", "manual (user-defined)", "mixed"], default_index=mode_default)
+        if mode_sel == "auto (scan headings)":
+            args.chapter_start_mode = "auto"
+        elif mode_sel == "manual (user-defined)":
+            args.chapter_start_mode = "manual"
+            # Prompt for chapter starts if not already provided
+            if not getattr(args, "chapter_starts", None):
+                chapter_input = prompt("Chapter start patterns (comma-separated):", default="Chapter 1, Chapter 2, Chapter 3")
+                if chapter_input and chapter_input.strip():
+                    args.chapter_starts = chapter_input.strip()
+        else:  # mixed
+            args.chapter_start_mode = "mixed"
+        
         args.page_list = prompt_select("Include page-list nav?", ["on", "off"], default_index={"on":1,"off":2}.get(args.page_list,2))
         args.page_numbers = prompt_select("Show page number counters?", ["on", "off"], default_index={"on":1,"off":2}.get(args.page_numbers,2))
         args.cover_scale = prompt_select("Cover scaling:", ["contain", "cover"], default_index={"contain":1,"cover":2}.get(args.cover_scale,1))
@@ -454,12 +485,21 @@ def _print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path
     print(f" {mark(bool(meta.keywords))} Keywords: {', '.join(meta.keywords) if meta.keywords else '—'}")
     print(f" {mark(meta.cover_path)} Cover: {meta.cover_path}")
     print(f" {mark(opts.extra_css)} Extra CSS: {opts.extra_css or '—'}  | Fonts: {opts.embed_fonts_dir or '—'}")
+    # Show chapter mode information
+    if opts.chapter_start_mode == "manual" and opts.chapter_starts:
+        chapter_list = opts.chapter_starts[:3] if isinstance(opts.chapter_starts, list) else opts.chapter_starts.split(',')[:3]
+        display_chapters = ', '.join(chapter_list) + ('...' if len(chapter_list) > 3 else '')
+        print(f" {mark(opts.chapter_starts)} Chapter Mode: manual ({display_chapters})")
+    elif opts.chapter_start_mode == "mixed":
+        print(" [x] Chapter Mode: mixed (custom + auto)")
+    else:
+        print(" [x] Chapter Mode: auto (scan headings)")
     print(f" Output: {output or '—'}\n")
 
 
 def run_build(args: argparse.Namespace) -> int:
+    from .assemble import assemble_epub, plan_build
     from .convert import docx_to_html, split_html_by_heading, split_html_by_pagebreak
-    from .assemble import plan_build, assemble_epub
 
     # Validate paths
     docx_path = Path(args.docx).expanduser().resolve()
@@ -531,6 +571,11 @@ def run_build(args: argparse.Namespace) -> int:
     dedication_path = _resolve_rel_to_docx(args.dedication) if getattr(args, "dedication", None) else None
     ack_path = _resolve_rel_to_docx(args.ack) if getattr(args, "ack", None) else None
 
+    # Parse chapter starts if provided
+    chapter_starts = None
+    if getattr(args, "chapter_starts", None):
+        chapter_starts = [s.strip() for s in args.chapter_starts.split(",") if s.strip()]
+    
     opts = BuildOptions(
         split_at=args.split_at,
         theme=args.theme,
@@ -538,6 +583,8 @@ def run_build(args: argparse.Namespace) -> int:
         hyphenate=args.hyphenate == "on",
         justify=args.justify == "on",
         toc_depth=int(args.toc_depth),
+        chapter_start_mode=getattr(args, "chapter_start_mode", "auto"),
+        chapter_starts=chapter_starts,
         page_list=args.page_list == "on",
         extra_css=css_path,
         page_numbers=args.page_numbers == "on",
@@ -713,6 +760,8 @@ def run_init_metadata(args: argparse.Namespace) -> int:
         "Theme: serif",
         "Split-At: h1",
         "ToC_Depth: 2",
+        "Chapter-Start-Mode: auto",
+        "Chapter-Starts:",
         "Hyphenate: on",
         "Justify: on",
         "Page-List: off",
