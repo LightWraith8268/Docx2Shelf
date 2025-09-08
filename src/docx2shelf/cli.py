@@ -555,6 +555,26 @@ def run_build(args: argparse.Namespace) -> int:
         except Exception:
             pass
 
+    # Offer to install Pandoc/EPUBCheck if missing (interactive only)
+    interactive_build = (not getattr(args, "no_prompt", False)) and sys.stdin.isatty()
+    if interactive_build:
+        try:
+            if pandoc_path() is None:
+                if prompt_bool("Pandoc not found. Install now?", default=True):
+                    p = install_pandoc()
+                    print(f"Installed Pandoc at: {p}")
+        except Exception as e:
+            print(f"Pandoc install failed: {e}", file=sys.stderr)
+        try:
+            # We'll run EPUBCheck later; pre-install if desired and enabled
+            ep_on = ((args.epubcheck == "on") if isinstance(args.epubcheck, str) else bool(getattr(args, "epubcheck", True)))
+            if ep_on and epubcheck_cmd() is None:
+                if prompt_bool("EPUBCheck not found. Install now?", default=True):
+                    j = install_epubcheck()
+                    print(f"Installed EPUBCheck jar: {j}")
+        except Exception as e:
+            print(f"EPUBCheck install failed: {e}", file=sys.stderr)
+
     try:
         html_chunks, resources = docx_to_html(docx_path)
     except RuntimeError as e:

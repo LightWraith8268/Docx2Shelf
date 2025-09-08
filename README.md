@@ -146,6 +146,7 @@ Details:
   - macOS/Linux: `~/.docx2shelf/bin`
 - The installer attempts to verify SHA‑256 checksums (when available from releases) and retries up to 3 times on transient failures.
 - The CLI prefers managed tools first, then PATH.
+- During interactive builds, if Pandoc or EPUBCheck is not found, Docx2Shelf offers to install them on the spot via the tools manager.
 
 ## What Gets Produced
 Inside the `.epub` (ZIP) you’ll see:
