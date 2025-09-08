@@ -14,7 +14,16 @@ from .utils import (
     sanitize_filename,
     parse_kv_file,
 )
-from .tools import tools_dir, install_pandoc, install_epubcheck, pandoc_path, epubcheck_cmd
+from .tools import (
+    tools_dir,
+    install_pandoc,
+    install_epubcheck,
+    uninstall_pandoc,
+    uninstall_epubcheck,
+    uninstall_all_tools,
+    pandoc_path,
+    epubcheck_cmd,
+)
 
 
 def _arg_parser() -> argparse.ArgumentParser:
@@ -97,6 +106,8 @@ def _arg_parser() -> argparse.ArgumentParser:
     mi = m_sub.add_parser("install", help="Install a tool")
     mi.add_argument("name", choices=["pandoc", "epubcheck"], help="Tool name")
     mi.add_argument("--version", dest="version", help="Tool version (optional)")
+    mu = m_sub.add_parser("uninstall", help="Uninstall a tool")
+    mu.add_argument("name", choices=["pandoc", "epubcheck", "all"], help="Tool name")
     mw = m_sub.add_parser("where", help="Show tool locations")
 
     return p
@@ -734,6 +745,19 @@ def run_tools(args: argparse.Namespace) -> int:
         print(f"Pandoc: {pandoc_path()}")
         print(f"EPUBCheck: {epubcheck_cmd()}")
         return 0
+    if args.tool_cmd == "uninstall":
+        if args.name == "pandoc":
+            uninstall_pandoc()
+            print("Removed Pandoc from tools cache (if present).")
+            return 0
+        if args.name == "epubcheck":
+            uninstall_epubcheck()
+            print("Removed EPUBCheck from tools cache (if present).")
+            return 0
+        if args.name == "all":
+            uninstall_all_tools()
+            print("Removed all managed tools from tools cache (if present).")
+            return 0
     return 1
 
 

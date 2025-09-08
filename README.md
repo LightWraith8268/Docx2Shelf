@@ -82,6 +82,11 @@ Behavior:
 
 Manual pip uninstall: `python -m pip uninstall docx2shelf`
 
+Managed tools removal (optional):
+- Linux/macOS: `sh scripts/uninstall.sh --remove-tools`
+- Windows: `powershell -ExecutionPolicy Bypass -File scripts/uninstall.ps1 -RemoveTools`
+  - This clears the Docx2Shelf tools cache (Pandoc/EPUBCheck) from the user profile.
+
 ## Quickstart
 ```
 docx2shelf build \
@@ -151,9 +156,14 @@ Details:
 - The installer attempts to verify SHA‑256 checksums (when available from releases) and retries up to 3 times on transient failures.
 - The CLI prefers managed tools first, then PATH.
 - During interactive builds, if Pandoc or EPUBCheck is not found, Docx2Shelf offers to install them on the spot via the tools manager.
- - You can also control install behavior from `build` with flags:
-   - `--auto-install-tools` installs missing tools automatically without prompts.
-   - `--no-install-tools` prevents any install attempts during the build.
+- You can also control install behavior from `build` with flags:
+  - `--auto-install-tools` installs missing tools automatically without prompts.
+  - `--no-install-tools` prevents any install attempts during the build.
+
+Uninstalling managed tools:
+```
+docx2shelf tools uninstall pandoc|epubcheck|all
+```
 
 ## What Gets Produced
 Inside the `.epub` (ZIP) you’ll see:

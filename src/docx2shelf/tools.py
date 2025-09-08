@@ -95,6 +95,33 @@ def epubcheck_cmd() -> Optional[list[str]]:
     return None
 
 
+def uninstall_pandoc() -> None:
+    td = tools_dir()
+    exe = "pandoc.exe" if os.name == "nt" else "pandoc"
+    try:
+        (td / exe).unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def uninstall_epubcheck() -> None:
+    td = tools_dir()
+    try:
+        (td / "epubcheck.jar").unlink(missing_ok=True)
+    except Exception:
+        pass
+    wrapper = td / ("epubcheck.bat" if os.name == "nt" else "epubcheck")
+    try:
+        wrapper.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def uninstall_all_tools() -> None:
+    uninstall_pandoc()
+    uninstall_epubcheck()
+
+
 def _fetch_pandoc_checksum(version: str, archive_name: str) -> str | None:
     # Try to fetch checksum list from release and parse for the archive
     base = f"https://github.com/jgm/pandoc/releases/download/{version}"

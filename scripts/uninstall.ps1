@@ -9,7 +9,8 @@
 [CmdletBinding()]
 param(
   [ValidateSet('auto','pipx','pip-user','pip-system')]
-  [string]$Method = 'auto'
+  [string]$Method = 'auto',
+  [switch]$RemoveTools
 )
 
 Set-StrictMode -Version Latest
@@ -51,3 +52,16 @@ switch ($Method) {
 
 Write-Host "Done. If 'docx2shelf' remains on PATH, restart your terminal or delete it from your Python Scripts directory."
 
+if ($RemoveTools) {
+  try {
+    if (Get-Command docx2shelf -ErrorAction SilentlyContinue) {
+      Write-Host 'Removing managed tools (Pandoc/EPUBCheck) from Docx2Shelf cache...'
+      docx2shelf tools uninstall all | Out-Null
+    } else {
+      $td = Join-Path $env:APPDATA 'Docx2Shelf\bin'
+      if (Test-Path $td) { Remove-Item -Recurse -Force $td }
+    }
+  } catch {
+    Write-Warning "Failed to remove tools cache: $_"
+  }
+}
