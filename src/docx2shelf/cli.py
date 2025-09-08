@@ -80,6 +80,8 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--dry-run", action="store_true", help="Print planned manifest/spine only")
     b.add_argument("--epubcheck", choices=["on", "off"], default="on", help="Validate with EPUBCheck if available")
     b.add_argument("--no-prompt", action="store_true", help="Do not prompt; use provided defaults and flags only")
+    b.add_argument("--auto-install-tools", action="store_true", help="Automatically install Pandoc/EPUBCheck when missing (no prompts)")
+    b.add_argument("--no-install-tools", action="store_true", help="Do not install tools even if missing")
     b.add_argument("--prompt-all", action="store_true", help="Prompt for every field even if prefilled")
     b.add_argument("--quiet", action="store_true", help="Reduce output (errors only)")
     b.add_argument("--verbose", action="store_true", help="Increase output (extra diagnostics)")
@@ -557,21 +559,35 @@ def run_build(args: argparse.Namespace) -> int:
 
     # Offer to install Pandoc/EPUBCheck if missing (interactive only)
     interactive_build = (not getattr(args, "no_prompt", False)) and sys.stdin.isatty()
-    if interactive_build:
+    allow_install = not bool(getattr(args, "no_install_tools", False))
+    if allow_install:
+        # Pandoc
         try:
             if pandoc_path() is None:
-                if prompt_bool("Pandoc not found. Install now?", default=True):
+                if getattr(args, "auto_install_tools", False):
                     p = install_pandoc()
-                    print(f"Installed Pandoc at: {p}")
+                    if not getattr(args, "quiet", False):
+                        print(f"Installed Pandoc at: {p}")
+                elif interactive_build:
+                    if prompt_bool("Pandoc not found. Install now?", default=True):
+                        p = install_pandoc()
+                        if not getattr(args, "quiet", False):
+                            print(f"Installed Pandoc at: {p}")
         except Exception as e:
             print(f"Pandoc install failed: {e}", file=sys.stderr)
+        # EPUBCheck
         try:
-            # We'll run EPUBCheck later; pre-install if desired and enabled
             ep_on = ((args.epubcheck == "on") if isinstance(args.epubcheck, str) else bool(getattr(args, "epubcheck", True)))
             if ep_on and epubcheck_cmd() is None:
-                if prompt_bool("EPUBCheck not found. Install now?", default=True):
+                if getattr(args, "auto_install_tools", False):
                     j = install_epubcheck()
-                    print(f"Installed EPUBCheck jar: {j}")
+                    if not getattr(args, "quiet", False):
+                        print(f"Installed EPUBCheck jar: {j}")
+                elif interactive_build:
+                    if prompt_bool("EPUBCheck not found. Install now?", default=True):
+                        j = install_epubcheck()
+                        if not getattr(args, "quiet", False):
+                            print(f"Installed EPUBCheck jar: {j}")
         except Exception as e:
             print(f"EPUBCheck install failed: {e}", file=sys.stderr)
 

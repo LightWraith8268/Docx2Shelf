@@ -105,6 +105,7 @@ docx2shelf build \
 - Output: `--output out.epub`, `--inspect`, `--dry-run`
   - Naming: `--output-pattern "{series}-{index2}-{title}"` (placeholders: `{title}`, `{series}`, `{index}` raw, `{index2}` zero‑padded)
 - Non-interactive: `--no-prompt` (use metadata.txt + flags only)
+ - Tools: `--auto-install-tools` (install Pandoc/EPUBCheck automatically when missing), `--no-install-tools` (never install during build)
  - Prompt control & logs: `--prompt-all` (ask everything), `--quiet`, `--verbose`
 
 ## Cheat Sheet
@@ -147,6 +148,9 @@ Details:
 - The installer attempts to verify SHA‑256 checksums (when available from releases) and retries up to 3 times on transient failures.
 - The CLI prefers managed tools first, then PATH.
 - During interactive builds, if Pandoc or EPUBCheck is not found, Docx2Shelf offers to install them on the spot via the tools manager.
+ - You can also control install behavior from `build` with flags:
+   - `--auto-install-tools` installs missing tools automatically without prompts.
+   - `--no-install-tools` prevents any install attempts during the build.
 
 ## What Gets Produced
 Inside the `.epub` (ZIP) you’ll see:
