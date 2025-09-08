@@ -105,7 +105,7 @@ def _inject_heading_ids(html: str, chap_idx: int) -> tuple[str, str, list[tuple[
     return html3, h1_id, h2_items
 
 
-def _find_chapter_starts(html_chunks: list[str], chapter_starts: list[str]) -> list[tuple[str, str]]:
+def _find_chapter_starts(html_chunks: list[str], chapter_starts: list[str]) -> list[tuple[str, int]]:
     """Find user-defined chapter starts in HTML chunks.
     
     Returns list of (chapter_title, chunk_index) tuples.
@@ -114,36 +114,36 @@ def _find_chapter_starts(html_chunks: list[str], chapter_starts: list[str]) -> l
     import re
     found_chapters = []
     
+    # Pre-process HTML chunks to text-only content (performance optimization)
+    text_chunks = [re.sub(r'<[^>]+>', '', chunk) for chunk in html_chunks]
+    
     for pattern in chapter_starts:
         pattern_found = False
         # Try to find this pattern in any chunk
-        for i, chunk in enumerate(html_chunks):
-            # Remove HTML tags for text matching
-            text_content = re.sub(r'<[^>]+>', '', chunk)
-            
+        for i, text_content in enumerate(text_chunks):
             # Try both exact match and regex-style matching
             if pattern.lower() in text_content.lower():
                 found_chapters.append((pattern.strip(), i))
                 pattern_found = True
                 break
             
-            # Try as a regex pattern
+            # Try as a regex pattern (single execution with better validation)
             try:
-                if re.search(pattern, text_content, re.IGNORECASE):
-                    # Extract the actual matched text for a better title
-                    match = re.search(pattern, text_content, re.IGNORECASE)
-                    if match:
-                        title = match.group(0).strip()
-                        found_chapters.append((title, i))
-                        pattern_found = True
-                        break
+                match = re.search(pattern, text_content, re.IGNORECASE)
+                if match and match.group(0).strip():  # Ensure meaningful match
+                    title = match.group(0).strip()
+                    found_chapters.append((title, i))
+                    pattern_found = True
+                    break
             except re.error:
                 pass  # Invalid regex, skip
         
         # If pattern not found, create a generic chapter name
         if not pattern_found:
+            # Ensure we don't exceed available chunks or create invalid indices
             chunk_idx = min(len(found_chapters), len(html_chunks) - 1)
-            found_chapters.append((f"Chapter {len(found_chapters) + 1}", chunk_idx))
+            if chunk_idx >= 0 and chunk_idx < len(html_chunks):  # Ensure valid index
+                found_chapters.append((f"Chapter {len(found_chapters) + 1}", chunk_idx))
     
     return found_chapters
 
@@ -345,7 +345,7 @@ def assemble_epub(
     chapter_sub_links = []
     
     # Determine chapter processing mode
-    if opts.chapter_start_mode == "manual" and opts.chapter_starts:
+    if opts.chapter_start_mode in ("manual", "mixed") and opts.chapter_starts:
         # Manual mode: use user-defined chapter starts
         manual_chapters = _find_chapter_starts(html_chunks, opts.chapter_starts)
         
