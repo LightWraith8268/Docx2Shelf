@@ -1,0 +1,39 @@
+# Docx2Shelf metadata template
+# Lines starting with # are ignored. Keys are case-insensitive.
+# Use key: value or key=value. Paths can be relative to this DOCX folder.
+
+Title: Manuscript
+Author: Riley E. Antrobus
+Language: en
+
+# Optional metadata
+SeriesName:
+SeriesIndex:
+Title-Sort:
+Author-Sort:
+Description:
+ISBN:
+Publisher:
+PubDate: 2024-01-01
+UUID:
+Subjects: 
+Keywords: 
+
+# Assets
+Cover: tmp/cover.png
+CSS:
+Embed-Fonts:
+
+# Conversion & layout
+Theme: serif
+Split-At: h1
+ToC_Depth: 2
+Hyphenate: on
+Justify: on
+Page-List: off
+Page-Numbers: off
+Cover-Scale: contain
+
+# Output & validation
+Output: Manuscript.epub
+EPUBCheck: on

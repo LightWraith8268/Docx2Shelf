@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+
+# Envs
+.venv/
+venv/
+ENV/
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+
+# Editors/OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Generated
+*.epub
+*.zip
+tmp/*.epub
+tmp/*.zip
+tmp/*.src/

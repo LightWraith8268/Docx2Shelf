@@ -1,0 +1,5 @@
+/* Base serif theme (placeholder) */
+html { font-family: serif; line-height: 1.5; }
+h1,h2,h3 { page-break-after: avoid; }
+p { text-indent: 1.2em; margin: 0; }
+

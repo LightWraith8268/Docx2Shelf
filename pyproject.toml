@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docx2shelf"
+version = "0.1.0"
+description = "Offline CLI to convert DOCX manuscripts into valid EPUB 3"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{ name = "Docx2Shelf Contributors" }]
+keywords = ["epub", "docx", "converter", "ebook"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "License :: OSI Approved :: MIT License",
+  "Environment :: Console",
+  "Topic :: Text Processing :: Markup",
+]
+dependencies = [
+  "ebooklib>=0.18",
+]
+
+[project.optional-dependencies]
+docx = ["python-docx>=1.0.0"]
+pandoc = ["pypandoc>=1.11"]
+dev = [
+  "pytest>=7.0",
+  "pytest-cov>=4.0",
+  "ruff>=0.5.0",
+  "black>=24.0",
+  "mypy>=1.8",
+  "build>=1.0",
+  "pyinstaller>=6.0",
+]
+
+[project.scripts]
+docx2shelf = "docx2shelf.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+docx2shelf = [
+  "assets/css/*.css",
+  "templates/*.xhtml",
+  "templates/*.xml",
+]
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]

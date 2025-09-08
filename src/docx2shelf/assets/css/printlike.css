@@ -1,0 +1,6 @@
+/* Print-like theme (placeholder) */
+html { font-family: Georgia, serif; line-height: 1.6; }
+body { margin: 0 8%; }
+h1,h2,h3 { page-break-after: avoid; }
+p { text-indent: 1.2em; margin: 0; }
+

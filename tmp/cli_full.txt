@@ -1,0 +1,502 @@
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+from typing import Optional
+
+from .metadata import BuildOptions, EpubMetadata, build_output_filename, parse_date
+from .utils import prompt, prompt_choice, prompt_bool, sanitize_filename, parse_kv_file
+
+
+def _arg_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="docx2shelf",
+        description="Convert a DOCX manuscript into a valid EPUB 3 (offline)",
+    )
+    sub = p.add_subparsers(dest="command", required=True)
+
+    b = sub.add_parser("build", help="Build an EPUB from inputs")
+    b.add_argument("--docx", type=str, help="Path to manuscript .docx")
+    b.add_argument("--cover", type=str, help="Path to cover image (jpg/png)")
+    b.add_argument("--title", type=str, help="Book title")
+    b.add_argument("--author", type=str, default="Riley E. Antrobus", help="Author name")
+    b.add_argument("--seriesName", type=str, help="Series name (optional)")
+    b.add_argument("--seriesIndex", type=str, help="Series index/number (optional)")
+    b.add_argument("--title-sort", dest="title_sort", type=str, help="Calibre title sort (optional)")
+    b.add_argument("--author-sort", dest="author_sort", type=str, help="Calibre author sort (optional)")
+    b.add_argument("--description", type=str, help="Long description (optional)")
+    b.add_argument("--isbn", type=str, help="ISBN-13 digits only (optional)")
+    b.add_argument("--language", type=str, default="en", help="Language code, e.g., en")
+    b.add_argument("--publisher", type=str, help="Publisher (optional)")
+    b.add_argument("--pubdate", type=str, help="Publication date ISO YYYY-MM-DD (optional)")
+    b.add_argument("--uuid", type=str, help="UUID to use when no ISBN (optional)")
+    b.add_argument("--subjects", type=str, help="Comma-separated subjects")
+    b.add_argument("--keywords", type=str, help="Comma-separated keywords")
+
+    b.add_argument(
+        "--split-at",
+        choices=["h1", "h2", "pagebreak"],
+        default="h1",
+        help="How to split content into XHTML files",
+    )
+    b.add_argument(
+        "--theme",
+        choices=["serif", "sans", "printlike"],
+        default="serif",
+        help="Base CSS theme",
+    )
+    b.add_argument("--embed-fonts", type=str, help="Directory of TTF/OTF to embed")
+    b.add_argument("--hyphenate", choices=["on", "off"], default="on")
+    b.add_argument("--justify", choices=["on", "off"], default="on")
+    b.add_argument("--toc-depth", type=int, default=2)
+    b.add_argument("--page-list", choices=["on", "off"], default="off")
+    b.add_argument("--css", type=str, help="Path to extra CSS to merge (optional)")
+    b.add_argument("--page-numbers", choices=["on", "off"], default="off")
+    b.add_argument("--epub-version", type=str, default="3")
+    b.add_argument("--cover-scale", choices=["contain", "cover"], default="contain")
+
+    b.add_argument("--dedication", type=str, help="Path to plain-text dedication (optional)")
+    b.add_argument("--ack", type=str, help="Path to plain-text acknowledgements (optional)")
+
+    b.add_argument("--output", type=str, help="Output .epub path (optional)")
+    b.add_argument("--inspect", action="store_true", help="Emit inspect folder with sources")
+    b.add_argument("--dry-run", action="store_true", help="Print planned manifest/spine only")
+    b.add_argument("--epubcheck", choices=["on", "off"], default="on", help="Validate with EPUBCheck if available")
+    b.add_argument("--no-prompt", action="store_true", help="Do not prompt; use provided defaults and flags only")
+
+    t = sub.add_parser("init-metadata", help="Generate a metadata.txt template next to the DOCX")
+    t.add_argument("--docx", type=str, required=True, help="Path to manuscript .docx")
+    t.add_argument("--cover", type=str, help="Optional default cover path")
+    t.add_argument("--output", type=str, help="Optional path to write template (defaults to DOCX folder/metadata.txt)")
+    t.add_argument("--force", action="store_true", help="Overwrite existing file if present")
+
+    return p
+
+
+def _apply_metadata_dict(args: argparse.Namespace, md: dict, base_dir: Path | None) -> None:
+    if not md:
+        return
+    def get(k: str):
+        # allow simple aliases
+        aliases = {
+            "series": "seriesName",
+            "seriesname": "seriesName",
+            "series_index": "seriesIndex",
+            "seriesindex": "seriesIndex",
+            "title-sort": "title_sort",
+            "author-sort": "author_sort",
+        }
+        k2 = aliases.get(k.lower(), k)
+        return md.get(k, md.get(k.lower(), md.get(k2, md.get(k2.lower()))))
+
+    def pathify(val: str | None) -> str | None:
+        if not val:
+            return None
+        p = Path(val)
+        if not p.is_absolute() and base_dir:
+            p = (base_dir / p).resolve()
+        return str(p)
+
+    # Core (file overrides defaults; CLI may still override if passed explicitly)
+    if get("docx"): args.docx = get("docx")
+    if get("cover"): args.cover = pathify(get("cover"))
+    if get("title"): args.title = get("title")
+    if get("author"): args.author = get("author")
+    if get("language"): args.language = get("language")
+    # Optional metadata
+    if get("seriesname") or get("series"):
+        args.seriesName = get("seriesname") or get("series")
+    if get("seriesindex"):
+        args.seriesIndex = get("seriesindex")
+    if get("title_sort") or get("title-sort"):
+        setattr(args, "title_sort", get("title_sort") or get("title-sort"))
+    if get("author_sort") or get("author-sort"):
+        setattr(args, "author_sort", get("author_sort") or get("author-sort"))
+    if get("description"): args.description = get("description")
+    if get("isbn"): args.isbn = get("isbn")
+    if get("publisher"): args.publisher = get("publisher")
+    if get("pubdate"): args.pubdate = get("pubdate")
+    if get("uuid"): args.uuid = get("uuid")
+    if get("subjects"): args.subjects = get("subjects")
+    if get("keywords"): args.keywords = get("keywords")
+    # Conversion/layout
+    if get("split_at") or get("split-at"): args.split_at = get("split_at") or get("split-at")
+    if get("theme"): args.theme = get("theme")
+    if get("hyphenate"): args.hyphenate = get("hyphenate")
+    if get("justify"): args.justify = get("justify")
+    try:
+        if get("toc_depth") and not getattr(args, "toc_depth_set", False):
+            args.toc_depth = int(get("toc_depth"))
+            setattr(args, "toc_depth_set", True)
+    except Exception:
+        pass
+    if get("toc_depth"):
+        try: args.toc_depth = int(get("toc_depth"))
+        except Exception: pass
+    if get("page_list") or get("page-list"): args.page_list = get("page_list") or get("page-list")
+    if get("page_numbers") or get("page-numbers"): args.page_numbers = get("page_numbers") or get("page-numbers")
+    if get("cover_scale") or get("cover-scale"): args.cover_scale = get("cover_scale") or get("cover-scale")
+    # Assets
+    if get("css"): args.css = pathify(get("css"))
+    if get("embed_fonts") or get("embed-fonts"): args.embed_fonts = pathify(get("embed_fonts") or get("embed-fonts"))
+    if get("dedication"): args.dedication = pathify(get("dedication"))
+    if get("ack") or get("acknowledgements") or get("acknowledgments"): args.ack = pathify(get("ack") or get("acknowledgements") or get("acknowledgments"))
+    # Output
+    if get("output"): args.output = pathify(get("output"))
+    if get("epubcheck"): args.epubcheck = get("epubcheck")
+
+
+def _print_checklist(args: argparse.Namespace) -> None:
+    def checked(val) -> str:
+        return "[x]" if (val is not None and str(val).strip() != "") else "[ ]"
+
+    items = [
+        ("DOCX", args.docx),
+        ("Cover", args.cover),
+        ("Title", args.title),
+        ("Author", args.author),
+        ("Language", args.language),
+        ("Series", args.seriesName),
+        ("Series Index", args.seriesIndex),
+        ("Title Sort", getattr(args, "title_sort", None)),
+        ("Author Sort", getattr(args, "author_sort", None)),
+        ("Description", args.description),
+        ("ISBN", args.isbn),
+        ("Publisher", args.publisher),
+        ("PubDate", args.pubdate),
+        ("UUID", args.uuid),
+        ("Subjects", args.subjects),
+        ("Keywords", args.keywords),
+        ("Split At", args.split_at),
+        ("Theme", args.theme),
+        ("Hyphenate", args.hyphenate),
+        ("Justify", args.justify),
+        ("ToC Depth", getattr(args, "toc_depth", None)),
+        ("Page List", args.page_list),
+        ("Page Numbers", args.page_numbers),
+        ("Cover Scale", args.cover_scale),
+        ("Extra CSS", args.css),
+        ("Fonts Dir", args.embed_fonts),
+        ("Dedication", args.dedication),
+        ("Acknowledgements", args.ack),
+        ("EPUBCheck", getattr(args, "epubcheck", None)),
+        ("Output", args.output),
+    ]
+    print("\n== Metadata Checklist ==")
+    print("(Press Enter to skip/keep current when prompted)\n")
+    for name, val in items:
+        display = str(val) if val is not None and str(val).strip() != "" else "—"
+        print(f" {checked(val)} {name}: {display}")
+    print("")
+
+
+def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
+    # Ask interactively for anything not provided on CLI.
+    import sys as _sys
+    interactive = (not getattr(args, "no_prompt", False)) and _sys.stdin.isatty()
+
+    # Attempt to pre-load metadata from metadata.txt
+    md_loaded = False
+    # Prefer docx directory if docx is already provided
+    if args.docx:
+        try:
+            md_path = Path(args.docx).expanduser()
+            md_dir = md_path.parent if md_path.suffix else Path.cwd()
+            mfile = md_dir / "metadata.txt"
+            if mfile.exists():
+                _apply_metadata_dict(args, parse_kv_file(mfile), md_dir)
+                md_loaded = True
+        except Exception:
+            pass
+    # If no docx yet, try CWD metadata.txt and let it specify docx
+    if not md_loaded:
+        mfile = Path.cwd() / "metadata.txt"
+        if mfile.exists():
+            md = parse_kv_file(mfile)
+            _apply_metadata_dict(args, md, Path.cwd())
+            # If docx now set, and a different dir holds another metadata.txt, merge it
+            if args.docx:
+                d = Path(args.docx).expanduser().resolve().parent
+                if d != Path.cwd() and (d / "metadata.txt").exists():
+                    _apply_metadata_dict(args, parse_kv_file(d / "metadata.txt"), d)
+
+    if interactive:
+        _print_checklist(args)
+    if not args.docx and interactive:
+        args.docx = prompt("Path to manuscript .docx", allow_empty=True)
+    if not args.cover and interactive:
+        args.cover = prompt("Path to cover image (jpg/png)", allow_empty=True)
+    if not args.title and interactive:
+        args.title = prompt("Book title", allow_empty=True)
+    # Ask for author and language (respect provided values)
+    if interactive:
+        args.author = prompt("Author", default=args.author or "Riley E. Antrobus")
+        args.language = prompt("Language (BCP-47)", default=args.language or "en")
+    # Defaults already exist for author and language.
+    # Optional metadata
+    if interactive and (args.seriesName is None):
+        args.seriesName = prompt("Series name (optional)", default="", allow_empty=True)
+    if interactive and (args.seriesIndex is None) and args.seriesName:
+        args.seriesIndex = prompt("Series index (optional)", default="", allow_empty=True)
+    # Calibre-compatible sort fields
+    if interactive and getattr(args, "title_sort", None) is None:
+        setattr(args, "title_sort", prompt("Title sort (optional)", default="", allow_empty=True))
+    if interactive and getattr(args, "author_sort", None) is None:
+        setattr(args, "author_sort", prompt("Author sort (optional)", default="", allow_empty=True))
+    if interactive and args.description is None:
+        args.description = prompt("Description (optional)", default="", allow_empty=True)
+    if interactive and args.isbn is None:
+        args.isbn = prompt("ISBN-13 (optional)", default="", allow_empty=True)
+    if interactive and args.publisher is None:
+        args.publisher = prompt("Publisher (optional)", default="", allow_empty=True)
+    if interactive and args.pubdate is None:
+        args.pubdate = prompt("Publication date YYYY-MM-DD (optional)", default="", allow_empty=True)
+    if interactive and args.uuid is None:
+        args.uuid = prompt("UUID (optional, auto if absent)", default="", allow_empty=True)
+    if interactive and args.subjects is None:
+        args.subjects = prompt("Subjects (comma-separated, optional)", default="", allow_empty=True)
+    if interactive and args.keywords is None:
+        args.keywords = prompt("Keywords (comma-separated, optional)", default="", allow_empty=True)
+
+    # Conversion/layout options
+    if interactive:
+        args.split_at = prompt_choice("Split at", ["h1", "h2", "pagebreak"], default=args.split_at)
+        args.theme = prompt_choice("Theme", ["serif", "sans", "printlike"], default=args.theme)
+        args.hyphenate = prompt_choice("Hyphenate", ["on", "off"], default=args.hyphenate)
+        args.justify = prompt_choice("Justify", ["on", "off"], default=args.justify)
+        try:
+            args.toc_depth = int(prompt("ToC depth (1-2)", default=str(args.toc_depth)))
+        except Exception:
+            pass
+        args.page_list = prompt_choice("Include page-list nav?", ["on", "off"], default=args.page_list)
+        args.page_numbers = prompt_choice("Show page number counters?", ["on", "off"], default=args.page_numbers)
+        args.cover_scale = prompt_choice("Cover scaling", ["contain", "cover"], default=args.cover_scale)
+    # Optional assets
+    if interactive and args.css is None:
+        args.css = prompt("Extra CSS path (optional)", default="", allow_empty=True)
+    if interactive and args.embed_fonts is None:
+        args.embed_fonts = prompt("Embed fonts directory (optional)", default="", allow_empty=True)
+    if interactive and args.dedication is None:
+        args.dedication = prompt("Dedication .txt (optional)", default="", allow_empty=True)
+    if interactive and args.ack is None:
+        args.ack = prompt("Acknowledgements .txt (optional)", default="", allow_empty=True)
+    # Validation
+    if interactive:
+        epubcheck_default = "on" if getattr(args, "epubcheck", None) in (True, None, "on") else "off"
+        args.epubcheck = prompt_choice("Validate with EPUBCheck if available?", ["on", "off"], default=epubcheck_default)
+
+    if args.output is None and interactive:
+        # Suggest computed output filename and allow override
+        suggested = build_output_filename(
+            title=args.title,
+            series=args.seriesName or None,
+            series_index=args.seriesIndex or None,
+        )
+        out = prompt("Output filename", default=suggested)
+        args.output = out
+
+    return args
+
+
+def _print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path | None) -> None:
+    def mark(val):
+        return "[x]" if val else "[ ]"
+    print("\n== Metadata Summary ==")
+    print(f" {mark(meta.title)} Title: {meta.title or '—'}")
+    print(f" {mark(meta.author)} Author: {meta.author or '—'}")
+    print(f" {mark(meta.language)} Language: {meta.language or '—'}")
+    print(f" {mark(meta.isbn or meta.uuid)} Identifier: {'ISBN '+meta.isbn if meta.isbn else (meta.uuid or '—')}")
+    if meta.series:
+        print(f" {mark(meta.series)} Series: {meta.series} #{meta.series_index or '—'}")
+    print(f" {mark(meta.publisher)} Publisher: {meta.publisher or '—'}")
+    print(f" {mark(meta.pubdate)} PubDate: {meta.pubdate.isoformat() if meta.pubdate else '—'}")
+    print(f" {mark(bool(meta.subjects))} Subjects: {', '.join(meta.subjects) if meta.subjects else '—'}")
+    print(f" {mark(bool(meta.keywords))} Keywords: {', '.join(meta.keywords) if meta.keywords else '—'}")
+    print(f" {mark(meta.cover_path)} Cover: {meta.cover_path}")
+    print(f" {mark(opts.extra_css)} Extra CSS: {opts.extra_css or '—'}  | Fonts: {opts.embed_fonts_dir or '—'}")
+    print(f" Output: {output or '—'}\n")
+
+
+def run_build(args: argparse.Namespace) -> int:
+    from .convert import docx_to_html, split_html_by_heading, split_html_by_pagebreak
+    from .assemble import plan_build, assemble_epub
+
+    # Validate paths
+    docx_path = Path(args.docx).expanduser().resolve()
+    cover_path = Path(args.cover).expanduser().resolve()
+    if not docx_path.is_file():
+        print(f"Error: DOCX not found: {docx_path}", file=sys.stderr)
+        return 2
+    if not cover_path.is_file():
+        print(f"Error: cover not found: {cover_path}", file=sys.stderr)
+        return 2
+
+    # Basic validations
+    if args.isbn:
+        from .metadata import validate_isbn13
+        if not validate_isbn13(args.isbn):
+            print("Error: Invalid ISBN-13. Provide 13 digits (hyphens allowed) with a valid checksum.", file=sys.stderr)
+            return 2
+    if docx_path.suffix.lower() != ".docx":
+        print("Error: Manuscript must be a .docx file.", file=sys.stderr)
+        return 2
+    if cover_path.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
+        print("Error: Cover must be a .jpg, .jpeg, or .png image.", file=sys.stderr)
+        return 2
+
+    # Language normalization/validation
+    from .metadata import normalize_lang, validate_lang_code
+    args.language = normalize_lang(args.language)
+    if not validate_lang_code(args.language):
+        print("Error: Language must be a BCP-47 code like 'en' or 'en-us'.", file=sys.stderr)
+        return 2
+
+    if not args.title or str(args.title).strip() == "":
+        print("Error: Title is required.", file=sys.stderr)
+        return 2
+
+    meta = EpubMetadata(
+        title=args.title,
+        author=args.author or "Riley E. Antrobus",
+        language=args.language or "en",
+        description=(args.description or None),
+        isbn=(args.isbn or None),
+        publisher=(args.publisher or None),
+        pubdate=parse_date(args.pubdate) if args.pubdate else None,
+        uuid=(args.uuid or None),
+        series=(args.seriesName or None),
+        series_index=(args.seriesIndex or None),
+        title_sort=(getattr(args, "title_sort", "") or None),
+        author_sort=(getattr(args, "author_sort", "") or None),
+        subjects=[s.strip() for s in (args.subjects or "").split(",") if s.strip()],
+        keywords=[s.strip() for s in (args.keywords or "").split(",") if s.strip()],
+        cover_path=cover_path,
+    )
+
+    opts = BuildOptions(
+        split_at=args.split_at,
+        theme=args.theme,
+        embed_fonts_dir=Path(args.embed_fonts).resolve() if args.embed_fonts else None,
+        hyphenate=args.hyphenate == "on",
+        justify=args.justify == "on",
+        toc_depth=int(args.toc_depth),
+        page_list=args.page_list == "on",
+        extra_css=Path(args.css).resolve() if args.css else None,
+        page_numbers=args.page_numbers == "on",
+        epub_version=str(args.epub_version),
+        cover_scale=args.cover_scale,
+        dedication_txt=Path(args.dedication).resolve() if args.dedication else None,
+        ack_txt=Path(args.ack).resolve() if args.ack else None,
+        inspect=args.inspect,
+        dry_run=args.dry_run,
+        epubcheck=((args.epubcheck == "on") if isinstance(args.epubcheck, str) else bool(getattr(args, "epubcheck", True))),
+    )
+
+    try:
+    html_chunks, resources = docx_to_html(docx_path)
+    except RuntimeError as e:
+        print(f"Conversion error: {e}", file=sys.stderr)
+        return 2
+    # Apply split strategy if needed
+    if args.split_at in {"h1", "h2"}:
+        combined = "".join(html_chunks)
+        html_chunks = split_html_by_heading(combined, level=args.split_at)
+    elif args.split_at == "pagebreak":
+        combined = "".join(html_chunks)
+        html_chunks = split_html_by_pagebreak(combined)
+
+    plan = plan_build(meta, opts, html_chunks, resources)
+    _print_metadata_summary(meta, opts, None if not args.output else Path(args.output))
+
+    if args.dry_run:
+        print("-- Dry Run: Planned manifest/spine --")
+        for line in plan:
+            print(line)
+        return 0
+
+    output = Path(sanitize_filename(args.output)).with_suffix(".epub").resolve()
+    assemble_epub(meta, opts, html_chunks, resources, output)
+    print(f"Wrote: {output}")
+    if opts.inspect:
+        print("Inspect folder emitted for debugging.")
+    return 0
+
+
+def run_init_metadata(args: argparse.Namespace) -> int:
+    docx_path = Path(args.docx).expanduser().resolve()
+    if not docx_path.is_file() or docx_path.suffix.lower() != ".docx":
+        print(f"Error: DOCX not found or not a .docx file: {docx_path}", file=sys.stderr)
+        return 2
+    out_path = Path(args.output).expanduser().resolve() if args.output else docx_path.parent / "metadata.txt"
+    if out_path.exists() and not args.force:
+        print(f"Refusing to overwrite existing file: {out_path}. Use --force to overwrite.", file=sys.stderr)
+        return 2
+
+    title_guess = docx_path.stem.replace("_", " ").replace("-", " ").strip().title()
+    from .metadata import build_output_filename
+    output_guess = build_output_filename(title_guess, None, None)
+
+    lines = [
+        "# Docx2Shelf metadata template",
+        "# Lines starting with # are ignored. Keys are case-insensitive.",
+        "# Use key: value or key=value. Paths can be relative to this DOCX folder.",
+        "",
+        f"Title: {title_guess}",
+        "Author: Riley E. Antrobus",
+        "Language: en",
+        "",
+        "# Optional metadata",
+        "SeriesName:",
+        "SeriesIndex:",
+        "Title-Sort:",
+        "Author-Sort:",
+        "Description:",
+        "ISBN:",
+        "Publisher:",
+        "PubDate: 2024-01-01",
+        "UUID:",
+        "Subjects: ",
+        "Keywords: ",
+        "",
+        "# Assets",
+        f"Cover: {args.cover or ''}",
+        "CSS:",
+        "Embed-Fonts:",
+        "",
+        "# Conversion & layout",
+        "Theme: serif",
+        "Split-At: h1",
+        "ToC_Depth: 2",
+        "Hyphenate: on",
+        "Justify: on",
+        "Page-List: off",
+        "Page-Numbers: off",
+        "Cover-Scale: contain",
+        "",
+        "# Output & validation",
+        f"Output: {output_guess}",
+        "EPUBCheck: on",
+        "",
+    ]
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"Wrote template: {out_path}")
+    return 0
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    parser = _arg_parser()
+    args = parser.parse_args(argv)
+
+    if args.command == "build":
+        args = _prompt_missing(args)
+        return run_build(args)
+    if args.command == "init-metadata":
+        return run_init_metadata(args)
+
+    parser.print_help()
+    return 1
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())
