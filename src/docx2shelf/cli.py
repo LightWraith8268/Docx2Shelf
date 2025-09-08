@@ -37,7 +37,7 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--docx", type=str, help="Path to manuscript .docx")
     b.add_argument("--cover", type=str, help="Path to cover image (jpg/png)")
     b.add_argument("--title", type=str, help="Book title")
-    b.add_argument("--author", type=str, default="Riley E. Antrobus", help="Author name")
+    b.add_argument("--author", type=str, help="Author name")
     b.add_argument("--seriesName", type=str, help="Series name (optional)")
     b.add_argument("--seriesIndex", type=str, help="Series index/number (optional)")
     b.add_argument("--title-sort", dest="title_sort", type=str, help="Calibre title sort (optional)")
@@ -321,7 +321,7 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
         args.title = prompt("Book title", allow_empty=True)
     # Ask for author and language (respect provided values)
     if interactive:
-        args.author = prompt("Author", default=args.author or "Riley E. Antrobus")
+        args.author = prompt("Author", default=args.author or "", allow_empty=True)
         args.language = prompt("Language (BCP-47)", default=args.language or "en")
     # Defaults already exist for author and language.
     # Optional metadata
@@ -501,7 +501,7 @@ def run_build(args: argparse.Namespace) -> int:
 
     meta = EpubMetadata(
         title=args.title,
-        author=args.author or "Riley E. Antrobus",
+        author=args.author or "Unknown Author",
         language=args.language or "en",
         description=(args.description or None),
         isbn=(args.isbn or None),
@@ -688,7 +688,7 @@ def run_init_metadata(args: argparse.Namespace) -> int:
         "# Example: --output-pattern \"{series}-{index2}-{title}\" (placeholders: {title}, {series}, {index}, {index2})",
         "",
         f"Title: {title_guess}",
-        "Author: Riley E. Antrobus",
+        "Author:",
         "Language: en",
         "",
         "# Optional metadata",

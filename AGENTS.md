@@ -14,7 +14,7 @@ Docx2Shelf is a Python 3.11, offline CLI that converts DOCX manuscripts into val
 - Editable install + dev deps: `pip install -e ".[dev]"`.
 - CLI help: `docx2shelf --help`.
 - Build EPUB (example):
-  `docx2shelf build --docx manuscript.docx --cover cover.jpg --title "Book" --author "Riley E. Antrobus" --theme serif --justify on --hyphenate on`
+  `docx2shelf build --docx manuscript.docx --cover cover.jpg --title "Book" --author "Author Name" --theme serif --justify on --hyphenate on`
 - Dry run / inspect: `--dry-run`, `--inspect`.
 - Tests: `pytest -q` (coverage: `pytest --cov=docx2shelf`).
 - Lint/format/type-check: `ruff check . && black . && mypy src/docx2shelf`.
