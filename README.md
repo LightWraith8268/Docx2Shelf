@@ -30,9 +30,9 @@ Place a `metadata.txt` next to your `.docx` to auto-fill prompts. Example:
 
 ```
 Title: Book Title
-Author: Riley E. Antrobus
+Author: Author Name
 Language: en
-SeriesName: The Starborn Legacy
+SeriesName: Series Name
 SeriesIndex: 01
 Description: ...
 ISBN: 9780306406157
@@ -42,7 +42,7 @@ UUID: 123e4567-e89b-12d3-a456-426614174000
 Subjects: Space, Adventure
 Keywords: sci-fi, epic
 Title-Sort: Book Title, The
-Author-Sort: Antrobus, Riley E.
+Author-Sort: Last, First
 Theme: serif
 Split-At: h1
 Page-List: on
@@ -93,7 +93,7 @@ docx2shelf build \
   --docx manuscript.docx \
   --cover cover.jpg \
   --title "Book Title" \
-  --author "Riley E. Antrobus" \
+  --author "Author Name" \
   --language en \
   --theme serif \
   --split-at h1 \
@@ -105,7 +105,7 @@ docx2shelf build \
 - Interactive flow shows a checklist of metadata found (from flags/metadata.txt) and prompts for anything missing. Press Enter to skip and keep current/blank.
  - Confirmation step: after showing a Metadata Summary and plan, you are asked to confirm before writing the EPUB (skipped with `--no-prompt`).
 ## CLI Options (selected)
-- Required: `--docx`, `--title`, `--cover` (author defaults to Riley E. Antrobus). The CLI interactively asks for all metadata if not provided.
+- Required: `--docx`, `--title`, `--cover` (author defaults are configurable). The CLI interactively asks for all metadata if not provided.
 - Metadata: `--author`, `--language`, `--isbn`, `--publisher`, `--pubdate YYYY-MM-DD`, `--uuid`, `--seriesName`, `--seriesIndex`, `--title-sort`, `--author-sort`, `--subjects`, `--keywords`
 - Conversion: `--split-at h1|h2|pagebreak`, `--toc-depth N`, `--theme serif|sans|printlike`, `--css EXTRA.css` (optional, will be asked)
 - Layout: `--justify on|off`, `--hyphenate on|off`, `--page-numbers on|off`, `--page-list on|off`, `--embed-fonts DIR` (optional, will be asked), `--cover-scale contain|cover`
