@@ -289,18 +289,4 @@ MIT
 
 
 
-\n\n### Interactive by default\nRun `docx2shelf` with no arguments to start a guided, interactive build (it will read metadata.txt if present, show a checklist, prompt for missing fields, summarize, and ask to confirm before writing). Use `--no-prompt` for non-interactive runs.\n
-
-
-### Auto-generation of metadata.txt
-In interactive mode, if no `metadata.txt` is found next to your DOCX, the CLI creates a template automatically (after you provide the DOCX path). It may include a Cover line if you already provided it. You can edit and re-run to reuse it later.
-
-
-
-### Run from the manuscript folder
-Change into the folder that contains your `.docx` (and `cover.jpg`/`cover.png`) and run `docx2shelf`. The CLI auto-detects the only `.docx` in the folder; if there are multiple, it lets you pick one. It also auto-detects a cover named `cover.jpg`/`cover.png`. If anything is missing, it prompts you and shows a checklist.
-
-All interactive choices use numeric pickers:
-- File selections (DOCX, cover, CSS, dedication/ack, fonts dir) show numbered lists of actual filenames found in the DOCX folder only.
-- Options (split-at, theme, hyphenate, justify, ToC depth, page-list, page-numbers, cover-scale, EPUBCheck) use numeric pickers with sensible defaults.
-
+\n\n
