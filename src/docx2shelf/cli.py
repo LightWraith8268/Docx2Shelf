@@ -14,6 +14,7 @@ from .utils import (
     sanitize_filename,
     parse_kv_file,
 )
+from .tools import tools_dir, install_pandoc, install_epubcheck, pandoc_path, epubcheck_cmd
 
 
 def _arg_parser() -> argparse.ArgumentParser:
@@ -88,6 +89,13 @@ def _arg_parser() -> argparse.ArgumentParser:
     t.add_argument("--cover", type=str, help="Optional default cover path")
     t.add_argument("--output", type=str, help="Optional path to write template (defaults to DOCX folder/metadata.txt)")
     t.add_argument("--force", action="store_true", help="Overwrite existing file if present")
+
+    m = sub.add_parser("tools", help="Manage optional tools (Pandoc, EPUBCheck)")
+    m_sub = m.add_subparsers(dest="tool_cmd", required=True)
+    mi = m_sub.add_parser("install", help="Install a tool")
+    mi.add_argument("name", choices=["pandoc", "epubcheck"], help="Tool name")
+    mi.add_argument("--version", dest="version", help="Tool version (optional)")
+    mw = m_sub.add_parser("where", help="Show tool locations")
 
     return p
 
@@ -674,6 +682,25 @@ def run_init_metadata(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_tools(args: argparse.Namespace) -> int:
+    if args.tool_cmd == "install":
+        if args.name == "pandoc":
+            p = install_pandoc(args.version) if args.version else install_pandoc()
+            print(f"Installed pandoc at: {p}")
+            return 0
+        if args.name == "epubcheck":
+            p = install_epubcheck(args.version) if args.version else install_epubcheck()
+            print(f"Installed epubcheck at: {p}")
+            return 0
+    if args.tool_cmd == "where":
+        td = tools_dir()
+        print(f"Tools dir: {td}")
+        print(f"Pandoc: {pandoc_path()}")
+        print(f"EPUBCheck: {epubcheck_cmd()}")
+        return 0
+    return 1
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
@@ -688,6 +715,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_build(args)
     if args.command == "init-metadata":
         return run_init_metadata(args)
+    if args.command == "tools":
+        return run_tools(args)
 
     parser.print_help()
     return 1

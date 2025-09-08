@@ -124,7 +124,28 @@ docx2shelf build \
 - venv (local dev):
   - Create + activate: `python -m venv .venv && . .venv/bin/activate` (Windows: `./.venv/Scripts/activate`)
   - Install: `pip install -e ".[dev,docx]"` (or `.[dev,pandoc]`)
-  - Run tests: `scripts/test.sh` or `scripts/test.ps1`
+- Run tests: `scripts/test.sh` or `scripts/test.ps1`
+
+### Tools Manager (Pandoc & EPUBCheck)
+Use the built‑in tools manager to install optional binaries locally (no admin):
+
+```
+# Install Pandoc (for best DOCX → HTML fidelity)
+docx2shelf tools install pandoc [--version X.Y.Z]
+
+# Install EPUBCheck (optional validation)
+docx2shelf tools install epubcheck [--version A.B.C]
+
+# Show where tools are located/resolved from
+docx2shelf tools where
+```
+
+Details:
+- Tools are stored under:
+  - Windows: `%APPDATA%\Docx2Shelf\bin`
+  - macOS/Linux: `~/.docx2shelf/bin`
+- The installer attempts to verify SHA‑256 checksums (when available from releases) and retries up to 3 times on transient failures.
+- The CLI prefers managed tools first, then PATH.
 
 ## What Gets Produced
 Inside the `.epub` (ZIP) you’ll see:
