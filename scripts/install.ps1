@@ -14,7 +14,9 @@ param(
   [ValidateSet('pipx','pip-user','pip-system')]
   [string]$Method = 'pipx',
   [ValidateSet('none','docx','pandoc','all')]
-  [string]$Extras = 'docx'
+  [string]$Extras = 'docx',
+  [ValidateSet('none','pandoc','epubcheck','all')]
+  [string]$WithTools = 'none'
 )
 
 Set-StrictMode -Version Latest
@@ -74,9 +76,15 @@ Write-Host 'Verifying CLI on PATH...'
 try {
   $null = Get-Command docx2shelf -ErrorAction Stop
   & docx2shelf --help | Out-Null
+  # Optional tools installation
+  switch ($WithTools) {
+    'none'      { }
+    'pandoc'    { Write-Host 'Installing Pandoc via tools manager...'; & docx2shelf tools install pandoc | Out-Null }
+    'epubcheck' { Write-Host 'Installing EPUBCheck via tools manager...'; & docx2shelf tools install epubcheck | Out-Null }
+    'all'       { Write-Host 'Installing Pandoc + EPUBCheck via tools manager...'; & docx2shelf tools install pandoc | Out-Null; & docx2shelf tools install epubcheck | Out-Null }
+  }
   Write-Host 'Done. Try: docx2shelf --help'
 } catch {
   Write-Warning 'docx2shelf not found on PATH yet. Ensure your user Scripts folder is on PATH and restart your terminal:'
   Write-Host '  %USERPROFILE%\AppData\Local\Programs\Python\Python311\Scripts (version may vary)'
 }
-

@@ -6,9 +6,10 @@ set -euo pipefail
 
 METHOD="pipx"           # pipx | pip-user | pip-system
 EXTRAS="docx"           # none | docx | pandoc | all
+WITH_TOOLS="none"       # none | pandoc | epubcheck | all
 
 usage() {
-  echo "Usage: $0 [--method pipx|pip-user|pip-system] [--extras none|docx|pandoc|all]"
+  echo "Usage: $0 [--method pipx|pip-user|pip-system] [--extras none|docx|pandoc|all] [--with-tools none|pandoc|epubcheck|all]"
   exit 1
 }
 
@@ -16,6 +17,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --method) METHOD="${2:-}"; shift 2;;
     --extras) EXTRAS="${2:-}"; shift 2;;
+    --with-tools) WITH_TOOLS="${2:-}"; shift 2;;
     -h|--help) usage;;
     *) echo "Unknown arg: $1"; usage;;
   esac
@@ -72,5 +74,20 @@ docx2shelf --help >/dev/null || {
   exit 1
 }
 
-echo "Done. Try: docx2shelf --help"
+# Optional tools installation
+case "$WITH_TOOLS" in
+  none) ;;
+  pandoc)
+    echo "Installing Pandoc via tools manager..."
+    docx2shelf tools install pandoc || true ;;
+  epubcheck)
+    echo "Installing EPUBCheck via tools manager..."
+    docx2shelf tools install epubcheck || true ;;
+  all)
+    echo "Installing Pandoc + EPUBCheck via tools manager..."
+    docx2shelf tools install pandoc || true
+    docx2shelf tools install epubcheck || true ;;
+  *) echo "Invalid --with-tools: $WITH_TOOLS" ;;
+esac
 
+echo "Done. Try: docx2shelf --help"

@@ -13,12 +13,15 @@ Offline Python 3.11 CLI that converts a DOCX manuscript plus metadata into a val
 
 ## Install
 Recommended (isolated global CLI):
-- Linux/macOS: `sh scripts/install.sh --method pipx --extras all`
-- Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File scripts/install.ps1 -Method pipx -Extras all`
+- Linux/macOS: `sh scripts/install.sh --method pipx --extras all [--with-tools all]`
+- Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File scripts/install.ps1 -Method pipx -Extras all -WithTools all`
 
 Alternative:
 - From source (dev): `python -m venv .venv && . .venv/bin/activate` (Windows: `./.venv/Scripts/activate`), then `pip install -e ".[dev]"` (optionally `.[docx]`, `.[pandoc]`).
 - User install: `python -m pip install --user .`
+
+Optional tooling via installer:
+- `--with-tools pandoc|epubcheck|all` will pre-install tools using `docx2shelf tools install ...` after the app is installed.
 
 Optional tools: Install Pandoc (for best DOCX conversion) and EPUBCheck (for validation).
 
