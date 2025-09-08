@@ -262,9 +262,16 @@ Output naming: If not provided, it suggests `SeriesName-##-BookTitle.epub` or `B
 
 ## Development
 - Run tests: `pytest -q` (coverage: `pytest --cov=docx2shelf`)
-- Lint/format/type‑check: `ruff check . && black . && mypy src/docx2shelf`
+- Lint/format/type-check: `ruff check . && black . && mypy src/docx2shelf`
 - Build wheel: `python -m build`
-- Single‑file binary: `pyinstaller packaging/docx2shelf.spec`
+- Single-file binary: `pyinstaller packaging/docx2shelf.spec`
+
+### CI & Releases
+- CI runs on Windows/macOS/Linux for pushes and PRs (see `.github/workflows/ci.yml`).
+- Tagging a release (e.g., `v0.1`) triggers:
+  - Tests → build → GitHub Release with artifacts
+  - CHANGELOG.md auto-update from `RELEASE_NOTES_<tag>.md` (see `.github/workflows/release.yml`).
+  - Draft release notes in `RELEASE_NOTES_<tag>.md` before tagging for best results.
 
 ## Project Layout
 - `src/docx2shelf/{cli,convert,assemble,metadata,utils}.py`
