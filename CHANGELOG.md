@@ -4,6 +4,9 @@
 
 ### Changed
 - The `install.bat` script was updated to download necessary files directly from the GitHub repository, making the installation fully standalone.
+- The `install.ps1` script now downloads the `.whl` file directly from GitHub releases for installation.
+- The `install.ps1` script now adds the `pipx` script path to the current PowerShell session's PATH, making `docx2shelf` immediately available.
+- The `install.bat` file now pauses at the end of its execution to allow the user to review the installation output.
 
 ## [1.0.0]
 
