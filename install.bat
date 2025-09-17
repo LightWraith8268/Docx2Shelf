@@ -27,4 +27,6 @@ del "%TEMP_PS1_PATH%"
 
 echo Installation process completed.
 
+pause
+
 endlocal
