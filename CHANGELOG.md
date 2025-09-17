@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.1] - 2025-09-17
+
+### Changed
+- The `install.bat` script was updated to download necessary files directly from the GitHub repository, making the installation fully standalone.
+
 ## [1.0.0] - 2025-09-17
 
 ### Added
