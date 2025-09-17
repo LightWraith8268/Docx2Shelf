@@ -7,11 +7,10 @@ Status: In Progress
 
 ### Robust DOCX fallback parser
 Expand coverage for tracked changes, comments, complex tables, text boxes/shapes, equations, headers/footers, footnotes/endnotes.
-Status: Completed (Basic handling for tracked changes and comments implemented)
+Why now: you already prefer Pandoc but promise a graceful fallback; that’s core to quality when Pandoc isn’t present.
 
 ### Style mapping
 Expose a styles.json to map Word styles → CSS classes, with user-override.
-Status: Completed (Basic paragraph style mapping implemented via styles.json)
 
 ### “Rasterize-on-escape”
 Optional image fallback for layout elements the parser can’t translate cleanly (preserves author intention).

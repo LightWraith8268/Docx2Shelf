@@ -1,15 +1,5 @@
 # Changelog
 
-## [1.0.3]
-
-### Improved
-- **Style mapping**: Implemented basic paragraph style mapping from `styles.json` in the `python-docx` fallback parser.
-
-## [1.0.2]
-
-### Improved
-- **Robust DOCX fallback parser**: Implemented basic handling for tracked changes (ignoring deletions, including insertions) and comments (ignoring references) in the `python-docx` fallback.
-
 ## [1.0.1]
 
 ### Changed
