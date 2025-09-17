@@ -39,12 +39,8 @@ function Ensure-Pipx {
 
 function Get-PkgSpec([string]$extras, [string]$basePath) {
   $base = Convert-Path $basePath # Ensure absolute path
-  switch ($extras) {
-    'none'   { return $base }
-    'docx'   { return "$base`[docx`]" }
-    'pandoc' { return "$base`[pandoc`]" }
-    'all'    { return "$base`[docx,pandoc`]" }
-  }
+  # Return just the base path, extras will be handled separately
+  return $base
 }
 
 function Download-And-Extract-Latest-Release {
@@ -104,7 +100,15 @@ switch ($Method) {
     # Use Python to invoke pipx module to avoid quoting issues
     $py = Get-PythonCmd
     # Force reinstall to handle upgrades or existing envs consistently
-    & $py -m pipx install --force $pkgSpec
+    # Pass the base path and extras separately
+    $pipxArgs = @("--force", $sourcePath)
+    if ($Extras -ne 'none') {
+        $pipxArgs += "--extras"
+        # Convert 'all' to 'docx,pandoc' for pipx
+        $pipxExtras = if ($Extras -eq 'all') { 'docx,pandoc' } else { $Extras }
+        $pipxArgs += $pipxExtras
+    }
+    & $py -m pipx install @pipxArgs
   }
   'pip-user' {
     $py = Get-PythonCmd
