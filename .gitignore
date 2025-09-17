@@ -32,3 +32,6 @@ tmp/*.src/
 
 # Release Steps
 github_release_steps.txt
+
+# Project Management
+ROADMAP.md
