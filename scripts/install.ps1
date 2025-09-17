@@ -33,8 +33,16 @@ function Ensure-Pipx {
   Write-Host 'pipx not found; installing to user site...'
   $py = Get-PythonCmd
   & $py -m pip install --user pipx
-  & $py -m pipx ensurepath | Out-Null
-  Write-Host 'If pipx is not found, open a new terminal to refresh PATH.'
+
+  # Capture output of pipx ensurepath and add to current session's PATH
+  $pipxPathOutput = & $py -m pipx ensurepath
+  $pipxScriptPath = ($pipxPathOutput | Select-String -Pattern "added to PATH: (.*)" | ForEach-Object { $_.Matches[0].Groups[1].Value })
+  if ($pipxScriptPath) {
+      $env:Path = "$env:Path;$pipxScriptPath"
+      Write-Host "Added pipx scripts to current session's PATH: $pipxScriptPath"
+  } else {
+      Write-Host 'If pipx is not found, open a new terminal to refresh PATH.'
+  }
 }
 
 function Get-PkgSpec([string]$extras, [string]$basePath) {
