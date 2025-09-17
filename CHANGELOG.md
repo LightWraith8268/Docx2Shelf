@@ -1,11 +1,11 @@
 # Changelog
 
-## [1.0.1] - 2025-09-17
+## [1.0.1]
 
 ### Changed
 - The `install.bat` script was updated to download necessary files directly from the GitHub repository, making the installation fully standalone.
 
-## [1.0.0] - 2025-09-17
+## [1.0.0]
 
 ### Added
 - Support for `.txt`, `.md`, `.html`, and `.htm` as input file formats.
