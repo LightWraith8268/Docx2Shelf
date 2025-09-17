@@ -35,3 +35,7 @@ github_release_steps.txt
 
 # Project Management
 ROADMAP.md
+
+# Agent-specific files
+claude.md
+agents.md
