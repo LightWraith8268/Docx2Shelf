@@ -3,15 +3,15 @@
 This document outlines the planned improvements for Docx2Shelf, categorized by impact area. As sections are completed, their status will be updated, and a new patch version will be released.
 
 ## 1) Formatting fidelity (DOCX → clean XHTML)
-Status: In Progress (Robust DOCX fallback parser - basic handling for tracked changes and comments implemented)
+Status: In Progress
 
 ### Robust DOCX fallback parser
 Expand coverage for tracked changes, comments, complex tables, text boxes/shapes, equations, headers/footers, footnotes/endnotes.
-Why now: you already prefer Pandoc but promise a graceful fallback; that’s core to quality when Pandoc isn’t present.
+Status: Completed (Basic handling for tracked changes and comments implemented)
 
 ### Style mapping
 Expose a styles.json to map Word styles → CSS classes, with user-override.
-Status: In Progress (Basic paragraph style mapping implemented via styles.json)
+Status: Completed (Basic paragraph style mapping implemented via styles.json)
 
 ### “Rasterize-on-escape”
 Optional image fallback for layout elements the parser can’t translate cleanly (preserves author intention).
