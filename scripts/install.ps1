@@ -37,12 +37,13 @@ function Ensure-Pipx {
   Write-Host 'If pipx is not found, open a new terminal to refresh PATH.'
 }
 
-function Get-PkgSpec([string]$extras) {
+function Get-PkgSpec([string]$extras, [string]$basePath) {
+  $base = Convert-Path $basePath # Ensure absolute path
   switch ($extras) {
-    'none'   { return '.' }
-    'docx'   { return '.[docx]' }
-    'pandoc' { return '.[pandoc]' }
-    'all'    { return '.[docx,pandoc]' }
+    'none'   { return $base }
+    'docx'   { return "$base`[docx`]" }
+    'pandoc' { return "$base`[pandoc`]" }
+    'all'    { return "$base`[docx,pandoc`]" }
   }
 }
 
@@ -84,13 +85,17 @@ function Download-And-Extract-Latest-Release {
 # --- Main Installation Logic ---
 
 # If running from a downloaded installer, download and extract the source
+$currentWorkingDir = Get-Location
 if (-not (Test-Path "pyproject.toml")) {
     $sourcePath = Download-And-Extract-Latest-Release
     Set-Location $sourcePath
     Write-Host "Changed current directory to: $(Get-Location)"
+} else {
+    # If pyproject.toml exists, we are running from the source directory
+    $sourcePath = $currentWorkingDir
 }
 
-$pkgSpec = Get-PkgSpec $Extras
+$pkgSpec = Get-PkgSpec $Extras $sourcePath # Pass $sourcePath to Get-PkgSpec
 Write-Host "Installing Docx2Shelf using method=$Method extras=$Extras"
 
 switch ($Method) {
