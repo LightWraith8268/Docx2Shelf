@@ -17,7 +17,7 @@ This guide will walk you through creating a new release on GitHub and attaching 
 4.  **Upload `install.bat` as an Asset:**
     *   Scroll down to the "Assets" section.
     *   You can drag and drop your local `install.bat` file into this area, or click "Add binaries by dragging & dropping or selecting them."
-    *   Select the `install.bat` file from your local `S:\coding\Docx2Shelf\` directory.
+    *   Select the `install.bat` file from your local clone of the repository (or wherever you saved it).
 
 5.  **Publish Release:**
     *   Review all the details.
