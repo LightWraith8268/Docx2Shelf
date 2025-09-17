@@ -46,6 +46,50 @@ function Get-PkgSpec([string]$extras) {
   }
 }
 
+function Download-And-Extract-Latest-Release {
+    param (
+        [string]$RepoApiUrl = "https://api.github.com/repos/LightWraith8268/Docx2Shelf/releases/latest"
+    )
+
+    Write-Host "Fetching latest release information from GitHub..."
+    try {
+        $releaseInfo = Invoke-WebRequest -Uri $RepoApiUrl -UseBasicParsing | ConvertFrom-Json
+        $downloadUrl = $releaseInfo.assets | Where-Object { $_.name -like "*.zip" } | Select-Object -ExpandProperty browser_download_url -First 1
+
+        if (-not $downloadUrl) {
+            throw "Could not find a .zip release asset."
+        }
+
+        $tempDir = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath() + "Docx2ShelfInstaller_" + (Get-Random))
+        $zipFilePath = Join-Path $tempDir "release.zip"
+
+        Write-Host "Downloading release from $downloadUrl to $zipFilePath..."
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $zipFilePath -UseBasicParsing
+
+        Write-Host "Extracting release to $tempDir..."
+        Expand-Archive -Path $zipFilePath -DestinationPath $tempDir -Force
+
+        # GitHub releases often have a top-level directory like "RepoName-TagName"
+        $extractedFolder = Get-ChildItem -Path $tempDir | Where-Object { $_.PSIsContainer -and $_.Name -notlike "*Installer*" } | Select-Object -ExpandProperty FullName -First 1
+        if (-not $extractedFolder) {
+            throw "Could not find extracted source folder."
+        }
+        return $extractedFolder
+    } catch {
+        Write-Error "Failed to download and extract latest release: $($_.Exception.Message)"
+        exit 1
+    }
+}
+
+# --- Main Installation Logic ---
+
+# If running from a downloaded installer, download and extract the source
+if (-not (Test-Path "pyproject.toml")) {
+    $sourcePath = Download-And-Extract-Latest-Release
+    Set-Location $sourcePath
+    Write-Host "Changed current directory to: $(Get-Location)"
+}
+
 $pkgSpec = Get-PkgSpec $Extras
 Write-Host "Installing Docx2Shelf using method=$Method extras=$Extras"
 
