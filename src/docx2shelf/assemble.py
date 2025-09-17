@@ -46,6 +46,7 @@ def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions) -> bytes:
         css += "\n/* user css */\n" + extra_css.read_text(encoding="utf-8")
     return css.encode("utf-8")
 
+
 def _html_item(title: str, file_name: str, content: str, lang: str):
     try:
         from ebooklib import epub  # type: ignore
@@ -66,6 +67,7 @@ def _inject_heading_ids(html: str, chap_idx: int) -> tuple[str, str, list[tuple[
     Returns: (html, h1_id, [(h2_title, h2_id), ...])
     """
     h1_id = f"ch{chap_idx:03d}"
+
     # Add id to first h1 if missing
     def h1_repl(match):
         tag_open = match.group(1)
@@ -74,7 +76,7 @@ def _inject_heading_ids(html: str, chap_idx: int) -> tuple[str, str, list[tuple[
             # keep existing attributes and id
             return f"<h1{tag_open}>{inside}</h1>"
         # inject id preserving other attributes
-        return f"<h1{tag_open} id=\"{h1_id}\">{inside}</h1>"
+        return f'<h1{tag_open} id="{h1_id}">{inside}</h1>'
 
     pattern_h1 = r"<h1([^>]*)>(.*?)</h1>"
     html2 = re.sub(pattern_h1, h1_repl, html, count=1, flags=re.IGNORECASE | re.DOTALL)
@@ -90,7 +92,7 @@ def _inject_heading_ids(html: str, chap_idx: int) -> tuple[str, str, list[tuple[
         if re.search(r"\bid=\"[^\"]+\"", tag_open):
             return f"<h2{tag_open}>{inside}</h2>"
         hid = f"{h1_id}-s{sec_idx:02d}"
-        return f"<h2{tag_open} id=\"{hid}\">{inside}</h2>"
+        return f'<h2{tag_open} id="{hid}">{inside}</h2>'
 
     html3 = re.sub(r"<h2([^>]*)>(.*?)</h2>", h2_repl, html2, flags=re.IGNORECASE | re.DOTALL)
 
@@ -105,18 +107,21 @@ def _inject_heading_ids(html: str, chap_idx: int) -> tuple[str, str, list[tuple[
     return html3, h1_id, h2_items
 
 
-def _find_chapter_starts(html_chunks: list[str], chapter_starts: list[str]) -> list[tuple[str, int]]:
+def _find_chapter_starts(
+    html_chunks: list[str], chapter_starts: list[str]
+) -> list[tuple[str, int]]:
     """Find user-defined chapter starts in HTML chunks.
-    
+
     Returns list of (chapter_title, chunk_index) tuples.
     Falls back to generic titles if patterns not found.
     """
     import re
+
     found_chapters = []
-    
+
     # Pre-process HTML chunks to text-only content (performance optimization)
-    text_chunks = [re.sub(r'<[^>]+>', '', chunk) for chunk in html_chunks]
-    
+    text_chunks = [re.sub(r"<[^>]+>", "", chunk) for chunk in html_chunks]
+
     for pattern in chapter_starts:
         pattern_found = False
         # Try to find this pattern in any chunk
@@ -126,7 +131,7 @@ def _find_chapter_starts(html_chunks: list[str], chapter_starts: list[str]) -> l
                 found_chapters.append((pattern.strip(), i))
                 pattern_found = True
                 break
-            
+
             # Try as a regex pattern (single execution with better validation)
             try:
                 match = re.search(pattern, text_content, re.IGNORECASE)
@@ -137,29 +142,32 @@ def _find_chapter_starts(html_chunks: list[str], chapter_starts: list[str]) -> l
                     break
             except re.error:
                 pass  # Invalid regex, skip
-        
+
         # If pattern not found, create a generic chapter name
         if not pattern_found:
             # Ensure we don't exceed available chunks or create invalid indices
             chunk_idx = min(len(found_chapters), len(html_chunks) - 1)
             if chunk_idx >= 0 and chunk_idx < len(html_chunks):  # Ensure valid index
                 found_chapters.append((f"Chapter {len(found_chapters) + 1}", chunk_idx))
-    
+
     return found_chapters
 
 
-def _inject_manual_chapter_ids(html: str, chap_idx: int, chapter_title: str) -> tuple[str, str, list[tuple[str, str]]]:
+def _inject_manual_chapter_ids(
+    html: str, chap_idx: int, chapter_title: str
+) -> tuple[str, str, list[tuple[str, str]]]:
     """Inject IDs for manually defined chapters, similar to _inject_heading_ids."""
     import re
-    
+
     # Create a unique ID for this chapter
     h1_id = f"ch{chap_idx:03d}"
-    
+
     # Look for existing h1/h2 headings to preserve them
     h2_items = []
-    
-    # Ensure h2 have ids; collect titles + ids  
+
+    # Ensure h2 have ids; collect titles + ids
     sec_idx = 0
+
     def h2_repl(match):
         nonlocal sec_idx
         sec_idx += 1
@@ -168,15 +176,17 @@ def _inject_manual_chapter_ids(html: str, chap_idx: int, chapter_title: str) -> 
         if re.search(r"\bid=\"[^\"]+\"", tag_open):
             return f"<h2{tag_open}>{inside}</h2>"
         hid = f"{h1_id}-s{sec_idx:02d}"
-        return f"<h2{tag_open} id=\"{hid}\">{inside}</h2>"
-    
-    html_with_h2_ids = re.sub(r"<h2([^>]*)>(.*?)</h2>", h2_repl, html, flags=re.IGNORECASE | re.DOTALL)
-    
+        return f'<h2{tag_open} id="{hid}">{inside}</h2>'
+
+    html_with_h2_ids = re.sub(
+        r"<h2([^>]*)>(.*?)</h2>", h2_repl, html, flags=re.IGNORECASE | re.DOTALL
+    )
+
     # Extract h2 titles and IDs for TOC
     titles = re.findall(r"<h2[^>]*>(.*?)</h2>", html_with_h2_ids, flags=re.IGNORECASE | re.DOTALL)
     ids = re.findall(r"<h2[^>]*id=\"([^\"]+)\"[^>]*>", html_with_h2_ids, flags=re.IGNORECASE)
     h2_items = [(re.sub(r"<[^>]+>", "", t), ids[i]) for i, t in enumerate(titles) if i < len(ids)]
-    
+
     # Add chapter anchor at the beginning if no h1 exists
     if not re.search(r"<h1[^>]*>", html_with_h2_ids, re.IGNORECASE):
         html_with_h2_ids = f'<div id="{h1_id}"></div>' + html_with_h2_ids
@@ -187,10 +197,16 @@ def _inject_manual_chapter_ids(html: str, chap_idx: int, chapter_title: str) -> 
             inside = match.group(2)
             if re.search(r"\bid=\"[^\"]+\"", tag_open):
                 return f"<h1{tag_open}>{inside}</h1>"
-            return f"<h1{tag_open} id=\"{h1_id}\">{inside}</h1>"
-        
-        html_with_h2_ids = re.sub(r"<h1([^>]*)>(.*?)</h1>", h1_repl, html_with_h2_ids, count=1, flags=re.IGNORECASE | re.DOTALL)
-    
+            return f'<h1{tag_open} id="{h1_id}">{inside}</h1>'
+
+        html_with_h2_ids = re.sub(
+            r"<h1([^>]*)>(.*?)</h1>",
+            h1_repl,
+            html_with_h2_ids,
+            count=1,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+
     return html_with_h2_ids, h1_id, h2_items
 
 
@@ -284,9 +300,7 @@ def assemble_epub(
         title_path = resources.files("docx2shelf.templates").joinpath("title.xhtml")
         with title_path.open("r", encoding="utf-8") as fh:
             content = (
-                fh.read()
-                .replace("{{ title }}", meta.title)
-                .replace("{{ author }}", meta.author)
+                fh.read().replace("{{ title }}", meta.title).replace("{{ author }}", meta.author)
             )
     except Exception:
         content = f"<html><body><h1>{meta.title}</h1><p>{meta.author}</p></body></html>"
@@ -295,6 +309,7 @@ def assemble_epub(
 
     # Copyright page (auto)
     import datetime as _dt
+
     year = str(_dt.date.today().year)
     copyright_html = (
         "<?xml version='1.0' encoding='utf-8'?>"
@@ -310,7 +325,9 @@ def assemble_epub(
     if opts.dedication_txt and opts.dedication_txt.exists():
         txt = _read_text(opts.dedication_txt)
         ded_html = f"<h2>Dedication</h2><p>{txt}</p>"
-        matter_items.append(_html_item("Dedication", "text/dedication.xhtml", ded_html, meta.language))
+        matter_items.append(
+            _html_item("Dedication", "text/dedication.xhtml", ded_html, meta.language)
+        )
     if opts.ack_txt and opts.ack_txt.exists():
         txt = _read_text(opts.ack_txt)
         matter_items.append(
@@ -326,8 +343,10 @@ def assemble_epub(
 
     # Add extracted resources (images) under images/
     for res in resources:
-        mt = "image/jpeg" if res.suffix.lower() in {".jpg", ".jpeg"} else (
-            "image/png" if res.suffix.lower() == ".png" else None
+        mt = (
+            "image/jpeg"
+            if res.suffix.lower() in {".jpg", ".jpeg"}
+            else ("image/png" if res.suffix.lower() == ".png" else None)
         )
         if mt is None:
             continue
@@ -343,12 +362,12 @@ def assemble_epub(
     chapters = []
     chapter_links = []
     chapter_sub_links = []
-    
+
     # Determine chapter processing mode
     if opts.chapter_start_mode in ("manual", "mixed") and opts.chapter_starts:
         # Manual mode: use user-defined chapter starts
         manual_chapters = _find_chapter_starts(html_chunks, opts.chapter_starts)
-        
+
         for chap_num, (chapter_title, chunk_idx) in enumerate(manual_chapters, start=1):
             if chunk_idx < len(html_chunks):
                 chunk = html_chunks[chunk_idx]
@@ -364,9 +383,11 @@ def assemble_epub(
                 sub_links = []
                 if opts.toc_depth > 1:  # Include subheadings in manual mode too
                     for idx, (title, hid) in enumerate(subs):
-                        sub_links.append(epub.Link(chap_fn + f"#{hid}", title, f"chap{chap_num:03d}-{idx+1:02d}"))
+                        sub_links.append(
+                            epub.Link(chap_fn + f"#{hid}", title, f"chap{chap_num:03d}-{idx+1:02d}")
+                        )
                 chapter_sub_links.append(sub_links)
-        
+
         # Add remaining chunks as additional chapters if there are more chunks than defined chapters
         for i in range(len(manual_chapters), len(html_chunks)):
             chunk = html_chunks[i]
@@ -377,13 +398,17 @@ def assemble_epub(
             chap.add_item(style_item)
             book.add_item(chap)
             chapters.append(chap)
-            chap_link = epub.Link(chap_fn + f"#{h1_id}", f"Chapter {chap_num}", f"chap{chap_num:03d}")
+            chap_link = epub.Link(
+                chap_fn + f"#{h1_id}", f"Chapter {chap_num}", f"chap{chap_num:03d}"
+            )
             chapter_links.append(chap_link)
             sub_links = []
             for idx, (title, hid) in enumerate(subs):
-                sub_links.append(epub.Link(chap_fn + f"#{hid}", title, f"chap{chap_num:03d}-{idx+1:02d}"))
+                sub_links.append(
+                    epub.Link(chap_fn + f"#{hid}", title, f"chap{chap_num:03d}-{idx+1:02d}")
+                )
             chapter_sub_links.append(sub_links)
-            
+
     else:
         # Auto mode (default): scan headings as before
         for i, chunk in enumerate(html_chunks, start=1):
@@ -450,7 +475,9 @@ def assemble_epub(
             "</ol></nav>"
             "</body></html>"
         )
-        landmarks_item = _html_item("Landmarks", "text/landmarks.xhtml", landmarks_html, meta.language)
+        landmarks_item = _html_item(
+            "Landmarks", "text/landmarks.xhtml", landmarks_html, meta.language
+        )
         book.add_item(landmarks_item)
     except Exception:
         pass

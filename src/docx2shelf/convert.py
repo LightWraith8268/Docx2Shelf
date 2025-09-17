@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 import re
 import tempfile
+from pathlib import Path
 
 IMG_NS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -62,6 +62,41 @@ def split_html_by_pagebreak(html: str) -> list[str]:
     return [f"<section>{c}</section>" for c in chunks]
 
 
+def convert_file_to_html(input_path: Path) -> tuple[list[str], list[Path]]:
+    """Convert input file to HTML chunks and gather any extracted resources.
+
+    Strategy:
+    - For .md and .txt, use Pandoc.
+    - For .docx, try Pandoc first, then fall back to python-docx.
+    """
+    suffix = input_path.suffix.lower()
+
+    if suffix in (".md", ".txt", ".html", ".htm"):
+        try:
+            import pypandoc  # type: ignore
+
+            if suffix in (".html", ".htm"):
+                file_format = "html"
+            else:
+                file_format = "markdown" if suffix == ".md" else "plain"
+
+            html = pypandoc.convert_file(
+                str(input_path), to="html", format=file_format, extra_args=["--wrap=none"]
+            )
+            # For now, we don't split these files, return as a single chunk
+            return [f"<section>{html}</section>"], []
+        except ImportError:
+            raise RuntimeError(f"Pandoc is required to convert {suffix} files. Please install it.")
+        except Exception as e:
+            raise RuntimeError(f"An error occurred during {suffix} conversion with Pandoc: {e}")
+
+    elif suffix == ".docx":
+        return docx_to_html(input_path)
+
+    else:
+        raise ValueError(f"Unsupported file type: {suffix}")
+
+
 def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
     """Convert DOCX to HTML chunks and gather any extracted resources.
 
@@ -101,7 +136,9 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
             return
         body = "".join(buf)
         if footnotes:
-            notes_html = "<hr/><section class=\"footnotes\"><ol>" + "".join(footnotes) + "</ol></section>"
+            notes_html = (
+                '<hr/><section class="footnotes"><ol>' + "".join(footnotes) + "</ol></section>"
+            )
             body += notes_html
         parts.append("<section>" + body + "</section>")
         buf.clear()
@@ -119,6 +156,7 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
             buf.append(f"<{current_list_type}>" + "".join(list_items) + f"</{current_list_type}>")
         current_list_type = None
         list_items = []
+
     pending_img: str | None = None
     for p in document.paragraphs:
         style = (p.style.name or "").lower()
@@ -130,9 +168,9 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
             is_list = pPr is not None and pPr.numPr is not None  # type: ignore[attr-defined]
         except Exception:
             is_list = False
-        if 'list' in style or 'bullet' in style or 'number' in style:
+        if "list" in style or "bullet" in style or "number" in style:
             is_list = True
-            is_num = 'number' in style
+            is_num = "number" in style
 
         # Build paragraph content with basic runs formatting and images, merging hyperlinks
         run_html: list[str] = []
@@ -142,35 +180,45 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
             txt = run.text or ""
             # Images in this run?
             try:
-                blips = run.element.xpath('.//a:blip', namespaces=IMG_NS)
+                blips = run.element.xpath(".//a:blip", namespaces=IMG_NS)
             except Exception:
                 blips = []
             for blip in blips:
-                rid = blip.get(qn('r:embed'))
+                rid = blip.get(qn("r:embed"))
                 if rid and rid in document.part.related_parts:
                     part = document.part.related_parts[rid]
                     filename = Path(part.partname).name
                     # Try to get alt text via docPr
                     alt = ""
                     try:
-                        docprs = run.element.xpath('.//wp:docPr', namespaces=IMG_NS)
+                        docprs = run.element.xpath(".//wp:docPr", namespaces=IMG_NS)
                         if docprs:
-                            alt = docprs[0].get('descr') or docprs[0].get('title') or ""
+                            alt = docprs[0].get("descr") or docprs[0].get("title") or ""
                     except Exception:
                         alt = ""
                     if filename not in images:
                         out = tempdir / filename
                         out.write_bytes(part.blob)
                         images[filename] = out
-                    alt_attr = f" alt=\"{alt}\"" if alt else " alt=\"\""
-                    run_html.append(f"<img src=\"images/{filename}\"{alt_attr} />")
+                    alt_attr = f' alt="{alt}"' if alt else ' alt=""'
+                    run_html.append(f'<img src="images/{filename}"{alt_attr} />')
             # Footnote/endnote references
             try:
-                fns = run.element.xpath('.//w:footnoteReference', namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"})
+                fns = run.element.xpath(
+                    ".//w:footnoteReference",
+                    namespaces={
+                        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                    },
+                )
             except Exception:
                 fns = []
             try:
-                ens = run.element.xpath('.//w:endnoteReference', namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"})
+                ens = run.element.xpath(
+                    ".//w:endnoteReference",
+                    namespaces={
+                        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                    },
+                )
             except Exception:
                 ens = []
             # Manual page breaks
@@ -183,44 +231,65 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
                 run_html.append("<!-- PAGEBREAK -->")
             for ref in fns + ens:
                 note_idx += 1
-                ref_id = ref.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id')
-                sup = f"<sup id=\"fnref{note_idx}\"><a href=\"#fn{note_idx}\">{note_idx}</a></sup>"
+                ref_id = ref.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id")
+                sup = f'<sup id="fnref{note_idx}"><a href="#fn{note_idx}">{note_idx}</a></sup>'
                 run_html.append(sup)
                 # Retrieve note text if possible
                 note_text = None
                 try:
-                    if 'footnote' in ref.tag and hasattr(document.part, 'footnotes_part') and document.part.footnotes_part is not None:
+                    if (
+                        "footnote" in ref.tag
+                        and hasattr(document.part, "footnotes_part")
+                        and document.part.footnotes_part is not None
+                    ):
                         # type: ignore[attr-defined]
                         nodes = document.part.footnotes_part._element.xpath(
                             f'.//w:footnote[@w:id="{ref_id}"]//w:t',
-                            namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+                            namespaces={
+                                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                            },
                         )
                         note_text = "".join(n.text or "" for n in nodes).strip()
-                    elif 'endnote' in ref.tag and hasattr(document.part, 'endnotes_part') and document.part.endnotes_part is not None:
+                    elif (
+                        "endnote" in ref.tag
+                        and hasattr(document.part, "endnotes_part")
+                        and document.part.endnotes_part is not None
+                    ):
                         nodes = document.part.endnotes_part._element.xpath(
                             f'.//w:endnote[@w:id="{ref_id}"]//w:t',
-                            namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+                            namespaces={
+                                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                            },
                         )
                         note_text = "".join(n.text or "" for n in nodes).strip()
                 except Exception:
                     note_text = None
                 if not note_text:
                     note_text = "(note)"
-                current_notes.append(f"<li id=\"fn{note_idx}\"><p>{note_text} <a href=\"#fnref{note_idx}\">↩</a></p></li>")
+                current_notes.append(
+                    f'<li id="fn{note_idx}"><p>{note_text} <a href="#fnref{note_idx}">↩</a></p></li>'
+                )
 
             if txt:
                 # Basic inline formatting
-                if getattr(run, 'bold', False):
+                if getattr(run, "bold", False):
                     txt = f"<strong>{txt}</strong>"
-                if getattr(run, 'italic', False):
+                if getattr(run, "italic", False):
                     txt = f"<em>{txt}</em>"
                 # Hyperlinks: wrap if run is inside a hyperlink element
                 try:
                     parent = run._r.getparent()
-                    if parent is not None and parent.tag.endswith('}hyperlink'):
+                    if parent is not None and parent.tag.endswith("}hyperlink"):
                         from docx.oxml.ns import qn  # type: ignore
-                        rid = parent.get(qn('r:id')) if parent is not None else None
-                        anchor = parent.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}anchor') if parent is not None else None
+
+                        rid = parent.get(qn("r:id")) if parent is not None else None
+                        anchor = (
+                            parent.get(
+                                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}anchor"
+                            )
+                            if parent is not None
+                            else None
+                        )
                         href = None
                         if rid and rid in p.part.rels:
                             href = p.part.rels[rid].target_ref  # type: ignore[attr-defined]
@@ -233,7 +302,9 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
                             else:
                                 # flush previous
                                 if current_link_href is not None:
-                                    run_html.append(f"<a href=\"{current_link_href}\">{''.join(current_link_buf)}</a>")
+                                    run_html.append(
+                                        f'<a href="{current_link_href}">{" ".join(current_link_buf)}</a>'
+                                    )
                                     current_link_buf = []
                                 current_link_href = href
                                 current_link_buf.append(txt)
@@ -243,20 +314,22 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
                 if txt:
                     # flush any open link first when standalone text encountered
                     if current_link_href is not None and current_link_buf:
-                        run_html.append(f"<a href=\"{current_link_href}\">{''.join(current_link_buf)}</a>")
+                        run_html.append(
+                            f'<a href="{current_link_href}">{" ".join(current_link_buf)}</a>'
+                        )
                         current_link_href = None
                         current_link_buf = []
                     run_html.append(txt)
 
         # Flush open hyperlink group
         if current_link_href is not None and current_link_buf:
-            run_html.append(f"<a href=\"{current_link_href}\">{''.join(current_link_buf)}</a>")
+            run_html.append(f'<a href="{current_link_href}">{" ".join(current_link_buf)}</a>')
 
         content = "".join(run_html).strip()
         if not content and not pending_img:
             continue
         # If previous paragraph was image-only and this is a caption, wrap in figure
-        if 'caption' in style and pending_img:
+        if "caption" in style and pending_img:
             flush_list()
             buf.append(f"<figure>{pending_img}<figcaption>{content}</figcaption></figure>")
             pending_img = None
@@ -268,7 +341,7 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
             continue
 
         # If we have a pending image and the current paragraph is not a caption, flush it first
-        if pending_img and ('caption' not in style):
+        if pending_img and ("caption" not in style):
             flush_list()
             buf.append(f"<p>{pending_img}</p>")
             pending_img = None
@@ -282,12 +355,12 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
             flush_list()
             buf.append(f"<h2>{content}</h2>")
         elif is_list:
-            list_type = 'ol' if is_num else 'ul'
+            list_type = "ol" if is_num else "ul"
             if current_list_type and current_list_type != list_type:
                 flush_list()
             current_list_type = list_type if current_list_type is None else current_list_type
             list_items.append(f"<li>{content}</li>")
-        elif 'quote' in style:
+        elif "quote" in style:
             flush_list()
             buf.append(f"<blockquote><p>{content}</p></blockquote>")
         else:

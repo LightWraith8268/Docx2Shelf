@@ -57,13 +57,7 @@ def build_output_filename(title: str, series: Optional[str], series_index: Optio
     if series:
         idx = series_index or "01"
         base = f"{series}-{idx}-{title}"
-    safe = (
-        base.replace("/", "-")
-        .replace("\\", "-")
-        .replace(":", "-")
-        .replace("\0", "")
-        .strip()
-    )
+    safe = base.replace("/", "-").replace("\\", "-").replace(":", "-").replace("\0", "").strip()
     return safe + ".epub"
 
 

@@ -1,5 +1,4 @@
-from docx2shelf.convert import split_html_by_heading
-from docx2shelf.convert import split_html_by_pagebreak
+from docx2shelf.convert import split_html_by_heading, split_html_by_pagebreak
 
 
 def test_split_html_by_heading_h1():
@@ -11,7 +10,7 @@ def test_split_html_by_heading_h1():
 
 
 def test_split_html_by_pagebreak_hr():
-    html = "<p>a</p><hr class=\"pagebreak\" /><p>b</p>"
+    html = '<p>a</p><hr class="pagebreak" /><p>b</p>'
     parts = split_html_by_pagebreak(html)
     assert len(parts) == 2
     assert "a" in parts[0]

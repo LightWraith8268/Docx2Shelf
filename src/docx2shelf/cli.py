@@ -16,6 +16,7 @@ from .tools import (
     uninstall_epubcheck,
     uninstall_pandoc,
 )
+from .update import check_for_updates
 from .utils import (
     parse_kv_file,
     prompt,
@@ -33,14 +34,22 @@ def _arg_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="command", required=False)
 
     b = sub.add_parser("build", help="Build an EPUB from inputs")
-    b.add_argument("--docx", type=str, help="Path to manuscript .docx")
+    b.add_argument(
+        "--input",
+        type=str,
+        help="Path to manuscript file or directory of files (.docx, .md, .txt, .html)",
+    )
     b.add_argument("--cover", type=str, help="Path to cover image (jpg/png)")
     b.add_argument("--title", type=str, help="Book title")
     b.add_argument("--author", type=str, help="Author name")
     b.add_argument("--seriesName", type=str, help="Series name (optional)")
     b.add_argument("--seriesIndex", type=str, help="Series index/number (optional)")
-    b.add_argument("--title-sort", dest="title_sort", type=str, help="Calibre title sort (optional)")
-    b.add_argument("--author-sort", dest="author_sort", type=str, help="Calibre author sort (optional)")
+    b.add_argument(
+        "--title-sort", dest="title_sort", type=str, help="Calibre title sort (optional)"
+    )
+    b.add_argument(
+        "--author-sort", dest="author_sort", type=str, help="Calibre author sort (optional)"
+    )
     b.add_argument("--description", type=str, help="Long description (optional)")
     b.add_argument("--isbn", type=str, help="ISBN-13 digits only (optional)")
     b.add_argument("--language", type=str, default="en", help="Language code, e.g., en")
@@ -70,7 +79,7 @@ def _arg_parser() -> argparse.ArgumentParser:
         "--chapter-start-mode",
         choices=["auto", "manual", "mixed"],
         default="auto",
-        help="TOC chapter detection mode: auto (scan headings), manual (user-defined), mixed (both)",
+        help="TOC chapter detection: auto (scan headings), manual (user-defined), mixed (both)",
     )
     b.add_argument(
         "--chapter-starts",
@@ -82,8 +91,12 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--page-numbers", choices=["on", "off"], default="off")
     b.add_argument("--epub-version", type=str, default="3")
     b.add_argument("--cover-scale", choices=["contain", "cover"], default="contain")
-    b.add_argument("--font-size", dest="font_size", type=str, help="Base font size (e.g., 1rem, 12pt)")
-    b.add_argument("--line-height", dest="line_height", type=str, help="Base line height (e.g., 1.5)")
+    b.add_argument(
+        "--font-size", dest="font_size", type=str, help="Base font size (e.g., 1rem, 12pt)"
+    )
+    b.add_argument(
+        "--line-height", dest="line_height", type=str, help="Base line height (e.g., 1.5)"
+    )
 
     b.add_argument("--dedication", type=str, help="Path to plain-text dedication (optional)")
     b.add_argument("--ack", type=str, help="Path to plain-text acknowledgements (optional)")
@@ -97,18 +110,43 @@ def _arg_parser() -> argparse.ArgumentParser:
     )
     b.add_argument("--inspect", action="store_true", help="Emit inspect folder with sources")
     b.add_argument("--dry-run", action="store_true", help="Print planned manifest/spine only")
-    b.add_argument("--epubcheck", choices=["on", "off"], default="on", help="Validate with EPUBCheck if available")
-    b.add_argument("--no-prompt", action="store_true", help="Do not prompt; use provided defaults and flags only")
-    b.add_argument("--auto-install-tools", action="store_true", help="Automatically install Pandoc/EPUBCheck when missing (no prompts)")
-    b.add_argument("--no-install-tools", action="store_true", help="Do not install tools even if missing")
-    b.add_argument("--prompt-all", action="store_true", help="Prompt for every field even if prefilled")
+    b.add_argument(
+        "--epubcheck",
+        choices=["on", "off"],
+        default="on",
+        help="Validate with EPUBCheck if available",
+    )
+    b.add_argument(
+        "--no-prompt",
+        action="store_true",
+        help="Do not prompt; use provided defaults and flags only",
+    )
+    b.add_argument(
+        "--auto-install-tools",
+        action="store_true",
+        help="Automatically install Pandoc/EPUBCheck when missing (no prompts)",
+    )
+    b.add_argument(
+        "--no-install-tools", action="store_true", help="Do not install tools even if missing"
+    )
+    b.add_argument(
+        "--prompt-all", action="store_true", help="Prompt for every field even if prefilled"
+    )
     b.add_argument("--quiet", action="store_true", help="Reduce output (errors only)")
     b.add_argument("--verbose", action="store_true", help="Increase output (extra diagnostics)")
 
-    t = sub.add_parser("init-metadata", help="Generate a metadata.txt template next to the DOCX")
-    t.add_argument("--docx", type=str, required=True, help="Path to manuscript .docx")
+    t = sub.add_parser(
+        "init-metadata", help="Generate a metadata.txt template next to the input file"
+    )
+    t.add_argument(
+        "--input", type=str, required=True, help="Path to manuscript file (.docx, .md, .txt)"
+    )
     t.add_argument("--cover", type=str, help="Optional default cover path")
-    t.add_argument("--output", type=str, help="Optional path to write template (defaults to DOCX folder/metadata.txt)")
+    t.add_argument(
+        "--output",
+        type=str,
+        help="Optional path to write template (defaults to input folder/metadata.txt)",
+    )
     t.add_argument("--force", action="store_true", help="Overwrite existing file if present")
 
     m = sub.add_parser("tools", help="Manage optional tools (Pandoc, EPUBCheck)")
@@ -118,7 +156,9 @@ def _arg_parser() -> argparse.ArgumentParser:
     mi.add_argument("--version", dest="version", help="Tool version (optional)")
     mu = m_sub.add_parser("uninstall", help="Uninstall a tool")
     mu.add_argument("name", choices=["pandoc", "epubcheck", "all"], help="Tool name")
-    mw = m_sub.add_parser("where", help="Show tool locations")
+    m_sub.add_parser("where", help="Show tool locations")
+
+    sub.add_parser("update", help="Update docx2shelf to the latest version")
 
     return p
 
@@ -126,6 +166,7 @@ def _arg_parser() -> argparse.ArgumentParser:
 def _apply_metadata_dict(args: argparse.Namespace, md: dict, base_dir: Path | None) -> None:
     if not md:
         return
+
     def get(k: str):
         # allow simple aliases
         aliases = {
@@ -148,11 +189,16 @@ def _apply_metadata_dict(args: argparse.Namespace, md: dict, base_dir: Path | No
         return str(p)
 
     # Core (file overrides defaults; CLI may still override if passed explicitly)
-    if (not args.docx) and get("docx"): args.docx = get("docx")
-    if (not args.cover) and get("cover"): args.cover = pathify(get("cover"))
-    if (not args.title) and get("title"): args.title = get("title")
-    if (not args.author) and get("author"): args.author = get("author")
-    if (not args.language) and get("language"): args.language = get("language")
+    if (not args.input) and get("input"):
+        args.input = get("input")
+    if (not args.cover) and get("cover"):
+        args.cover = pathify(get("cover"))
+    if (not args.title) and get("title"):
+        args.title = get("title")
+    if (not args.author) and get("author"):
+        args.author = get("author")
+    if (not args.language) and get("language"):
+        args.language = get("language")
     # Optional metadata
     if get("seriesname") or get("series"):
         args.seriesName = get("seriesname") or get("series")
@@ -162,13 +208,20 @@ def _apply_metadata_dict(args: argparse.Namespace, md: dict, base_dir: Path | No
         setattr(args, "title_sort", get("title_sort") or get("title-sort"))
     if get("author_sort") or get("author-sort"):
         setattr(args, "author_sort", get("author_sort") or get("author-sort"))
-    if get("description"): args.description = get("description")
-    if get("isbn"): args.isbn = get("isbn")
-    if get("publisher"): args.publisher = get("publisher")
-    if get("pubdate"): args.pubdate = get("pubdate")
-    if get("uuid"): args.uuid = get("uuid")
-    if get("subjects"): args.subjects = get("subjects")
-    if get("keywords"): args.keywords = get("keywords")
+    if get("description"):
+        args.description = get("description")
+    if get("isbn"):
+        args.isbn = get("isbn")
+    if get("publisher"):
+        args.publisher = get("publisher")
+    if get("pubdate"):
+        args.pubdate = get("pubdate")
+    if get("uuid"):
+        args.uuid = get("uuid")
+    if get("subjects"):
+        args.subjects = get("subjects")
+    if get("keywords"):
+        args.keywords = get("keywords")
     # Conversion/layout
     if (args.split_at in (None, "", "h1")) and (get("split_at") or get("split-at")):
         args.split_at = get("split_at") or get("split-at")
@@ -185,12 +238,18 @@ def _apply_metadata_dict(args: argparse.Namespace, md: dict, base_dir: Path | No
     except Exception:
         pass
     if (getattr(args, "toc_depth", None) in (None, 2)) and get("toc_depth"):
-        try: args.toc_depth = int(get("toc_depth"))
-        except Exception: pass
+        try:
+            args.toc_depth = int(get("toc_depth"))
+        except Exception:
+            pass
     # Chapter start mode and patterns
-    if (getattr(args, "chapter_start_mode", None) in (None, "auto")) and (get("chapter_start_mode") or get("chapter-start-mode")):
+    if (getattr(args, "chapter_start_mode", None) in (None, "auto")) and (
+        get("chapter_start_mode") or get("chapter-start-mode")
+    ):
         setattr(args, "chapter_start_mode", get("chapter_start_mode") or get("chapter-start-mode"))
-    if (getattr(args, "chapter_starts", None) in (None, "")) and (get("chapter_starts") or get("chapter-starts")):
+    if (getattr(args, "chapter_starts", None) in (None, "")) and (
+        get("chapter_starts") or get("chapter-starts")
+    ):
         setattr(args, "chapter_starts", get("chapter_starts") or get("chapter-starts"))
     if (args.page_list in (None, "", "off")) and (get("page_list") or get("page-list")):
         args.page_list = get("page_list") or get("page-list")
@@ -201,18 +260,28 @@ def _apply_metadata_dict(args: argparse.Namespace, md: dict, base_dir: Path | No
     # Typography options
     if getattr(args, "font_size", None) in (None, "") and (get("font_size") or get("font-size")):
         setattr(args, "font_size", get("font_size") or get("font-size"))
-    if getattr(args, "line_height", None) in (None, "") and (get("line_height") or get("line-height")):
+    if getattr(args, "line_height", None) in (None, "") and (
+        get("line_height") or get("line-height")
+    ):
         setattr(args, "line_height", get("line_height") or get("line-height"))
     # Assets
-    if (getattr(args, "css", None) in (None, "")) and get("css"): args.css = pathify(get("css"))
-    if (getattr(args, "embed_fonts", None) in (None, "")) and (get("embed_fonts") or get("embed-fonts")):
+    if (getattr(args, "css", None) in (None, "")) and get("css"):
+        args.css = pathify(get("css"))
+    if (getattr(args, "embed_fonts", None) in (None, "")) and (
+        get("embed_fonts") or get("embed-fonts")
+    ):
         args.embed_fonts = pathify(get("embed_fonts") or get("embed-fonts"))
-    if (getattr(args, "dedication", None) in (None, "")) and get("dedication"): args.dedication = pathify(get("dedication"))
-    if (getattr(args, "ack", None) in (None, "")) and (get("ack") or get("acknowledgements") or get("acknowledgments")):
+    if (getattr(args, "dedication", None) in (None, "")) and get("dedication"):
+        args.dedication = pathify(get("dedication"))
+    if (getattr(args, "ack", None) in (None, "")) and (
+        get("ack") or get("acknowledgements") or get("acknowledgments")
+    ):
         args.ack = pathify(get("ack") or get("acknowledgements") or get("acknowledgments"))
     # Output
-    if (getattr(args, "output", None) in (None, "")) and get("output"): args.output = pathify(get("output"))
-    if (getattr(args, "epubcheck", None) in (None, "on")) and get("epubcheck"): args.epubcheck = get("epubcheck")
+    if (getattr(args, "output", None) in (None, "")) and get("output"):
+        args.output = pathify(get("output"))
+    if (getattr(args, "epubcheck", None) in (None, "on")) and get("epubcheck"):
+        args.epubcheck = get("epubcheck")
 
 
 def _print_checklist(args: argparse.Namespace) -> None:
@@ -220,7 +289,7 @@ def _print_checklist(args: argparse.Namespace) -> None:
         return "[x]" if (val is not None and str(val).strip() != "") else "[ ]"
 
     items = [
-        ("DOCX", args.docx),
+        ("Input", args.input),
         ("Cover", args.cover),
         ("Title", args.title),
         ("Author", args.author),
@@ -262,58 +331,51 @@ def _print_checklist(args: argparse.Namespace) -> None:
 def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
     # Ask interactively for anything not provided on CLI.
     import sys as _sys
+
     interactive = (not getattr(args, "no_prompt", False)) and _sys.stdin.isatty()
+
+    # Ask for input path if not provided
+    if not args.input and interactive:
+        args.input = prompt("Path to manuscript file or folder", allow_empty=False)
 
     # Attempt to pre-load metadata from metadata.txt
     md_loaded = False
-    # Prefer docx directory if docx is already provided
-    if args.docx:
+    if args.input:
         try:
-            md_path = Path(args.docx).expanduser()
-            md_dir = md_path.parent if md_path.suffix else Path.cwd()
+            input_path = Path(args.input).expanduser()
+            md_dir = input_path.parent if input_path.is_file() else input_path
             mfile = md_dir / "metadata.txt"
             if mfile.exists():
                 _apply_metadata_dict(args, parse_kv_file(mfile), md_dir)
                 md_loaded = True
         except Exception:
             pass
-    # If no docx yet, try CWD metadata.txt and let it specify docx
+    # If no input yet, try CWD metadata.txt and let it specify input
     if not md_loaded:
         mfile = Path.cwd() / "metadata.txt"
         if mfile.exists():
             md = parse_kv_file(mfile)
             _apply_metadata_dict(args, md, Path.cwd())
-            # If docx now set, and a different dir holds another metadata.txt, merge it
-            if args.docx:
-                d = Path(args.docx).expanduser().resolve().parent
+            # If input now set, and a different dir holds another metadata.txt, merge it
+            if args.input:
+                d = Path(args.input).expanduser().resolve().parent
                 if d != Path.cwd() and (d / "metadata.txt").exists():
                     _apply_metadata_dict(args, parse_kv_file(d / "metadata.txt"), d)
 
-    # Auto-detect DOCX in current working directory when not provided
-    if not args.docx:
-        cwd = Path.cwd()
-        candidates = sorted([p.name for p in cwd.glob("*.docx") if p.is_file()])
-        if len(candidates) == 1:
-            args.docx = candidates[0]
-        elif len(candidates) > 1 and interactive:
-            # Let user choose among files found in current directory
-            args.docx = prompt_select("Found multiple DOCX files in this folder:", candidates, default_index=1)
-        # else: leave empty for prompt below or non-interactive error handling
-
     # After potential docx selection, attempt to auto-detect or pick common cover file name
-    if not args.cover and args.docx:
-        docx_path_tmp = Path(args.docx).expanduser().resolve()
+    if not args.cover and args.input:
+        docx_path_tmp = Path(args.input).expanduser().resolve()
         docx_dir_tmp = docx_path_tmp.parent
         # Enumerate available image files (jpg/jpeg/png)
-        cover_candidates = [
-            p.name for p in sorted(docx_dir_tmp.glob("*.jpg"))
-        ] + [
-            p.name for p in sorted(docx_dir_tmp.glob("*.jpeg"))
-        ] + [
-            p.name for p in sorted(docx_dir_tmp.glob("*.png"))
-        ]
+        cover_candidates = (
+            [p.name for p in sorted(docx_dir_tmp.glob("*.jpg"))]
+            + [p.name for p in sorted(docx_dir_tmp.glob("*.jpeg"))]
+            + [p.name for p in sorted(docx_dir_tmp.glob("*.png"))]
+        )
         # Prefer conventional cover names first if present
-        conventional = [n for n in ("cover.jpg", "cover.jpeg", "cover.png") if (docx_dir_tmp / n).is_file()]
+        conventional = [
+            n for n in ("cover.jpg", "cover.jpeg", "cover.png") if (docx_dir_tmp / n).is_file()
+        ]
         if conventional:
             # Move conventional names to the front of the candidate list
             cover_candidates = list(dict.fromkeys(conventional + cover_candidates))
@@ -322,12 +384,15 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
 
     if interactive:
         _print_checklist(args)
-    if not args.docx and interactive:
-        args.docx = prompt("DOCX filename in this folder", allow_empty=True)
+
     if not args.cover and interactive:
         # Offer a numeric pick of images in the folder, else prompt
-        cwd = Path.cwd() if not args.docx else Path(args.docx).expanduser().resolve().parent
-        img_files = [p.name for p in sorted(cwd.glob("*.jpg"))] + [p.name for p in sorted(cwd.glob("*.jpeg"))] + [p.name for p in sorted(cwd.glob("*.png"))]
+        cwd = Path.cwd() if not args.input else Path(args.input).expanduser().resolve().parent
+        img_files = (
+            [p.name for p in sorted(cwd.glob("*.jpg"))]
+            + [p.name for p in sorted(cwd.glob("*.jpeg"))]
+            + [p.name for p in sorted(cwd.glob("*.png"))]
+        )
         if img_files:
             args.cover = prompt_select("Select cover image:", img_files, default_index=1)
         else:
@@ -356,7 +421,9 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
     if interactive and args.publisher is None:
         args.publisher = prompt("Publisher (optional)", default="", allow_empty=True)
     if interactive and args.pubdate is None:
-        args.pubdate = prompt("Publication date YYYY-MM-DD (optional)", default="", allow_empty=True)
+        args.pubdate = prompt(
+            "Publication date YYYY-MM-DD (optional)", default="", allow_empty=True
+        )
     if interactive and args.uuid is None:
         args.uuid = prompt("UUID (optional, auto if absent)", default="", allow_empty=True)
     if interactive and args.subjects is None:
@@ -366,37 +433,70 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
 
     # Conversion/layout options
     if interactive:
-        args.split_at = prompt_select("Split at:", ["h1", "h2", "pagebreak"], default_index={"h1":1, "h2":2, "pagebreak":3}.get(args.split_at,1))
-        args.theme = prompt_select("Theme:", ["serif", "sans", "printlike"], default_index={"serif":1, "sans":2, "printlike":3}.get(args.theme,1))
-        args.hyphenate = prompt_select("Hyphenate:", ["on", "off"], default_index={"on":1, "off":2}.get(args.hyphenate,1))
-        args.justify = prompt_select("Justify:", ["on", "off"], default_index={"on":1, "off":2}.get(args.justify,1))
+        args.split_at = prompt_select(
+            "Split at:",
+            ["h1", "h2", "pagebreak"],
+            default_index={"h1": 1, "h2": 2, "pagebreak": 3}.get(args.split_at, 1),
+        )
+        args.theme = prompt_select(
+            "Theme:",
+            ["serif", "sans", "printlike"],
+            default_index={"serif": 1, "sans": 2, "printlike": 3}.get(args.theme, 1),
+        )
+        args.hyphenate = prompt_select(
+            "Hyphenate:", ["on", "off"], default_index={"on": 1, "off": 2}.get(args.hyphenate, 1)
+        )
+        args.justify = prompt_select(
+            "Justify:", ["on", "off"], default_index={"on": 1, "off": 2}.get(args.justify, 1)
+        )
         # Numeric picker for ToC depth
         default_idx = 1 if int(args.toc_depth) == 1 else 2
         sel = prompt_select("ToC depth:", ["1", "2"], default_index=default_idx)
         args.toc_depth = int(sel)
-        
+
         # Chapter start mode selection
-        mode_default = {"auto": 1, "manual": 2, "mixed": 3}.get(getattr(args, "chapter_start_mode", "auto"), 1)
-        mode_sel = prompt_select("Chapter detection:", ["auto (scan headings)", "manual (user-defined)", "mixed"], default_index=mode_default)
+        mode_default = {"auto": 1, "manual": 2, "mixed": 3}.get(
+            getattr(args, "chapter_start_mode", "auto"), 1
+        )
+        mode_sel = prompt_select(
+            "Chapter detection:",
+            ["auto (scan headings)", "manual (user-defined)", "mixed"],
+            default_index=mode_default,
+        )
         if mode_sel == "auto (scan headings)":
             args.chapter_start_mode = "auto"
         elif mode_sel == "manual (user-defined)":
             args.chapter_start_mode = "manual"
             # Prompt for chapter starts if not already provided
             if not getattr(args, "chapter_starts", None):
-                chapter_input = prompt("Chapter start patterns (comma-separated):", default="Chapter 1, Chapter 2, Chapter 3")
+                chapter_input = prompt(
+                    "Chapter start patterns (comma-separated):",
+                    default="Chapter 1, Chapter 2, Chapter 3",
+                )
                 if chapter_input and chapter_input.strip():
                     args.chapter_starts = chapter_input.strip()
         else:  # mixed
             args.chapter_start_mode = "mixed"
-        
-        args.page_list = prompt_select("Include page-list nav?", ["on", "off"], default_index={"on":1,"off":2}.get(args.page_list,2))
-        args.page_numbers = prompt_select("Show page number counters?", ["on", "off"], default_index={"on":1,"off":2}.get(args.page_numbers,2))
-        args.cover_scale = prompt_select("Cover scaling:", ["contain", "cover"], default_index={"contain":1,"cover":2}.get(args.cover_scale,1))
+
+        args.page_list = prompt_select(
+            "Include page-list nav?",
+            ["on", "off"],
+            default_index={"on": 1, "off": 2}.get(args.page_list, 2),
+        )
+        args.page_numbers = prompt_select(
+            "Show page number counters?",
+            ["on", "off"],
+            default_index={"on": 1, "off": 2}.get(args.page_numbers, 2),
+        )
+        args.cover_scale = prompt_select(
+            "Cover scaling:",
+            ["contain", "cover"],
+            default_index={"contain": 1, "cover": 2}.get(args.cover_scale, 1),
+        )
     # Optional assets
     if interactive and args.css is None:
         # Offer a numeric pick of CSS files in the folder
-        base = Path.cwd() if not args.docx else Path(args.docx).expanduser().resolve().parent
+        base = Path.cwd() if not args.input else Path(args.input).expanduser().resolve().parent
         css_files = [p.name for p in sorted(base.glob("*.css"))]
         if css_files:
             choices = ["(none)"] + css_files
@@ -406,7 +506,7 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
             args.css = ""
     if interactive and args.embed_fonts is None:
         # Find directories that contain TTF/OTF files and offer a pick
-        base = Path.cwd() if not args.docx else Path(args.docx).expanduser().resolve().parent
+        base = Path.cwd() if not args.input else Path(args.input).expanduser().resolve().parent
         dir_candidates = []
         for d in sorted([p for p in base.iterdir() if p.is_dir()]):
             if any((d.glob("*.ttf"))) or any((d.glob("*.otf"))):
@@ -418,7 +518,7 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
         else:
             args.embed_fonts = ""
     if interactive and args.dedication is None:
-        base = Path.cwd() if not args.docx else Path(args.docx).expanduser().resolve().parent
+        base = Path.cwd() if not args.input else Path(args.input).expanduser().resolve().parent
         txt_files = [p.name for p in sorted(base.glob("*.txt"))]
         if txt_files:
             choices = ["(none)"] + txt_files
@@ -427,7 +527,7 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
         else:
             args.dedication = ""
     if interactive and args.ack is None:
-        base = Path.cwd() if not args.docx else Path(args.docx).expanduser().resolve().parent
+        base = Path.cwd() if not args.input else Path(args.input).expanduser().resolve().parent
         txt_files = [p.name for p in sorted(base.glob("*.txt"))]
         if txt_files:
             choices = ["(none)"] + txt_files
@@ -438,7 +538,9 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
     # Validation
     if interactive:
         epub_default_idx = 1 if getattr(args, "epubcheck", None) in (True, None, "on") else 2
-        args.epubcheck = prompt_select("Validate with EPUBCheck if available?", ["on", "off"], default_index=epub_default_idx)
+        args.epubcheck = prompt_select(
+            "Validate with EPUBCheck if available?", ["on", "off"], default_index=epub_default_idx
+        )
 
     if args.output is None and interactive:
         # Suggest computed output filename and allow override
@@ -450,14 +552,14 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
         out = prompt("Output filename", default=suggested)
         args.output = out
 
-    # Auto-generate a metadata.txt template next to DOCX if missing (interactive)
+    # Auto-generate a metadata.txt template next to input if missing (interactive)
     try:
-        if interactive and args.docx:
-            docx_path = Path(args.docx).expanduser()
-            mpath = docx_path.parent / "metadata.txt"
+        if interactive and args.input:
+            input_path = Path(args.input).expanduser()
+            mpath = input_path.parent / "metadata.txt"
             if not mpath.exists():
                 tmpl_ns = argparse.Namespace(
-                    docx=str(docx_path),
+                    input=str(input_path),
                     cover=args.cover if args.cover else None,
                     output=None,
                     force=False,
@@ -472,6 +574,7 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
 def _print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path | None) -> None:
     def mark(val):
         return "[x]" if val else "[ ]"
+
     print("\n== Metadata Summary ==")
     print(f" {mark(meta.title)} Title: {meta.title or '—'}")
     print(f" {mark(meta.author)} Author: {meta.author or '—'}")
@@ -487,8 +590,12 @@ def _print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path
     print(f" {mark(opts.extra_css)} Extra CSS: {opts.extra_css or '—'}  | Fonts: {opts.embed_fonts_dir or '—'}")
     # Show chapter mode information
     if opts.chapter_start_mode == "manual" and opts.chapter_starts:
-        chapter_list = opts.chapter_starts[:3] if isinstance(opts.chapter_starts, list) else opts.chapter_starts.split(',')[:3]
-        display_chapters = ', '.join(chapter_list) + ('...' if len(chapter_list) > 3 else '')
+        chapter_list = (
+            opts.chapter_starts[:3]
+            if isinstance(opts.chapter_starts, list)
+            else opts.chapter_starts.split(",")[:3]
+        )
+        display_chapters = ", ".join(chapter_list) + ("..." if len(chapter_list) > 3 else "")
         print(f" {mark(opts.chapter_starts)} Chapter Mode: manual ({display_chapters})")
     elif opts.chapter_start_mode == "mixed":
         print(" [x] Chapter Mode: mixed (custom + auto)")
@@ -499,37 +606,83 @@ def _print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path
 
 def run_build(args: argparse.Namespace) -> int:
     from .assemble import assemble_epub, plan_build
-    from .convert import docx_to_html, split_html_by_heading, split_html_by_pagebreak
+    from .convert import convert_file_to_html, split_html_by_heading, split_html_by_pagebreak
 
     # Validate paths
-    docx_path = Path(args.docx).expanduser().resolve()
-    docx_dir = docx_path.parent
+    input_path = Path(args.input).expanduser().resolve()
+    if not input_path.exists():
+        print(f"Error: Input path not found: {input_path}", file=sys.stderr)
+        return 2
+
+    input_dir = input_path.parent if input_path.is_file() else input_path
+
     cover_path_candidate = Path(args.cover).expanduser()
     if not cover_path_candidate.is_absolute():
-        cover_path_candidate = (docx_dir / cover_path_candidate)
+        cover_path_candidate = input_dir / cover_path_candidate
     cover_path = cover_path_candidate.resolve()
-    if not docx_path.is_file():
-        print(f"Error: DOCX not found: {docx_path}", file=sys.stderr)
-        return 2
+
     if not cover_path.is_file():
         print(f"Error: cover not found: {cover_path}", file=sys.stderr)
+        return 2
+
+    # --- Input file handling ---
+    html_chunks = []
+    resources = []
+
+    supported_extensions = {".docx", ".md", ".txt", ".html", ".htm"}
+
+    if input_path.is_dir():
+        print("Input is a directory, processing supported files in alphabetical order...")
+        files_to_process = sorted(
+            [
+                p
+                for p in input_path.iterdir()
+                if p.is_file() and p.suffix.lower() in supported_extensions
+            ]
+        )
+        if not files_to_process:
+            print(f"Error: No supported files found in directory: {input_path}", file=sys.stderr)
+            return 2
+
+        for file in files_to_process:
+            print(f" - Processing {file.name}...")
+            try:
+                chunks, res = convert_file_to_html(file)
+                html_chunks.extend(chunks)
+                resources.extend(res)
+            except (RuntimeError, ValueError) as e:
+                print(f"Error converting {file.name}: {e}", file=sys.stderr)
+                return 2
+    elif input_path.is_file():
+        if input_path.suffix.lower() not in supported_extensions:
+            print(f"Error: Unsupported file type: {input_path.suffix}", file=sys.stderr)
+            return 2
+        try:
+            html_chunks, resources = convert_file_to_html(input_path)
+        except (RuntimeError, ValueError) as e:
+            print(f"Error converting {input_path.name}: {e}", file=sys.stderr)
+            return 2
+    else:
+        print(f"Error: Input path is not a file or directory: {input_path}", file=sys.stderr)
         return 2
 
     # Basic validations
     if args.isbn:
         from .metadata import validate_isbn13
+
         if not validate_isbn13(args.isbn):
-            print("Error: Invalid ISBN-13. Provide 13 digits (hyphens allowed) with a valid checksum.", file=sys.stderr)
+            print(
+                "Error: Invalid ISBN-13. Provide 13 digits with a valid checksum.",
+                file=sys.stderr,
+            )
             return 2
-    if docx_path.suffix.lower() != ".docx":
-        print("Error: Manuscript must be a .docx file.", file=sys.stderr)
-        return 2
     if cover_path.suffix.lower() not in {".jpg", ".jpeg", ".png"}:
         print("Error: Cover must be a .jpg, .jpeg, or .png image.", file=sys.stderr)
         return 2
 
     # Language normalization/validation
     from .metadata import normalize_lang, validate_lang_code
+
     args.language = normalize_lang(args.language)
     if not validate_lang_code(args.language):
         print("Error: Language must be a BCP-47 code like 'en' or 'en-us'.", file=sys.stderr)
@@ -557,25 +710,29 @@ def run_build(args: argparse.Namespace) -> int:
         cover_path=cover_path,
     )
 
-    # Resolve optional resource paths relative to DOCX dir
-    def _resolve_rel_to_docx(path_str: str | None) -> Path | None:
+    # Resolve optional resource paths relative to input dir
+    def _resolve_rel_to_input(path_str: str | None) -> Path | None:
         if not path_str:
             return None
         p = Path(path_str).expanduser()
         if not p.is_absolute():
-            p = (docx_dir / p)
+            p = input_dir / p
         return p.resolve()
 
-    css_path = _resolve_rel_to_docx(args.css) if getattr(args, "css", None) else None
-    fonts_dir = _resolve_rel_to_docx(args.embed_fonts) if getattr(args, "embed_fonts", None) else None
-    dedication_path = _resolve_rel_to_docx(args.dedication) if getattr(args, "dedication", None) else None
-    ack_path = _resolve_rel_to_docx(args.ack) if getattr(args, "ack", None) else None
+    css_path = _resolve_rel_to_input(args.css) if getattr(args, "css", None) else None
+    fonts_dir = (
+        _resolve_rel_to_input(args.embed_fonts) if getattr(args, "embed_fonts", None) else None
+    )
+    dedication_path = (
+        _resolve_rel_to_input(args.dedication) if getattr(args, "dedication", None) else None
+    )
+    ack_path = _resolve_rel_to_input(args.ack) if getattr(args, "ack", None) else None
 
     # Parse chapter starts if provided
     chapter_starts = None
     if getattr(args, "chapter_starts", None):
         chapter_starts = [s.strip() for s in args.chapter_starts.split(",") if s.strip()]
-    
+
     opts = BuildOptions(
         split_at=args.split_at,
         theme=args.theme,
@@ -594,7 +751,11 @@ def run_build(args: argparse.Namespace) -> int:
         ack_txt=ack_path,
         inspect=args.inspect,
         dry_run=args.dry_run,
-        epubcheck=((args.epubcheck == "on") if isinstance(args.epubcheck, str) else bool(getattr(args, "epubcheck", True))),
+        epubcheck=(
+            (args.epubcheck == "on")
+            if isinstance(args.epubcheck, str)
+            else bool(getattr(args, "epubcheck", True))
+        ),
         font_size=(getattr(args, "font_size", None) or None),
         line_height=(getattr(args, "line_height", None) or None),
         quiet=bool(getattr(args, "quiet", False)),
@@ -602,15 +763,20 @@ def run_build(args: argparse.Namespace) -> int:
     )
 
     # Prefill from DOCX core properties if missing
-    if (not args.title or not args.author):
+    if (
+        input_path.is_file()
+        and input_path.suffix.lower() == ".docx"
+        and (not args.title or not args.author)
+    ):
         try:
             from docx import Document  # type: ignore
-            d = Document(str(docx_path))
-            core = getattr(d, 'core_properties', None)
+
+            d = Document(str(input_path))
+            core = getattr(d, "core_properties", None)
             if core:
-                if not args.title and getattr(core, 'title', None):
+                if not args.title and getattr(core, "title", None):
                     args.title = core.title
-                if (not args.author) and getattr(core, 'author', None):
+                if (not args.author) and getattr(core, "author", None):
                     args.author = core.author
         except Exception:
             pass
@@ -635,7 +801,11 @@ def run_build(args: argparse.Namespace) -> int:
             print(f"Pandoc install failed: {e}", file=sys.stderr)
         # EPUBCheck
         try:
-            ep_on = ((args.epubcheck == "on") if isinstance(args.epubcheck, str) else bool(getattr(args, "epubcheck", True)))
+            ep_on = (
+                (args.epubcheck == "on")
+                if isinstance(args.epubcheck, str)
+                else bool(getattr(args, "epubcheck", True))
+            )
             if ep_on and epubcheck_cmd() is None:
                 if getattr(args, "auto_install_tools", False):
                     j = install_epubcheck()
@@ -649,11 +819,6 @@ def run_build(args: argparse.Namespace) -> int:
         except Exception as e:
             print(f"EPUBCheck install failed: {e}", file=sys.stderr)
 
-    try:
-        html_chunks, resources = docx_to_html(docx_path)
-    except RuntimeError as e:
-        print(f"Conversion error: {e}", file=sys.stderr)
-        return 2
     # Apply split strategy if needed
     if args.split_at in {"h1", "h2"}:
         combined = "".join(html_chunks)
@@ -683,6 +848,7 @@ def run_build(args: argparse.Namespace) -> int:
     if not args.output:
         if getattr(args, "output_pattern", None):
             from .metadata import render_output_pattern
+
             stem = render_output_pattern(
                 args.output_pattern,
                 title=args.title,
@@ -696,15 +862,18 @@ def run_build(args: argparse.Namespace) -> int:
                 series=args.seriesName or None,
                 series_index=args.seriesIndex or None,
             )
-    # Resolve output relative to DOCX dir if relative
+
+    # Resolve output relative to input dir if relative
     out_path = Path(args.output)
     if not out_path.is_absolute():
-        out_path = (docx_dir / out_path)
+        out_path = input_dir / out_path
+
     # Sanitize name and ensure .epub extension
     name = out_path.name
-    if not name.lower().endswith('.epub'):
-        name = sanitize_filename(name) + '.epub'
+    if not name.lower().endswith(".epub"):
+        name = sanitize_filename(name) + ".epub"
     out_path = out_path.with_name(name)
+
     output = out_path.resolve()
     assemble_epub(meta, opts, html_chunks, resources, output)
     print(f"Wrote: {output}")
@@ -714,17 +883,31 @@ def run_build(args: argparse.Namespace) -> int:
 
 
 def run_init_metadata(args: argparse.Namespace) -> int:
-    docx_path = Path(args.docx).expanduser().resolve()
-    if not docx_path.is_file() or docx_path.suffix.lower() != ".docx":
-        print(f"Error: DOCX not found or not a .docx file: {docx_path}", file=sys.stderr)
+    input_path = Path(args.input).expanduser().resolve()
+    if not input_path.is_file() or input_path.suffix.lower() not in {
+        ".docx",
+        ".md",
+        ".txt",
+        ".html",
+        ".htm",
+    }:
+        print(f"Error: Input file not found or not a supported type: {input_path}", file=sys.stderr)
         return 2
-    out_path = Path(args.output).expanduser().resolve() if args.output else docx_path.parent / "metadata.txt"
+    out_path = (
+        Path(args.output).expanduser().resolve()
+        if args.output
+        else input_path.parent / "metadata.txt"
+    )
     if out_path.exists() and not args.force:
-        print(f"Refusing to overwrite existing file: {out_path}. Use --force to overwrite.", file=sys.stderr)
+        print(
+            f"Refusing to overwrite existing file: {out_path}. Use --force to overwrite.",
+            file=sys.stderr,
+        )
         return 2
 
-    title_guess = docx_path.stem.replace("_", " ").replace("-", " ").strip().title()
+    title_guess = input_path.stem.replace("_", " ").replace("-", " ").strip().title()
     from .metadata import build_output_filename
+
     output_guess = build_output_filename(title_guess, None, None)
 
     lines = [
@@ -732,7 +915,7 @@ def run_init_metadata(args: argparse.Namespace) -> int:
         "# Lines starting with # are ignored. Keys are case-insensitive.",
         "# Use key: value or key=value. Paths can be relative to this DOCX folder.",
         "# Output naming (optional): you can pass --output-pattern on the CLI",
-        "# Example: --output-pattern \"{series}-{index2}-{title}\" (placeholders: {title}, {series}, {index}, {index2})",
+                '# Example: --output-pattern "{series}-{index2}-{title}"',
         "",
         f"Title: {title_guess}",
         "Author:",
@@ -810,9 +993,39 @@ def run_tools(args: argparse.Namespace) -> int:
     return 1
 
 
+def run_update(args: argparse.Namespace) -> int:
+    import subprocess
+
+    print("Checking for updates...")
+    check_for_updates()  # This will print if there is an update
+    if prompt_bool("Do you want to try upgrading now?", default=True):
+        try:
+            subprocess.run(["pipx", "upgrade", "docx2shelf"], check=True)
+            print("Update successful!")
+            return 0
+        except FileNotFoundError:
+            print(
+                "Error: pipx not found. Please make sure pipx is installed and in your PATH.",
+                file=sys.stderr,
+            )
+            return 1
+        except subprocess.CalledProcessError as e:
+            print(f"Error during update: {e}", file=sys.stderr)
+            return 1
+    return 0
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
+
+    # Perform a quick update check in a background thread if not running update command
+    if not (argv and "update" in argv[0]):
+        import threading
+
+        update_thread = threading.Thread(target=check_for_updates)
+        update_thread.start()
+
     if not argv:
         # Default to interactive build when no args are provided
         argv = ["build"]
@@ -826,6 +1039,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_init_metadata(args)
     if args.command == "tools":
         return run_tools(args)
+    if args.command == "update":
+        return run_update(args)
 
     parser.print_help()
     return 1

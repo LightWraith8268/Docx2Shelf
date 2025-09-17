@@ -13,6 +13,7 @@ Offline Python 3.11 CLI that converts a DOCX manuscript plus metadata into a val
 
 ## Install
 Recommended (isolated global CLI):
+- Windows (automated): `install.bat`
 - Linux/macOS: `sh scripts/install.sh --method pipx --extras all [--with-tools all]`
 - Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File scripts/install.ps1 -Method pipx -Extras all -WithTools all`
 

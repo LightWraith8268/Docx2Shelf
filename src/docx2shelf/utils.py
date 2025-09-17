@@ -60,13 +60,7 @@ def prompt_select(question: str, options: list[str], default_index: int = 1) -> 
 
 
 def sanitize_filename(name: str) -> str:
-    return (
-        name.replace("/", "-")
-        .replace("\\", "-")
-        .replace(":", "-")
-        .replace("\0", "")
-        .strip()
-    )
+    return name.replace("/", "-").replace("\\", "-").replace(":", "-").replace("\0", "").strip()
 
 
 def parse_kv_file(path: Path) -> Dict[str, str]:

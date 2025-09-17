@@ -1,17 +1,15 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import platform
 import shutil
-import sys
 import tarfile
+import time
 import zipfile
 from pathlib import Path
 from typing import Optional
 from urllib.request import urlopen
-import hashlib
-import time
-
 
 DEFAULT_PANDOC_VERSION = "3.1.12"
 DEFAULT_EPUBCHECK_VERSION = "5.1.0"
@@ -195,7 +193,7 @@ def install_pandoc(version: str = DEFAULT_PANDOC_VERSION) -> Path:
 def _fetch_epubcheck_checksum(version: str, archive_name: str) -> str | None:
     base = f"https://github.com/w3c/epubcheck/releases/download/v{version}"
     # Try common checksum filename variants
-    for cand in (f"{archive_name}.sha256", f"SHA256SUMS.txt", f"sha256sum.txt"):
+    for cand in (f"{archive_name}.sha256", "SHA256SUMS.txt", "sha256sum.txt"):
         url = f"{base}/{cand}"
         try:
             with urlopen(url) as resp:
@@ -238,7 +236,7 @@ def install_epubcheck(version: str = DEFAULT_EPUBCHECK_VERSION) -> Path:
     # Create a wrapper for convenience
     wrapper = td / ("epubcheck.bat" if os.name == "nt" else "epubcheck")
     if os.name == "nt":
-        wrapper.write_text(f"@echo off\njava -jar \"{jar}\" %*\n", encoding="utf-8")
+        wrapper.write_text(f'@echo off\njava -jar "{jar}" %*\n', encoding="utf-8")
     else:
         # Use single-quoted f-string to avoid escaping inner double quotes
         wrapper.write_text(f'#!/usr/bin/env sh\nexec java -jar "{jar}" "$@"\n', encoding="utf-8")

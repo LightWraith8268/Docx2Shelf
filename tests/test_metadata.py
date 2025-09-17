@@ -1,4 +1,9 @@
-from docx2shelf.metadata import build_output_filename, validate_isbn13, validate_lang_code, normalize_lang
+from docx2shelf.metadata import (
+    build_output_filename,
+    normalize_lang,
+    validate_isbn13,
+    validate_lang_code,
+)
 
 
 def test_build_output_filename_simple():

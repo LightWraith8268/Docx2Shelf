@@ -39,7 +39,7 @@ function Ensure-Pipx {
 
 function Get-PkgSpec([string]$extras) {
   switch ($extras) {
-    'none'   { return '.'' }
+    'none'   { return '.' }
     'docx'   { return '.[docx]' }
     'pandoc' { return '.[pandoc]' }
     'all'    { return '.[docx,pandoc]' }
@@ -52,15 +52,10 @@ Write-Host "Installing Docx2Shelf using method=$Method extras=$Extras"
 switch ($Method) {
   'pipx' {
     Ensure-Pipx
-    # Prefer pipx executable; fallback to module call
-    $pipxCmd = $(if (Get-Command pipx -ErrorAction SilentlyContinue) { 'pipx' } else { (Get-PythonCmd) + ' -m pipx' })
-    # Install or upgrade
-    try {
-      & $pipxCmd install $pkgSpec
-    } catch {
-      Write-Host 'Attempting pipx upgrade instead...'
-      & $pipxCmd upgrade $pkgSpec
-    }
+    # Use Python to invoke pipx module to avoid quoting issues
+    $py = Get-PythonCmd
+    # Force reinstall to handle upgrades or existing envs consistently
+    & $py -m pipx install --force $pkgSpec
   }
   'pip-user' {
     $py = Get-PythonCmd
