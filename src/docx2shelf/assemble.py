@@ -12,7 +12,7 @@ def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions) -> bytes:
+def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions, styles_css: str = "") -> bytes:
     # Load packaged CSS: docx2shelf/assets/css/<theme>.css
     try:
         css_path = resources.files("docx2shelf.assets.css").joinpath(f"{theme}.css")
@@ -42,6 +42,9 @@ def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions) -> bytes:
             "\n/* page number counters on h1/h2 (informational) */\n"
             "h1::before, h2::before { counter-increment: page; content: counter(page) '\\a0'; }\n"
         )
+    # Add styles from styles.json
+    if styles_css:
+        css += "\n/* styles from styles.json */\n" + styles_css
     if extra_css and extra_css.exists():
         css += "\n/* user css */\n" + extra_css.read_text(encoding="utf-8")
     return css.encode("utf-8")
@@ -240,6 +243,7 @@ def assemble_epub(
     html_chunks: list[str],
     resources: list[Path],
     output_path: Path,
+    styles_css: str = "",
 ) -> None:
     """Assemble the EPUB with ebooklib and write to output_path."""
     try:
@@ -285,7 +289,7 @@ def assemble_epub(
     book.set_cover(meta.cover_path.name, cover_bytes)
 
     # CSS
-    css_bytes = _load_css(opts.theme, opts.extra_css, opts)
+    css_bytes = _load_css(opts.theme, opts.extra_css, opts, styles_css)
     style_item = epub.EpubItem(
         uid="style_base",
         file_name="style/base.css",

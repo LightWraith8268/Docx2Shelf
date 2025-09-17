@@ -628,6 +628,7 @@ def run_build(args: argparse.Namespace) -> int:
     # --- Input file handling ---
     html_chunks = []
     resources = []
+    all_styles_css = []
 
     supported_extensions = {".docx", ".md", ".txt", ".html", ".htm"}
 
@@ -647,9 +648,12 @@ def run_build(args: argparse.Namespace) -> int:
         for file in files_to_process:
             print(f" - Processing {file.name}...")
             try:
-                chunks, res = convert_file_to_html(file)
+                chunks, res, styles_css = convert_file_to_html(file)
                 html_chunks.extend(chunks)
                 resources.extend(res)
+                # Collect styles CSS from all files
+                if styles_css and styles_css not in all_styles_css:
+                    all_styles_css.append(styles_css)
             except (RuntimeError, ValueError) as e:
                 print(f"Error converting {file.name}: {e}", file=sys.stderr)
                 return 2
@@ -658,7 +662,8 @@ def run_build(args: argparse.Namespace) -> int:
             print(f"Error: Unsupported file type: {input_path.suffix}", file=sys.stderr)
             return 2
         try:
-            html_chunks, resources = convert_file_to_html(input_path)
+            html_chunks, resources, styles_css = convert_file_to_html(input_path)
+            all_styles_css = [styles_css] if styles_css else []
         except (RuntimeError, ValueError) as e:
             print(f"Error converting {input_path.name}: {e}", file=sys.stderr)
             return 2
@@ -875,7 +880,9 @@ def run_build(args: argparse.Namespace) -> int:
     out_path = out_path.with_name(name)
 
     output = out_path.resolve()
-    assemble_epub(meta, opts, html_chunks, resources, output)
+    # Combine all styles CSS
+    combined_styles_css = "\n".join(all_styles_css)
+    assemble_epub(meta, opts, html_chunks, resources, output, combined_styles_css)
     print(f"Wrote: {output}")
     if opts.inspect:
         print("Inspect folder emitted for debugging.")

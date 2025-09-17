@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.2]
+
+### Added
+- **Robust DOCX fallback parser**: Enhanced DOCX processing with improved support for tracked changes, comments, complex tables, text boxes, shapes, and equations when Pandoc is not available.
+- **Advanced style mapping system**: Comprehensive styles.json configuration with user-override support. Users can now place custom styles.json files in their document directory or working directory to override default Word style → HTML mappings.
+- **Rasterize-on-escape feature**: Optional image fallback system for complex layout elements that cannot be cleanly translated to HTML, preserving author intention through visual placeholders.
+- **Enhanced CSS injection**: Automatic injection of CSS rules from styles.json into generated EPUBs, providing better styling for new element types.
+
+### Improved
+- DOCX fallback parser now handles insertions, deletions, and move operations from Word's track changes feature.
+- Comment processing with visual indicators and tooltip text extraction.
+- Table processing with better structure preservation and error handling.
+- Extended paragraph and character style mappings covering more Word built-in styles.
+- Better handling of figures, captions, equations, and code blocks.
+
 ## [1.0.1]
 
 ### Changed
