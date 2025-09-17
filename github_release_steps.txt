@@ -1,0 +1,26 @@
+## Steps to Create a GitHub Release and Upload Assets
+
+This guide will walk you through creating a new release on GitHub and attaching the `install.bat` file as a release asset. You have already completed the necessary Git steps (committed changes and pushed the `v1.0.0` tag).
+
+1.  **Go to your GitHub Repository:**
+    *   Open your web browser and navigate to your Docx2Shelf repository on GitHub (e.g., `https://github.com/LightWraith8268/Docx2Shelf`).
+
+2.  **Navigate to Releases:**
+    *   On your repository's main page, look for the "Releases" section. It's usually on the right sidebar or under the "Code" tab, then "Releases". Click on it.
+
+3.  **Draft a New Release:**
+    *   You should see the `v1.0.0` tag listed. Click on the "Draft a new release" button.
+    *   In the "Tag version" dropdown, select `v1.0.0`.
+    *   For "Release title," you can put something like "Docx2Shelf v1.0.0 - Initial Release".
+    *   In the "Description" box, you can copy the content of your `CHANGELOG.md` entry for 1.0.0, or a summary of it.
+
+4.  **Upload `install.bat` as an Asset:**
+    *   Scroll down to the "Assets" section.
+    *   You can drag and drop your local `install.bat` file into this area, or click "Add binaries by dragging & dropping or selecting them."
+    *   Select the `install.bat` file from your local `S:\coding\Docx2Shelf\` directory.
+
+5.  **Publish Release:**
+    *   Review all the details.
+    *   If everything looks correct, click the "Publish release" button.
+
+Once you've completed these steps, `install.bat` will be available for download directly from your GitHub release page, making it easy for users to get started with your tool.

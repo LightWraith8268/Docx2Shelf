@@ -29,3 +29,6 @@ Thumbs.db
 tmp/*.epub
 tmp/*.zip
 tmp/*.src/
+
+# Release Steps
+github_release_steps.txt
