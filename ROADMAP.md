@@ -11,6 +11,7 @@ Why now: you already prefer Pandoc but promise a graceful fallback; that’s cor
 
 ### Style mapping
 Expose a styles.json to map Word styles → CSS classes, with user-override.
+Status: In Progress (Basic paragraph style mapping implemented via styles.json)
 
 ### “Rasterize-on-escape”
 Optional image fallback for layout elements the parser can’t translate cleanly (preserves author intention).

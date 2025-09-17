@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.3]
+
+### Improved
+- **Style mapping**: Implemented basic paragraph style mapping from `styles.json` in the `python-docx` fallback parser.
+
 ## [1.0.2]
 
 ### Improved

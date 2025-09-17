@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import tempfile
 from pathlib import Path
@@ -104,7 +105,18 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
     1) Try Pandoc via pypandoc for rich conversion.
     2) Fallback to a lightweight python-docx paragraph/headings extraction.
     """
-    # 1) Pandoc path
+    # Load style mapping
+    styles_path = Path(__file__).parent / "styles.json"
+    styles_data = {}
+    if styles_path.exists():
+        try:
+            with open(styles_path, 'r', encoding='utf-8') as f:
+                styles_data = json.load(f)
+        except Exception as e:
+            print(f"Warning: Could not load styles.json: {e}", file=sys.stderr)
+
+    paragraph_styles_map = styles_data.get("paragraph_styles", {})
+    run_styles_map = styles_data.get("run_styles", {})
     try:
         import pypandoc  # type: ignore
 
@@ -158,6 +170,21 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
         list_items = []
 
     pending_img: str | None = None
+
+    def _get_run_html(run, run_styles_map, initial_txt):
+        txt = initial_txt
+        # Apply basic inline formatting
+        if getattr(run, "bold", False):
+            txt = f"<strong>{txt}</strong>"
+        if getattr(run, "italic", False):
+            txt = f"<em>{txt}</em>"
+
+        # TODO: Implement robust run style mapping from styles.json
+        # This would involve inspecting run.element.xml for w:rPr and w:rStyle
+        # and mapping them to CSS classes or HTML tags.
+
+        return txt
+
     for p in document.paragraphs:
         style = (p.style.name or "").lower()
         # Detect list paragraphs
@@ -177,6 +204,14 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
         current_link_href: str | None = None
         current_link_buf: list[str] = []
         for run in p.runs:
+            # Skip deleted runs
+            if run.element.find('.//w:del', namespaces=IMG_NS) is not None:
+                continue
+
+            # Skip comment references
+            if run.element.find('.//w:commentReference', namespaces=IMG_NS) is not None:
+                continue
+
             txt = run.text or ""
             # Images in this run?
             try:
@@ -271,11 +306,8 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
                 )
 
             if txt:
-                # Basic inline formatting
-                if getattr(run, "bold", False):
-                    txt = f"<strong>{txt}</strong>"
-                if getattr(run, "italic", False):
-                    txt = f"<em>{txt}</em>"
+                # Apply basic inline formatting and mapped run styles
+                run_html.append(_get_run_html(run, run_styles_map, txt))
                 # Hyperlinks: wrap if run is inside a hyperlink element
                 try:
                     parent = run._r.getparent()
@@ -346,26 +378,28 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path]]:
             buf.append(f"<p>{pending_img}</p>")
             pending_img = None
 
-        if "heading 1" in style:
+        # Apply paragraph style mapping
+        mapped_tag = paragraph_styles_map.get(p.style.name, "p")
+        if mapped_tag == "h1":
             flush_list()
             flush_section(buf, current_notes)
             current_notes = []
             buf.append(f"<h1>{content}</h1>")
-        elif "heading 2" in style:
+        elif mapped_tag == "h2":
             flush_list()
             buf.append(f"<h2>{content}</h2>")
-        elif is_list:
+        elif mapped_tag == "li":
             list_type = "ol" if is_num else "ul"
             if current_list_type and current_list_type != list_type:
                 flush_list()
             current_list_type = list_type if current_list_type is None else current_list_type
             list_items.append(f"<li>{content}</li>")
-        elif "quote" in style:
+        elif mapped_tag == "blockquote":
             flush_list()
             buf.append(f"<blockquote><p>{content}</p></blockquote>")
-        else:
+        else: # Default to paragraph
             flush_list()
-            buf.append(f"<p>{content}</p>")
+            buf.append(f"<{mapped_tag}>{content}</{mapped_tag}>")
 
     flush_list()
     flush_section(buf, current_notes)
