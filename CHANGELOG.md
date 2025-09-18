@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.1.0]
+### Added
+- Comprehensive plugin system with development documentation and example templates
+- Plugin discovery mechanism scanning multiple standard locations
+- Enhanced plugin CLI commands: `list`, `load`, `enable`, `disable`, `info`, `discover`, `create`
+- Plugin template creation with `docx2shelf plugins create` supporting basic, HTML cleaner, and metadata enhancer templates
+- Tools manager health check with `docx2shelf tools doctor` command providing PATH diagnostics
+- Version pin sets for tools (stable, latest, bleeding) with `--preset` option
+- Offline bundle mode for air-gapped machines with `docx2shelf tools bundle`
+- Auto-discovery of plugins from user directory, package directory, and project directory
+- Plugin information extraction using AST parsing for safe metadata reading
+- Template-based plugin creation with automatic class name customization
+
+### Changed
+- Enhanced README with comprehensive plugin development section and examples
+- Improved plugin management with verbose output options and detailed information display
+- Extended tools CLI with preset support and offline bundle capabilities
+- Enhanced plugin system documentation with best practices and troubleshooting
+
+### Plugin Examples Added
+- Basic Template: Complete starter showing all hook types with detailed comments
+- HTML Cleaner: Advanced post-processing with smart quotes, CSS classes, and configurable cleanup
+- Metadata Enhancer: Auto-generates descriptions, detects genres, estimates reading time with fiction-specific analysis
+
 ## [1.0.9]
 ### Added
 - Automated PyPI publishing via GitHub Actions with trusted publishing

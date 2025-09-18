@@ -253,7 +253,7 @@ plugin_manager = PluginManager()
 
 
 def load_default_plugins() -> None:
-    """Load default plugins from the plugins directory."""
+    """Load default plugins from multiple discovery locations."""
     from docx2shelf.utils import get_user_data_dir
 
     # Load from user plugins directory
@@ -263,6 +263,115 @@ def load_default_plugins() -> None:
     # Load from package plugins directory if it exists
     package_plugins_dir = Path(__file__).parent / "plugins"
     plugin_manager.load_plugins_from_directory(package_plugins_dir)
+
+    # Load from current working directory plugins folder
+    cwd_plugins_dir = Path.cwd() / "plugins"
+    plugin_manager.load_plugins_from_directory(cwd_plugins_dir)
+
+    logger.info(f"Loaded {len(plugin_manager.plugins)} plugins from discovery locations")
+
+
+def discover_available_plugins() -> List[Dict[str, Any]]:
+    """Discover all available plugins without loading them."""
+    from docx2shelf.utils import get_user_data_dir
+
+    available_plugins = []
+    discovery_locations = [
+        get_user_data_dir() / "plugins",
+        Path(__file__).parent / "plugins",
+        Path.cwd() / "plugins"
+    ]
+
+    for location in discovery_locations:
+        if not location.exists():
+            continue
+
+        for plugin_file in location.glob("*.py"):
+            if plugin_file.name.startswith("_"):
+                continue
+
+            plugin_info = _extract_plugin_info(plugin_file)
+            if plugin_info:
+                plugin_info['location'] = str(location)
+                plugin_info['file_path'] = str(plugin_file)
+                plugin_info['loaded'] = any(p.name == plugin_info['name'] for p in plugin_manager.plugins)
+                available_plugins.append(plugin_info)
+
+    return available_plugins
+
+
+def _extract_plugin_info(plugin_file: Path) -> Optional[Dict[str, Any]]:
+    """Extract basic plugin information without loading the module."""
+    try:
+        with open(plugin_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Extract docstring
+        import ast
+        tree = ast.parse(content)
+        docstring = ast.get_docstring(tree) or "No description available"
+
+        # Look for BasePlugin classes
+        plugin_classes = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                for base in node.bases:
+                    if isinstance(base, ast.Name) and base.id == 'BasePlugin':
+                        plugin_classes.append(node.name)
+
+        if not plugin_classes:
+            return None
+
+        # Try to extract version and name from __init__ calls
+        name = plugin_file.stem  # fallback to filename
+        version = "unknown"
+
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.FunctionDef) and node.name == '__init__' and
+                len(node.body) > 0):
+                for stmt in node.body:
+                    if (isinstance(stmt, ast.Expr) and
+                        isinstance(stmt.value, ast.Call) and
+                        isinstance(stmt.value.func, ast.Attribute) and
+                        stmt.value.func.attr == '__init__'):
+                        # Extract name and version from super().__init__ call
+                        args = stmt.value.args
+                        if len(args) >= 1 and isinstance(args[0], ast.Constant):
+                            name = args[0].value
+                        if len(args) >= 2 and isinstance(args[1], ast.Constant):
+                            version = args[1].value
+
+        return {
+            'name': name,
+            'version': version,
+            'description': docstring.split('\n')[0] if docstring else "No description",
+            'classes': plugin_classes,
+            'file_name': plugin_file.name
+        }
+
+    except Exception as e:
+        logger.debug(f"Could not extract info from {plugin_file}: {e}")
+        return None
+
+
+def get_plugin_info(plugin_name: str) -> Optional[Dict[str, Any]]:
+    """Get detailed information about a loaded plugin."""
+    plugin = plugin_manager.get_plugin_by_name(plugin_name)
+    if not plugin:
+        return None
+
+    hooks_info = {}
+    plugin_hooks = plugin.get_hooks()
+    for hook_type, hooks in plugin_hooks.items():
+        hooks_info[hook_type] = [hook.__class__.__name__ for hook in hooks]
+
+    return {
+        'name': plugin.name,
+        'version': plugin.version,
+        'enabled': plugin.enabled,
+        'hooks': hooks_info,
+        'hook_count': sum(len(hooks) for hooks in plugin_hooks.values())
+    }
 
 
 # Example plugin implementation for demonstration

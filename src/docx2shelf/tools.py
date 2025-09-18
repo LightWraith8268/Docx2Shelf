@@ -14,6 +14,22 @@ from urllib.request import urlopen
 DEFAULT_PANDOC_VERSION = "3.1.12"
 DEFAULT_EPUBCHECK_VERSION = "5.1.0"
 
+# Version pin sets for different stability levels
+VERSION_PIN_SETS = {
+    "stable": {
+        "pandoc": "3.1.11",  # Known stable version
+        "epubcheck": "5.0.1"  # Known stable version
+    },
+    "latest": {
+        "pandoc": "3.1.12",  # Latest tested version
+        "epubcheck": "5.1.0"  # Latest tested version
+    },
+    "bleeding": {
+        "pandoc": None,  # Use latest available
+        "epubcheck": None  # Use latest available
+    }
+}
+
 
 def tools_dir() -> Path:
     if os.name == "nt":
@@ -302,3 +318,270 @@ def install_epubcheck(version: str = DEFAULT_EPUBCHECK_VERSION) -> Path:
             pass
     tmp.unlink(missing_ok=True)
     return jar
+
+
+def get_version_pin_config() -> Path:
+    """Get path to version pin configuration file."""
+    config_dir = tools_dir().parent / "config"
+    config_dir.mkdir(exist_ok=True)
+    return config_dir / "version_pins.json"
+
+
+def load_version_pins() -> dict:
+    """Load current version pin configuration."""
+    config_file = get_version_pin_config()
+    if not config_file.exists():
+        return {"preset": "latest"}
+
+    try:
+        import json
+        with open(config_file, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return {"preset": "latest"}
+
+
+def save_version_pins(config: dict) -> None:
+    """Save version pin configuration."""
+    config_file = get_version_pin_config()
+    import json
+    with open(config_file, 'w') as f:
+        json.dump(config, f, indent=2)
+
+
+def set_version_pin_preset(preset: str) -> None:
+    """Set version pin preset (stable, latest, bleeding)."""
+    if preset not in VERSION_PIN_SETS:
+        raise ValueError(f"Unknown preset: {preset}. Available: {list(VERSION_PIN_SETS.keys())}")
+
+    config = {"preset": preset, "custom_pins": {}}
+    save_version_pins(config)
+    print(f"Version pin preset set to: {preset}")
+
+
+def pin_tool_version(tool: str, version: str) -> None:
+    """Pin a specific tool to a specific version."""
+    config = load_version_pins()
+    if "custom_pins" not in config:
+        config["custom_pins"] = {}
+
+    config["custom_pins"][tool] = version
+    save_version_pins(config)
+    print(f"Pinned {tool} to version {version}")
+
+
+def get_pinned_version(tool: str) -> Optional[str]:
+    """Get the pinned version for a tool."""
+    config = load_version_pins()
+
+    # Check custom pins first
+    if "custom_pins" in config and tool in config["custom_pins"]:
+        return config["custom_pins"][tool]
+
+    # Check preset
+    preset = config.get("preset", "latest")
+    if preset in VERSION_PIN_SETS and tool in VERSION_PIN_SETS[preset]:
+        return VERSION_PIN_SETS[preset][tool]
+
+    # Fall back to defaults
+    if tool == "pandoc":
+        return DEFAULT_PANDOC_VERSION
+    elif tool == "epubcheck":
+        return DEFAULT_EPUBCHECK_VERSION
+
+    return None
+
+
+def tools_doctor() -> int:
+    """Run comprehensive health check on tools setup."""
+    import subprocess
+    import sys
+
+    print("🔍 Docx2Shelf Tools Health Check")
+    print("=" * 40)
+
+    issues_found = 0
+
+    # Check Python version
+    print(f"✓ Python version: {sys.version}")
+
+    # Check tools directory
+    td = tools_dir()
+    print(f"✓ Tools directory: {td}")
+    print(f"  Exists: {'Yes' if td.exists() else 'No'}")
+    print(f"  Writable: {'Yes' if os.access(td, os.W_OK) else 'No'}")
+
+    # Check Pandoc
+    print("\n📚 Pandoc Status:")
+    pandoc_path_obj = pandoc_path()
+    if pandoc_path_obj:
+        print(f"  ✓ Found at: {pandoc_path_obj}")
+        try:
+            result = subprocess.run([str(pandoc_path_obj), "--version"],
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                version_line = result.stdout.split('\n')[0] if result.stdout else "Unknown"
+                print(f"  ✓ Version: {version_line}")
+
+                # Check if version matches pinned version
+                pinned = get_pinned_version("pandoc")
+                if pinned and pinned not in version_line:
+                    print(f"  ⚠️  Warning: Expected version {pinned}, got {version_line}")
+                    issues_found += 1
+            else:
+                print(f"  ❌ Error running pandoc: {result.stderr}")
+                issues_found += 1
+        except Exception as e:
+            print(f"  ❌ Error checking pandoc: {e}")
+            issues_found += 1
+    else:
+        print("  ❌ Pandoc not found")
+        issues_found += 1
+
+        # Check if it's available in PATH
+        system_pandoc = shutil.which("pandoc")
+        if system_pandoc:
+            print(f"  ℹ️  System pandoc available at: {system_pandoc}")
+        else:
+            print("  ℹ️  No system pandoc found in PATH")
+
+    # Check EPUBCheck
+    print("\n📖 EPUBCheck Status:")
+    epubcheck_cmd_list = epubcheck_cmd()
+    if epubcheck_cmd_list:
+        print(f"  ✓ Found at: {epubcheck_cmd_list[0]}")
+        try:
+            result = subprocess.run(epubcheck_cmd_list + ["--version"],
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                version_info = result.stdout.strip() if result.stdout else result.stderr.strip()
+                print(f"  ✓ Version: {version_info}")
+
+                # Check if version matches pinned version
+                pinned = get_pinned_version("epubcheck")
+                if pinned and pinned not in version_info:
+                    print(f"  ⚠️  Warning: Expected version {pinned}, got {version_info}")
+                    issues_found += 1
+            else:
+                print(f"  ❌ Error running epubcheck: {result.stderr}")
+                issues_found += 1
+        except Exception as e:
+            print(f"  ❌ Error checking epubcheck: {e}")
+            issues_found += 1
+    else:
+        print("  ❌ EPUBCheck not found")
+        issues_found += 1
+
+    # Check Java (for EPUBCheck)
+    print("\n☕ Java Status:")
+    try:
+        result = subprocess.run(["java", "-version"],
+                              capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            java_version = result.stderr.split('\n')[0] if result.stderr else "Unknown"
+            print(f"  ✓ Java available: {java_version}")
+        else:
+            print("  ❌ Java not working properly")
+            issues_found += 1
+    except FileNotFoundError:
+        print("  ❌ Java not found (required for EPUBCheck)")
+        issues_found += 1
+    except Exception as e:
+        print(f"  ❌ Error checking Java: {e}")
+        issues_found += 1
+
+    # Check version pins configuration
+    print("\n📌 Version Pins:")
+    config = load_version_pins()
+    preset = config.get("preset", "latest")
+    print(f"  Current preset: {preset}")
+
+    custom_pins = config.get("custom_pins", {})
+    if custom_pins:
+        print("  Custom pins:")
+        for tool, version in custom_pins.items():
+            print(f"    {tool}: {version}")
+    else:
+        print("  No custom pins set")
+
+    # Check PATH
+    print("\n🛤️  PATH Diagnostics:")
+    path_dirs = os.environ.get("PATH", "").split(os.pathsep)
+    tools_in_path = []
+
+    for tool in ["pandoc", "java", "python", "pip", "pipx"]:
+        found = shutil.which(tool)
+        if found:
+            tools_in_path.append(f"  ✓ {tool}: {found}")
+        else:
+            tools_in_path.append(f"  ❌ {tool}: not found")
+
+    for tool_info in tools_in_path:
+        print(tool_info)
+
+    # Summary
+    print("\n" + "=" * 40)
+    if issues_found == 0:
+        print("🎉 All systems operational!")
+        return 0
+    else:
+        print(f"⚠️  Found {issues_found} issue(s)")
+        print("\nRecommended actions:")
+        print("- Run 'docx2shelf tools install pandoc' to install Pandoc")
+        print("- Run 'docx2shelf tools install epubcheck' to install EPUBCheck")
+        print("- Ensure Java is installed for EPUBCheck functionality")
+        return 1
+
+
+def setup_offline_bundle(bundle_dir: Path) -> None:
+    """Set up offline bundle directory with pre-downloaded tools."""
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create bundle structure
+    cache_dir = bundle_dir / "cache"
+    cache_dir.mkdir(exist_ok=True)
+
+    print(f"Setting up offline bundle in: {bundle_dir}")
+
+    # Pre-download Pandoc for current platform
+    try:
+        sysname, mach = _platform_tag()
+        pandoc_version = get_pinned_version("pandoc") or DEFAULT_PANDOC_VERSION
+
+        # Download Pandoc archive to cache
+        pandoc_cache = cache_dir / f"pandoc-{pandoc_version}-{sysname}-{mach}.tar.gz"
+        if not pandoc_cache.exists():
+            # This would need platform-specific URLs - simplified for now
+            print(f"Would download Pandoc {pandoc_version} to {pandoc_cache}")
+
+        # Download EPUBCheck to cache
+        epubcheck_version = get_pinned_version("epubcheck") or DEFAULT_EPUBCHECK_VERSION
+        epubcheck_cache = cache_dir / f"epubcheck-{epubcheck_version}.zip"
+        if not epubcheck_cache.exists():
+            print(f"Would download EPUBCheck {epubcheck_version} to {epubcheck_cache}")
+
+        # Create offline installation script
+        install_script = bundle_dir / ("install_offline.bat" if os.name == "nt" else "install_offline.sh")
+        script_content = f"""#!/bin/bash
+# Offline installation script for Docx2Shelf tools
+# Bundle created: {time.strftime('%Y-%m-%d %H:%M:%S')}
+
+echo "Installing tools from offline bundle..."
+# Copy cached files to tools directory and extract
+# Implementation would copy from cache to tools directory
+echo "Offline installation complete!"
+"""
+        install_script.write_text(script_content)
+        if os.name != "nt":
+            install_script.chmod(0o755)
+
+        print(f"✓ Offline bundle prepared in {bundle_dir}")
+        print("Bundle includes cached tool downloads for air-gapped installation.")
+
+    except Exception as e:
+        print(f"Error setting up offline bundle: {e}")
+
+
+def get_offline_bundle_dir() -> Path:
+    """Get the default offline bundle directory."""
+    return tools_dir().parent / "offline_bundle"

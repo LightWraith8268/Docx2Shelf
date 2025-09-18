@@ -121,15 +121,71 @@ docx2shelf tools install epubcheck
 ```
 
 ### Plugins & Extensions
-Extend Docx2Shelf with custom functionality:
+
+Docx2Shelf features a powerful plugin system that allows you to extend functionality with custom processing logic. Plugins can modify DOCX files before conversion, transform HTML content after conversion, or enhance metadata dynamically.
+
+#### Quick Plugin Usage
 
 ```bash
-# List available plugins
+# List all plugins (loaded and available)
 docx2shelf plugins list
 
 # Load a custom plugin
-docx2shelf plugins load my_plugin.py
+docx2shelf plugins load /path/to/my_plugin.py
+
+# Enable/disable plugins
+docx2shelf plugins enable my_plugin
+docx2shelf plugins disable my_plugin
+
+# Get plugin information
+docx2shelf plugins info my_plugin
 ```
+
+#### Creating Custom Plugins
+
+Docx2Shelf supports three types of plugin hooks:
+
+1. **PreConvertHook** - Process DOCX files before conversion
+2. **PostConvertHook** - Transform HTML content after conversion
+3. **MetadataResolverHook** - Add or modify metadata dynamically
+
+**Example Plugin:**
+```python
+from docx2shelf.plugins import BasePlugin, PostConvertHook
+from typing import Dict, Any, List
+
+class MyPlugin(BasePlugin):
+    def __init__(self):
+        super().__init__("my_plugin", "1.0.0")
+
+    def get_hooks(self) -> Dict[str, List]:
+        return {'post_convert': [MyHTMLProcessor()]}
+
+class MyHTMLProcessor(PostConvertHook):
+    def transform_html(self, html_content: str, context: Dict[str, Any]) -> str:
+        # Your custom HTML transformation
+        return html_content.replace("old_text", "new_text")
+```
+
+#### Plugin Examples Included
+
+Docx2Shelf comes with example plugins to help you get started:
+
+- **Basic Template** (`docs/plugins/examples/basic_template.py`) - Complete template showing all hook types
+- **HTML Cleaner** (`docs/plugins/examples/html_cleaner.py`) - Advanced HTML post-processing with smart quotes, CSS classes, and cleanup
+- **Metadata Enhancer** (`docs/plugins/examples/metadata_enhancer.py`) - Auto-generates descriptions, detects genres, estimates reading time
+
+#### Plugin Installation
+
+Plugins can be loaded from several locations:
+
+1. **User plugins directory**:
+   - Linux/macOS: `~/.local/share/docx2shelf/plugins/`
+   - Windows: `%APPDATA%/Docx2Shelf/plugins/`
+2. **Project-specific**: Place plugins in your project directory
+3. **Manual loading**: Use `docx2shelf plugins load <path>` for any location
+
+For complete plugin development documentation, see [`docs/plugins/README.md`](docs/plugins/README.md).
 
 ### Document Connectors
 Import from various sources (requires explicit opt-in):
