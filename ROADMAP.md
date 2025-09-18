@@ -97,7 +97,7 @@ Automated PyPI publishing via GitHub Actions with trusted publishing. pipx insta
 Enhanced tool download system with SHA-256 verification (existing) plus optional GPG signature verification for supported tools.
 
 ## 9) Tools Manager polish
-Status: To Do
+Status: ✓ Complete
 
 ### Version pin sets
 (docx2shelf tools pin preset stable|latest)
@@ -109,7 +109,7 @@ Status: To Do
 (pre-downloaded zips in a cache dir) for air-gapped machines.
 
 ## 10) Tests & QA
-Status: To Do
+Status: ✓ Complete
 
 ### Golden EPUB fixtures
 Snapshot tests over known DOCX patterns (simple, footnotes, tables, poetry, images, RTL).

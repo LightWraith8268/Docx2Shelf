@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.1.1]
+### Added
+- Comprehensive test suite with golden EPUB fixtures for regression detection
+- Property-based testing using Hypothesis for edge case verification
+- Reader smoke tests with headless browser rendering validation
+- Multi-layered testing framework: unit, integration, property-based, golden fixtures, and smoke tests
+- Advanced CI/CD testing pipeline with coverage reporting and multi-platform validation
+- Test runner script with multiple execution modes (quick, full, smoke, property, golden, ci)
+- Comprehensive testing documentation with guidelines and examples
+
+### Testing Infrastructure
+- Golden EPUB fixtures covering simple documents, footnotes, tables, poetry, images, and RTL text
+- Property-based tests for content preservation, filename generation, and split logic correctness
+- Headless browser smoke tests for typography, accessibility, and rendering verification
+- pytest configuration with test markers and coverage requirements (70% minimum)
+- Hypothesis integration with configurable test profiles for development and CI
+- Selenium-based reader testing with Chrome/Firefox support
+
+### CI/CD Enhancements
+- Enhanced GitHub Actions workflow with comprehensive test matrix
+- Multi-platform testing across Ubuntu, macOS, Windows with Python 3.11 and 3.12
+- Separate test jobs for external tools integration and plugin system validation
+- Coverage reporting with Codecov integration
+- Code quality checks with ruff linting and mypy type checking
+
+### Developer Experience
+- Test runner script supporting different execution modes and coverage reporting
+- Detailed testing documentation with guidelines, examples, and troubleshooting
+- Test categorization with markers for efficient test execution
+- Development and CI test profiles for optimal performance
+
 ## [1.1.0]
 ### Added
 - Comprehensive plugin system with development documentation and example templates
