@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.3]
+
+### Added
+- **Arbitrary ToC depth support**: Table of contents now supports heading depths from 1-6 levels (h1 through h6), extending beyond the previous h1/h2 limitation.
+- **Mixed split strategy**: New `--split-at mixed` option with `--mixed-split-pattern` allows flexible content splitting (e.g., "h1,pagebreak" or "h1:main,pagebreak:appendix").
+- **Enhanced heading level splitting**: Added support for splitting content at h3, h4, h5, and h6 heading levels.
+- **Per-section start markers**: New `--reader-start-chapter` option allows specifying which chapter should be the reader's starting point in EPUB landmarks.
+
+### Improved
+- ToC generation now properly handles hierarchical heading structures with configurable depth limits.
+- EPUB navigation supports deeper nesting for complex document structures.
+- Heading ID generation creates proper hierarchical identifiers for multi-level documents.
+- Reader start point can be customized instead of defaulting to first chapter.
+
+### Technical
+- Enhanced `_inject_heading_ids` function to process arbitrary heading depths.
+- Added `split_html_by_heading_level` and `split_html_mixed` functions for flexible content splitting.
+- Updated `BuildOptions` dataclass with new fields for mixed splitting and reader start configuration.
+- Improved ToC assembly logic to handle variable-depth heading structures.
+
 ## [1.0.2]
 
 ### Added

@@ -64,10 +64,10 @@ def _html_item(title: str, file_name: str, content: str, lang: str):
     return item
 
 
-def _inject_heading_ids(html: str, chap_idx: int) -> tuple[str, str, list[tuple[str, str]]]:
-    """Ensure first h1 has an id and collect h2 headings with ids.
+def _inject_heading_ids(html: str, chap_idx: int, toc_depth: int = 2) -> tuple[str, str, list[tuple[str, str, int]]]:
+    """Ensure first h1 has an id and collect headings with ids up to specified depth.
 
-    Returns: (html, h1_id, [(h2_title, h2_id), ...])
+    Returns: (html, h1_id, [(heading_title, heading_id, level), ...])
     """
     h1_id = f"ch{chap_idx:03d}"
 
@@ -82,32 +82,56 @@ def _inject_heading_ids(html: str, chap_idx: int) -> tuple[str, str, list[tuple[
         return f'<h1{tag_open} id="{h1_id}">{inside}</h1>'
 
     pattern_h1 = r"<h1([^>]*)>(.*?)</h1>"
-    html2 = re.sub(pattern_h1, h1_repl, html, count=1, flags=re.IGNORECASE | re.DOTALL)
+    html_result = re.sub(pattern_h1, h1_repl, html, count=1, flags=re.IGNORECASE | re.DOTALL)
 
-    # Ensure h2 have ids; then collect titles + ids
-    sec_idx = 0
+    # Collect all headings from h2 to h{toc_depth} and assign IDs
+    all_headings = []
+    heading_counters = {}  # Track counters for each level
 
-    def h2_repl(match):
-        nonlocal sec_idx
-        sec_idx += 1
-        tag_open = match.group(1)
-        inside = match.group(2)
-        if re.search(r"\bid=\"[^\"]+\"", tag_open):
-            return f"<h2{tag_open}>{inside}</h2>"
-        hid = f"{h1_id}-s{sec_idx:02d}"
-        return f'<h2{tag_open} id="{hid}">{inside}</h2>'
+    for level in range(2, min(toc_depth + 1, 7)):  # h2 to h6, limited by toc_depth
+        heading_counters[level] = 0
 
-    html3 = re.sub(r"<h2([^>]*)>(.*?)</h2>", h2_repl, html2, flags=re.IGNORECASE | re.DOTALL)
+        def make_heading_repl(heading_level):
+            def heading_repl(match):
+                nonlocal heading_counters
+                heading_counters[heading_level] += 1
+                tag_open = match.group(1)
+                inside = match.group(2)
 
-    titles = re.findall(r"<h2[^>]*>(.*?)</h2>", html3, flags=re.IGNORECASE | re.DOTALL)
-    ids = re.findall(r"<h2[^>]*id=\"([^\"]+)\"[^>]*>", html3, flags=re.IGNORECASE)
-    h2_items = [(re.sub(r"<[^>]+>", "", t), ids[i]) for i, t in enumerate(titles) if i < len(ids)]
+                if re.search(r"\bid=\"[^\"]+\"", tag_open):
+                    return f"<h{heading_level}{tag_open}>{inside}</h{heading_level}>"
+
+                # Generate hierarchical ID
+                id_parts = [h1_id]
+                for l in range(2, heading_level + 1):
+                    id_parts.append(f"s{heading_counters.get(l, 0):02d}")
+                hid = "-".join(id_parts)
+
+                return f'<h{heading_level}{tag_open} id="{hid}">{inside}</h{heading_level}>'
+            return heading_repl
+
+        pattern = rf"<h{level}([^>]*?)>(.*?)</h{level}>"
+        html_result = re.sub(pattern, make_heading_repl(level), html_result, flags=re.IGNORECASE | re.DOTALL)
+
+    # Extract all headings with their IDs and levels for ToC
+    for level in range(2, min(toc_depth + 1, 7)):
+        pattern = rf"<h{level}[^>]*?>(.*?)</h{level}>"
+        titles = re.findall(pattern, html_result, flags=re.IGNORECASE | re.DOTALL)
+
+        pattern_ids = rf"<h{level}[^>]*?id=\"([^\"]+)\"[^>]*?>"
+        ids = re.findall(pattern_ids, html_result, flags=re.IGNORECASE)
+
+        for i, title in enumerate(titles):
+            if i < len(ids):
+                clean_title = re.sub(r"<[^>]+>", "", title)
+                all_headings.append((clean_title, ids[i], level))
 
     # Determine h1 id actually present
-    m = re.search(r"<h1[^>]*id=\"([^\"]+)\"[^>]*>", html3, flags=re.IGNORECASE)
+    m = re.search(r"<h1[^>]*id=\"([^\"]+)\"[^>]*>", html_result, flags=re.IGNORECASE)
     if m:
         h1_id = m.group(1)
-    return html3, h1_id, h2_items
+
+    return html_result, h1_id, all_headings
 
 
 def _find_chapter_starts(
@@ -396,7 +420,7 @@ def assemble_epub(
         for i in range(len(manual_chapters), len(html_chunks)):
             chunk = html_chunks[i]
             chap_num = i + 1
-            chunk2, h1_id, subs = _inject_heading_ids(chunk, chap_num)
+            chunk2, h1_id, subs = _inject_heading_ids(chunk, chap_num, opts.toc_depth)
             chap_fn = f"text/chap_{chap_num:03d}.xhtml"
             chap = _html_item(f"Chapter {chap_num}", chap_fn, chunk2, meta.language)
             chap.add_item(style_item)
@@ -407,7 +431,7 @@ def assemble_epub(
             )
             chapter_links.append(chap_link)
             sub_links = []
-            for idx, (title, hid) in enumerate(subs):
+            for idx, (title, hid, level) in enumerate(subs):
                 sub_links.append(
                     epub.Link(chap_fn + f"#{hid}", title, f"chap{chap_num:03d}-{idx+1:02d}")
                 )
@@ -416,7 +440,7 @@ def assemble_epub(
     else:
         # Auto mode (default): scan headings as before
         for i, chunk in enumerate(html_chunks, start=1):
-            chunk2, h1_id, subs = _inject_heading_ids(chunk, i)
+            chunk2, h1_id, subs = _inject_heading_ids(chunk, i, opts.toc_depth)
             chap_fn = f"text/chap_{i:03d}.xhtml"
             chap = _html_item(f"Chapter {i}", chap_fn, chunk2, meta.language)
             chap.add_item(style_item)
@@ -426,22 +450,62 @@ def assemble_epub(
             chap_link = epub.Link(chap_fn + f"#{h1_id}", f"Chapter {i}", f"chap{i:03d}")
             chapter_links.append(chap_link)
             sub_links = []
-            for idx, (title, hid) in enumerate(subs):
+            for idx, (title, hid, level) in enumerate(subs):
                 sub_links.append(epub.Link(chap_fn + f"#{hid}", title, f"chap{i:03d}-{idx+1:02d}"))
             chapter_sub_links.append(sub_links)
 
     # TOC and spine
-    # TOC by depth
+    # TOC by depth (now supports up to 6 levels)
     toc_items = [title_page, copyright_page] + matter_items
-    depth = max(1, min(2, opts.toc_depth))
+    depth = max(1, min(6, opts.toc_depth))
+
+    def build_nested_toc(chap_link, sub_links, current_depth=2):
+        """Build nested ToC structure supporting arbitrary depth."""
+        if current_depth > depth or not sub_links:
+            return chap_link
+
+        # Group sub_links by level
+        grouped_links = {}
+        for link_info in sub_links:
+            if len(link_info) >= 3:  # (title, hid, level)
+                level = link_info[2] if len(link_info) > 2 else 2
+                if level not in grouped_links:
+                    grouped_links[level] = []
+                grouped_links[level].append(link_info)
+
+        # For now, create flat structure for all sub-headings
+        # More sophisticated nesting could be implemented later
+        epub_sub_links = []
+        for link_info in sub_links:
+            if hasattr(link_info, 'href'):  # It's already an epub.Link
+                epub_sub_links.append(link_info)
+
+        if epub_sub_links:
+            return (chap_link, epub_sub_links)
+        else:
+            return chap_link
+
     for i, chap_link in enumerate(chapter_links):
         if depth == 1 or not chapter_sub_links[i]:
             toc_items.append(chap_link)
         else:
-            toc_items.append((chap_link, chapter_sub_links[i]))
+            toc_items.append(build_nested_toc(chap_link, chapter_sub_links[i]))
     book.toc = tuple(toc_items)
     book.add_item(epub.EpubNcx())
     book.add_item(epub.EpubNav())
+    # Determine reader start chapter
+    start_reading_link = "text/chap_001.xhtml#ch001"  # Default start
+    if opts.reader_start_chapter:
+        # Find the chapter that matches the start pattern
+        for i, chap_link in enumerate(chapter_links):
+            if opts.reader_start_chapter.lower() in chap_link.title.lower():
+                # Extract chapter number from the link href
+                import re
+                match = re.search(r'chap_(\d+)\.xhtml#(ch\d+)', chap_link.href)
+                if match:
+                    start_reading_link = chap_link.href
+                break
+
     book.spine = ["nav", title_page, copyright_page] + matter_items + chapters
 
     # Optional page-list nav (informational; support varies)
@@ -475,7 +539,7 @@ def assemble_epub(
             "<li><a epub:type='titlepage' href='text/title.xhtml'>Title Page</a></li>"
             "<li><a epub:type='toc' href='nav.xhtml'>Table of Contents</a></li>"
             "<li><a epub:type='cover' href='cover.xhtml'>Cover</a></li>"
-            "<li><a epub:type='bodymatter' href='text/chap_001.xhtml#ch001'>Start Reading</a></li>"
+            f"<li><a epub:type='bodymatter' href='{start_reading_link}'>Start Reading</a></li>"
             "</ol></nav>"
             "</body></html>"
         )

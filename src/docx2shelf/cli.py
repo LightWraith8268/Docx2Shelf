@@ -61,9 +61,14 @@ def _arg_parser() -> argparse.ArgumentParser:
 
     b.add_argument(
         "--split-at",
-        choices=["h1", "h2", "pagebreak"],
+        choices=["h1", "h2", "h3", "pagebreak", "mixed"],
         default="h1",
         help="How to split content into XHTML files",
+    )
+    b.add_argument(
+        "--mixed-split-pattern",
+        type=str,
+        help="Mixed split pattern: 'h1,pagebreak' or 'h1:main,pagebreak:appendix' etc.",
     )
     b.add_argument(
         "--theme",
@@ -74,7 +79,7 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--embed-fonts", type=str, help="Directory of TTF/OTF to embed")
     b.add_argument("--hyphenate", choices=["on", "off"], default="on")
     b.add_argument("--justify", choices=["on", "off"], default="on")
-    b.add_argument("--toc-depth", type=int, default=2)
+    b.add_argument("--toc-depth", type=int, default=2, help="Table of contents depth (1-6)")
     b.add_argument(
         "--chapter-start-mode",
         choices=["auto", "manual", "mixed"],
@@ -85,6 +90,11 @@ def _arg_parser() -> argparse.ArgumentParser:
         "--chapter-starts",
         type=str,
         help="Comma-separated list of chapter start text patterns for manual TOC mode",
+    )
+    b.add_argument(
+        "--reader-start-chapter",
+        type=str,
+        help="Chapter title or pattern where reader should start (e.g., 'Chapter 1', 'Prologue')",
     )
     b.add_argument("--page-list", choices=["on", "off"], default="off")
     b.add_argument("--css", type=str, help="Path to extra CSS to merge (optional)")
@@ -606,7 +616,7 @@ def _print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path
 
 def run_build(args: argparse.Namespace) -> int:
     from .assemble import assemble_epub, plan_build
-    from .convert import convert_file_to_html, split_html_by_heading, split_html_by_pagebreak
+    from .convert import convert_file_to_html, split_html_by_heading, split_html_by_pagebreak, split_html_by_heading_level, split_html_mixed
 
     # Validate paths
     input_path = Path(args.input).expanduser().resolve()
@@ -738,15 +748,20 @@ def run_build(args: argparse.Namespace) -> int:
     if getattr(args, "chapter_starts", None):
         chapter_starts = [s.strip() for s in args.chapter_starts.split(",") if s.strip()]
 
+    # Validate ToC depth
+    toc_depth = max(1, min(6, int(args.toc_depth)))
+
     opts = BuildOptions(
         split_at=args.split_at,
         theme=args.theme,
         embed_fonts_dir=fonts_dir,
         hyphenate=args.hyphenate == "on",
         justify=args.justify == "on",
-        toc_depth=int(args.toc_depth),
+        toc_depth=toc_depth,
         chapter_start_mode=getattr(args, "chapter_start_mode", "auto"),
         chapter_starts=chapter_starts,
+        mixed_split_pattern=getattr(args, "mixed_split_pattern", None),
+        reader_start_chapter=getattr(args, "reader_start_chapter", None),
         page_list=args.page_list == "on",
         extra_css=css_path,
         page_numbers=args.page_numbers == "on",
@@ -828,9 +843,16 @@ def run_build(args: argparse.Namespace) -> int:
     if args.split_at in {"h1", "h2"}:
         combined = "".join(html_chunks)
         html_chunks = split_html_by_heading(combined, level=args.split_at)
+    elif args.split_at in {"h3", "h4", "h5", "h6"}:
+        combined = "".join(html_chunks)
+        html_chunks = split_html_by_heading_level(combined, level=args.split_at)
     elif args.split_at == "pagebreak":
         combined = "".join(html_chunks)
         html_chunks = split_html_by_pagebreak(combined)
+    elif args.split_at == "mixed":
+        combined = "".join(html_chunks)
+        mixed_pattern = getattr(args, 'mixed_split_pattern', None)
+        html_chunks = split_html_mixed(combined, mixed_pattern)
 
     plan = plan_build(meta, opts, html_chunks, resources)
     _print_metadata_summary(meta, opts, None if not args.output else Path(args.output))

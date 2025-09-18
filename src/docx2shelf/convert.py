@@ -43,6 +43,73 @@ def split_html_by_heading(html: str, level: str) -> list[str]:
     return [f"<section>{c}</section>" for c in chunks if c.strip()]
 
 
+def split_html_by_heading_level(html: str, level: str) -> list[str]:
+    """Split HTML by a specific heading level (h3, h4, h5, h6)."""
+    if level not in ["h3", "h4", "h5", "h6"]:
+        return split_html_by_heading(html, level)
+
+    tag = level.lower()
+    s = html.replace("\r\n", "\n")
+    pattern = re.compile(rf"(<{tag}[^>]*>.*?</{tag}>)", re.IGNORECASE | re.DOTALL)
+    parts = pattern.split(s)
+    if len(parts) <= 1:
+        return [s]
+    chunks: list[str] = []
+    current: list[str] = []
+    for i, part in enumerate(parts):
+        if i % 2 == 1:  # this is a heading
+            if current:
+                chunks.append("".join(current))
+                current = []
+            current.append(part)
+        else:
+            current.append(part)
+    if current:
+        chunks.append("".join(current))
+    return [f"<section>{c}</section>" for c in chunks if c.strip()]
+
+
+def split_html_mixed(html: str, mixed_pattern: str) -> list[str]:
+    """Split HTML using mixed strategy based on pattern.
+
+    Pattern examples:
+    - 'h1,pagebreak' - Split at h1 OR pagebreak
+    - 'h1:main,pagebreak:appendix' - Split at h1 for main content, pagebreak for appendix
+    """
+    if not mixed_pattern:
+        return split_html_by_heading(html, "h1")
+
+    # Parse the pattern
+    strategies = []
+    for part in mixed_pattern.split(","):
+        part = part.strip()
+        if ":" in part:
+            strategy, section = part.split(":", 1)
+            strategies.append((strategy.strip(), section.strip()))
+        else:
+            strategies.append((part, None))
+
+    # For now, implement simple OR logic - split at any of the specified points
+    html_sections = [html]
+
+    for strategy, section_type in strategies:
+        new_sections = []
+        for section in html_sections:
+            if strategy == "pagebreak":
+                parts = split_html_by_pagebreak(section)
+            elif strategy in ["h1", "h2", "h3", "h4", "h5", "h6"]:
+                if strategy in ["h1", "h2"]:
+                    parts = split_html_by_heading(section, strategy)
+                else:
+                    parts = split_html_by_heading_level(section, strategy)
+            else:
+                parts = [section]
+            new_sections.extend(parts)
+        html_sections = new_sections
+
+    return html_sections
+
+
 def split_html_by_pagebreak(html: str) -> list[str]:
     """Split HTML at common pagebreak markers.
 

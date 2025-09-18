@@ -28,7 +28,7 @@ class EpubMetadata:
 
 @dataclass
 class BuildOptions:
-    split_at: str  # h1|h2|pagebreak
+    split_at: str  # h1|h2|h3|pagebreak|mixed
     theme: str  # serif|sans|printlike
     embed_fonts_dir: Optional[Path]
     hyphenate: bool
@@ -36,6 +36,8 @@ class BuildOptions:
     toc_depth: int
     chapter_start_mode: str = "auto"  # auto|manual|mixed
     chapter_starts: Optional[List[str]] = None
+    mixed_split_pattern: Optional[str] = None
+    reader_start_chapter: Optional[str] = None
     page_list: bool = False
     extra_css: Optional[Path] = None
     page_numbers: bool = False

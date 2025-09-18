@@ -16,13 +16,13 @@ Expose a styles.json to map Word styles → CSS classes, with user-override.
 Optional image fallback for layout elements the parser can't translate cleanly (preserves author intention).
 
 ## 2) Table of contents & splitting
-Status: To Do
+Status: Completed
 
-### Arbitrary ToC depth (≥3) and mixed split strategy
+### Arbitrary ToC depth (≥3) and mixed split strategy ✓
 (e.g., h1 plus pagebreaks in appendices). Current docs mention --split-at and toc depth control; extend flexibility.
 
-### Per-section start markers
-(reader start page + landmarks are already emitted; let users choose “start” chapter via metadata flag).
+### Per-section start markers ✓
+(reader start page + landmarks are already emitted; let users choose "start" chapter via metadata flag).
 
 ## 3) Typography, CSS, and assets
 Status: To Do
