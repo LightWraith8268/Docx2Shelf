@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from .metadata import BuildOptions, EpubMetadata, build_output_filename, parse_date
+from .preview import run_live_preview, create_epub_preview
 from .tools import (
     epubcheck_cmd,
     install_epubcheck,
@@ -133,6 +134,20 @@ def _arg_parser() -> argparse.ArgumentParser:
     )
     b.add_argument("--inspect", action="store_true", help="Emit inspect folder with sources")
     b.add_argument("--dry-run", action="store_true", help="Print planned manifest/spine only")
+    b.add_argument("--preview", action="store_true", help="Generate live preview in browser instead of EPUB file")
+    b.add_argument("--preview-port", type=int, default=8000, help="Port for preview server (default: 8000)")
+
+    # Import profiles for dynamic choices
+    try:
+        from .profiles import get_available_profiles
+        available_profiles = get_available_profiles()
+        profile_help = "Publishing profile to pre-fill settings (use --list-profiles to see all options)"
+    except ImportError:
+        available_profiles = ["kdp", "kobo", "apple", "generic", "legacy"]
+        profile_help = "Publishing profile to pre-fill settings"
+
+    b.add_argument("--profile", choices=available_profiles, help=profile_help)
+    b.add_argument("--json-output", help="Output build results in JSON format to specified file")
     b.add_argument(
         "--epubcheck",
         choices=["on", "off"],
@@ -178,6 +193,29 @@ def _arg_parser() -> argparse.ArgumentParser:
         "--genre",
         help="Filter themes by genre (fantasy, romance, mystery, scifi, academic, general)",
     )
+
+    # --- List profiles subcommand ---
+    list_profiles = sub.add_parser("list-profiles", help="List available publishing profiles")
+    list_profiles.add_argument(
+        "--profile",
+        help="Show detailed information for a specific profile",
+    )
+
+    # --- Batch mode subcommand ---
+    batch = sub.add_parser("batch", help="Process multiple DOCX files in batch mode")
+    batch.add_argument("--dir", dest="batch_dir", required=True, help="Directory containing DOCX files")
+    batch.add_argument("--pattern", dest="batch_pattern", default="*.docx", help="File pattern to match (default: *.docx)")
+    batch.add_argument("--output-dir", dest="batch_output_dir", help="Output directory for generated EPUBs")
+    batch.add_argument("--parallel", action="store_true", help="Process files in parallel")
+    batch.add_argument("--max-workers", type=int, help="Maximum number of parallel workers")
+    batch.add_argument("--report", help="Generate batch processing report to file")
+
+    # Add common build options to batch command
+    batch.add_argument("--profile", choices=available_profiles, help=profile_help)
+    batch.add_argument("--theme", choices=available_themes, default="serif", help="Base CSS theme")
+    batch.add_argument("--epub-version", type=str, default="3")
+    batch.add_argument("--image-format", choices=["original", "webp", "avif"], default="webp")
+    batch.add_argument("--epubcheck", choices=["on", "off"], default="on")
 
     m = sub.add_parser("tools", help="Manage optional tools (Pandoc, EPUBCheck)")
     m_sub = m.add_subparsers(dest="tool_cmd", required=True)
@@ -634,9 +672,87 @@ def _print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path
     print(f" Output: {output or '—'}\n")
 
 
+def run_list_profiles(args: argparse.Namespace) -> int:
+    """List available publishing profiles."""
+    try:
+        from .profiles import list_all_profiles, get_profile_summary
+
+        if args.profile:
+            # Show detailed info for specific profile
+            summary = get_profile_summary(args.profile)
+            print(summary)
+        else:
+            # Show all profiles
+            print(list_all_profiles())
+
+        return 0
+    except ImportError:
+        print("Profile system not available.")
+        return 1
+
+
+def run_batch_mode(args: argparse.Namespace) -> int:
+    """Run batch processing mode."""
+    try:
+        from .batch import run_batch_mode, validate_batch_args, create_batch_report
+
+        # Validate batch arguments
+        errors = validate_batch_args(args)
+        if errors:
+            for error in errors:
+                print(f"Error: {error}", file=sys.stderr)
+            return 1
+
+        # Run batch processing
+        summary = run_batch_mode(
+            directory=Path(args.batch_dir),
+            pattern=args.batch_pattern,
+            output_dir=Path(args.batch_output_dir) if args.batch_output_dir else None,
+            parallel=args.parallel,
+            max_workers=args.max_workers,
+            base_args=args,
+            quiet=getattr(args, 'quiet', False)
+        )
+
+        # Generate report if requested
+        if args.report:
+            report_path = Path(args.report)
+            create_batch_report(summary, report_path)
+            print(f"📄 Batch report written to: {report_path}")
+
+        # Return non-zero if any files failed
+        return 0 if summary['failed'] == 0 else 1
+
+    except ImportError:
+        print("Batch processing not available.")
+        return 1
+    except Exception as e:
+        print(f"Batch processing error: {e}", file=sys.stderr)
+        return 1
+
+
 def run_build(args: argparse.Namespace) -> int:
     from .assemble import assemble_epub, plan_build
     from .convert import convert_file_to_html, split_html_by_heading, split_html_by_pagebreak, split_html_by_heading_level, split_html_mixed
+
+    # Initialize JSON logger if requested
+    json_logger = None
+    if getattr(args, 'json_output', None):
+        from .json_logger import init_json_logger
+        json_logger = init_json_logger(Path(args.json_output))
+
+    # Apply profile settings if specified
+    if getattr(args, 'profile', None):
+        try:
+            from .profiles import apply_profile_to_args
+            apply_profile_to_args(args, args.profile)
+            if not getattr(args, 'quiet', False):
+                print(f"📋 Applied profile: {args.profile}")
+        except ImportError:
+            print("Warning: Profile system not available", file=sys.stderr)
+        except Exception as e:
+            print(f"Error applying profile: {e}", file=sys.stderr)
+            return 1
 
     # Validate paths
     input_path = Path(args.input).expanduser().resolve()
@@ -797,6 +913,8 @@ def run_build(args: argparse.Namespace) -> int:
         ack_txt=ack_path,
         inspect=args.inspect,
         dry_run=args.dry_run,
+        preview=args.preview,
+        preview_port=args.preview_port,
         epubcheck=(
             (args.epubcheck == "on")
             if isinstance(args.epubcheck, str)
@@ -888,6 +1006,10 @@ def run_build(args: argparse.Namespace) -> int:
         for line in plan:
             print(line)
         return 0
+
+    # Handle preview mode
+    if args.preview:
+        return _run_preview_mode(meta, opts, html_chunks, resources, args)
 
     # Confirm to proceed if interactive
     interactive = (not getattr(args, "no_prompt", False)) and sys.stdin.isatty()
@@ -1117,6 +1239,98 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_init_metadata(args)
     if args.command == "list-themes":
         return run_list_themes(args)
+    if args.command == "list-profiles":
+        return run_list_profiles(args)
+    if args.command == "batch":
+        return run_batch_mode(args)
+
+
+def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[str], resources: list[Path], args) -> int:
+    """Run live preview mode instead of generating EPUB."""
+    import tempfile
+    import signal
+    import sys
+    import time
+    from .assemble import assemble_epub
+
+    try:
+        # Create temporary directory for preview content
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+
+            # Generate EPUB content in temporary location (but don't zip it)
+            epub_temp = temp_path / "temp.epub"
+
+            # Generate the EPUB content structure
+            if not opts.quiet:
+                print("📚 Generating preview content...")
+
+            assemble_epub(
+                meta=meta,
+                opts=opts,
+                html_chunks=html_chunks,
+                resources=resources,
+                output_path=epub_temp,
+                styles_css=""  # Will be populated by conversion process
+            )
+
+            # Check if inspect folder was created (contains the EPUB content structure)
+            inspect_dir = epub_temp.parent / f"{epub_temp.stem}.src"
+            if not inspect_dir.exists():
+                # Force inspect mode for preview
+                opts.inspect = True
+                assemble_epub(
+                    meta=meta,
+                    opts=opts,
+                    html_chunks=html_chunks,
+                    resources=resources,
+                    output_path=epub_temp,
+                    styles_css=""
+                )
+
+            if not inspect_dir.exists():
+                print("Error: Could not generate preview content", file=sys.stderr)
+                return 1
+
+            # Create output directory for preview
+            output_dir = Path.cwd() / "preview_output"
+            output_dir.mkdir(exist_ok=True)
+
+            # Run live preview
+            port = run_live_preview(
+                epub_content_dir=inspect_dir,
+                output_dir=output_dir,
+                title=meta.title or "EPUB Preview",
+                port=opts.preview_port,
+                auto_open=True,
+                quiet=opts.quiet
+            )
+
+            if port is None:
+                return 1
+
+            # Set up signal handlers for graceful shutdown
+            def signal_handler(sig, frame):
+                if not opts.quiet:
+                    print("\n\n🛑 Stopping preview server...")
+                sys.exit(0)
+
+            signal.signal(signal.SIGINT, signal_handler)
+            signal.signal(signal.SIGTERM, signal_handler)
+
+            # Keep the server running
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                if not opts.quiet:
+                    print("\n\n🛑 Preview server stopped")
+                return 0
+
+    except Exception as e:
+        if not opts.quiet:
+            print(f"Error running preview: {e}", file=sys.stderr)
+        return 1
     if args.command == "tools":
         return run_tools(args)
     if args.command == "update":

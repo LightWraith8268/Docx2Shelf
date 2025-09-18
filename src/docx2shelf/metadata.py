@@ -53,6 +53,8 @@ class BuildOptions:
     ack_txt: Optional[Path] = None
     inspect: bool = False
     dry_run: bool = False
+    preview: bool = False
+    preview_port: int = 8000
     epubcheck: bool = True
     font_size: Optional[str] = None
     line_height: Optional[str] = None

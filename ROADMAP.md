@@ -52,18 +52,18 @@ RTL (Arabic/Hebrew), CJK vertical options, hyphenation dictionaries; you already
 For old readers (dual-nav/NCX already present; add stricter CSS constraints).
 
 ## 5) UX & workflow
-Status: To Do
+Status: Completed
 
-### Live preview
+### Live preview ✓
 --preview builds .src/ (you already support --inspect) and opens a local viewer to catch layout issues pre-zip.
 
-### Profiles & presets
+### Profiles & presets ✓
 --profile kdp|kobo|apple|generic to pre-fill metadata and CSS knobs. Your metadata/template flow is strong—extend it to full presets.
 
-### Batch mode
+### Batch mode ✓
 docx2shelf build --dir manuscripts/ --pattern *.docx --parallel with shared defaults.
 
-### Machine-readable logs
+### Machine-readable logs ✓
 --json output for CI pipelines.
 
 ## 6) Metadata & publishing

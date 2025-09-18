@@ -1,68 +1,56 @@
 # Changelog
 
+## [1.0.6]
+### Changed
+- Live preview mode with --preview flag that generates interactive browser-based preview instead of EPUB file
+- Publishing profiles system with --profile flag supporting kdp, kobo, apple, generic, and legacy presets
+- Batch processing mode with --batch command for processing multiple DOCX files with --parallel support
+- Machine-readable JSON logging with --json-output flag for CI/CD pipeline integration
+- Interactive preview server with automatic browser opening and content navigation
+- Profile validation with platform-specific requirements and recommendations
+- Parallel processing support with configurable worker limits for batch operations
+- Comprehensive JSON output including build metadata, warnings, errors, and validation results
+- Custom profile discovery and creation support for organization-specific presets
+- Batch processing reports with detailed success/failure tracking
+
 ## [1.0.5]
-
-### Added
-- **EPUB Accessibility 1.1 compliance**: Auto-detection of missing alt text with interactive prompts, ARIA landmarks, and Schema.org accessibility metadata.
-- **Enhanced EPUBCheck integration**: Default-enabled validation with friendly error reporting and actionable suggestions.
-- **Comprehensive language/script support**: RTL languages (Arabic, Hebrew, Persian), CJK vertical writing modes, and language-aware typography defaults.
-- **EPUB 2 compatibility mode**: Stricter CSS constraints for legacy reader support via `--epub2-compat` flag.
-
-### Improved
-- Interactive alt text prompts for better accessibility compliance
+### Changed
+- Auto-detection of missing alt text with interactive prompts for accessibility compliance
+- Default-enabled EPUBCheck validation with friendly error reporting and actionable suggestions
+- RTL language support for Arabic, Hebrew, Persian with automatic direction detection
+- CJK vertical writing modes for Chinese, Japanese, Korean with --vertical-writing flag
+- Language-aware hyphenation and justification defaults based on script requirements
+- Font stack optimization for different writing systems
+- EPUB 2 compatibility mode via --epub2-compat flag with stricter CSS constraints
+- Schema.org accessibility metadata automatically generated and embedded
+- ARIA landmarks added for structural navigation and screen reader support
+- Reading order validation with automatic issue detection
 - Enhanced EPUBCheck output with timeout handling and issue prioritization
-- Language-aware hyphenation and justification defaults
-- Automatic language attribute injection in HTML content
-- Font stack optimization for different script systems
-
-### Technical
-- Created `accessibility.py`: EPUB accessibility validation and metadata generation
-- Created `language.py`: Comprehensive language/script configuration system
-- Enhanced EPUBCheck integration with better error parsing and user guidance
-- Added CLI options: `--vertical-writing`, `--epub2-compat`
 - Language-specific CSS generation with RTL and CJK support
-- Accessibility metadata integration in EPUB package
+- Automatic language attributes injected into HTML content
 
 ## [1.0.4]
-
-### Added
-- **Genre-specific theme system**: Added 6 new CSS themes (fantasy, romance, mystery, scifi, academic, night) with metadata-driven discovery.
-- **Font subsetting**: Intelligent font optimization using fontTools to reduce EPUB file sizes by including only used characters.
-- **Advanced image pipeline**: Auto-resize, compression, and WebP/AVIF conversion with configurable quality and dimensions.
-- **Theme discovery API**: Comprehensive theme management with custom theme support and genre filtering.
-- **Image processing options**: New CLI flags for image quality, dimensions, and format conversion control.
-
-### Improved
-- Font embedding now includes automatic subsetting to reduce file sizes and licensing warnings.
-- Image processing with modern format conversion (WebP/AVIF) for better compression.
-- Theme selection enhanced with `--list-themes` command and genre-based filtering.
-- Graceful fallbacks when optional dependencies (fontTools, Pillow) are unavailable.
-
-### Technical
-- Created `fonts.py` module with character analysis and font subsetting capabilities.
-- Created `images.py` module with comprehensive image optimization pipeline.
-- Enhanced `themes.py` with metadata system and theme discovery functions.
-- Added CLI options: `--image-quality`, `--image-max-width`, `--image-max-height`, `--image-format`.
-- Updated `BuildOptions` dataclass with image processing configuration fields.
+### Changed
+- Added 6 genre-specific CSS themes: fantasy, romance, mystery, scifi, academic, night
+- Intelligent font optimization using fontTools to reduce EPUB file sizes by including only used characters
+- Auto-resize, compression, and WebP/AVIF conversion with configurable quality and dimensions
+- Theme discovery API with custom theme support and genre filtering
+- Font embedding now includes automatic subsetting to reduce file sizes and licensing warnings
+- Image processing with modern format conversion for better compression
+- Theme selection enhanced with --list-themes command and genre-based filtering
+- Graceful fallbacks when optional dependencies (fontTools, Pillow) are unavailable
+- CLI options added: --image-quality, --image-max-width, --image-max-height, --image-format
 
 ## [1.0.3]
-
-### Added
-- **Arbitrary ToC depth support**: Table of contents now supports heading depths from 1-6 levels (h1 through h6), extending beyond the previous h1/h2 limitation.
-- **Mixed split strategy**: New `--split-at mixed` option with `--mixed-split-pattern` allows flexible content splitting (e.g., "h1,pagebreak" or "h1:main,pagebreak:appendix").
-- **Enhanced heading level splitting**: Added support for splitting content at h3, h4, h5, and h6 heading levels.
-- **Per-section start markers**: New `--reader-start-chapter` option allows specifying which chapter should be the reader's starting point in EPUB landmarks.
-
-### Improved
-- ToC generation now properly handles hierarchical heading structures with configurable depth limits.
-- EPUB navigation supports deeper nesting for complex document structures.
-- Heading ID generation creates proper hierarchical identifiers for multi-level documents.
-- Reader start point can be customized instead of defaulting to first chapter.
-
-### Technical
-- Enhanced `_inject_heading_ids` function to process arbitrary heading depths.
-- Added `split_html_by_heading_level` and `split_html_mixed` functions for flexible content splitting.
-- Updated `BuildOptions` dataclass with new fields for mixed splitting and reader start configuration.
+### Changed
+- Table of contents now supports heading depths from 1-6 levels (h1 through h6)
+- Mixed split strategy with --split-at mixed option and --mixed-split-pattern for flexible content splitting
+- Enhanced heading level splitting with support for h3, h4, h5, and h6 splitting
+- Per-section start markers with --reader-start-chapter option for custom reader start points
+- ToC generation properly handles hierarchical heading structures with configurable depth limits
+- EPUB navigation supports deeper nesting for complex document structures
+- Heading ID generation creates proper hierarchical identifiers for multi-level documents
+- Reader start point can be customized instead of defaulting to first chapter
 - Improved ToC assembly logic to handle variable-depth heading structures.
 
 ## [1.0.2]
