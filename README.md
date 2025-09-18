@@ -54,7 +54,13 @@ docker run -v $(pwd):/workspace ghcr.io/lightwraith8268/docx2shelf build --input
 
 #### Quick Install Scripts
 
-**Windows**: Download and run `install.bat` from the [releases page](https://github.com/LightWraith8268/Docx2Shelf/releases)
+**Windows**: Download and run `install.bat` from the [releases page](https://github.com/LightWraith8268/Docx2Shelf/releases), or:
+```cmd
+curl -L -o install.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat && install.bat
+```
+```powershell
+Invoke-WebRequest -Uri "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat" -OutFile "install.bat"; .\install.bat
+```
 
 **macOS/Linux**: Download and run `install.sh` from the [releases page](https://github.com/LightWraith8268/Docx2Shelf/releases), or:
 ```bash
@@ -71,9 +77,13 @@ docx2shelf update
 
 ## Quickstart
 
-To convert a manuscript, navigate to its directory and run `docx2shelf build`. The tool will guide you through the process interactively.
+To convert a manuscript, navigate to its directory and run `docx2shelf`. The tool will guide you through the process interactively.
 
 ```bash
+# Interactive mode (simplest - just follow the prompts)
+docx2shelf
+
+# Or specify options directly
 docx2shelf build \
   --input manuscript.docx \
   --cover cover.jpg \
