@@ -76,16 +76,16 @@ Extended metadata.txt template with roles (editor, illustrator, translator, narr
 Comprehensive publishing store compatibility system with `docx2shelf checklist` command. Store-specific validation for cover dimensions, file formats, metadata requirements, and platform-specific pitfalls. Supports JSON output for CI integration.
 
 ## 7) Automation & ecosystem
-Status: To Do
+Status: ✓ Complete
 
-### First-party GitHub Action
-Matrix (Windows/macOS/Linux), with/without Pandoc, Python 3.11+. Artifacts: .epub, .src/, EPUBCheck report. (You already have a workflows folder—formalize a reusable action.)
+### First-party GitHub Action ✓
+Matrix (Windows/macOS/Linux), with/without Pandoc, Python 3.11+. Artifacts: .epub, .src/, EPUBCheck report. Reusable action.yml with comprehensive input parameters and artifact management.
 
-### Plugins
-Hooks for pre-convert (sanitize DOCX), post-convert (html transforms), and metadata resolvers.
+### Plugins ✓
+Hooks for pre-convert (sanitize DOCX), post-convert (html transforms), and metadata resolvers. Full plugin management CLI with load/enable/disable commands.
 
-### Optional connectors
-(kept offline by default): local Markdown → EPUB; later gated cloud imports (Google Docs/OneDrive) via a separate opt-in package to preserve the project’s offline stance. The README emphasizes “No network calls required”—keep that default.
+### Optional connectors ✓
+(kept offline by default): local Markdown → EPUB; gated cloud imports (Google Docs/OneDrive) via explicit opt-in to preserve the project's offline stance. Network consent system maintains "No network calls required" default.
 
 ## 8) Packaging & distribution
 Status: To Do

@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.0]
+### Added
+- First-party GitHub Action for automated EPUB building in CI/CD pipelines
+- Matrix testing support across Windows/macOS/Linux with optional Pandoc and EPUBCheck
+- Plugin system with hooks for pre-convert, post-convert, and metadata resolution
+- Optional connectors framework for local Markdown and cloud document sources
+- Plugin management CLI commands: `docx2shelf plugins list/load/enable/disable`
+- Connector management CLI commands: `docx2shelf connectors list/enable/disable/auth/fetch`
+- Network consent system for cloud connectors maintaining offline-first principle
+- Pre-convert hooks for DOCX sanitization and preprocessing
+- Post-convert hooks for HTML content transformation
+- Metadata resolver hooks for dynamic metadata enrichment
+- Local Markdown connector for seamless Markdown-to-EPUB workflow
+- Google Docs and OneDrive connector framework (requires explicit opt-in)
+
+### Changed
+- Enhanced build pipeline with plugin hook integration
+- Improved conversion workflow with configurable preprocessing and postprocessing
+- Updated CLI interface with new plugin and connector management commands
+
 ## [1.0.7]
 ### Changed
 - Extended metadata system with comprehensive role-based contributors (editor, illustrator, translator, narrator, designer, contributor)

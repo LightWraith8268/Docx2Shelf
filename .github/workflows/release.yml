@@ -48,21 +48,12 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
-    - name: Upload Release Asset
+    - name: Upload install.bat as Release Asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/*.whl # Upload the generated wheel file
-        asset_name: docx2shelf-${{ github.ref_name }}.whl # Name the asset appropriately
-        asset_content_type: application/zip # Or application/octet-stream
-    - name: Upload install.bat as Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: install.bat
         asset_name: install.bat
-        asset_content_type: application/x-msdownload # Or application/octet-stream
+        asset_content_type: application/x-msdownload

@@ -131,14 +131,28 @@ def split_html_by_pagebreak(html: str) -> list[str]:
     return [f"<section>{c}</section>" for c in chunks]
 
 
-def convert_file_to_html(input_path: Path) -> tuple[list[str], list[Path], str]:
+def convert_file_to_html(input_path: Path, context: dict = None) -> tuple[list[str], list[Path], str]:
     """Convert input file to HTML chunks and gather any extracted resources.
 
     Strategy:
     - For .md and .txt, use Pandoc.
     - For .docx, try Pandoc first, then fall back to python-docx.
     """
-    suffix = input_path.suffix.lower()
+    from .plugins import plugin_manager, load_default_plugins
+
+    # Initialize context if not provided
+    if context is None:
+        context = {}
+
+    # Load plugins
+    load_default_plugins()
+
+    # Execute pre-convert hooks for DOCX files
+    actual_input_path = input_path
+    if input_path.suffix.lower() == ".docx":
+        actual_input_path = plugin_manager.execute_pre_convert_hooks(input_path, context)
+
+    suffix = actual_input_path.suffix.lower()
 
     if suffix in (".md", ".txt", ".html", ".htm"):
         try:
@@ -150,17 +164,25 @@ def convert_file_to_html(input_path: Path) -> tuple[list[str], list[Path], str]:
                 file_format = "markdown" if suffix == ".md" else "plain"
 
             html = pypandoc.convert_file(
-                str(input_path), to="html", format=file_format, extra_args=["--wrap=none"]
+                str(actual_input_path), to="html", format=file_format, extra_args=["--wrap=none"]
             )
+            # Apply post-convert hooks
+            processed_html = plugin_manager.execute_post_convert_hooks(html, context)
             # For now, we don't split these files, return as a single chunk
-            return [f"<section>{html}</section>"], [], ""
+            return [f"<section>{processed_html}</section>"], [], ""
         except ImportError:
             raise RuntimeError(f"Pandoc is required to convert {suffix} files. Please install it.")
         except Exception as e:
             raise RuntimeError(f"An error occurred during {suffix} conversion with Pandoc: {e}")
 
     elif suffix == ".docx":
-        return docx_to_html(input_path)
+        chunks, resources, styles = docx_to_html(actual_input_path)
+        # Apply post-convert hooks to each chunk
+        processed_chunks = []
+        for chunk in chunks:
+            processed_chunk = plugin_manager.execute_post_convert_hooks(chunk, context)
+            processed_chunks.append(processed_chunk)
+        return processed_chunks, resources, styles
 
     else:
         raise ValueError(f"Unsupported file type: {suffix}")

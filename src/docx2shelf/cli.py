@@ -227,6 +227,34 @@ def _arg_parser() -> argparse.ArgumentParser:
     mu.add_argument("name", choices=["pandoc", "epubcheck", "all"], help="Tool name")
     m_sub.add_parser("where", help="Show tool locations")
 
+    # Plugin management commands
+    p = sub.add_parser("plugins", help="Manage plugins and hooks")
+    p_sub = p.add_subparsers(dest="plugin_cmd", required=True)
+    p_sub.add_parser("list", help="List available plugins")
+    pl = p_sub.add_parser("load", help="Load a plugin from file")
+    pl.add_argument("path", help="Path to plugin file")
+    pe = p_sub.add_parser("enable", help="Enable a plugin")
+    pe.add_argument("name", help="Plugin name")
+    pd = p_sub.add_parser("disable", help="Disable a plugin")
+    pd.add_argument("name", help="Plugin name")
+
+    # Connector management commands
+    c = sub.add_parser("connectors", help="Manage document connectors")
+    c_sub = c.add_subparsers(dest="connector_cmd", required=True)
+    c_sub.add_parser("list", help="List available connectors")
+    ce = c_sub.add_parser("enable", help="Enable a connector")
+    ce.add_argument("name", help="Connector name")
+    ce.add_argument("--allow-network", action="store_true", help="Allow network access for connector")
+    cd = c_sub.add_parser("disable", help="Disable a connector")
+    cd.add_argument("name", help="Connector name")
+    ca = c_sub.add_parser("auth", help="Authenticate with a connector")
+    ca.add_argument("name", help="Connector name")
+    ca.add_argument("--credentials", help="Path to credentials file")
+    cf = c_sub.add_parser("fetch", help="Fetch document from connector")
+    cf.add_argument("connector", help="Connector name")
+    cf.add_argument("document_id", help="Document ID")
+    cf.add_argument("--output", help="Output path")
+
     sub.add_parser("update", help="Update docx2shelf to the latest version")
 
     # --- Checklist subcommand ---
@@ -1439,12 +1467,152 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_batch_mode(args)
     if args.command == "tools":
         return run_tools(args)
+    if args.command == "plugins":
+        return run_plugins(args)
+    if args.command == "connectors":
+        return run_connectors(args)
     if args.command == "update":
         return run_update(args)
     if args.command == "checklist":
         return run_checklist(args)
 
     parser.print_help()
+    return 1
+
+
+def run_plugins(args) -> int:
+    """Handle plugin management commands."""
+    from .plugins import plugin_manager, load_default_plugins
+    from pathlib import Path
+
+    # Load default plugins first
+    load_default_plugins()
+
+    if args.plugin_cmd == "list":
+        plugins = plugin_manager.list_plugins()
+        if not plugins:
+            print("No plugins loaded.")
+            return 0
+
+        print("Loaded plugins:")
+        for plugin in plugins:
+            status = "✓" if plugin['enabled'] == 'True' else "✗"
+            print(f"  {status} {plugin['name']} (v{plugin['version']})")
+        return 0
+
+    elif args.plugin_cmd == "load":
+        plugin_path = Path(args.path)
+        if not plugin_path.exists():
+            print(f"Error: Plugin file not found: {plugin_path}")
+            return 1
+
+        plugin_manager.load_plugin_from_file(plugin_path)
+        print(f"Loaded plugin from: {plugin_path}")
+        return 0
+
+    elif args.plugin_cmd == "enable":
+        plugin = plugin_manager.get_plugin_by_name(args.name)
+        if not plugin:
+            print(f"Error: Plugin not found: {args.name}")
+            return 1
+
+        plugin.enable()
+        print(f"Enabled plugin: {args.name}")
+        return 0
+
+    elif args.plugin_cmd == "disable":
+        plugin = plugin_manager.get_plugin_by_name(args.name)
+        if not plugin:
+            print(f"Error: Plugin not found: {args.name}")
+            return 1
+
+        plugin.disable()
+        print(f"Disabled plugin: {args.name}")
+        return 0
+
+    return 1
+
+
+def run_connectors(args) -> int:
+    """Handle connector management commands."""
+    from .connectors import connector_manager, load_default_connectors, download_from_connector
+    from pathlib import Path
+
+    # Load default connectors first
+    load_default_connectors()
+
+    if args.connector_cmd == "list":
+        connectors = connector_manager.list_connectors()
+        if not connectors:
+            print("No connectors available.")
+            return 0
+
+        print("Available connectors:")
+        for conn in connectors:
+            status = "✓" if conn['enabled'] else "✗"
+            network = "🌐" if conn['requires_network'] else "📁"
+            auth = "🔑" if conn['authenticated'] else "🔓"
+            print(f"  {status} {network} {auth} {conn['name']}")
+
+        print("\nLegend:")
+        print("  ✓/✗ = Enabled/Disabled")
+        print("  🌐/📁 = Network/Local")
+        print("  🔑/🔓 = Authenticated/Not authenticated")
+        return 0
+
+    elif args.connector_cmd == "enable":
+        if args.allow_network:
+            connector_manager.give_network_consent()
+
+        success = connector_manager.enable_connector(args.name, force=args.allow_network)
+        if success:
+            print(f"Enabled connector: {args.name}")
+            return 0
+        else:
+            print(f"Failed to enable connector: {args.name}")
+            return 1
+
+    elif args.connector_cmd == "disable":
+        success = connector_manager.disable_connector(args.name)
+        if success:
+            print(f"Disabled connector: {args.name}")
+            return 0
+        else:
+            print(f"Failed to disable connector: {args.name}")
+            return 1
+
+    elif args.connector_cmd == "auth":
+        connector = connector_manager.get_connector(args.name)
+        if not connector:
+            print(f"Error: Connector not found: {args.name}")
+            return 1
+
+        if not connector.enabled:
+            print(f"Error: Connector not enabled: {args.name}")
+            return 1
+
+        auth_kwargs = {}
+        if args.credentials:
+            auth_kwargs['credentials_path'] = args.credentials
+
+        success = connector.authenticate(**auth_kwargs)
+        if success:
+            print(f"Authenticated with connector: {args.name}")
+            return 0
+        else:
+            print(f"Authentication failed for connector: {args.name}")
+            return 1
+
+    elif args.connector_cmd == "fetch":
+        try:
+            output_path = Path(args.output) if args.output else Path(f"downloaded_{args.document_id}.docx")
+            result_path = download_from_connector(args.connector, args.document_id, output_path)
+            print(f"Downloaded document to: {result_path}")
+            return 0
+        except Exception as e:
+            print(f"Error downloading document: {e}")
+            return 1
+
     return 1
 
 

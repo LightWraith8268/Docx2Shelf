@@ -10,7 +10,11 @@
       "Bash(pip install:*)",
       "Bash(docx2shelf build:*)",
       "Bash(git push:*)",
-      "Bash(git tag:*)"
+      "Bash(git tag:*)",
+      "Bash(timeout:*)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(gh release create:*)",
+      "Bash(where gh)"
     ],
     "deny": [],
     "ask": []
