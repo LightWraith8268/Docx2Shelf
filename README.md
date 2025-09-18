@@ -6,13 +6,14 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 
 ## Features
 
--   **Broad Input Compatibility**: Convert manuscripts from `.docx`, `.txt`, `.md` (Markdown), `.html`, and `.htm` file formats.
--   **Flexible Content Handling**: Process single manuscript files or entire directories of files (e.g., one file per chapter), which the tool intelligently processes as individual sections.
--   **Rich Metadata Support**: Embed comprehensive metadata including title, author, language (BCP-47), ISBN/UUID, publisher, date, and Calibre-compatible series information.
--   **Customizable Output**: Apply various CSS themes (serif, sans, printlike), embed custom fonts, merge user-defined CSS, and control content splitting (at headings or pagebreaks).
--   **Interactive & Automated Workflows**: Use the interactive CLI for guided setup or integrate into automated pipelines for non-interactive builds.
--   **Built-in Tool Management**: Easily install and manage optional tools like Pandoc (for best conversion fidelity) and EPUBCheck (for validation) directly through the CLI.
--   **Automatic Updates**: The tool includes an automatic update checker that notifies you of new releases and provides a simple command to upgrade.
+-   **Multiple Input Formats**: Convert from DOCX, Markdown, TXT, and HTML files
+-   **Professional EPUB Output**: Creates valid EPUB 3 files with proper metadata and structure
+-   **Smart Content Organization**: Automatically splits content into chapters based on headings or page breaks
+-   **Beautiful Typography**: Choose from built-in themes (serif, sans, printlike) or add custom CSS
+-   **Comprehensive Metadata**: Full support for title, author, ISBN, series info, and publishing details
+-   **Publishing-Ready**: Built-in validation and compatibility checks for major ebook stores
+-   **Plugin Support**: Extend functionality with custom plugins for specialized workflows
+-   **No Internet Required**: Works completely offline - your manuscripts never leave your computer
 
 ## Installation
 
@@ -36,7 +37,7 @@ pip install docx2shelf
 brew install docx2shelf
 ```
 
-**Windows Package Manager (winget):**
+**Windows Package Manager:**
 ```bash
 winget install LightWraith8268.Docx2Shelf
 ```
@@ -46,26 +47,18 @@ winget install LightWraith8268.Docx2Shelf
 scoop install docx2shelf
 ```
 
-#### Docker
+#### Docker (Advanced Users)
 ```bash
-# Run directly
 docker run -v $(pwd):/workspace ghcr.io/lightwraith8268/docx2shelf build --input manuscript.docx --title "My Book" --author "Author"
-
-# Or use as an alias
-alias docx2shelf='docker run --rm -v $(pwd):/workspace ghcr.io/lightwraith8268/docx2shelf'
 ```
 
-#### Windows Install Script (Legacy)
+#### Quick Install Script
 
-For Windows users who prefer the automated setup script:
+**Windows**: Download and run `install.bat` from the [releases page](https://github.com/LightWraith8268/Docx2Shelf/releases)
 
-1.  **Download `install.bat`**: Get it from the [GitHub Releases page](https://github.com/LightWraith8268/Docx2Shelf/releases).
-2.  **Run the script**: Double-click `install.bat` and follow the prompts.
-
-#### Linux / macOS Install Script (Legacy)
-
+**macOS/Linux**:
 ```bash
-sh scripts/install.sh --method pipx --extras all --with-tools all
+curl -sSL https://raw.githubusercontent.com/LightWraith8268/Docx2Shelf/main/scripts/install.sh | bash
 ```
 
 ### Updating Docx2Shelf
@@ -104,19 +97,47 @@ docx2shelf build \
 -   **Output**: `--output out.epub`, `--output-pattern "{series}-{index2}-{title}"`, `--inspect`, `--dry-run`.
 -   **Non-interactive**: `--no-prompt` (use metadata.txt + flags only), `--auto-install-tools`, `--no-install-tools`, `--prompt-all`, `--quiet`, `--verbose`.
 
-## Tools Manager (Pandoc & EPUBCheck)
+## Advanced Features
 
-Use the built-in tools manager to install optional binaries locally (no admin privileges required):
+### Tools Manager
+Install optional tools locally (no admin privileges required):
 
 ```bash
-# Install Pandoc (for best DOCX → HTML fidelity)
-docx2shelf tools install pandoc [--version X.Y.Z]
+# Install Pandoc for better DOCX conversion
+docx2shelf tools install pandoc
 
-# Install EPUBCheck (optional validation)
-docx2shelf tools install epubcheck [--version A.B.C]
+# Install EPUBCheck for validation
+docx2shelf tools install epubcheck
+```
 
-# Show where tools are located/resolved from
-docx2shelf tools where
+### Plugins & Extensions
+Extend Docx2Shelf with custom functionality:
+
+```bash
+# List available plugins
+docx2shelf plugins list
+
+# Load a custom plugin
+docx2shelf plugins load my_plugin.py
+```
+
+### Document Connectors
+Import from various sources (requires explicit opt-in):
+
+```bash
+# List available connectors
+docx2shelf connectors list
+
+# Convert local Markdown files
+docx2shelf connectors fetch local_markdown document.md
+```
+
+### Publishing Compatibility
+Check your EPUB against store requirements:
+
+```bash
+# Run compatibility checks for major stores
+docx2shelf checklist --epub my-book.epub --store kdp
 ```
 
 ## What Gets Produced
