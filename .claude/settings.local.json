@@ -9,7 +9,8 @@
       "Bash(pytest:*)",
       "Bash(pip install:*)",
       "Bash(docx2shelf build:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git tag:*)"
     ],
     "deny": [],
     "ask": []

@@ -70,13 +70,24 @@ def _arg_parser() -> argparse.ArgumentParser:
         type=str,
         help="Mixed split pattern: 'h1,pagebreak' or 'h1:main,pagebreak:appendix' etc.",
     )
+    # Import themes dynamically to get available themes
+    try:
+        from .themes import get_available_themes
+        available_themes = get_available_themes()
+    except ImportError:
+        available_themes = ["serif", "sans", "printlike"]  # Fallback
+
     b.add_argument(
         "--theme",
-        choices=["serif", "sans", "printlike"],
+        choices=available_themes,
         default="serif",
-        help="Base CSS theme",
+        help="Base CSS theme (use --list-themes to see all options)",
     )
     b.add_argument("--embed-fonts", type=str, help="Directory of TTF/OTF to embed")
+    b.add_argument("--image-quality", type=int, default=85, help="JPEG/WebP quality for image compression (1-100)")
+    b.add_argument("--image-max-width", type=int, default=1200, help="Maximum image width in pixels")
+    b.add_argument("--image-max-height", type=int, default=1600, help="Maximum image height in pixels")
+    b.add_argument("--image-format", choices=["original", "webp", "avif"], default="webp", help="Convert images to modern format")
     b.add_argument("--hyphenate", choices=["on", "off"], default="on")
     b.add_argument("--justify", choices=["on", "off"], default="on")
     b.add_argument("--toc-depth", type=int, default=2, help="Table of contents depth (1-6)")
@@ -158,6 +169,13 @@ def _arg_parser() -> argparse.ArgumentParser:
         help="Optional path to write template (defaults to input folder/metadata.txt)",
     )
     t.add_argument("--force", action="store_true", help="Overwrite existing file if present")
+
+    # --- List themes subcommand ---
+    list_themes = sub.add_parser("list-themes", help="List available CSS themes")
+    list_themes.add_argument(
+        "--genre",
+        help="Filter themes by genre (fantasy, romance, mystery, scifi, academic, general)",
+    )
 
     m = sub.add_parser("tools", help="Manage optional tools (Pandoc, EPUBCheck)")
     m_sub = m.add_subparsers(dest="tool_cmd", required=True)
@@ -755,6 +773,10 @@ def run_build(args: argparse.Namespace) -> int:
         split_at=args.split_at,
         theme=args.theme,
         embed_fonts_dir=fonts_dir,
+        image_quality=args.image_quality,
+        image_max_width=args.image_max_width,
+        image_max_height=args.image_max_height,
+        image_format=args.image_format,
         hyphenate=args.hyphenate == "on",
         justify=args.justify == "on",
         toc_depth=toc_depth,
@@ -909,6 +931,29 @@ def run_build(args: argparse.Namespace) -> int:
     if opts.inspect:
         print("Inspect folder emitted for debugging.")
     return 0
+
+
+def run_list_themes(args: argparse.Namespace) -> int:
+    """List available CSS themes."""
+    try:
+        from .themes import list_all_themes, get_themes_by_genre, get_theme_info
+
+        if args.genre:
+            themes = get_themes_by_genre(args.genre)
+            if not themes:
+                print(f"No themes found for genre: {args.genre}")
+                return 1
+
+            print(f"Themes for {args.genre}:")
+            for theme in themes:
+                print(f"  {get_theme_info(theme)}")
+        else:
+            print(list_all_themes())
+
+        return 0
+    except ImportError:
+        print("Theme discovery not available. Available themes: serif, sans, printlike")
+        return 1
 
 
 def run_init_metadata(args: argparse.Namespace) -> int:
@@ -1066,6 +1111,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_build(args)
     if args.command == "init-metadata":
         return run_init_metadata(args)
+    if args.command == "list-themes":
+        return run_list_themes(args)
     if args.command == "tools":
         return run_tools(args)
     if args.command == "update":

@@ -25,15 +25,15 @@ Status: Completed
 (reader start page + landmarks are already emitted; let users choose "start" chapter via metadata flag).
 
 ## 3) Typography, CSS, and assets
-Status: To Do
+Status: Completed
 
-### Theme pack system
+### Theme pack system ✓
 Beyond serif/sans/printlike (genre presets; night-mode friendly). Existing themes are noted; formalize a discoverable theme API.
 
-### Font subsetting
+### Font subsetting ✓
 (via fontTools) when --embed-fonts is used to shrink EPUBs; warn on licensing.
 
-### Image pipeline
+### Image pipeline ✓
 Cover scaling is supported now; add auto-resize/compress (long-edge cap, WebP/AVIF with fallback), and per-image DPI rules.
 
 ## 4) Accessibility & compliance

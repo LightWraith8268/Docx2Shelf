@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.0.4]
+
+### Added
+- **Genre-specific theme system**: Added 6 new CSS themes (fantasy, romance, mystery, scifi, academic, night) with metadata-driven discovery.
+- **Font subsetting**: Intelligent font optimization using fontTools to reduce EPUB file sizes by including only used characters.
+- **Advanced image pipeline**: Auto-resize, compression, and WebP/AVIF conversion with configurable quality and dimensions.
+- **Theme discovery API**: Comprehensive theme management with custom theme support and genre filtering.
+- **Image processing options**: New CLI flags for image quality, dimensions, and format conversion control.
+
+### Improved
+- Font embedding now includes automatic subsetting to reduce file sizes and licensing warnings.
+- Image processing with modern format conversion (WebP/AVIF) for better compression.
+- Theme selection enhanced with `--list-themes` command and genre-based filtering.
+- Graceful fallbacks when optional dependencies (fontTools, Pillow) are unavailable.
+
+### Technical
+- Created `fonts.py` module with character analysis and font subsetting capabilities.
+- Created `images.py` module with comprehensive image optimization pipeline.
+- Enhanced `themes.py` with metadata system and theme discovery functions.
+- Added CLI options: `--image-quality`, `--image-max-width`, `--image-max-height`, `--image-format`.
+- Updated `BuildOptions` dataclass with image processing configuration fields.
+
 ## [1.0.3]
 
 ### Added

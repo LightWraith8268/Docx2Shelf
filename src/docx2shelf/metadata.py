@@ -31,6 +31,10 @@ class BuildOptions:
     split_at: str  # h1|h2|h3|pagebreak|mixed
     theme: str  # serif|sans|printlike
     embed_fonts_dir: Optional[Path]
+    image_quality: int = 85
+    image_max_width: int = 1200
+    image_max_height: int = 1600
+    image_format: str = "webp"
     hyphenate: bool
     justify: bool
     toc_depth: int

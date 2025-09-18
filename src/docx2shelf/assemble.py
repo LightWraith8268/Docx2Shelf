@@ -6,6 +6,8 @@ from importlib import resources
 from pathlib import Path
 
 from .metadata import BuildOptions, EpubMetadata
+from .fonts import process_embedded_fonts, warn_about_font_licensing
+from .images import process_images, get_media_type_for_image
 
 
 def _read_text(path: Path) -> str:
@@ -13,13 +15,29 @@ def _read_text(path: Path) -> str:
 
 
 def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions, styles_css: str = "") -> bytes:
-    # Load packaged CSS: docx2shelf/assets/css/<theme>.css
+    # Load theme CSS using the theme discovery system
+    css = ""
     try:
-        css_path = resources.files("docx2shelf.assets.css").joinpath(f"{theme}.css")
-        with css_path.open("r", encoding="utf-8") as fh:
-            css = fh.read()
+        from .themes import get_theme_css_path, validate_theme
+
+        if validate_theme(theme):
+            theme_path = get_theme_css_path(theme)
+            if theme_path:
+                with theme_path.open("r", encoding="utf-8") as fh:
+                    css = fh.read()
+        else:
+            # Fallback to direct file loading for backwards compatibility
+            css_path = resources.files("docx2shelf.assets.css").joinpath(f"{theme}.css")
+            with css_path.open("r", encoding="utf-8") as fh:
+                css = fh.read()
     except Exception:
-        css = ""
+        # Final fallback - try direct file access
+        try:
+            css_path = resources.files("docx2shelf.assets.css").joinpath(f"{theme}.css")
+            with css_path.open("r", encoding="utf-8") as fh:
+                css = fh.read()
+        except Exception:
+            css = ""
     if opts.font_size:
         css += f"\nhtml {{ font-size: {opts.font_size}; }}\n"
     if opts.line_height:
@@ -370,21 +388,54 @@ def assemble_epub(
         book.add_item(it)
 
     # Add extracted resources (images) under images/
-    for res in resources:
-        mt = (
-            "image/jpeg"
-            if res.suffix.lower() in {".jpg", ".jpeg"}
-            else ("image/png" if res.suffix.lower() == ".png" else None)
-        )
-        if mt is None:
-            continue
-        item = epub.EpubItem(
-            uid=f"img_{res.stem}",
-            file_name=f"images/{res.name}",
-            media_type=mt,
-            content=res.read_bytes(),
-        )
-        book.add_item(item)
+    if resources:
+        import tempfile
+
+        # Process images with optimization
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+
+            # Filter image files
+            image_files = [
+                res for res in resources
+                if res.suffix.lower() in {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.bmp', '.tiff', '.tif'}
+            ]
+
+            if image_files:
+                # Process images with auto-resize and optional format conversion
+                modern_format = None if opts.image_format == "original" else opts.image_format
+                processed_images = process_images(
+                    image_files,
+                    temp_path,
+                    max_width=opts.image_max_width,
+                    max_height=opts.image_max_height,
+                    quality=opts.image_quality,
+                    modern_format=modern_format,
+                    quiet=opts.quiet
+                )
+
+                # Add processed images to EPUB
+                for img_path in processed_images:
+                    mt = get_media_type_for_image(img_path)
+                    item = epub.EpubItem(
+                        uid=f"img_{img_path.stem}",
+                        file_name=f"images/{img_path.name}",
+                        media_type=mt,
+                        content=img_path.read_bytes(),
+                    )
+                    book.add_item(item)
+
+            # Handle non-image resources
+            for res in resources:
+                if res.suffix.lower() not in {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.bmp', '.tiff', '.tif'}:
+                    # Keep non-image resources as-is
+                    item = epub.EpubItem(
+                        uid=f"res_{res.stem}",
+                        file_name=f"images/{res.name}",
+                        media_type="application/octet-stream",
+                        content=res.read_bytes(),
+                    )
+                    book.add_item(item)
 
     # Chapters from html_chunks
     chapters = []
@@ -552,13 +603,39 @@ def assemble_epub(
 
     # Embed fonts (optional)
     if opts.embed_fonts_dir and opts.embed_fonts_dir.exists():
-        for font in sorted(opts.embed_fonts_dir.glob("**/*")):
-            if font.suffix.lower() in {".ttf", ".otf"} and font.is_file():
-                data = font.read_bytes()
+        import tempfile
+
+        # Display font licensing warning
+        warn_about_font_licensing(opts.embed_fonts_dir, opts.quiet)
+
+        # Process fonts with subsetting
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+
+            # Collect all HTML content for character analysis
+            html_chunks = []
+            for item in book.items:
+                if hasattr(item, 'content') and hasattr(item, 'file_name') and item.file_name.endswith('.xhtml'):
+                    if isinstance(item.content, bytes):
+                        html_chunks.append(item.content.decode('utf-8'))
+                    else:
+                        html_chunks.append(str(item.content))
+
+            # Process and subset fonts
+            processed_fonts = process_embedded_fonts(
+                opts.embed_fonts_dir,
+                html_chunks,
+                temp_path,
+                opts.quiet
+            )
+
+            # Add processed fonts to EPUB
+            for font_path in processed_fonts:
+                data = font_path.read_bytes()
                 item = epub.EpubItem(
-                    uid=f"font_{font.stem}",
-                    file_name=f"fonts/{font.name}",
-                    media_type="font/otf" if font.suffix.lower() == ".otf" else "font/ttf",
+                    uid=f"font_{font_path.stem}",
+                    file_name=f"fonts/{font_path.name}",
+                    media_type="font/otf" if font_path.suffix.lower() == ".otf" else "font/ttf",
                     content=data,
                 )
                 book.add_item(item)
