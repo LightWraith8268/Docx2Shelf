@@ -19,7 +19,8 @@
       "Bash(gh release view:*)",
       "Bash(gh release edit:*)",
       "Bash(gh run list:*)",
-      "Bash(gh release delete:*)"
+      "Bash(gh release delete:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": [],
     "ask": []
