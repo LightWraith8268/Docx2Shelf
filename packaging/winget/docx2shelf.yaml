@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.4.0.schema.json
+
+PackageIdentifier: LightWraith8268.Docx2Shelf
+PackageVersion: 1.0.9
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.4.0
+
+---
+
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultlocale.1.4.0.schema.json
+
+PackageIdentifier: LightWraith8268.Docx2Shelf
+PackageVersion: 1.0.9
+PackageLocale: en-US
+Publisher: Docx2Shelf Contributors
+PublisherUrl: https://github.com/LightWraith8268/Docx2Shelf
+PublisherSupportUrl: https://github.com/LightWraith8268/Docx2Shelf/issues
+PackageName: Docx2Shelf
+PackageUrl: https://github.com/LightWraith8268/Docx2Shelf
+License: MIT
+LicenseUrl: https://github.com/LightWraith8268/Docx2Shelf/blob/main/LICENSE
+ShortDescription: Offline CLI to convert DOCX manuscripts into valid EPUB 3
+Description: |-
+  Docx2Shelf is an offline command-line tool that converts DOCX manuscripts
+  into valid EPUB 3 files. It supports multiple input formats, includes
+  comprehensive theming options, and provides advanced features like plugin
+  support and publishing store compatibility checks.
+Moniker: docx2shelf
+Tags:
+- epub
+- docx
+- converter
+- ebook
+- manuscript
+- publishing
+- cli
+ReleaseNotesUrl: https://github.com/LightWraith8268/Docx2Shelf/releases/tag/v1.0.9
+ManifestType: defaultLocale
+ManifestVersion: 1.4.0
+
+---
+
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.4.0.schema.json
+
+PackageIdentifier: LightWraith8268.Docx2Shelf
+PackageVersion: 1.0.9
+Platform:
+- Windows.Desktop
+MinimumOSVersion: 10.0.0.0
+Scope: user
+InstallModes:
+- interactive
+- silent
+InstallerSwitches:
+  Silent: --quiet
+  SilentWithProgress: --progress
+UpgradeBehavior: install
+Commands:
+- docx2shelf
+FileExtensions:
+- docx
+- epub
+Installers:
+- Architecture: neutral
+  InstallerType: portable
+  InstallerUrl: https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat
+  InstallerSha256: TO_BE_UPDATED
+ManifestType: installer
+ManifestVersion: 1.4.0

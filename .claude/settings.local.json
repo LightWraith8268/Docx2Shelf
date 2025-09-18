@@ -14,7 +14,12 @@
       "Bash(timeout:*)",
       "Bash(echo \"Exit code: $?\")",
       "Bash(gh release create:*)",
-      "Bash(where gh)"
+      "Bash(where gh)",
+      "Bash(gh release list:*)",
+      "Bash(gh release view:*)",
+      "Bash(gh release edit:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh release delete:*)"
     ],
     "deny": [],
     "ask": []

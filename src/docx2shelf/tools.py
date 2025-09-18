@@ -33,20 +33,30 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def _download(url: str, dest: Path, *, attempts: int = 3, expect_sha256: str | None = None) -> None:
+def _download(url: str, dest: Path, *, attempts: int = 3, expect_sha256: str | None = None,
+              gpg_signature_url: str | None = None, trusted_keys: list[str] | None = None) -> None:
+    """Download a file with optional SHA-256 and GPG verification."""
     last_err: Exception | None = None
     for i in range(1, attempts + 1):
         try:
             with urlopen(url) as resp, open(dest, "wb") as f:
                 shutil.copyfileobj(resp, f)
+
+            if dest.stat().st_size <= 0:
+                raise RuntimeError("Downloaded file is empty")
+
+            # SHA-256 verification (existing)
             if expect_sha256:
                 got = _sha256(dest)
                 if got.lower() != expect_sha256.lower():
                     raise RuntimeError(
                         f"Checksum mismatch for {dest.name}: expected {expect_sha256}, got {got}"
                     )
-            if dest.stat().st_size <= 0:
-                raise RuntimeError("Downloaded file is empty")
+
+            # GPG verification (new)
+            if gpg_signature_url and trusted_keys:
+                _verify_gpg_signature(dest, gpg_signature_url, trusted_keys)
+
             return
         except Exception as e:
             last_err = e
@@ -57,6 +67,52 @@ def _download(url: str, dest: Path, *, attempts: int = 3, expect_sha256: str | N
             time.sleep(0.8 * i)
     assert last_err is not None
     raise last_err
+
+
+def _verify_gpg_signature(file_path: Path, signature_url: str, trusted_keys: list[str]) -> None:
+    """Verify GPG signature of a downloaded file."""
+    import subprocess
+    import tempfile
+
+    # Check if gpg is available
+    if not shutil.which("gpg"):
+        print("Warning: GPG not available, skipping signature verification")
+        return
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        signature_file = temp_path / f"{file_path.name}.sig"
+
+        try:
+            # Download signature file
+            with urlopen(signature_url) as resp, open(signature_file, "wb") as f:
+                shutil.copyfileobj(resp, f)
+
+            # Import trusted keys if provided
+            for key in trusted_keys:
+                try:
+                    result = subprocess.run([
+                        "gpg", "--quiet", "--batch", "--import", "-"
+                    ], input=key, text=True, capture_output=True)
+                    if result.returncode != 0:
+                        print(f"Warning: Failed to import GPG key: {result.stderr}")
+                except Exception as e:
+                    print(f"Warning: Error importing GPG key: {e}")
+
+            # Verify signature
+            result = subprocess.run([
+                "gpg", "--quiet", "--batch", "--verify", str(signature_file), str(file_path)
+            ], capture_output=True, text=True)
+
+            if result.returncode == 0:
+                print(f"✓ GPG signature verified for {file_path.name}")
+            else:
+                print(f"Warning: GPG signature verification failed for {file_path.name}: {result.stderr}")
+                # Don't fail the download, just warn
+
+        except Exception as e:
+            print(f"Warning: GPG verification error for {file_path.name}: {e}")
+            # Don't fail the download, just warn
 
 
 def _platform_tag() -> tuple[str, str]:

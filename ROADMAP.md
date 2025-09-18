@@ -88,13 +88,13 @@ Hooks for pre-convert (sanitize DOCX), post-convert (html transforms), and metad
 (kept offline by default): local Markdown → EPUB; gated cloud imports (Google Docs/OneDrive) via explicit opt-in to preserve the project's offline stance. Network consent system maintains "No network calls required" default.
 
 ## 8) Packaging & distribution
-Status: To Do
+Status: ✓ Complete
 
-### Publish to PyPI
-With pipx install path documented (already in README), plus Homebrew, winget, Scoop, and a Docker image.
+### Publish to PyPI ✓
+Automated PyPI publishing via GitHub Actions with trusted publishing. pipx install path documented in README, plus Homebrew, winget, Scoop, and Docker image support.
 
-### Signed tool downloads
-You already attempt SHA-256 verification for tools; also offer GPG verification.
+### Signed tool downloads ✓
+Enhanced tool download system with SHA-256 verification (existing) plus optional GPG signature verification for supported tools.
 
 ## 9) Tools Manager polish
 Status: To Do

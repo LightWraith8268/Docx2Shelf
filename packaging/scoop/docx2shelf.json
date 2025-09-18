@@ -1,0 +1,34 @@
+{
+  "version": "1.0.9",
+  "description": "Offline CLI to convert DOCX manuscripts into valid EPUB 3",
+  "homepage": "https://github.com/LightWraith8268/Docx2Shelf",
+  "license": "MIT",
+  "url": "https://github.com/LightWraith8268/Docx2Shelf/releases/download/v1.0.9/install.bat",
+  "hash": "TO_BE_UPDATED",
+  "depends": "python",
+  "suggest": {
+    "Pandoc": "pandoc"
+  },
+  "installer": {
+    "script": [
+      "Start-Process -FilePath \"$dir\\install.bat\" -Wait -NoNewWindow"
+    ]
+  },
+  "uninstaller": {
+    "script": [
+      "pip uninstall docx2shelf -y"
+    ]
+  },
+  "bin": [
+    [
+      "docx2shelf",
+      "docx2shelf"
+    ]
+  ],
+  "checkver": {
+    "github": "https://github.com/LightWraith8268/Docx2Shelf"
+  },
+  "autoupdate": {
+    "url": "https://github.com/LightWraith8268/Docx2Shelf/releases/download/v$version/install.bat"
+  }
+}

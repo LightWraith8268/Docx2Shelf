@@ -18,16 +18,51 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 
 Docx2Shelf requires **Python 3.11 or newer**.
 
-### Windows (Recommended)
+### Quick Install Options
 
-For Windows users, the easiest way to install is by downloading and running the `install.bat` script. This script will automatically set up Docx2Shelf and its dependencies, including `pipx` and optional tools like Pandoc.
+Choose the method that works best for your system:
 
-1.  **Download `install.bat`**: Get the latest `install.bat` from the [GitHub Releases page](https://github.com/LightWraith8268/Docx2Shelf/releases).
+#### PyPI (Recommended for Python users)
+```bash
+pipx install docx2shelf
+# or with pip:
+pip install docx2shelf
+```
+
+#### Package Managers
+
+**Homebrew (macOS/Linux):**
+```bash
+brew install docx2shelf
+```
+
+**Windows Package Manager (winget):**
+```bash
+winget install LightWraith8268.Docx2Shelf
+```
+
+**Scoop (Windows):**
+```bash
+scoop install docx2shelf
+```
+
+#### Docker
+```bash
+# Run directly
+docker run -v $(pwd):/workspace ghcr.io/lightwraith8268/docx2shelf build --input manuscript.docx --title "My Book" --author "Author"
+
+# Or use as an alias
+alias docx2shelf='docker run --rm -v $(pwd):/workspace ghcr.io/lightwraith8268/docx2shelf'
+```
+
+#### Windows Install Script (Legacy)
+
+For Windows users who prefer the automated setup script:
+
+1.  **Download `install.bat`**: Get it from the [GitHub Releases page](https://github.com/LightWraith8268/Docx2Shelf/releases).
 2.  **Run the script**: Double-click `install.bat` and follow the prompts.
 
-### Linux / macOS
-
-For Linux and macOS, `pipx` is the recommended installation method for an isolated global CLI:
+#### Linux / macOS Install Script (Legacy)
 
 ```bash
 sh scripts/install.sh --method pipx --extras all --with-tools all

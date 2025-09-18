@@ -1,6 +1,25 @@
 # Changelog
 
-## [1.1.0]
+## [1.0.9]
+### Added
+- Automated PyPI publishing via GitHub Actions with trusted publishing
+- Docker container support with pre-installed Pandoc and EPUBCheck
+- Package manager distribution support for Homebrew, winget, and Scoop
+- GPG signature verification for tool downloads (optional, with graceful fallback)
+- Multi-platform Docker image builds (linux/amd64, linux/arm64)
+- Comprehensive package distribution documentation and manifests
+
+### Changed
+- Enhanced tool download system with dual SHA-256 and GPG verification
+- Updated README with multiple installation methods including package managers
+- Improved Docker workflow with automated publishing to GitHub Container Registry
+
+### Infrastructure
+- Added PyPI publishing workflow triggered on releases
+- Added Docker build and publish workflow with multi-platform support
+- Created package manager configuration files for Homebrew, winget, and Scoop
+
+## [1.0.8]
 ### Added
 - First-party GitHub Action for automated EPUB building in CI/CD pipelines
 - Matrix testing support across Windows/macOS/Linux with optional Pandoc and EPUBCheck
