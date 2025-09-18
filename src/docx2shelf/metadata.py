@@ -24,6 +24,39 @@ class EpubMetadata:
     subjects: List[str]
     keywords: List[str]
     cover_path: Path
+    # Extended metadata fields
+    editor: Optional[str] = None
+    illustrator: Optional[str] = None
+    translator: Optional[str] = None
+    narrator: Optional[str] = None
+    designer: Optional[str] = None
+    contributor: Optional[str] = None
+    bisac_codes: List[str] = None
+    age_range: Optional[str] = None
+    reading_level: Optional[str] = None
+    copyright_holder: Optional[str] = None
+    copyright_year: Optional[str] = None
+    rights: Optional[str] = None
+    price: Optional[str] = None
+    currency: Optional[str] = None
+    print_isbn: Optional[str] = None
+    audiobook_isbn: Optional[str] = None
+    series_type: Optional[str] = None  # e.g., "sequence", "collection"
+    series_position: Optional[str] = None  # e.g., "1 of 5", "standalone"
+    publication_type: Optional[str] = None  # e.g., "novel", "anthology", "memoir"
+    target_audience: Optional[str] = None  # e.g., "adult", "young adult", "children"
+    content_warnings: List[str] = None
+
+    def __post_init__(self):
+        # Initialize list fields if None
+        if self.subjects is None:
+            self.subjects = []
+        if self.keywords is None:
+            self.keywords = []
+        if self.bisac_codes is None:
+            self.bisac_codes = []
+        if self.content_warnings is None:
+            self.content_warnings = []
 
 
 @dataclass
@@ -31,15 +64,15 @@ class BuildOptions:
     split_at: str  # h1|h2|h3|pagebreak|mixed
     theme: str  # serif|sans|printlike
     embed_fonts_dir: Optional[Path]
+    hyphenate: bool
+    justify: bool
+    toc_depth: int
     image_quality: int = 85
     image_max_width: int = 1200
     image_max_height: int = 1600
     image_format: str = "webp"
     vertical_writing: bool = False
     epub2_compat: bool = False
-    hyphenate: bool
-    justify: bool
-    toc_depth: int
     chapter_start_mode: str = "auto"  # auto|manual|mixed
     chapter_starts: Optional[List[str]] = None
     mixed_split_pattern: Optional[str] = None

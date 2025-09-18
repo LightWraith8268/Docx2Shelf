@@ -7,6 +7,7 @@ from typing import Optional
 
 from .metadata import BuildOptions, EpubMetadata, build_output_filename, parse_date
 from .preview import run_live_preview, create_epub_preview
+from .publishing_checklists import run_all_checklists, get_checker, format_checklist_report
 from .tools import (
     epubcheck_cmd,
     install_epubcheck,
@@ -228,6 +229,14 @@ def _arg_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("update", help="Update docx2shelf to the latest version")
 
+    # --- Checklist subcommand ---
+    check = sub.add_parser("checklist", help="Run publishing store compatibility checklists")
+    check.add_argument("--metadata", help="Path to metadata.txt file (default: ./metadata.txt)")
+    check.add_argument("--cover", help="Path to cover image file")
+    check.add_argument("--store", choices=["kdp", "apple", "kobo", "all"], default="all",
+                      help="Which store to check (default: all)")
+    check.add_argument("--json", action="store_true", help="Output results as JSON")
+
     return p
 
 
@@ -290,6 +299,50 @@ def _apply_metadata_dict(args: argparse.Namespace, md: dict, base_dir: Path | No
         args.subjects = get("subjects")
     if get("keywords"):
         args.keywords = get("keywords")
+
+    # Extended metadata fields
+    if get("editor"):
+        setattr(args, "editor", get("editor"))
+    if get("illustrator"):
+        setattr(args, "illustrator", get("illustrator"))
+    if get("translator"):
+        setattr(args, "translator", get("translator"))
+    if get("narrator"):
+        setattr(args, "narrator", get("narrator"))
+    if get("designer"):
+        setattr(args, "designer", get("designer"))
+    if get("contributor"):
+        setattr(args, "contributor", get("contributor"))
+    if get("bisac_codes") or get("bisac-codes"):
+        setattr(args, "bisac_codes", get("bisac_codes") or get("bisac-codes"))
+    if get("age_range") or get("age-range"):
+        setattr(args, "age_range", get("age_range") or get("age-range"))
+    if get("reading_level") or get("reading-level"):
+        setattr(args, "reading_level", get("reading_level") or get("reading-level"))
+    if get("copyright_holder") or get("copyright-holder"):
+        setattr(args, "copyright_holder", get("copyright_holder") or get("copyright-holder"))
+    if get("copyright_year") or get("copyright-year"):
+        setattr(args, "copyright_year", get("copyright_year") or get("copyright-year"))
+    if get("rights"):
+        setattr(args, "rights", get("rights"))
+    if get("price"):
+        setattr(args, "price", get("price"))
+    if get("currency"):
+        setattr(args, "currency", get("currency"))
+    if get("print_isbn") or get("print-isbn"):
+        setattr(args, "print_isbn", get("print_isbn") or get("print-isbn"))
+    if get("audiobook_isbn") or get("audiobook-isbn"):
+        setattr(args, "audiobook_isbn", get("audiobook_isbn") or get("audiobook-isbn"))
+    if get("series_type") or get("series-type"):
+        setattr(args, "series_type", get("series_type") or get("series-type"))
+    if get("series_position") or get("series-position"):
+        setattr(args, "series_position", get("series_position") or get("series-position"))
+    if get("publication_type") or get("publication-type"):
+        setattr(args, "publication_type", get("publication_type") or get("publication-type"))
+    if get("target_audience") or get("target-audience"):
+        setattr(args, "target_audience", get("target_audience") or get("target-audience"))
+    if get("content_warnings") or get("content-warnings"):
+        setattr(args, "content_warnings", get("content_warnings") or get("content-warnings"))
     # Conversion/layout
     if (args.split_at in (None, "", "h1")) and (get("split_at") or get("split-at")):
         args.split_at = get("split_at") or get("split-at")
@@ -1121,7 +1174,7 @@ def run_init_metadata(args: argparse.Namespace) -> int:
         "Author:",
         "Language: en",
         "",
-        "# Optional metadata",
+        "# Basic metadata",
         "SeriesName:",
         "SeriesIndex:",
         "Title-Sort:",
@@ -1133,6 +1186,29 @@ def run_init_metadata(args: argparse.Namespace) -> int:
         "UUID:",
         "Subjects: ",
         "Keywords: ",
+        "",
+        "# Extended metadata (roles, classifications, etc.)",
+        "Editor:",
+        "Illustrator:",
+        "Translator:",
+        "Narrator:",
+        "Designer:",
+        "Contributor:",
+        "BISAC-Codes: ",
+        "Age-Range:",
+        "Reading-Level:",
+        "Copyright-Holder:",
+        "Copyright-Year:",
+        "Rights:",
+        "Price:",
+        "Currency:",
+        "Print-ISBN:",
+        "Audiobook-ISBN:",
+        "Series-Type:",
+        "Series-Position:",
+        "Publication-Type:",
+        "Target-Audience:",
+        "Content-Warnings: ",
         "",
         "# Assets",
         f"Cover: {args.cover or ''}",
@@ -1215,6 +1291,124 @@ def run_update(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_checklist(args: argparse.Namespace) -> int:
+    """Run publishing store compatibility checklists."""
+    import json
+
+    # Determine metadata file path
+    metadata_path = Path(args.metadata) if args.metadata else Path("metadata.txt")
+
+    if not metadata_path.exists():
+        print(f"Error: Metadata file not found: {metadata_path}", file=sys.stderr)
+        print("Run 'docx2shelf init-metadata' to create a metadata.txt file", file=sys.stderr)
+        return 1
+
+    # Load metadata from file
+    try:
+        metadata_dict = parse_kv_file(metadata_path)
+
+        # Create a minimal EpubMetadata object from the metadata file
+        metadata = EpubMetadata(
+            title=metadata_dict.get("title", ""),
+            author=metadata_dict.get("author", ""),
+            language=metadata_dict.get("language", "en"),
+            description=metadata_dict.get("description"),
+            isbn=metadata_dict.get("isbn"),
+            publisher=metadata_dict.get("publisher"),
+            pubdate=parse_date(metadata_dict.get("pubdate")) if metadata_dict.get("pubdate") else None,
+            uuid=metadata_dict.get("uuid"),
+            series=metadata_dict.get("series"),
+            series_index=metadata_dict.get("series_index"),
+            title_sort=metadata_dict.get("title_sort"),
+            author_sort=metadata_dict.get("author_sort"),
+            subjects=metadata_dict.get("subjects", "").split(",") if metadata_dict.get("subjects") else [],
+            keywords=metadata_dict.get("keywords", "").split(",") if metadata_dict.get("keywords") else [],
+            cover_path=Path(args.cover) if args.cover else Path("cover.jpg"),  # Default cover path
+            # Extended metadata fields
+            editor=metadata_dict.get("editor"),
+            illustrator=metadata_dict.get("illustrator"),
+            translator=metadata_dict.get("translator"),
+            narrator=metadata_dict.get("narrator"),
+            designer=metadata_dict.get("designer"),
+            contributor=metadata_dict.get("contributor"),
+            bisac_codes=metadata_dict.get("bisac_codes", "").split(",") if metadata_dict.get("bisac_codes") else [],
+            age_range=metadata_dict.get("age_range"),
+            reading_level=metadata_dict.get("reading_level"),
+            copyright_holder=metadata_dict.get("copyright_holder"),
+            copyright_year=metadata_dict.get("copyright_year"),
+            rights=metadata_dict.get("rights"),
+            price=metadata_dict.get("price"),
+            currency=metadata_dict.get("currency"),
+            print_isbn=metadata_dict.get("print_isbn"),
+            audiobook_isbn=metadata_dict.get("audiobook_isbn"),
+            series_type=metadata_dict.get("series_type"),
+            series_position=metadata_dict.get("series_position"),
+            publication_type=metadata_dict.get("publication_type"),
+            target_audience=metadata_dict.get("target_audience"),
+            content_warnings=metadata_dict.get("content_warnings", "").split(",") if metadata_dict.get("content_warnings") else []
+        )
+    except Exception as e:
+        print(f"Error parsing metadata file: {e}", file=sys.stderr)
+        return 1
+
+    # Determine cover image path
+    cover_path = None
+    if args.cover:
+        cover_path = Path(args.cover)
+        if not cover_path.exists():
+            print(f"Warning: Cover image not found: {cover_path}", file=sys.stderr)
+            cover_path = None
+    else:
+        # Try to find a cover image in common locations
+        for cover_name in ["cover.jpg", "cover.png", "cover.jpeg"]:
+            potential_cover = metadata_path.parent / cover_name
+            if potential_cover.exists():
+                cover_path = potential_cover
+                break
+
+    # Run checklists
+    try:
+        if args.store == "all":
+            results = run_all_checklists(metadata, cover_path)
+        else:
+            checker = get_checker(args.store)
+            result = checker.run_checks(metadata, cover_path)
+            # Use proper store display name
+            store_names = {"kdp": "KDP", "apple": "Apple Books", "kobo": "Kobo"}
+            display_name = store_names.get(args.store, args.store.title())
+            results = {display_name: result}
+
+        if args.json:
+            # Output as JSON
+            json_results = {}
+            for store, result in results.items():
+                json_results[store] = {
+                    "passed": result.passed,
+                    "errors": [{"severity": i.severity, "category": i.category,
+                              "message": i.message, "fix_suggestion": i.fix_suggestion}
+                              for i in result.errors],
+                    "warnings": [{"severity": i.severity, "category": i.category,
+                                "message": i.message, "fix_suggestion": i.fix_suggestion}
+                                for i in result.warnings],
+                    "infos": [{"severity": i.severity, "category": i.category,
+                             "message": i.message, "fix_suggestion": i.fix_suggestion}
+                             for i in result.infos]
+                }
+            print(json.dumps(json_results, indent=2))
+        else:
+            # Output formatted report
+            report = format_checklist_report(results)
+            print(report)
+
+        # Return appropriate exit code
+        has_errors = any(len(result.errors) > 0 for result in results.values())
+        return 1 if has_errors else 0
+
+    except Exception as e:
+        print(f"Error running checklists: {e}", file=sys.stderr)
+        return 1
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
@@ -1243,6 +1437,15 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_list_profiles(args)
     if args.command == "batch":
         return run_batch_mode(args)
+    if args.command == "tools":
+        return run_tools(args)
+    if args.command == "update":
+        return run_update(args)
+    if args.command == "checklist":
+        return run_checklist(args)
+
+    parser.print_help()
+    return 1
 
 
 def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[str], resources: list[Path], args) -> int:
@@ -1331,13 +1534,6 @@ def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[
         if not opts.quiet:
             print(f"Error running preview: {e}", file=sys.stderr)
         return 1
-    if args.command == "tools":
-        return run_tools(args)
-    if args.command == "update":
-        return run_update(args)
-
-    parser.print_help()
-    return 1
 
 
 if __name__ == "__main__":  # pragma: no cover

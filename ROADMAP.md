@@ -67,13 +67,13 @@ docx2shelf build --dir manuscripts/ --pattern *.docx --parallel with shared defa
 --json output for CI pipelines.
 
 ## 6) Metadata & publishing
-Status: To Do
+Status: ✓ Complete
 
-### Richer metadata keys in metadata.txt
-(roles: editor, illustrator, translator; BISAC/keywords normalization; series anchors). Your metadata.txt is already first-class—expand schema + validation.
+### Richer metadata keys in metadata.txt ✓
+Extended metadata.txt template with roles (editor, illustrator, translator, narrator, designer, contributor), BISAC codes validation, age ranges, reading levels, copyright information, pricing, and content warnings. Full schema validation with detailed error reporting.
 
-### KDP/Apple/Kobo checklists
-Lints that warn on store-specific pitfalls (e.g., oversized cover, missing language, forbidden fonts).
+### KDP/Apple/Kobo checklists ✓
+Comprehensive publishing store compatibility system with `docx2shelf checklist` command. Store-specific validation for cover dimensions, file formats, metadata requirements, and platform-specific pitfalls. Supports JSON output for CI integration.
 
 ## 7) Automation & ecosystem
 Status: To Do

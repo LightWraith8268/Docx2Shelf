@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.7]
+### Changed
+- Extended metadata system with comprehensive role-based contributors (editor, illustrator, translator, narrator, designer, contributor)
+- BISAC subject heading code validation and suggestion system with industry-standard categorization
+- Age range and reading level validation for children's and educational books
+- Copyright and rights management fields with pricing information support
+- Content warnings and target audience specification
+- Enhanced metadata.txt template with 20+ new optional fields for professional publishing
+- Publishing store compatibility checklist system with docx2shelf checklist command
+- Store-specific validation for KDP, Apple Books, and Kobo with detailed requirements checking
+- Cover image validation including dimensions, format, and file size requirements
+- JSON output support for CI/CD integration and automated publishing workflows
+- Comprehensive metadata validation reporting with actionable fix suggestions
+
 ## [1.0.6]
 ### Changed
 - Live preview mode with --preview flag that generates interactive browser-based preview instead of EPUB file
