@@ -35,6 +35,8 @@ class BuildOptions:
     image_max_width: int = 1200
     image_max_height: int = 1600
     image_format: str = "webp"
+    vertical_writing: bool = False
+    epub2_compat: bool = False
     hyphenate: bool
     justify: bool
     toc_depth: int

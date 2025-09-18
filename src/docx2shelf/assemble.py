@@ -8,13 +8,156 @@ from pathlib import Path
 from .metadata import BuildOptions, EpubMetadata
 from .fonts import process_embedded_fonts, warn_about_font_licensing
 from .images import process_images, get_media_type_for_image
+from .accessibility import process_accessibility_features, create_accessibility_summary
+from .language import generate_language_css, add_language_attributes_to_html, apply_language_defaults
+from .tools import epubcheck_cmd
 
 
 def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions, styles_css: str = "") -> bytes:
+def _run_epubcheck_validation(epub_path: Path, quiet: bool = False) -> None:
+    """Run EPUBCheck validation with enhanced reporting."""
+    try:
+        import subprocess
+
+        cmd = epubcheck_cmd()
+        if not cmd:
+            if not quiet:
+                print("📋 EPUBCheck: Not available (install via 'docx2shelf tools install epubcheck')")
+            return
+
+        if not quiet:
+            print("📋 Running EPUBCheck validation...")
+
+        # Run EPUBCheck with JSON output if supported
+        proc = subprocess.run(
+            cmd + [str(epub_path)],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+
+        output = (proc.stdout or "") + "\n" + (proc.stderr or "")
+
+        # Parse output for issues
+        errors = []
+        warnings = []
+        info_messages = []
+
+        for line in output.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            if "ERROR" in line.upper():
+                errors.append(line)
+            elif "WARNING" in line.upper():
+                warnings.append(line)
+            elif "INFO" in line.upper():
+                info_messages.append(line)
+
+        # Generate summary
+        if not quiet:
+            if errors or warnings:
+                print(f"📋 EPUBCheck: {len(errors)} error(s), {len(warnings)} warning(s)")
+
+                # Show first few critical issues
+                critical_issues = errors[:3] + warnings[:3]
+                if critical_issues:
+                    print("   Top issues:")
+                    for issue in critical_issues:
+                        # Clean up the issue message
+                        clean_issue = issue.replace("ERROR", "").replace("WARNING", "").strip()
+                        if clean_issue:
+                            print(f"   • {clean_issue}")
+
+                if len(errors) > 3 or len(warnings) > 3:
+                    print(f"   ... and {max(0, len(errors) - 3 + len(warnings) - 3)} more issues")
+
+                # Suggest actionable fixes
+                if errors:
+                    print("   💡 Fix errors for better reader compatibility")
+                if warnings and not errors:
+                    print("   💡 Address warnings for optimal EPUB quality")
+
+            else:
+                print("📋 EPUBCheck: ✅ No issues found")
+
+    except subprocess.TimeoutExpired:
+        if not quiet:
+            print("📋 EPUBCheck: Timeout (file may be too large)")
+    except Exception as e:
+        if not quiet:
+            print(f"📋 EPUBCheck: Error during validation ({e})")
+
+
+def _generate_epub2_compat_css() -> str:
+    """Generate CSS rules for EPUB 2 compatibility mode."""
+    return """
+/* EPUB 2 compatibility constraints */
+/* Remove modern CSS features that may not be supported */
+body {
+    /* Avoid CSS Grid and Flexbox */
+    display: block !important;
+}
+
+/* Simpler font stacks for better compatibility */
+h1, h2, h3, h4, h5, h6 {
+    font-family: serif !important;
+}
+
+/* Avoid advanced selectors and properties */
+* {
+    /* Remove CSS transforms and animations */
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+
+    /* Remove modern layout properties */
+    display: inline, block, inline-block, list-item, table, table-cell !important;
+}
+
+/* Conservative image sizing */
+img {
+    max-width: 100% !important;
+    height: auto !important;
+    /* Remove object-fit and other modern properties */
+    object-fit: initial !important;
+}
+
+/* Simple table styling */
+table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+}
+
+/* Conservative text formatting */
+p {
+    /* Avoid advanced text properties */
+    text-overflow: clip !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+/* Remove advanced pseudo-elements and selectors */
+::before, ::after {
+    content: none !important;
+}
+
+/* Avoid CSS counters and generated content */
+ol, ul {
+    list-style-type: decimal !important;
+}
+
+ul {
+    list-style-type: disc !important;
+}
+"""
+
+
+def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions, styles_css: str = "", language: str = "en") -> bytes:
     # Load theme CSS using the theme discovery system
     css = ""
     try:
@@ -63,6 +206,17 @@ def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions, styles_css
     # Add styles from styles.json
     if styles_css:
         css += "\n/* styles from styles.json */\n" + styles_css
+
+    # Add language-specific CSS
+    language_css = generate_language_css(language, opts.vertical_writing)
+    if language_css:
+        css += "\n/* language-specific styles */\n" + language_css
+
+    # Add EPUB 2 compatibility CSS if enabled
+    if opts.epub2_compat:
+        epub2_css = _generate_epub2_compat_css()
+        css += "\n/* EPUB 2 compatibility styles */\n" + epub2_css
+
     if extra_css and extra_css.exists():
         css += "\n/* user css */\n" + extra_css.read_text(encoding="utf-8")
     return css.encode("utf-8")
@@ -331,7 +485,7 @@ def assemble_epub(
     book.set_cover(meta.cover_path.name, cover_bytes)
 
     # CSS
-    css_bytes = _load_css(opts.theme, opts.extra_css, opts, styles_css)
+    css_bytes = _load_css(opts.theme, opts.extra_css, opts, styles_css, meta.language or "en")
     style_item = epub.EpubItem(
         uid="style_base",
         file_name="style/base.css",
@@ -436,6 +590,30 @@ def assemble_epub(
                         content=res.read_bytes(),
                     )
                     book.add_item(item)
+
+    # Process accessibility features
+    if not opts.quiet:
+        print("🔍 Processing EPUB Accessibility features...")
+
+    html_chunks, accessibility_meta = process_accessibility_features(
+        html_chunks,
+        meta,
+        interactive=not opts.quiet,
+        quiet=opts.quiet
+    )
+
+    # Add accessibility metadata to EPUB
+    for key, value in accessibility_meta.items():
+        book.add_metadata(None, "meta", value, {"property": key})
+
+    # Add language-specific attributes to HTML
+    language_code = meta.language or "en"
+    html_chunks = add_language_attributes_to_html(html_chunks, language_code)
+
+    if not opts.quiet:
+        print(f"🌐 Applied language settings for: {language_code}")
+        if opts.vertical_writing:
+            print("📝 Vertical writing mode enabled")
 
     # Chapters from html_chunks
     chapters = []
@@ -664,30 +842,6 @@ def assemble_epub(
             encoding="utf-8",
         )
 
-    # Optional EPUBCheck if available
+    # EPUBCheck validation (default enabled)
     if opts.epubcheck:
-        try:
-            import shutil
-            import subprocess
-
-            cmd = shutil.which("epubcheck")
-            if cmd:
-                proc = subprocess.run([cmd, str(output_path)], capture_output=True, text=True)
-                out = (proc.stdout or "") + "\n" + (proc.stderr or "")
-                # Naive counts
-                errors = len([1 for line in out.splitlines() if "ERROR" in line])
-                warnings = len([1 for line in out.splitlines() if "WARNING" in line])
-                summary = f"EPUBCheck: {errors} error(s), {warnings} warning(s)"
-                if not opts.quiet:
-                    print(summary)
-                    if opts.verbose and (errors or warnings):
-                        print("First issues:")
-                        shown = 0
-                        for line in out.splitlines():
-                            if ("ERROR" in line) or ("WARNING" in line):
-                                print("  " + line)
-                                shown += 1
-                                if shown >= 10:
-                                    break
-        except Exception:
-            pass
+        _run_epubcheck_validation(output_path, opts.quiet)

@@ -37,18 +37,18 @@ Beyond serif/sans/printlike (genre presets; night-mode friendly). Existing theme
 Cover scaling is supported now; add auto-resize/compress (long-edge cap, WebP/AVIF with fallback), and per-image DPI rules.
 
 ## 4) Accessibility & compliance
-Status: To Do
+Status: Completed
 
-### EPUB Accessibility 1.1 pass
+### EPUB Accessibility 1.1 pass ✓
 Auto-prompt for missing alt text, add ARIA landmarks and accessMode/accessibilityFeature metadata.
 
-### Default EPUBCheck run
+### Default EPUBCheck run ✓
 (opt-out instead of opt-in) with friendly summary; you already integrate EPUBCheck when present/on PATH and via Tools Manager—flip the default and surface actionable hints.
 
-### Language/script support
+### Language/script support ✓
 RTL (Arabic/Hebrew), CJK vertical options, hyphenation dictionaries; you already have --hyphenate/--justify. Make language-aware defaults.
 
-### EPUB 2 compatibility mode
+### EPUB 2 compatibility mode ✓
 For old readers (dual-nav/NCX already present; add stricter CSS constraints).
 
 ## 5) UX & workflow

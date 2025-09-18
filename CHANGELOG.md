@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.0.5]
+
+### Added
+- **EPUB Accessibility 1.1 compliance**: Auto-detection of missing alt text with interactive prompts, ARIA landmarks, and Schema.org accessibility metadata.
+- **Enhanced EPUBCheck integration**: Default-enabled validation with friendly error reporting and actionable suggestions.
+- **Comprehensive language/script support**: RTL languages (Arabic, Hebrew, Persian), CJK vertical writing modes, and language-aware typography defaults.
+- **EPUB 2 compatibility mode**: Stricter CSS constraints for legacy reader support via `--epub2-compat` flag.
+
+### Improved
+- Interactive alt text prompts for better accessibility compliance
+- Enhanced EPUBCheck output with timeout handling and issue prioritization
+- Language-aware hyphenation and justification defaults
+- Automatic language attribute injection in HTML content
+- Font stack optimization for different script systems
+
+### Technical
+- Created `accessibility.py`: EPUB accessibility validation and metadata generation
+- Created `language.py`: Comprehensive language/script configuration system
+- Enhanced EPUBCheck integration with better error parsing and user guidance
+- Added CLI options: `--vertical-writing`, `--epub2-compat`
+- Language-specific CSS generation with RTL and CJK support
+- Accessibility metadata integration in EPUB package
+
 ## [1.0.4]
 
 ### Added

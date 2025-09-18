@@ -88,6 +88,7 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--image-max-width", type=int, default=1200, help="Maximum image width in pixels")
     b.add_argument("--image-max-height", type=int, default=1600, help="Maximum image height in pixels")
     b.add_argument("--image-format", choices=["original", "webp", "avif"], default="webp", help="Convert images to modern format")
+    b.add_argument("--vertical-writing", action="store_true", help="Enable vertical writing mode for CJK languages")
     b.add_argument("--hyphenate", choices=["on", "off"], default="on")
     b.add_argument("--justify", choices=["on", "off"], default="on")
     b.add_argument("--toc-depth", type=int, default=2, help="Table of contents depth (1-6)")
@@ -111,6 +112,7 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--css", type=str, help="Path to extra CSS to merge (optional)")
     b.add_argument("--page-numbers", choices=["on", "off"], default="off")
     b.add_argument("--epub-version", type=str, default="3")
+    b.add_argument("--epub2-compat", action="store_true", help="Enable EPUB 2 compatibility mode (stricter CSS)")
     b.add_argument("--cover-scale", choices=["contain", "cover"], default="contain")
     b.add_argument(
         "--font-size", dest="font_size", type=str, help="Base font size (e.g., 1rem, 12pt)"
@@ -777,6 +779,8 @@ def run_build(args: argparse.Namespace) -> int:
         image_max_width=args.image_max_width,
         image_max_height=args.image_max_height,
         image_format=args.image_format,
+        vertical_writing=args.vertical_writing,
+        epub2_compat=args.epub2_compat,
         hyphenate=args.hyphenate == "on",
         justify=args.justify == "on",
         toc_depth=toc_depth,
