@@ -34,14 +34,31 @@ function Ensure-Pipx {
   $py = Get-PythonCmd
   & $py -m pip install --user pipx
 
-  # Capture output of pipx ensurepath and add to current session's PATH
-  $pipxPathOutput = & $py -m pipx ensurepath
-  $pipxScriptPath = ($pipxPathOutput | Select-String -Pattern "added to PATH: (.*)" | ForEach-Object { $_.Matches[0].Groups[1].Value })
-  if ($pipxScriptPath) {
-      $env:Path = "$env:Path;$pipxScriptPath"
-      Write-Host "Added pipx scripts to current session's PATH: $pipxScriptPath"
-  } else {
-      Write-Host 'If pipx is not found, open a new terminal to refresh PATH.'
+  # Run pipx ensurepath to add to permanent PATH
+  Write-Host 'Ensuring pipx is on PATH...'
+  & $py -m pipx ensurepath --force
+
+  # Add pipx script directory to current session PATH
+  $pythonVersion = & $py -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
+  $pipxScriptPath = "$env:USERPROFILE\AppData\Local\Programs\Python\Python${pythonVersion}\Scripts"
+
+  # Also check the roaming path
+  $pipxScriptPathRoaming = "$env:USERPROFILE\.local\bin"
+
+  # Add both potential paths to current session
+  $pathsToAdd = @($pipxScriptPath, $pipxScriptPathRoaming)
+  foreach ($pathToAdd in $pathsToAdd) {
+      if (Test-Path $pathToAdd) {
+          if ($env:Path -notlike "*$pathToAdd*") {
+              $env:Path = "$env:Path;$pathToAdd"
+              Write-Host "Added to current session PATH: $pathToAdd"
+          }
+      }
+  }
+
+  # Test if pipx is now available
+  if (-not (Get-Command pipx -ErrorAction SilentlyContinue)) {
+      Write-Host 'pipx still not found. You may need to restart your terminal.'
   }
 }
 
@@ -98,16 +115,15 @@ switch ($Method) {
     Ensure-Pipx
     # Use Python to invoke pipx module to avoid quoting issues
     $py = Get-PythonCmd
-    # Force reinstall to handle upgrades or existing envs consistently
-    # Pass the base path and extras separately
-    $pipxArgs = @("--force", $pkgSpec)
+    # Build package spec with extras in bracket notation for older pipx compatibility
+    $packageWithExtras = $pkgSpec
     if ($Extras -ne 'none') {
-        $pipxArgs += "--extras"
-        # Convert 'all' to 'docx,pandoc' for pipx
+        # Convert 'all' to 'docx,pandoc' for extras
         $pipxExtras = if ($Extras -eq 'all') { 'docx,pandoc' } else { $Extras }
-        $pipxArgs += $pipxExtras
+        $packageWithExtras = "${pkgSpec}[${pipxExtras}]"
     }
-    & $py -m pipx install @pipxArgs
+    # Force reinstall to handle upgrades or existing envs consistently
+    & $py -m pipx install --force $packageWithExtras
   }
   'pip-user' {
     $py = Get-PythonCmd
@@ -120,18 +136,61 @@ switch ($Method) {
 }
 
 Write-Host 'Verifying CLI on PATH...'
+
+# Add common pipx installation paths to current session
+$py = Get-PythonCmd
+$pythonVersion = & $py -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
+$commonPaths = @(
+    "$env:USERPROFILE\.local\bin",
+    "$env:USERPROFILE\AppData\Roaming\Python\Python${pythonVersion}\Scripts",
+    "$env:APPDATA\Python\Python${pythonVersion}\Scripts"
+)
+
+foreach ($path in $commonPaths) {
+    if ((Test-Path $path) -and ($env:Path -notlike "*$path*")) {
+        $env:Path = "$env:Path;$path"
+        Write-Host "Added potential docx2shelf path to session: $path"
+    }
+}
+
 try {
-  $null = Get-Command docx2shelf -ErrorAction Stop
+  $docx2shelfCmd = Get-Command docx2shelf -ErrorAction Stop
+  Write-Host "✓ Found docx2shelf at: $($docx2shelfCmd.Source)"
   & docx2shelf --help | Out-Null
+  Write-Host "✓ docx2shelf is working correctly"
+
   # Optional tools installation
   switch ($WithTools) {
     'none'      { }
-    'pandoc'    { Write-Host 'Installing Pandoc via tools manager...'; & docx2shelf tools install pandoc | Out-Null }
-    'epubcheck' { Write-Host 'Installing EPUBCheck via tools manager...'; & docx2shelf tools install epubcheck | Out-Null }
-    'all'       { Write-Host 'Installing Pandoc + EPUBCheck via tools manager...'; & docx2shelf tools install pandoc | Out-Null; & docx2shelf tools install epubcheck | Out-Null }
+    'pandoc'    { Write-Host 'Installing Pandoc via tools manager...'; & docx2shelf tools install pandoc }
+    'epubcheck' { Write-Host 'Installing EPUBCheck via tools manager...'; & docx2shelf tools install epubcheck }
+    'all'       {
+        Write-Host 'Installing Pandoc + EPUBCheck via tools manager...'
+        & docx2shelf tools install pandoc
+        & docx2shelf tools install epubcheck
+    }
   }
-  Write-Host 'Done. Try: docx2shelf --help'
+  Write-Host ''
+  Write-Host '🎉 Installation successful! You can now use docx2shelf.'
+  Write-Host 'Try: docx2shelf --help'
+  Write-Host 'Or just: docx2shelf (for interactive mode)'
 } catch {
-  Write-Warning 'docx2shelf not found on PATH yet. Ensure your user Scripts folder is on PATH and restart your terminal:'
-  Write-Host '  %USERPROFILE%\AppData\Local\Programs\Python\Python311\Scripts (version may vary)'
+  Write-Warning 'docx2shelf not found on PATH. This can happen after installation.'
+  Write-Host ''
+  Write-Host 'Solutions:'
+  Write-Host '1. Restart your terminal/PowerShell and try: docx2shelf --help'
+  Write-Host '2. If that fails, manually add this directory to your PATH:'
+
+  foreach ($path in $commonPaths) {
+      if (Test-Path $path) {
+          if (Test-Path "$path\docx2shelf.exe") {
+              Write-Host "   $path (docx2shelf.exe found here)"
+              break
+          } else {
+              Write-Host "   $path (check for docx2shelf.exe)"
+          }
+      }
+  }
+
+  Write-Host '3. Or run the installer again in a new terminal'
 }
