@@ -52,13 +52,13 @@ scoop install docx2shelf
 docker run -v $(pwd):/workspace ghcr.io/lightwraith8268/docx2shelf build --input manuscript.docx --title "My Book" --author "Author"
 ```
 
-#### Quick Install Script
+#### Quick Install Scripts
 
 **Windows**: Download and run `install.bat` from the [releases page](https://github.com/LightWraith8268/Docx2Shelf/releases)
 
-**macOS/Linux**:
+**macOS/Linux**: Download and run `install.sh` from the [releases page](https://github.com/LightWraith8268/Docx2Shelf/releases), or:
 ```bash
-curl -sSL https://raw.githubusercontent.com/LightWraith8268/Docx2Shelf/main/scripts/install.sh | bash
+curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh | bash
 ```
 
 ### Updating Docx2Shelf
