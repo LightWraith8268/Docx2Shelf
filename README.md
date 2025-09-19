@@ -36,12 +36,12 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 -   **IDE Integration**: Language Server Protocol support for enhanced development experience
 -   **Optimization Recommendations**: AI-powered suggestions for improving performance and memory usage
 
-### Community & Ecosystem (New in v1.2.8)
+### Plugin Marketplace & Ecosystem (Updated in v1.2.9)
 -   **Plugin Marketplace**: Discover, install, and manage community plugins with ratings and reviews
--   **Community Platform**: Forums, knowledge base, and contributor recognition with achievement system
 -   **Writing Tool Integration**: Import from Scrivener, Notion, and Google Docs with seamless conversion
 -   **Publishing Connectors**: Direct integration with KDP, Apple Books, and Kobo for automated publishing
 -   **Template Gallery**: Community-contributed themes and configuration templates
+-   **Streamlined Focus**: Simplified architecture focusing on core conversion and marketplace features
 
 ## Installation
 

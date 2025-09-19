@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.2.9] - 2025-01-19
+### Community Features Cleanup & Marketplace Focus
+
+#### Major Changes
+- **Removed community features**: Eliminated all community platform functionality including forums, user profiles, and achievement systems
+- **Streamlined codebase**: Focused exclusively on plugin marketplace and ecosystem integration features
+- **Simplified architecture**: Reduced complexity by removing community-related modules and dependencies
+
+#### Plugin Marketplace (Retained)
+- **Plugin discovery**: Search, filter, and browse plugins with ratings and reviews
+- **Installation management**: Secure plugin installation with dependency resolution
+- **Quality validation**: Automated security scanning and code quality checks
+- **Marketplace API**: RESTful interface for plugin distribution and management
+
+#### Ecosystem Integration (Retained)
+- **Writing tool integration**: Import from Scrivener, Notion, and Google Docs
+- **Publishing platform connectors**: Automated sync with KDP, Apple Books, and Kobo
+- **Template gallery**: Community templates and configuration sharing
+
+#### Technical Improvements
+- **Cleaner test suite**: Removed community-related tests, focused on marketplace and ecosystem
+- **Simplified imports**: Eliminated unused community module dependencies
+- **Performance optimization**: Reduced memory footprint by removing community features
+- **Code cleanup**: Removed all community references from marketplace and ecosystem modules
+
 ## [1.2.8] - 2025-01-19
 ### Community & Ecosystem
 

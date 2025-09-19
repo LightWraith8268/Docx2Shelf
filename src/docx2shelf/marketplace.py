@@ -1,8 +1,8 @@
 """
 Plugin marketplace and distribution system for Docx2Shelf.
 
-This module provides a comprehensive plugin marketplace with community ratings,
-reviews, installation management, dependency resolution, and quality certification.
+This module provides a plugin marketplace with discovery, installation management,
+dependency resolution, and quality validation for extending Docx2Shelf functionality.
 """
 
 from __future__ import annotations
@@ -47,30 +47,14 @@ class PluginMetadata:
     updated_at: str = ""
 
 
-@dataclass
-class PluginReview:
-    """User review for a plugin."""
-
-    plugin_id: str
-    user_id: str
-    username: str
-    rating: int  # 1-5 stars
-    title: str
-    content: str
-    helpful_count: int = 0
-    created_at: str = ""
-    verified_download: bool = False
 
 
 @dataclass
 class PluginStats:
-    """Statistics for a plugin."""
+    """Basic statistics for a plugin."""
 
     plugin_id: str
     download_count: int = 0
-    rating_average: float = 0.0
-    rating_count: int = 0
-    review_count: int = 0
     weekly_downloads: int = 0
     monthly_downloads: int = 0
     last_updated: str = ""
@@ -81,9 +65,9 @@ class PluginCertificationChecker:
 
     def __init__(self):
         self.certification_levels = {
-            'basic': {'min_rating': 3.0, 'min_downloads': 10, 'min_reviews': 3},
-            'verified': {'min_rating': 4.0, 'min_downloads': 100, 'min_reviews': 10},
-            'premium': {'min_rating': 4.5, 'min_downloads': 500, 'min_reviews': 25}
+            'basic': {'min_downloads': 10},
+            'verified': {'min_downloads': 100},
+            'trusted': {'min_downloads': 500}
         }
 
     def validate_plugin_code(self, plugin_path: Path) -> Tuple[bool, List[str]]:
@@ -149,9 +133,7 @@ class PluginCertificationChecker:
     def get_certification_level(self, stats: PluginStats) -> Optional[str]:
         """Determine certification level based on statistics."""
         for level, requirements in reversed(self.certification_levels.items()):
-            if (stats.rating_average >= requirements['min_rating'] and
-                stats.download_count >= requirements['min_downloads'] and
-                stats.review_count >= requirements['min_reviews']):
+            if stats.download_count >= requirements['min_downloads']:
                 return level
         return None
 
@@ -255,29 +237,11 @@ class PluginMarketplace:
                 )
             """)
 
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS reviews (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    plugin_id TEXT NOT NULL,
-                    user_id TEXT NOT NULL,
-                    username TEXT NOT NULL,
-                    rating INTEGER NOT NULL,
-                    title TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    helpful_count INTEGER DEFAULT 0,
-                    created_at TEXT NOT NULL,
-                    verified_download BOOLEAN DEFAULT FALSE,
-                    FOREIGN KEY (plugin_id) REFERENCES plugins (id)
-                )
-            """)
 
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS stats (
                     plugin_id TEXT PRIMARY KEY,
                     download_count INTEGER DEFAULT 0,
-                    rating_average REAL DEFAULT 0.0,
-                    rating_count INTEGER DEFAULT 0,
-                    review_count INTEGER DEFAULT 0,
                     weekly_downloads INTEGER DEFAULT 0,
                     monthly_downloads INTEGER DEFAULT 0,
                     last_updated TEXT NOT NULL,
@@ -334,10 +298,9 @@ class PluginMarketplace:
 
                     # Insert stats
                     conn.execute("""
-                        INSERT INTO stats VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO stats VALUES (?, ?, ?, ?, ?)
                     """, (
-                        stats.plugin_id, stats.download_count, stats.rating_average,
-                        stats.rating_count, stats.review_count, stats.weekly_downloads,
+                        stats.plugin_id, stats.download_count, stats.weekly_downloads,
                         stats.monthly_downloads, stats.last_updated
                     ))
 
@@ -354,7 +317,7 @@ class PluginMarketplace:
 
         with sqlite3.connect(self.db_path) as conn:
             sql = """
-                SELECT p.*, s.rating_average, s.download_count
+                SELECT p.*, s.download_count
                 FROM plugins p
                 LEFT JOIN stats s ON p.id = s.plugin_id
                 WHERE 1=1
@@ -378,8 +341,6 @@ class PluginMarketplace:
             # Sort order
             if sort_by == "popularity":
                 sql += " ORDER BY s.download_count DESC"
-            elif sort_by == "rating":
-                sql += " ORDER BY s.rating_average DESC"
             elif sort_by == "recent":
                 sql += " ORDER BY p.updated_at DESC"
             elif sort_by == "name":
@@ -429,28 +390,12 @@ class PluginMarketplace:
 
             if row:
                 return PluginStats(
-                    plugin_id=row[0], download_count=row[1], rating_average=row[2],
-                    rating_count=row[3], review_count=row[4], weekly_downloads=row[5],
-                    monthly_downloads=row[6], last_updated=row[7]
+                    plugin_id=row[0], download_count=row[1], weekly_downloads=row[2],
+                    monthly_downloads=row[3], last_updated=row[4]
                 )
 
         return None
 
-    def get_plugin_reviews(self, plugin_id: str, limit: int = 10) -> List[PluginReview]:
-        """Get reviews for a specific plugin."""
-        try:
-            response = requests.get(
-                f"{self.api_base}/plugins/{plugin_id}/reviews",
-                params={'limit': limit},
-                timeout=30
-            )
-            response.raise_for_status()
-            reviews_data = response.json()
-
-            return [PluginReview(**review) for review in reviews_data.get('reviews', [])]
-
-        except Exception:
-            return []
 
     def install_plugin(self, plugin_id: str, auto_update: bool = True) -> bool:
         """Install a plugin from the marketplace."""

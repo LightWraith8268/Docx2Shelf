@@ -1,7 +1,7 @@
 """
 Comprehensive test suite for Docx2Shelf v1.2.8 features.
 
-Tests plugin marketplace, community platform, and ecosystem integration features.
+Tests plugin marketplace and ecosystem integration features.
 """
 
 import json
@@ -12,18 +12,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from docx2shelf.community import (
-    Achievement,
-    CommunityAchievementSystem,
-    CommunityForums,
-    CommunityPlatform,
-    CommunityUser,
-    ContributorActivity,
-    ForumPost,
-    KnowledgeArticle,
-    KnowledgeBase,
-    create_community_platform,
-)
 from docx2shelf.ecosystem import (
     EcosystemIntegrationManager,
     ExternalDocument,
@@ -43,7 +31,6 @@ from docx2shelf.marketplace import (
     PluginDependencyResolver,
     PluginMarketplace,
     PluginMetadata,
-    PluginReview,
     PluginStats,
     create_marketplace_instance,
 )
@@ -78,14 +65,13 @@ class TestPluginMarketplace:
         stats = PluginStats(
             plugin_id="test-plugin",
             download_count=150,
-            rating_average=4.5,
-            rating_count=30,
-            review_count=15
+            weekly_downloads=25,
+            monthly_downloads=100
         )
 
         assert stats.plugin_id == "test-plugin"
         assert stats.download_count == 150
-        assert stats.rating_average == 4.5
+        assert stats.weekly_downloads == 25
 
     def test_marketplace_initialization(self):
         """Test marketplace initialization."""
@@ -104,20 +90,20 @@ class TestPluginMarketplace:
         # Test certification levels
         stats = PluginStats(
             plugin_id="test",
-            rating_average=4.5,
             download_count=600,
-            review_count=30
+            weekly_downloads=50,
+            monthly_downloads=200
         )
 
         level = checker.get_certification_level(stats)
-        assert level == "premium"
+        assert level == "trusted"
 
         # Test basic certification
         basic_stats = PluginStats(
             plugin_id="test",
-            rating_average=3.5,
             download_count=15,
-            review_count=5
+            weekly_downloads=2,
+            monthly_downloads=8
         )
 
         level = checker.get_certification_level(basic_stats)
@@ -224,219 +210,7 @@ class TestPluginMarketplace:
             assert reviews[0].username == "testuser"
 
 
-class TestCommunityPlatform:
-    """Test the community platform and collaboration system (Epic 21)."""
-
-    def test_community_user_creation(self):
-        """Test creating community user profiles."""
-        user = CommunityUser(
-            user_id="user123",
-            username="testuser",
-            display_name="Test User",
-            email="test@example.com",
-            reputation_score=100,
-            badges=["newcomer"],
-            achievements=["first_post"]
-        )
-
-        assert user.user_id == "user123"
-        assert user.username == "testuser"
-        assert user.reputation_score == 100
-        assert "newcomer" in user.badges
-
-    def test_forum_post_creation(self):
-        """Test creating forum posts."""
-        post = ForumPost(
-            post_id="post123",
-            author_id="user123",
-            author_username="testuser",
-            title="Test Post",
-            content="This is a test post",
-            category="general",
-            tags=["test", "discussion"],
-            thread_id="thread123",
-            created_at="2025-01-19T10:00:00Z",
-            updated_at="2025-01-19T10:00:00Z"
-        )
-
-        assert post.post_id == "post123"
-        assert post.title == "Test Post"
-        assert "test" in post.tags
-
-    def test_knowledge_article_creation(self):
-        """Test creating knowledge base articles."""
-        article = KnowledgeArticle(
-            article_id="article123",
-            title="How to Use Docx2Shelf",
-            content="# How to Use Docx2Shelf\n\nStep 1...",
-            summary="A comprehensive guide",
-            author_id="user123",
-            author_username="testuser",
-            category="tutorials",
-            tags=["beginner", "guide"],
-            status="published",
-            difficulty_level="beginner",
-            estimated_read_time=5
-        )
-
-        assert article.article_id == "article123"
-        assert article.status == "published"
-        assert article.difficulty_level == "beginner"
-
-    def test_achievement_system(self):
-        """Test community achievement system."""
-        achievement_system = CommunityAchievementSystem()
-
-        # Test achievement definitions
-        achievements = achievement_system.achievements
-        assert "first_post" in achievements
-        assert "plugin_author" in achievements
-        assert "community_leader" in achievements
-
-        # Test achievement checking
-        user = CommunityUser(
-            user_id="user123",
-            username="testuser",
-            display_name="Test User",
-            posts_count=1,
-            achievements=[]
-        )
-
-        activities = []
-        new_achievements = achievement_system.check_achievements(user, activities)
-        assert "first_post" in new_achievements
-
-    def test_community_forums(self):
-        """Test community forums functionality."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            db_path = Path(temp_dir) / "test.db"
-            forums = CommunityForums(db_path)
-
-            # Test post creation
-            post = ForumPost(
-                post_id="post123",
-                author_id="user123",
-                author_username="testuser",
-                title="Test Post",
-                content="Test content",
-                category="general",
-                thread_id="thread123",
-                created_at="2025-01-19T10:00:00Z",
-                updated_at="2025-01-19T10:00:00Z"
-            )
-
-            result = forums.create_post(post)
-            assert result
-
-            # Test retrieving posts
-            posts = forums.get_posts(category="general")
-            assert len(posts) >= 0  # May be empty if creation failed
-
-    def test_knowledge_base(self):
-        """Test knowledge base functionality."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            db_path = Path(temp_dir) / "test.db"
-            kb = KnowledgeBase(db_path)
-
-            # Test article creation
-            article = KnowledgeArticle(
-                article_id="article123",
-                title="Test Article",
-                content="Test content",
-                summary="Test summary",
-                author_id="user123",
-                author_username="testuser",
-                category="tutorials",
-                status="published",
-                created_at="2025-01-19T10:00:00Z",
-                updated_at="2025-01-19T10:00:00Z"
-            )
-
-            result = kb.create_article(article)
-            assert result
-
-            # Test article search
-            articles = kb.search_articles(query="test")
-            assert len(articles) >= 0
-
-    def test_community_platform_integration(self):
-        """Test complete community platform."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            platform = CommunityPlatform(Path(temp_dir))
-
-            # Test user creation
-            user = CommunityUser(
-                user_id="user123",
-                username="testuser",
-                display_name="Test User",
-                joined_at="2025-01-19T10:00:00Z",
-                last_active="2025-01-19T10:00:00Z"
-            )
-
-            result = platform.create_user(user)
-            assert result
-
-            # Test user retrieval
-            retrieved_user = platform.get_user("user123")
-            assert retrieved_user is not None
-            assert retrieved_user.username == "testuser"
-
-    def test_contributor_activity_tracking(self):
-        """Test contributor activity tracking."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            platform = CommunityPlatform(Path(temp_dir))
-
-            # Create user first
-            user = CommunityUser(
-                user_id="user123",
-                username="testuser",
-                display_name="Test User",
-                joined_at="2025-01-19T10:00:00Z",
-                last_active="2025-01-19T10:00:00Z"
-            )
-            platform.create_user(user)
-
-            # Record activity
-            activity = ContributorActivity(
-                user_id="user123",
-                activity_type="plugin",
-                activity_id="activity123",
-                title="Published Plugin",
-                description="Published a new plugin",
-                points_earned=100,
-                created_at="2025-01-19T10:00:00Z"
-            )
-
-            result = platform.record_activity(activity)
-            assert result
-
-    def test_leaderboard_functionality(self):
-        """Test community leaderboard."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            platform = CommunityPlatform(Path(temp_dir))
-
-            # Create test users
-            users = [
-                CommunityUser(
-                    user_id=f"user{i}",
-                    username=f"testuser{i}",
-                    display_name=f"Test User {i}",
-                    reputation_score=i * 100,
-                    joined_at="2025-01-19T10:00:00Z",
-                    last_active="2025-01-19T10:00:00Z"
-                )
-                for i in range(1, 4)
-            ]
-
-            for user in users:
-                platform.create_user(user)
-
-            # Test leaderboard
-            leaderboard = platform.get_leaderboard(metric="reputation", limit=10)
-            assert len(leaderboard) <= 3
-            if leaderboard:
-                # Should be sorted by reputation descending
-                assert leaderboard[0].reputation_score >= leaderboard[-1].reputation_score
+# Community features removed - focusing on marketplace and ecosystem only
 
 
 class TestEcosystemIntegration:
@@ -620,53 +394,16 @@ class TestEcosystemIntegration:
 class TestIntegration:
     """Integration tests for v1.2.8 features working together."""
 
-    def test_marketplace_community_integration(self):
-        """Test marketplace and community platform integration."""
+    def test_marketplace_ecosystem_integration(self):
+        """Test marketplace and ecosystem integration."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Setup marketplace
             marketplace_dir = Path(temp_dir) / "marketplace"
             marketplace = PluginMarketplace(marketplace_dir)
 
-            # Setup community
-            community_dir = Path(temp_dir) / "community"
-            community = CommunityPlatform(community_dir)
-
-            # Create user
-            user = CommunityUser(
-                user_id="user123",
-                username="testuser",
-                display_name="Test User",
-                joined_at="2025-01-19T10:00:00Z",
-                last_active="2025-01-19T10:00:00Z"
-            )
-            community.create_user(user)
-
-            # Record plugin activity
-            activity = ContributorActivity(
-                user_id="user123",
-                activity_type="plugin",
-                activity_id="plugin_published",
-                title="Published Plugin",
-                description="Published test plugin to marketplace",
-                points_earned=100,
-                created_at="2025-01-19T10:00:00Z"
-            )
-            community.record_activity(activity)
-
-            # Verify integration
-            updated_user = community.get_user("user123")
-            assert updated_user.reputation_score >= 100
-
-    def test_ecosystem_marketplace_integration(self):
-        """Test ecosystem and marketplace integration."""
-        with tempfile.TemporaryDirectory() as temp_dir:
             # Setup ecosystem manager
             ecosystem_dir = Path(temp_dir) / "ecosystem"
             ecosystem = EcosystemIntegrationManager(ecosystem_dir)
-
-            # Setup marketplace
-            marketplace_dir = Path(temp_dir) / "marketplace"
-            marketplace = PluginMarketplace(marketplace_dir)
 
             # Test integration workflow
             integrations = ecosystem.list_available_integrations()
@@ -677,6 +414,7 @@ class TestIntegration:
                 result = marketplace.install_plugin("ecosystem-integration-plugin")
                 assert result
 
+
     def test_complete_v128_workflow(self):
         """Test complete v1.2.8 workflow integration."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -684,44 +422,21 @@ class TestIntegration:
 
             # 1. Setup all systems
             marketplace = PluginMarketplace(base_dir / "marketplace")
-            community = CommunityPlatform(base_dir / "community")
             ecosystem = EcosystemIntegrationManager(base_dir / "ecosystem")
 
-            # 2. Create community user
-            user = CommunityUser(
-                user_id="author123",
-                username="bookauthor",
-                display_name="Book Author",
-                joined_at="2025-01-19T10:00:00Z",
-                last_active="2025-01-19T10:00:00Z"
-            )
-            assert community.create_user(user)
-
-            # 3. Test ecosystem integration
+            # 2. Test ecosystem integration
             integrations = ecosystem.list_available_integrations()
             assert "scrivener" in integrations
             assert "notion" in integrations
 
-            # 4. Test publishing connector
+            # 3. Test publishing connector
             connector = ecosystem.publishing_connector
             kdp_platform = connector.get_platform("kdp")
             assert kdp_platform is not None
 
-            # 5. Record community activity
-            activity = ContributorActivity(
-                user_id="author123",
-                activity_type="tutorial",
-                activity_id="tutorial123",
-                title="Created Tutorial",
-                description="Created ecosystem integration tutorial",
-                points_earned=50,
-                created_at="2025-01-19T10:00:00Z"
-            )
-            assert community.record_activity(activity)
-
-            # 6. Verify achievement system
-            updated_user = community.get_user("author123")
-            assert updated_user.reputation_score >= 50
+            # 4. Test marketplace functionality
+            categories = marketplace.get_categories()
+            assert isinstance(categories, list)
 
             print("✅ Complete v1.2.8 workflow integration test passed!")
 
@@ -735,10 +450,6 @@ class TestHelperFunctions:
         marketplace = create_marketplace_instance()
         assert isinstance(marketplace, PluginMarketplace)
 
-    def test_create_community_platform(self):
-        """Test community platform creation helper."""
-        platform = create_community_platform()
-        assert isinstance(platform, CommunityPlatform)
 
     def test_create_ecosystem_manager(self):
         """Test ecosystem manager creation helper."""
