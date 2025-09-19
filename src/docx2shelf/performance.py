@@ -1,27 +1,62 @@
 """
-Performance optimization module for Docx2Shelf.
+Performance optimization and analytics module for Docx2Shelf.
 
-Provides streaming DOCX reading, incremental build cache, and parallel processing
+Provides streaming DOCX reading, incremental build cache, parallel processing,
+advanced performance profiling, memory optimization, and conversion analytics
 to reduce memory usage and improve conversion speed for large documents.
 """
 
 from __future__ import annotations
 
+import cProfile
 import hashlib
+import io
 import json
 import multiprocessing
 import pickle
+import pstats
 import sqlite3
 import threading
 import time
+import tracemalloc
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
 from zipfile import ZipFile
 
+import psutil
 from PIL import Image
 
 from .metadata import BuildOptions
+
+
+@dataclass
+class ConversionMetrics:
+    """Metrics for a single conversion operation."""
+
+    input_file: str
+    input_size_mb: float
+    output_size_mb: float
+    conversion_time_seconds: float
+    memory_peak_mb: float
+    cpu_percent: float
+    chapter_count: int
+    image_count: int
+    processing_stages: Dict[str, float] = field(default_factory=dict)
+    error_count: int = 0
+    warnings: List[str] = field(default_factory=list)
+
+
+@dataclass
+class PerformanceProfile:
+    """Detailed performance profiling data."""
+
+    function_stats: Dict[str, Dict[str, Any]]
+    memory_timeline: List[Dict[str, Any]]
+    hot_paths: List[str]
+    optimization_suggestions: List[str]
 
 
 class StreamingDocxReader:
@@ -401,6 +436,386 @@ class ParallelImageProcessor:
             return None
 
 
+class PerformanceProfiler:
+    """Advanced performance profiler for conversion operations."""
+
+    def __init__(self, enable_memory_tracking: bool = True):
+        self.enable_memory_tracking = enable_memory_tracking
+        self.profiler: Optional[cProfile.Profile] = None
+        self.start_time: float = 0
+        self.memory_snapshots: List[Dict[str, Any]] = []
+        self.stage_timings: Dict[str, float] = {}
+        self.current_stage: Optional[str] = None
+
+    def start_profiling(self) -> None:
+        """Start performance profiling."""
+        self.profiler = cProfile.Profile()
+        self.profiler.enable()
+        self.start_time = time.time()
+
+        if self.enable_memory_tracking:
+            tracemalloc.start()
+
+    def stop_profiling(self) -> PerformanceProfile:
+        """Stop profiling and return performance data."""
+        if not self.profiler:
+            raise RuntimeError("Profiler not started")
+
+        self.profiler.disable()
+
+        # Capture final memory snapshot
+        if self.enable_memory_tracking:
+            current, peak = tracemalloc.get_traced_memory()
+            self.memory_snapshots.append({
+                'timestamp': time.time() - self.start_time,
+                'current_mb': current / 1024 / 1024,
+                'peak_mb': peak / 1024 / 1024,
+                'stage': 'final'
+            })
+            tracemalloc.stop()
+
+        return self._analyze_profile()
+
+    def start_stage(self, stage_name: str) -> None:
+        """Mark the start of a processing stage."""
+        if self.current_stage:
+            self.end_stage()
+
+        self.current_stage = stage_name
+        self.stage_timings[stage_name] = time.time()
+
+        # Memory snapshot
+        if self.enable_memory_tracking and tracemalloc.is_tracing():
+            current, peak = tracemalloc.get_traced_memory()
+            self.memory_snapshots.append({
+                'timestamp': time.time() - self.start_time,
+                'current_mb': current / 1024 / 1024,
+                'peak_mb': peak / 1024 / 1024,
+                'stage': stage_name
+            })
+
+    def end_stage(self) -> None:
+        """Mark the end of the current processing stage."""
+        if not self.current_stage:
+            return
+
+        elapsed = time.time() - self.stage_timings[self.current_stage]
+        self.stage_timings[self.current_stage] = elapsed
+        self.current_stage = None
+
+    def _analyze_profile(self) -> PerformanceProfile:
+        """Analyze profiling data and generate insights."""
+        # Extract function statistics
+        s = io.StringIO()
+        ps = pstats.Stats(self.profiler, stream=s)
+        ps.sort_stats('cumulative')
+
+        function_stats = {}
+        for func, (cc, nc, tt, ct, callers) in ps.stats.items():
+            function_stats[f"{func[0]}:{func[1]}({func[2]})"] = {
+                'call_count': cc,
+                'total_time': tt,
+                'cumulative_time': ct,
+                'per_call': tt / cc if cc > 0 else 0
+            }
+
+        # Identify hot paths (functions taking >5% of total time)
+        total_time = sum(stats['total_time'] for stats in function_stats.values())
+        hot_paths = [
+            func for func, stats in function_stats.items()
+            if stats['total_time'] / total_time > 0.05
+        ]
+
+        # Generate optimization suggestions
+        suggestions = self._generate_optimization_suggestions(function_stats, hot_paths)
+
+        return PerformanceProfile(
+            function_stats=function_stats,
+            memory_timeline=self.memory_snapshots,
+            hot_paths=hot_paths,
+            optimization_suggestions=suggestions
+        )
+
+    def _generate_optimization_suggestions(
+        self,
+        function_stats: Dict[str, Dict[str, Any]],
+        hot_paths: List[str]
+    ) -> List[str]:
+        """Generate performance optimization suggestions."""
+        suggestions = []
+
+        # Memory-related suggestions
+        if self.memory_snapshots:
+            peak_memory = max(snap['peak_mb'] for snap in self.memory_snapshots)
+            if peak_memory > 500:  # > 500MB
+                suggestions.append(
+                    f"High memory usage detected ({peak_memory:.1f}MB). "
+                    "Consider streaming processing for large documents."
+                )
+
+        # Function-specific suggestions
+        for func in hot_paths:
+            if 'image' in func.lower():
+                suggestions.append(
+                    "Image processing is a performance bottleneck. "
+                    "Consider parallel image processing or caching."
+                )
+            elif 'parse' in func.lower() or 'xml' in func.lower():
+                suggestions.append(
+                    "Document parsing is slow. Consider using faster XML parsers "
+                    "or streaming parsing for large documents."
+                )
+
+        return suggestions
+
+
+class ConversionAnalytics:
+    """Analytics system for tracking conversion performance over time."""
+
+    def __init__(self, analytics_dir: Optional[Path] = None):
+        self.analytics_dir = analytics_dir or Path.home() / ".docx2shelf" / "analytics"
+        self.analytics_dir.mkdir(parents=True, exist_ok=True)
+        self.metrics_file = self.analytics_dir / "conversion_metrics.json"
+        self.benchmarks_file = self.analytics_dir / "benchmarks.json"
+
+    def record_conversion(self, metrics: ConversionMetrics) -> None:
+        """Record metrics for a conversion operation."""
+        # Load existing metrics
+        existing_metrics = []
+        if self.metrics_file.exists():
+            with open(self.metrics_file, 'r', encoding='utf-8') as f:
+                existing_metrics = json.load(f)
+
+        # Add new metrics
+        metrics_dict = {
+            'timestamp': time.time(),
+            'input_file': metrics.input_file,
+            'input_size_mb': metrics.input_size_mb,
+            'output_size_mb': metrics.output_size_mb,
+            'conversion_time_seconds': metrics.conversion_time_seconds,
+            'memory_peak_mb': metrics.memory_peak_mb,
+            'cpu_percent': metrics.cpu_percent,
+            'chapter_count': metrics.chapter_count,
+            'image_count': metrics.image_count,
+            'processing_stages': metrics.processing_stages,
+            'error_count': metrics.error_count,
+            'warnings': metrics.warnings
+        }
+
+        existing_metrics.append(metrics_dict)
+
+        # Keep only last 1000 entries
+        if len(existing_metrics) > 1000:
+            existing_metrics = existing_metrics[-1000:]
+
+        # Save updated metrics
+        with open(self.metrics_file, 'w', encoding='utf-8') as f:
+            json.dump(existing_metrics, f, indent=2)
+
+    def get_performance_trends(self, days: int = 30) -> Dict[str, Any]:
+        """Get performance trends over the specified number of days."""
+        if not self.metrics_file.exists():
+            return {}
+
+        with open(self.metrics_file, 'r', encoding='utf-8') as f:
+            all_metrics = json.load(f)
+
+        # Filter to recent metrics
+        cutoff_time = time.time() - (days * 24 * 60 * 60)
+        recent_metrics = [m for m in all_metrics if m['timestamp'] > cutoff_time]
+
+        if not recent_metrics:
+            return {}
+
+        # Calculate trends
+        avg_conversion_time = sum(m['conversion_time_seconds'] for m in recent_metrics) / len(recent_metrics)
+        avg_memory_usage = sum(m['memory_peak_mb'] for m in recent_metrics) / len(recent_metrics)
+        total_conversions = len(recent_metrics)
+        total_errors = sum(m['error_count'] for m in recent_metrics)
+
+        # Performance by file size buckets
+        size_buckets = defaultdict(list)
+        for m in recent_metrics:
+            if m['input_size_mb'] < 1:
+                bucket = 'small'
+            elif m['input_size_mb'] < 10:
+                bucket = 'medium'
+            else:
+                bucket = 'large'
+            size_buckets[bucket].append(m['conversion_time_seconds'])
+
+        bucket_averages = {
+            bucket: sum(times) / len(times)
+            for bucket, times in size_buckets.items()
+        }
+
+        return {
+            'period_days': days,
+            'total_conversions': total_conversions,
+            'avg_conversion_time_seconds': avg_conversion_time,
+            'avg_memory_usage_mb': avg_memory_usage,
+            'total_errors': total_errors,
+            'error_rate': total_errors / total_conversions if total_conversions > 0 else 0,
+            'performance_by_size': bucket_averages
+        }
+
+    def run_benchmark_suite(self) -> Dict[str, Any]:
+        """Run comprehensive benchmark tests."""
+        benchmarks = {}
+
+        # System information
+        benchmarks['system'] = {
+            'cpu_count': psutil.cpu_count(),
+            'cpu_freq_mhz': psutil.cpu_freq().current if psutil.cpu_freq() else None,
+            'memory_total_gb': psutil.virtual_memory().total / (1024**3),
+            'disk_type': 'unknown'  # Would need platform-specific detection
+        }
+
+        # Memory allocation benchmark
+        start_time = time.time()
+        test_data = [i for i in range(1000000)]  # 1M integers
+        allocation_time = time.time() - start_time
+        del test_data
+
+        benchmarks['memory_allocation_ms'] = allocation_time * 1000
+
+        # File I/O benchmark
+        test_file = self.analytics_dir / "benchmark_test.tmp"
+        test_content = "x" * 1024 * 1024  # 1MB of data
+
+        start_time = time.time()
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write(test_content)
+        write_time = time.time() - start_time
+
+        start_time = time.time()
+        with open(test_file, 'r', encoding='utf-8') as f:
+            _ = f.read()
+        read_time = time.time() - start_time
+
+        test_file.unlink()  # Clean up
+
+        benchmarks['file_io'] = {
+            'write_1mb_ms': write_time * 1000,
+            'read_1mb_ms': read_time * 1000
+        }
+
+        # Save benchmarks
+        benchmarks['timestamp'] = time.time()
+
+        existing_benchmarks = []
+        if self.benchmarks_file.exists():
+            with open(self.benchmarks_file, 'r', encoding='utf-8') as f:
+                existing_benchmarks = json.load(f)
+
+        existing_benchmarks.append(benchmarks)
+
+        # Keep only last 50 benchmark runs
+        if len(existing_benchmarks) > 50:
+            existing_benchmarks = existing_benchmarks[-50:]
+
+        with open(self.benchmarks_file, 'w', encoding='utf-8') as f:
+            json.dump(existing_benchmarks, f, indent=2)
+
+        return benchmarks
+
+    def detect_performance_regressions(self) -> List[str]:
+        """Detect performance regressions compared to historical data."""
+        if not self.benchmarks_file.exists():
+            return ["No historical benchmark data available"]
+
+        with open(self.benchmarks_file, 'r', encoding='utf-8') as f:
+            benchmarks = json.load(f)
+
+        if len(benchmarks) < 2:
+            return ["Insufficient benchmark data for regression analysis"]
+
+        current = benchmarks[-1]
+        baseline = benchmarks[-10] if len(benchmarks) >= 10 else benchmarks[0]
+
+        regressions = []
+
+        # Check memory allocation performance
+        current_mem = current.get('memory_allocation_ms', 0)
+        baseline_mem = baseline.get('memory_allocation_ms', 0)
+        if baseline_mem > 0 and current_mem > baseline_mem * 1.2:  # 20% slower
+            regressions.append(
+                f"Memory allocation performance regression: "
+                f"{current_mem:.1f}ms vs {baseline_mem:.1f}ms baseline"
+            )
+
+        # Check file I/O performance
+        current_io = current.get('file_io', {})
+        baseline_io = baseline.get('file_io', {})
+
+        for operation in ['write_1mb_ms', 'read_1mb_ms']:
+            current_val = current_io.get(operation, 0)
+            baseline_val = baseline_io.get(operation, 0)
+            if baseline_val > 0 and current_val > baseline_val * 1.3:  # 30% slower
+                regressions.append(
+                    f"File I/O regression ({operation}): "
+                    f"{current_val:.1f}ms vs {baseline_val:.1f}ms baseline"
+                )
+
+        return regressions if regressions else ["No performance regressions detected"]
+
+
+class MemoryOptimizer:
+    """Memory optimization utilities for large document processing."""
+
+    @staticmethod
+    def optimize_for_large_documents(file_size_mb: float) -> Dict[str, Any]:
+        """Return optimization settings based on document size."""
+        if file_size_mb < 10:
+            return {
+                'streaming_mode': False,
+                'chunk_size': None,
+                'parallel_processing': True,
+                'memory_limit_mb': None
+            }
+        elif file_size_mb < 100:
+            return {
+                'streaming_mode': True,
+                'chunk_size': 1024 * 1024,  # 1MB chunks
+                'parallel_processing': True,
+                'memory_limit_mb': 512
+            }
+        else:
+            return {
+                'streaming_mode': True,
+                'chunk_size': 512 * 1024,  # 512KB chunks
+                'parallel_processing': False,  # Avoid memory pressure
+                'memory_limit_mb': 256
+            }
+
+    @staticmethod
+    def estimate_memory_requirements(
+        file_size_mb: float,
+        image_count: int,
+        chapter_count: int
+    ) -> Dict[str, float]:
+        """Estimate memory requirements for conversion."""
+        # Base memory for document structure
+        base_memory = file_size_mb * 2  # 2x file size for parsing
+
+        # Additional memory for images (estimate 1MB per image in memory)
+        image_memory = image_count * 1.0
+
+        # Memory for chapter processing (estimate 5MB per chapter)
+        chapter_memory = chapter_count * 5.0
+
+        # Safety margin
+        total_estimated = (base_memory + image_memory + chapter_memory) * 1.5
+
+        return {
+            'base_mb': base_memory,
+            'images_mb': image_memory,
+            'chapters_mb': chapter_memory,
+            'total_estimated_mb': total_estimated,
+            'recommended_available_mb': total_estimated * 2
+        }
+
+
 class PerformanceMonitor:
     """Monitor and report performance metrics during conversion."""
 
@@ -490,3 +905,18 @@ class PerformanceMonitor:
                     summary += f"  {phase}: {times['duration']:.2f}s ({percentage:.1f}%)\n"
 
         return summary
+
+
+def create_conversion_profiler(enable_memory: bool = True) -> PerformanceProfiler:
+    """Create a configured performance profiler."""
+    return PerformanceProfiler(enable_memory_tracking=enable_memory)
+
+
+def create_analytics_system(analytics_dir: Optional[Path] = None) -> ConversionAnalytics:
+    """Create a configured analytics system."""
+    return ConversionAnalytics(analytics_dir)
+
+
+def create_memory_optimizer() -> MemoryOptimizer:
+    """Create a memory optimizer instance."""
+    return MemoryOptimizer()

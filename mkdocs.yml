@@ -1,0 +1,168 @@
+site_name: Docx2Shelf Documentation
+site_description: Comprehensive documentation for Docx2Shelf EPUB converter
+site_author: Docx2Shelf Contributors
+site_url: https://docs.docx2shelf.io
+
+repo_name: LightWraith8268/Docx2Shelf
+repo_url: https://github.com/LightWraith8268/Docx2Shelf
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; 2025 Docx2Shelf Contributors
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - toc.follow
+    - toc.integrate
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
+
+plugins:
+  - search:
+      lang: en
+  - macros
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - minify:
+      minify_html: true
+  - redirects:
+      redirect_maps:
+        'index.md': 'getting-started/index.md'
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/LightWraith8268/Docx2Shelf
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/docx2shelf/
+    - icon: fontawesome/brands/docker
+      link: https://github.com/LightWraith8268/Docx2Shelf/pkgs/container/docx2shelf
+
+extra_css:
+  - assets/extra.css
+
+extra_javascript:
+  - assets/extra.js
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:materialx.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: LightWraith8268
+      repo: Docx2Shelf
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - First Conversion: getting-started/first-conversion.md
+  - User Guide:
+    - user-guide/index.md
+    - CLI Reference: user-guide/cli-reference.md
+    - Configuration: user-guide/configuration.md
+    - Metadata Management: user-guide/metadata.md
+    - Themes & Styling: user-guide/themes.md
+    - Publishing: user-guide/publishing.md
+  - Advanced Features:
+    - advanced/index.md
+    - Plugin System: advanced/plugins.md
+    - Anthology & Series: advanced/anthology-series.md
+    - GUI Applications: advanced/gui.md
+    - Enterprise API: advanced/enterprise-api.md
+    - Production Deployment: advanced/deployment.md
+  - Developer Guide:
+    - developers/index.md
+    - Plugin Development: developers/plugin-development.md
+    - Theme Creation: developers/theme-creation.md
+    - Contributing: developers/contributing.md
+    - API Reference: developers/api-reference.md
+    - Testing: developers/testing.md
+  - Cookbook:
+    - cookbook/index.md
+    - Common Workflows: cookbook/workflows.md
+    - Troubleshooting: cookbook/troubleshooting.md
+    - Best Practices: cookbook/best-practices.md
+    - Performance Tips: cookbook/performance.md
+  - Store Guides:
+    - stores/index.md
+    - Amazon KDP: stores/kdp.md
+    - Apple Books: stores/apple-books.md
+    - Kobo: stores/kobo.md
+    - Google Play Books: stores/google-play.md
+    - Barnes & Noble: stores/barnes-noble.md
+  - Reference:
+    - reference/index.md
+    - EPUB Structure: reference/epub-structure.md
+    - CSS Classes: reference/css-classes.md
+    - Metadata Fields: reference/metadata-fields.md
+    - Error Codes: reference/error-codes.md
+    - Changelog: reference/changelog.md

@@ -29,6 +29,13 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 -   **Plugin Support**: Extend functionality with custom plugins for specialized workflows
 -   **No Internet Required**: Works completely offline - your manuscripts never leave your computer
 
+### Developer Experience (New in v1.2.7)
+-   **Interactive Documentation**: Built-in tutorials, troubleshooting wizard, and comprehensive guides
+-   **Advanced Developer Tools**: Hot-reload development, code generation, and LSP integration
+-   **Performance Analytics**: Real-time profiling, memory optimization, and conversion analytics
+-   **IDE Integration**: Language Server Protocol support for enhanced development experience
+-   **Optimization Recommendations**: AI-powered suggestions for improving performance and memory usage
+
 ## Installation
 
 Docx2Shelf requires **Python 3.11 or newer**.
@@ -592,6 +599,95 @@ security:
     enabled: true
     requests_per_minute: 120
     burst_size: 20
+```
+
+### Documentation & Developer Experience (v1.2.7)
+
+#### Interactive Documentation Platform
+Built-in documentation with interactive tutorials and troubleshooting:
+
+```bash
+# Launch documentation site
+docx2shelf docs serve --port 8000
+
+# Run interactive tutorials
+docx2shelf docs tutorial getting-started
+docx2shelf docs tutorial plugin-development
+docx2shelf docs tutorial enterprise-deployment
+
+# Get troubleshooting help
+docx2shelf docs troubleshoot "EPUB validation failed"
+docx2shelf docs troubleshoot --interactive
+```
+
+**Documentation Features:**
+- **Interactive tutorials**: Step-by-step guides with code validation and progress tracking
+- **Troubleshooting wizard**: Intelligent problem diagnosis with guided solutions
+- **MkDocs integration**: Complete documentation site with Material theme and responsive design
+- **Content validation**: Automated checking of documentation examples and code snippets
+
+#### Enhanced Developer Experience
+Advanced tooling for plugin and theme development:
+
+```bash
+# Start development environment with hot-reload
+docx2shelf dev start --project-dir my-plugin --hot-reload
+
+# Generate code templates
+docx2shelf dev generate plugin --name MyPlugin --hooks pre_convert post_convert
+docx2shelf dev generate theme --name MyTheme --base serif --fonts "Georgia, Times"
+docx2shelf dev generate config --type novel --stores kindle apple
+
+# IDE integration (Language Server Protocol)
+docx2shelf dev lsp-server --port 3000  # For IDE integration
+```
+
+**Developer Tools:**
+- **Hot-reload development**: Real-time file watching with automatic plugin/theme reloading
+- **Code generation**: Template-based generators for plugins, themes, and configurations
+- **LSP support**: Language Server Protocol integration for enhanced IDE experience
+- **AST analysis**: Intelligent code analysis and symbol extraction for development assistance
+
+#### Performance Analytics & Optimization
+Comprehensive performance monitoring and optimization recommendations:
+
+```bash
+# Start performance profiling
+docx2shelf profile start --enable-memory-tracking
+# ... run conversion ...
+docx2shelf profile stop --output performance-report.json
+
+# View analytics dashboard
+docx2shelf analytics dashboard --days 30
+docx2shelf analytics trends --performance --by-size
+
+# Get optimization recommendations
+docx2shelf analytics optimize --input large-document.docx
+docx2shelf analytics benchmark --run-suite
+```
+
+**Analytics Features:**
+- **Advanced profiling**: Function-level performance analysis with memory tracking and hot path identification
+- **Historical trends**: Performance tracking over time with regression detection and benchmarking
+- **Memory optimization**: Document-size-based recommendations with streaming processing guidance
+- **Optimization suggestions**: AI-powered recommendations for improving conversion speed and memory usage
+
+#### New CLI Commands (v1.2.7)
+```bash
+# Documentation commands
+docx2shelf docs serve                    # Start documentation server
+docx2shelf docs tutorial <name>          # Run interactive tutorial
+docx2shelf docs troubleshoot <issue>     # Get troubleshooting help
+
+# Developer commands
+docx2shelf dev start                     # Start development environment
+docx2shelf dev generate <type>           # Generate code templates
+docx2shelf dev lsp-server               # Start LSP server for IDE integration
+
+# Performance commands
+docx2shelf profile start/stop           # Advanced performance profiling
+docx2shelf analytics dashboard          # View performance analytics
+docx2shelf analytics optimize           # Get optimization recommendations
 ```
 
 ## What Gets Produced
