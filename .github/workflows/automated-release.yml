@@ -1,0 +1,131 @@
+name: Automated Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.2.8)'
+        required: true
+        type: string
+      milestone:
+        description: 'Milestone name (e.g., Community & Ecosystem)'
+        required: true
+        type: string
+      features:
+        description: 'Comma-separated list of features'
+        required: false
+        type: string
+        default: ''
+      readme_features:
+        description: 'Comma-separated list of README features'
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Dry run (preview only)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  automated-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Configure Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Install GitHub CLI
+      run: |
+        sudo apt-get update
+        sudo apt-get install gh
+
+    - name: Prepare feature arguments
+      id: prepare-args
+      run: |
+        # Convert comma-separated features to space-separated arguments
+        FEATURES="${{ github.event.inputs.features }}"
+        README_FEATURES="${{ github.event.inputs.readme_features }}"
+
+        if [ -n "$FEATURES" ]; then
+          FEATURES_ARGS=$(echo "$FEATURES" | sed 's/,/ /g' | sed 's/^/--features /' | tr '\n' ' ')
+        else
+          FEATURES_ARGS=""
+        fi
+
+        if [ -n "$README_FEATURES" ]; then
+          README_ARGS=$(echo "$README_FEATURES" | sed 's/,/ /g' | sed 's/^/--readme-features /' | tr '\n' ' ')
+        else
+          README_ARGS=""
+        fi
+
+        echo "features_args=$FEATURES_ARGS" >> $GITHUB_OUTPUT
+        echo "readme_args=$README_ARGS" >> $GITHUB_OUTPUT
+
+    - name: Run release script
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        DRY_RUN_FLAG=""
+        if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          DRY_RUN_FLAG="--dry-run"
+        fi
+
+        python scripts/release.py \
+          --version "${{ github.event.inputs.version }}" \
+          --milestone "${{ github.event.inputs.milestone }}" \
+          ${{ steps.prepare-args.outputs.features_args }} \
+          ${{ steps.prepare-args.outputs.readme_args }} \
+          $DRY_RUN_FLAG
+
+    - name: Trigger PyPI publish (if not dry run)
+      if: github.event.inputs.dry_run == 'false'
+      run: |
+        # Trigger the PyPI publishing workflow
+        gh workflow run publish-pypi.yml \
+          --field version="${{ github.event.inputs.version }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Summary
+      run: |
+        echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Milestone**: ${{ github.event.inputs.milestone }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Features**: ${{ github.event.inputs.features }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **README Features**: ${{ github.event.inputs.readme_features }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Dry Run**: ${{ github.event.inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ github.event.inputs.dry_run }}" = "false" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Release completed successfully!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The following files were updated:" >> $GITHUB_STEP_SUMMARY
+          echo "- pyproject.toml (version)" >> $GITHUB_STEP_SUMMARY
+          echo "- ROADMAP.md (milestone completion)" >> $GITHUB_STEP_SUMMARY
+          echo "- CHANGELOG.md (release notes)" >> $GITHUB_STEP_SUMMARY
+          echo "- README.md (user-facing features)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 **GitHub Release**: [v${{ github.event.inputs.version }}](https://github.com/${{ github.repository }}/releases/tag/v${{ github.event.inputs.version }})" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔍 **Dry run completed** - No changes were made" >> $GITHUB_STEP_SUMMARY
+        fi
