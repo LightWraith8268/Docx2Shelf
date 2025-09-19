@@ -11,8 +11,12 @@ Every release follows these steps automatically:
 4. ✅ Update `README.md` with new user-facing features
 5. ✅ Commit changes with standardized commit message
 6. ✅ Push to GitHub
-7. ✅ Create GitHub release with comprehensive notes
+7. ✅ Create GitHub release with comprehensive notes and installation assets
 8. ✅ Trigger PyPI publishing workflow
+
+**Release Assets Included:**
+- `install.bat` - Windows installation script
+- `scripts/install.sh` - macOS/Linux installation script
 
 ## Automated Release via GitHub Actions
 

@@ -179,7 +179,9 @@ Co-Authored-By: Claude <noreply@anthropic.com>"""
 def create_github_release(version: str, milestone_name: str, features: List[str], dry_run: bool = False) -> None:
     """Create GitHub release."""
     if dry_run:
-        print("Would create GitHub release")
+        print("Would create GitHub release with assets:")
+        print("  - install.bat")
+        print("  - scripts/install.sh")
         return
 
     release_notes = f"""# 🚀 v{version} - {milestone_name}
@@ -193,16 +195,37 @@ def create_github_release(version: str, milestone_name: str, features: List[str]
 
     release_notes += f"""
 
+## 📦 Quick Installation
+
+### Windows
+```cmd
+curl -L -o install.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat && install.bat
+```
+
+### macOS/Linux
+```bash
+curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh | bash
+```
+
+
 ## 📖 Documentation Updates
 
 - Updated ROADMAP.md with v{version} completion
 - Enhanced CHANGELOG.md with detailed feature breakdown
 - Updated README.md with new user-facing capabilities
 
-## 💡 Installation
+## 💡 Alternative Installation Methods
 
 ```bash
+# PyPI
 pipx install docx2shelf
+
+# Homebrew
+brew install docx2shelf
+
+# Package managers
+winget install LightWraith8268.Docx2Shelf
+scoop install docx2shelf
 ```
 
 See [installation guide](https://github.com/LightWraith8268/Docx2Shelf#installation) for more options.
@@ -212,14 +235,26 @@ See [installation guide](https://github.com/LightWraith8268/Docx2Shelf#installat
 **Full Changelog**: See [CHANGELOG.md](https://github.com/LightWraith8268/Docx2Shelf/blob/main/CHANGELOG.md)
 """
 
-    # Create release
-    run_command([
+    # Check if installation scripts exist
+    install_assets = []
+    if Path("install.bat").exists():
+        install_assets.append("install.bat")
+    if Path("scripts/install.sh").exists():
+        install_assets.append("scripts/install.sh")
+
+    # Create release with assets
+    cmd = [
         "gh", "release", "create", f"v{version}",
         "--title", f"v{version} - {milestone_name}",
         "--notes", release_notes
-    ])
+    ]
 
-    print(f"Created GitHub release v{version}")
+    # Add assets to the command
+    cmd.extend(install_assets)
+
+    run_command(cmd)
+
+    print(f"Created GitHub release v{version} with {len(install_assets)} installation assets")
 
 
 def main():
