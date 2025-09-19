@@ -399,6 +399,201 @@ Check your EPUB against store requirements:
 docx2shelf checklist --epub my-book.epub --store kdp
 ```
 
+## Enterprise & Production Deployment (v1.2.6+)
+
+### Enterprise API & Integration
+
+Docx2Shelf v1.2.6 introduces enterprise-grade features for production environments and large-scale workflows:
+
+#### REST API Server
+Start the enterprise API server for programmatic access:
+
+```bash
+# Install with enterprise features
+pip install docx2shelf[enterprise]
+
+# Start API server
+docx2shelf api start --port 8080 --workers 4
+
+# Generate API key for authentication
+docx2shelf api create-key --name "Production" --permissions read,write
+```
+
+**API Features:**
+- **OpenAPI 3.0 specification** at `/api/docs`
+- **Authentication** via API keys with permissions
+- **Rate limiting** with configurable thresholds
+- **Job queue management** for conversion operations
+- **Webhook notifications** for real-time status updates
+- **Audit logging** for enterprise compliance
+
+#### Webhook Integration
+Configure webhooks for real-time notifications:
+
+```bash
+# Add webhook endpoint
+docx2shelf api webhooks add \
+  --url https://your-app.com/webhooks/docx2shelf \
+  --secret your-webhook-secret \
+  --events job.created,job.completed,job.failed
+
+# Test webhook delivery
+docx2shelf api webhooks test --endpoint-id 123
+```
+
+**Webhook Events:**
+- `job.created` - New conversion job submitted
+- `job.running` - Job processing started
+- `job.completed` - Conversion completed successfully
+- `job.failed` - Conversion failed with error details
+
+#### Enterprise CLI Commands
+```bash
+# Job management
+docx2shelf api jobs list --status running
+docx2shelf api jobs status --job-id abc123
+docx2shelf api jobs cancel --job-id abc123
+
+# Queue management
+docx2shelf api queue status
+docx2shelf api queue pause
+docx2shelf api queue resume
+
+# Monitoring and health
+docx2shelf api health
+docx2shelf api metrics
+```
+
+### Production Deployment
+
+#### Kubernetes Deployment
+Deploy Docx2Shelf in production Kubernetes environments:
+
+```bash
+# Install with Helm (recommended)
+helm repo add docx2shelf https://charts.docx2shelf.io
+helm install docx2shelf docx2shelf/docx2shelf --values production-values.yaml
+
+# Or use Kubernetes manifests directly
+kubectl apply -f k8s/
+```
+
+**Production Features:**
+- **Auto-scaling** with HPA based on CPU, memory, and queue size
+- **Prometheus monitoring** with comprehensive metrics
+- **Health checks** for liveness, readiness, and startup probes
+- **Security hardening** with non-root containers and capability restrictions
+- **High availability** with pod anti-affinity and rolling updates
+
+#### Docker Deployment
+```bash
+# Production container
+docker run -d \
+  --name docx2shelf-api \
+  -p 8080:8080 \
+  -e DOCX2SHELF_WORKERS=4 \
+  -e DOCX2SHELF_DB_PATH=/data/docx2shelf.db \
+  -v /data:/data \
+  ghcr.io/lightwraith8268/docx2shelf:v1.2.6
+
+# With monitoring
+docker-compose up -f docker-compose.prod.yml
+```
+
+### Advanced Plugin Management
+
+#### Plugin Sandboxing & Security
+v1.2.6 introduces advanced plugin security features:
+
+```bash
+# Enable plugin sandboxing (production environments)
+docx2shelf plugins config --sandbox-enabled true --resource-limits strict
+
+# Monitor plugin resource usage
+docx2shelf plugins monitor --plugin-id my-plugin --duration 300s
+
+# Performance profiling
+docx2shelf plugins profile --top-consumers 5
+```
+
+**Security Features:**
+- **Sandbox isolation** with import restrictions and resource limits
+- **Hot-reload capability** for zero-downtime plugin updates
+- **Resource monitoring** for memory, CPU, and execution time
+- **Cross-platform compatibility** with graceful feature degradation
+
+#### Plugin Performance Management
+```bash
+# Resource limits configuration
+docx2shelf plugins config set resource-limits \
+  --max-memory 256MB \
+  --max-cpu 50% \
+  --max-execution-time 30s
+
+# Hot-reload settings
+docx2shelf plugins config set hot-reload \
+  --enabled true \
+  --check-interval 5s
+
+# Performance metrics
+docx2shelf plugins metrics --format prometheus
+```
+
+### Monitoring & Observability
+
+#### System Monitoring
+Built-in monitoring with Prometheus integration:
+
+```bash
+# Start with monitoring enabled
+docx2shelf api start --monitoring-enabled --metrics-port 9090
+
+# Health check endpoints
+curl http://localhost:8080/health          # Overall health
+curl http://localhost:8080/health/live     # Liveness probe
+curl http://localhost:8080/health/ready    # Readiness probe
+
+# Prometheus metrics
+curl http://localhost:8080/metrics
+```
+
+**Monitoring Features:**
+- **System metrics**: CPU, memory, disk usage
+- **Conversion metrics**: Job counts, durations, success rates
+- **Plugin metrics**: Resource usage, execution times, error rates
+- **API metrics**: Request rates, response times, error counts
+
+#### Production Configuration
+```yaml
+# production-config.yaml
+server:
+  workers: 8
+  max_request_size: 100MB
+  request_timeout: 300s
+
+conversion:
+  max_concurrent_jobs: 20
+  temp_cleanup_interval: 60s
+
+monitoring:
+  enabled: true
+  prometheus_metrics: true
+  health_checks_enabled: true
+
+plugins:
+  sandbox_enabled: true
+  hot_reload_enabled: true
+  resource_limits:
+    max_memory_mb: 512
+    max_cpu_percent: 75
+
+security:
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 120
+    burst_size: 20
+```
+
 ## What Gets Produced
 
 Inside the `.epub` (ZIP) you’ll find:
