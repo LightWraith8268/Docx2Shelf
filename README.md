@@ -29,12 +29,19 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 -   **Plugin Support**: Extend functionality with custom plugins for specialized workflows
 -   **No Internet Required**: Works completely offline - your manuscripts never leave your computer
 
-### Developer Experience (New in v1.2.7)
+### Developer Experience (v1.2.7)
 -   **Interactive Documentation**: Built-in tutorials, troubleshooting wizard, and comprehensive guides
 -   **Advanced Developer Tools**: Hot-reload development, code generation, and LSP integration
 -   **Performance Analytics**: Real-time profiling, memory optimization, and conversion analytics
 -   **IDE Integration**: Language Server Protocol support for enhanced development experience
 -   **Optimization Recommendations**: AI-powered suggestions for improving performance and memory usage
+
+### Community & Ecosystem (New in v1.2.8)
+-   **Plugin Marketplace**: Discover, install, and manage community plugins with ratings and reviews
+-   **Community Platform**: Forums, knowledge base, and contributor recognition with achievement system
+-   **Writing Tool Integration**: Import from Scrivener, Notion, and Google Docs with seamless conversion
+-   **Publishing Connectors**: Direct integration with KDP, Apple Books, and Kobo for automated publishing
+-   **Template Gallery**: Community-contributed themes and configuration templates
 
 ## Installation
 
@@ -688,6 +695,31 @@ docx2shelf dev lsp-server               # Start LSP server for IDE integration
 docx2shelf profile start/stop           # Advanced performance profiling
 docx2shelf analytics dashboard          # View performance analytics
 docx2shelf analytics optimize           # Get optimization recommendations
+```
+
+#### New CLI Commands (v1.2.8)
+```bash
+# Plugin marketplace commands
+docx2shelf marketplace search <query>    # Search plugin marketplace
+docx2shelf marketplace install <plugin>  # Install plugin from marketplace
+docx2shelf marketplace list             # List installed plugins
+docx2shelf marketplace update <plugin>   # Update installed plugin
+docx2shelf marketplace uninstall <plugin> # Uninstall plugin
+
+# Community commands
+docx2shelf community login              # Login to community platform
+docx2shelf community profile            # View/edit user profile
+docx2shelf community forums             # Browse community forums
+docx2shelf community leaderboard        # View community leaderboard
+
+# Ecosystem integration commands
+docx2shelf import scrivener <project>   # Import from Scrivener project
+docx2shelf import notion <page-id>      # Import from Notion page
+docx2shelf import gdocs <doc-id>        # Import from Google Docs
+docx2shelf publish kdp <epub>           # Publish to Kindle Direct Publishing
+docx2shelf publish apple <epub>         # Publish to Apple Books
+docx2shelf templates browse             # Browse template gallery
+docx2shelf templates download <id>      # Download template
 ```
 
 ## What Gets Produced

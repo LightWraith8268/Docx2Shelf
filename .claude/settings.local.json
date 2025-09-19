@@ -21,7 +21,8 @@
       "Bash(gh run list:*)",
       "Bash(gh release delete:*)",
       "Bash(git rebase:*)",
-      "Bash(gh release upload:*)"
+      "Bash(gh release upload:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []
