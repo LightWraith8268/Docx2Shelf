@@ -2,79 +2,89 @@
 
 This document outlines the automated release process for Docx2Shelf, ensuring consistency and completeness for every release.
 
-## Overview
+## Overview - Fully Automated Tag-Based Releases
 
-Every release follows these steps automatically:
+The release process is now **fully automated**. Simply push your changes and create a version tag, and everything else happens automatically:
+
+### Developer Workflow
 1. ✅ Update version in `pyproject.toml`
 2. ✅ Update `ROADMAP.md` marking current version as completed
 3. ✅ Update `CHANGELOG.md` with release notes
 4. ✅ Update `README.md` with new user-facing features
-5. ✅ Commit changes with standardized commit message
-6. ✅ Push to GitHub
-7. ✅ Create GitHub release with comprehensive notes and installation assets
-8. ✅ Trigger PyPI publishing workflow
+5. ✅ Commit and push changes
+6. ✅ Create and push a version tag (e.g., `v1.2.8`)
 
-**Release Assets Included:**
+### Automated by GitHub Actions
+7. 🤖 **Automatically extracts** version and milestone from tag and CHANGELOG
+8. 🤖 **Automatically creates** GitHub release with comprehensive notes
+9. 🤖 **Automatically attaches** installation assets (`install.bat`, `scripts/install.sh`)
+10. 🤖 **Automatically triggers** PyPI publishing workflow
+
+**Release Assets Automatically Included:**
 - `install.bat` - Windows installation script
 - `scripts/install.sh` - macOS/Linux installation script
 
-## Automated Release via GitHub Actions
+## Simple Tag-Based Release Process
 
-### Using the GitHub UI
+### Complete Example Workflow
 
-1. Go to the **Actions** tab in the GitHub repository
-2. Select **Automated Release** workflow
-3. Click **Run workflow**
-4. Fill in the required fields:
-   - **Version**: New version number (e.g., `1.2.8`)
-   - **Milestone**: Milestone name (e.g., `Community & Ecosystem`)
-   - **Features**: Comma-separated list of features for CHANGELOG
-   - **README Features**: Comma-separated list of user-facing features for README
-   - **Dry Run**: Check to preview without making changes
-
-### Example Usage
-
-**For a minor release (v1.2.8):**
-```
-Version: 1.2.8
-Milestone: Community & Ecosystem
-Features: Plugin marketplace with ratings, Community forums integration, Enhanced ecosystem integration
-README Features: Plugin Marketplace, Community Platform, Writing Tools Integration
-Dry Run: false
-```
-
-**For a dry run (preview):**
-```
-Version: 1.2.8
-Milestone: Community & Ecosystem
-Features: Plugin marketplace with ratings, Community forums integration
-README Features: Plugin Marketplace, Community Platform
-Dry Run: true
-```
-
-## Manual Release via Script
-
-For local testing or manual releases:
+Here's the complete process for releasing v1.2.8:
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# 1. Update version in pyproject.toml
+sed -i 's/version = "1.2.7"/version = "1.2.8"/' pyproject.toml
 
-# Preview release (dry run)
-python scripts/release.py \
-  --version 1.2.8 \
-  --milestone "Community & Ecosystem" \
-  --features "Plugin marketplace with ratings" "Community forums integration" \
-  --readme-features "Plugin Marketplace" "Community Platform" \
-  --dry-run
+# 2. Update ROADMAP.md (mark v1.2.8 as completed)
+# Edit ROADMAP.md manually or using your editor
 
-# Execute release
-python scripts/release.py \
-  --version 1.2.8 \
-  --milestone "Community & Ecosystem" \
-  --features "Plugin marketplace with ratings" "Community forums integration" \
-  --readme-features "Plugin Marketplace" "Community Platform"
+# 3. Update CHANGELOG.md (add v1.2.8 entry)
+# Add new section at the top:
+## [1.2.8] - 2025-01-20
+### Community & Ecosystem
+- Plugin marketplace with community ratings and reviews
+- Community forums integration and collaboration tools
+- Enhanced ecosystem integration with popular writing tools
+
+# 4. Update README.md with new user-facing features
+# Add or update feature sections as needed
+
+# 5. Commit all changes
+git add .
+git commit -m "feat: Release v1.2.8 - Community & Ecosystem"
+
+# 6. Push changes
+git push
+
+# 7. Create and push version tag - THIS TRIGGERS THE RELEASE!
+git tag v1.2.8
+git push origin v1.2.8
 ```
+
+**That's it!** The GitHub Actions workflow will automatically:
+- Extract version and milestone from the tag and CHANGELOG
+- Create a GitHub release with comprehensive notes
+- Attach `install.bat` and `scripts/install.sh` as assets
+- Trigger PyPI publishing
+
+### Alternative: Using GitHub CLI
+
+```bash
+# Steps 1-6 same as above...
+
+# 7. Create and push tag with GitHub CLI
+gh release create v1.2.8 --generate-notes --title "v1.2.8 - Community & Ecosystem"
+```
+
+### Alternative: Using GitHub Web UI
+
+1. Go to **Releases** in your GitHub repository
+2. Click **Create a new release**
+3. Click **Choose a tag** → Type `v1.2.8` → **Create new tag**
+4. **Release title**: `v1.2.8 - Community & Ecosystem`
+5. Click **Generate release notes** (optional)
+6. Click **Publish release**
+
+The automation will still run and attach the installation assets!
 
 ## Release Types
 
@@ -143,7 +153,7 @@ Updates the features section with new user-facing capabilities:
 
 ## Commit Message Format
 
-The automation uses standardized commit messages:
+Use this simple format for release commits:
 
 ```
 feat: Release v1.2.8 - Community & Ecosystem
@@ -152,10 +162,6 @@ feat: Release v1.2.8 - Community & Ecosystem
 - Updated ROADMAP.md marking v1.2.8 as completed
 - Updated CHANGELOG.md with Community & Ecosystem features
 - Updated README.md with new user-facing features
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 ## GitHub Release Notes

@@ -1,0 +1,174 @@
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.2.8, v2.0.0, etc.
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Extract version from tag
+      id: extract_version
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        VERSION=${TAG#v}
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+
+    - name: Extract milestone from CHANGELOG
+      id: extract_milestone
+      run: |
+        # Extract the latest entry from CHANGELOG.md
+        VERSION="${{ steps.extract_version.outputs.version }}"
+
+        # Find the section for this version in CHANGELOG.md
+        if grep -q "\[$VERSION\]" CHANGELOG.md; then
+          # Extract milestone name from the header after the version
+          MILESTONE=$(grep -A1 "\[$VERSION\]" CHANGELOG.md | tail -1 | sed 's/^### //' | sed 's/^## //')
+          echo "milestone=$MILESTONE" >> $GITHUB_OUTPUT
+          echo "Found milestone: $MILESTONE"
+        else
+          echo "milestone=Release" >> $GITHUB_OUTPUT
+          echo "No milestone found, using 'Release'"
+        fi
+
+    - name: Extract release notes from CHANGELOG
+      id: extract_notes
+      run: |
+        VERSION="${{ steps.extract_version.outputs.version }}"
+
+        # Extract release notes from CHANGELOG.md
+        if grep -q "\[$VERSION\]" CHANGELOG.md; then
+          # Get content between this version and the next version section
+          awk -v version="$VERSION" '
+            BEGIN { found=0; print_notes=0 }
+            /^## \[/ {
+              if (found && print_notes) exit
+              if ($0 ~ "\\[" version "\\]") { found=1; print_notes=1; next }
+            }
+            found && print_notes && !/^## \[/ { print }
+          ' CHANGELOG.md > release_notes.md
+
+          echo "Release notes extracted:"
+          cat release_notes.md
+        else
+          echo "## What's New" > release_notes.md
+          echo "" >> release_notes.md
+          echo "Release notes for version $VERSION" >> release_notes.md
+        fi
+
+    - name: Generate comprehensive release notes
+      id: generate_notes
+      run: |
+        VERSION="${{ steps.extract_version.outputs.version }}"
+        MILESTONE="${{ steps.extract_milestone.outputs.milestone }}"
+
+        cat > full_release_notes.md << 'EOF'
+        # 🚀 v$VERSION - $MILESTONE
+
+        $(cat release_notes.md)
+
+        ## 📦 Quick Installation
+
+        ### Windows
+        ```cmd
+        curl -L -o install.bat https://github.com/${{ github.repository }}/releases/latest/download/install.bat && install.bat
+        ```
+
+        ### macOS/Linux
+        ```bash
+        curl -sSL https://github.com/${{ github.repository }}/releases/latest/download/install.sh | bash
+        ```
+
+        ## 💡 Alternative Installation Methods
+
+        ```bash
+        # PyPI
+        pipx install docx2shelf
+
+        # Homebrew
+        brew install docx2shelf
+
+        # Package managers
+        winget install LightWraith8268.Docx2Shelf
+        scoop install docx2shelf
+        ```
+
+        See [installation guide](https://github.com/${{ github.repository }}#installation) for more options.
+
+        ---
+
+        **Full Changelog**: See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
+        EOF
+
+        # Substitute variables
+        envsubst < full_release_notes.md > final_release_notes.md
+
+        echo "Final release notes:"
+        cat final_release_notes.md
+
+    - name: Check for installation assets
+      id: check_assets
+      run: |
+        ASSETS=""
+        if [ -f "install.bat" ]; then
+          ASSETS="$ASSETS install.bat"
+          echo "Found install.bat"
+        fi
+        if [ -f "scripts/install.sh" ]; then
+          ASSETS="$ASSETS scripts/install.sh"
+          echo "Found scripts/install.sh"
+        fi
+
+        echo "assets=$ASSETS" >> $GITHUB_OUTPUT
+        echo "Assets to include: $ASSETS"
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.extract_version.outputs.tag }}
+        name: "v${{ steps.extract_version.outputs.version }} - ${{ steps.extract_milestone.outputs.milestone }}"
+        body_path: final_release_notes.md
+        files: ${{ steps.check_assets.outputs.assets }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Trigger PyPI publish
+      if: success()
+      run: |
+        # Trigger the PyPI publishing workflow
+        gh workflow run publish-pypi.yml \
+          --field version="${{ steps.extract_version.outputs.version }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Summary
+      run: |
+        echo "## 🚀 Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Tag**: ${{ steps.extract_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ steps.extract_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Milestone**: ${{ steps.extract_milestone.outputs.milestone }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Assets**: ${{ steps.check_assets.outputs.assets }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🔗 **Release URL**: https://github.com/${{ github.repository }}/releases/tag/${{ steps.extract_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📋 **Quick Install**:" >> $GITHUB_STEP_SUMMARY
+        echo '```bash' >> $GITHUB_STEP_SUMMARY
+        echo "curl -sSL https://github.com/${{ github.repository }}/releases/latest/download/install.sh | bash" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
