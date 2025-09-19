@@ -137,12 +137,26 @@ def convert_file_to_html(input_path: Path, context: dict = None) -> tuple[list[s
     Strategy:
     - For .md and .txt, use Pandoc.
     - For .docx, try Pandoc first, then fall back to python-docx.
+    - Uses performance optimizations for large files.
     """
     from .plugins import plugin_manager, load_default_plugins
+    from .performance import PerformanceMonitor, BuildCache, ParallelImageProcessor
 
     # Initialize context if not provided
     if context is None:
         context = {}
+
+    # Initialize performance monitoring
+    monitor = PerformanceMonitor()
+    monitor.start_monitoring()
+
+    # Check for build cache
+    cache_dir = Path.home() / ".docx2shelf" / "cache"
+    cache = BuildCache(cache_dir)
+
+    # Initialize image processor
+    image_processor = ParallelImageProcessor()
+    image_processor.set_cache(cache)
 
     # Load plugins
     load_default_plugins()
@@ -305,20 +319,48 @@ def _rasterize_complex_element(element, element_type: str, tempdir: Path) -> str
     of layout elements to preserve author intention.
     """
     try:
-        # For now, this is a placeholder for complex rasterization logic
-        # In a full implementation, this would:
-        # 1. Use python-docx to extract the element's visual properties
-        # 2. Render it to an image using a library like Pillow or similar
-        # 3. Save the image and return an img tag
+        from xml.etree import ElementTree as ET
+        import hashlib
 
-        # Simple fallback: create a styled placeholder
-        element_id = f"{element_type}_{hash(str(element))}"
-        placeholder_text = f"[Complex {element_type} - rasterization placeholder]"
+        # Extract basic properties from the element
+        element_id = f"{element_type}_{hashlib.md5(str(element).encode()).hexdigest()[:8]}"
 
-        return f'<div class="rasterized-element" data-type="{element_type}" data-id="{element_id}">{placeholder_text}</div>'
+        # Try to extract text content if available
+        text_content = ""
+        if hasattr(element, 'text') and element.text:
+            text_content = element.text.strip()
+        elif hasattr(element, 'element'):
+            # Try to extract text from Word XML
+            try:
+                for text_elem in element.element.xpath('.//w:t', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}):
+                    if text_elem.text:
+                        text_content += text_elem.text
+            except:
+                pass
+
+        # Create semantic markup based on element type
+        if element_type.lower() == 'textbox':
+            css_class = "text-box"
+            if text_content:
+                return f'<aside class="{css_class}" data-id="{element_id}"><p>{text_content}</p></aside>'
+            else:
+                return f'<aside class="{css_class}" data-id="{element_id}"><p>[Text Box Content]</p></aside>'
+
+        elif element_type.lower() in ('shape', 'drawing'):
+            css_class = "drawing-element"
+            if text_content:
+                return f'<figure class="{css_class}" data-id="{element_id}"><figcaption>{text_content}</figcaption></figure>'
+            else:
+                return f'<figure class="{css_class}" data-id="{element_id}"><figcaption>[Drawing Element]</figcaption></figure>'
+
+        else:
+            # Generic complex element
+            css_class = "complex-element"
+            content = text_content if text_content else f"[{element_type}]"
+            return f'<div class="{css_class}" data-type="{element_type}" data-id="{element_id}">{content}</div>'
 
     except Exception:
-        return f'<div class="rasterized-element">[Complex {element_type}]</div>'
+        return f'<div class="complex-element" data-type="{element_type}">[{element_type}]</div>'
 
 
 def _process_text_box_or_shape(element, tempdir: Path, rasterize_fallback: bool = True) -> str:
@@ -540,9 +582,43 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
         if getattr(run, "italic", False):
             txt = f"<em>{txt}</em>"
 
-        # TODO: Implement robust run style mapping from styles.json
-        # This would involve inspecting run.element.xml for w:rPr and w:rStyle
-        # and mapping them to CSS classes or HTML tags.
+        # Enhanced run style mapping
+        try:
+            # Check for underline
+            if hasattr(run, 'underline') and run.underline:
+                txt = f"<u>{txt}</u>"
+
+            # Check for strike-through
+            if hasattr(run, 'font') and hasattr(run.font, 'strike') and run.font.strike:
+                txt = f"<s>{txt}</s>"
+
+            # Check for superscript/subscript
+            if hasattr(run, 'font') and hasattr(run.font, 'superscript') and run.font.superscript:
+                txt = f"<sup>{txt}</sup>"
+            elif hasattr(run, 'font') and hasattr(run.font, 'subscript') and run.font.subscript:
+                txt = f"<sub>{txt}</sub>"
+
+            # Check for small caps
+            if hasattr(run, 'font') and hasattr(run.font, 'small_caps') and run.font.small_caps:
+                txt = f'<span class="small-caps">{txt}</span>'
+
+            # Check for custom styles via run style
+            if hasattr(run, 'style') and run.style and hasattr(run.style, 'name'):
+                style_name = run.style.name.lower().replace(' ', '-')
+                # Map common Word styles to semantic HTML
+                if 'code' in style_name or 'monospace' in style_name:
+                    txt = f"<code>{txt}</code>"
+                elif 'emphasis' in style_name or 'stress' in style_name:
+                    txt = f"<em>{txt}</em>"
+                elif 'strong' in style_name or 'intense' in style_name:
+                    txt = f"<strong>{txt}</strong>"
+                elif style_name not in ('normal', 'default'):
+                    # Apply as CSS class for custom styles
+                    txt = f'<span class="style-{style_name}">{txt}</span>'
+
+        except AttributeError:
+            # Fallback if style attributes don't exist
+            pass
 
         return txt
 

@@ -16,7 +16,9 @@ param(
   [ValidateSet('none','docx','pandoc','all')]
   [string]$Extras = 'docx',
   [ValidateSet('none','pandoc','epubcheck','all')]
-  [string]$WithTools = 'none'
+  [string]$WithTools = 'none',
+  [ValidateSet('none','publishing','workflow','accessibility','cloud','premium')]
+  [string]$WithPlugins = 'none'
 )
 
 Set-StrictMode -Version Latest
@@ -168,6 +170,31 @@ try {
         Write-Host 'Installing Pandoc + EPUBCheck via tools manager...'
         & docx2shelf tools install pandoc
         & docx2shelf tools install epubcheck
+    }
+  }
+
+  # Optional plugin bundles installation
+  switch ($WithPlugins) {
+    'none'         { }
+    'publishing'   {
+        Write-Host 'Installing Publishing Bundle (Store Profiles, ONIX Export, Kindle Previewer)...'
+        & docx2shelf plugins bundles install publishing
+    }
+    'workflow'     {
+        Write-Host 'Installing Workflow Bundle (Anthology Builder, Series Builder, Web Interface)...'
+        & docx2shelf plugins bundles install workflow
+    }
+    'accessibility' {
+        Write-Host 'Installing Accessibility Bundle (Media Overlays, Dyslexic Themes)...'
+        & docx2shelf plugins bundles install accessibility
+    }
+    'cloud'        {
+        Write-Host 'Installing Cloud Integration Bundle (Google Docs, OneDrive)...'
+        & docx2shelf plugins bundles install cloud
+    }
+    'premium'      {
+        Write-Host 'Installing Premium Bundle (All marketplace plugins)...'
+        & docx2shelf plugins bundles install premium
     }
   }
   Write-Host ''

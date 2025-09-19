@@ -1,0 +1,189 @@
+# Default values for docx2shelf
+replicaCount: 3
+
+image:
+  repository: ghcr.io/docx2shelf/docx2shelf
+  pullPolicy: IfNotPresent
+  tag: "v1.2.6"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: http
+  healthPort: 8081
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+  - host: docx2shelf.local
+    paths:
+    - path: /
+      pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - docx2shelf
+        topologyKey: kubernetes.io/hostname
+
+# Application configuration
+config:
+  server:
+    host: "0.0.0.0"
+    port: 8080
+    health_port: 8081
+    workers: 4
+    max_request_size: "100MB"
+    request_timeout: "300s"
+
+  conversion:
+    max_concurrent_jobs: 10
+    temp_dir: "/tmp/docx2shelf"
+    cleanup_interval: "300s"
+    max_file_size: "50MB"
+
+  monitoring:
+    enabled: true
+    metrics_enabled: true
+    health_checks_enabled: true
+    prometheus_metrics: true
+    log_level: "INFO"
+
+  security:
+    enable_cors: true
+    cors_origins: ["*"]
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 60
+      burst_size: 10
+
+  plugins:
+    enable_hot_reload: true
+    sandbox_enabled: true
+    resource_limits:
+      max_memory_mb: 256
+      max_cpu_percent: 50
+      max_execution_time_seconds: 30
+
+# Storage configuration
+persistence:
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 8Gi
+
+# Monitoring dependencies
+prometheus:
+  enabled: false
+
+grafana:
+  enabled: false
+
+# Environment variables
+env: []
+
+# Volume mounts
+volumeMounts:
+- name: temp-storage
+  mountPath: /tmp/docx2shelf
+- name: config
+  mountPath: /app/config
+  readOnly: true
+
+# Volumes
+volumes:
+- name: temp-storage
+  emptyDir:
+    sizeLimit: 5Gi
+- name: config
+  configMap:
+    name: "{{ include \"docx2shelf.fullname\" . }}-config"
+
+# Health checks
+health:
+  liveness:
+    enabled: true
+    path: /health/live
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readiness:
+    enabled: true
+    path: /health/ready
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 2
+
+  startup:
+    enabled: true
+    path: /health/startup
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30

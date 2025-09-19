@@ -187,13 +187,50 @@ class GoogleDocsConnector(DocumentConnector):
     def authenticate(self, credentials_path: Optional[str] = None, **kwargs) -> bool:
         """Authenticate with Google Docs API."""
         try:
-            # This would require google-api-python-client
-            # For now, this is a placeholder that shows the structure
-            logger.info("Google Docs connector requires google-api-python-client package")
-            logger.info("Install with: pip install docx2shelf[connectors]")
-            return False
+            from google.auth.transport.requests import Request
+            from google.oauth2.credentials import Credentials
+            from google_auth_oauthlib.flow import InstalledAppFlow
+            from googleapiclient.discovery import build
+
+            # Scopes required for Google Docs API
+            SCOPES = ['https://www.googleapis.com/auth/documents.readonly']
+
+            creds = None
+            token_path = Path.home() / '.docx2shelf' / 'google_token.json'
+
+            # Load existing token
+            if token_path.exists():
+                creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+
+            # If there are no (valid) credentials available, let the user log in
+            if not creds or not creds.valid:
+                if creds and creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
+                else:
+                    if not credentials_path:
+                        logger.error("Google Docs authentication requires credentials.json file")
+                        logger.info("Download from Google Cloud Console: https://console.cloud.google.com/")
+                        return False
+
+                    flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
+                    creds = flow.run_local_server(port=0)
+
+                # Save the credentials for the next run
+                token_path.parent.mkdir(exist_ok=True)
+                with open(token_path, 'w') as token:
+                    token.write(creds.to_json())
+
+            self.service = build('docs', 'v1', credentials=creds)
+            self._authenticated = True
+            logger.info("Successfully authenticated with Google Docs")
+            return True
+
         except ImportError:
-            logger.error("Google Docs connector requires additional dependencies")
+            logger.error("Google Docs connector requires google-api-python-client")
+            logger.info("Install with: pip install google-api-python-client google-auth-oauthlib")
+            return False
+        except Exception as e:
+            logger.error(f"Google Docs authentication failed: {e}")
             return False
 
     def list_documents(self) -> List[Dict[str, Any]]:
@@ -201,16 +238,44 @@ class GoogleDocsConnector(DocumentConnector):
         if not self._authenticated:
             raise AuthenticationError("Not authenticated with Google Docs")
 
-        # Placeholder implementation
-        return []
+        try:
+            # Note: Google Docs API doesn't have a direct "list documents" endpoint
+            # This would typically require Google Drive API integration
+            logger.warning("Google Docs API doesn't support document listing directly")
+            logger.info("Use Google Drive API or provide document IDs directly")
+            return []
+        except Exception as e:
+            logger.error(f"Failed to list Google Docs: {e}")
+            return []
 
     def download_document(self, document_id: str, output_path: Path) -> Path:
         """Download a Google Docs document."""
         if not self._authenticated:
             raise AuthenticationError("Not authenticated with Google Docs")
 
-        # Placeholder implementation
-        raise NotImplementedError("Google Docs connector not yet implemented")
+        try:
+            # Get the document content
+            document = self.service.documents().get(documentId=document_id).execute()
+
+            # Export as DOCX format
+            export_request = self.service.documents().export(
+                documentId=document_id,
+                mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            )
+
+            # Download the content
+            content = export_request.execute()
+
+            # Save to output path
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_bytes(content)
+
+            logger.info(f"Downloaded Google Doc '{document.get('title', document_id)}' to {output_path}")
+            return output_path
+
+        except Exception as e:
+            logger.error(f"Failed to download Google Doc {document_id}: {e}")
+            raise
 
 
 class OneDriveConnector(DocumentConnector):
@@ -242,7 +307,34 @@ class OneDriveConnector(DocumentConnector):
         if not self._authenticated:
             raise AuthenticationError("Not authenticated with OneDrive")
 
-        raise NotImplementedError("OneDrive connector not yet implemented")
+        try:
+            # Use Microsoft Graph API to download the document
+            headers = {'Authorization': f'Bearer {self.access_token}'}
+
+            # Get file metadata
+            file_url = f"https://graph.microsoft.com/v1.0/me/drive/items/{document_id}"
+            response = requests.get(file_url, headers=headers)
+            response.raise_for_status()
+            file_info = response.json()
+
+            # Download file content
+            download_url = f"https://graph.microsoft.com/v1.0/me/drive/items/{document_id}/content"
+            download_response = requests.get(download_url, headers=headers)
+            download_response.raise_for_status()
+
+            # Save to output path
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_bytes(download_response.content)
+
+            logger.info(f"Downloaded OneDrive file '{file_info.get('name', document_id)}' to {output_path}")
+            return output_path
+
+        except requests.RequestException as e:
+            logger.error(f"Failed to download OneDrive document {document_id}: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error downloading OneDrive document {document_id}: {e}")
+            raise
 
 
 class ConnectorManager:

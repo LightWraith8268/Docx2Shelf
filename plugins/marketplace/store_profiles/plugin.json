@@ -1,0 +1,16 @@
+{
+  "name": "store_profiles",
+  "display_name": "Store Profile Manager",
+  "version": "1.0.0",
+  "description": "Validation for KDP, Apple Books, Kobo, and other retailers",
+  "author": "Docx2Shelf Team",
+  "license": "MIT",
+  "homepage": "https://github.com/LightWraith8268/Docx2Shelf",
+  "tags": ["publishing", "validation", "kdp", "apple", "kobo"],
+  "category": "publishing",
+  "dependencies": ["requests"],
+  "docx2shelf_version": ">=1.2.4",
+  "entry_point": "store_profiles.create_plugin",
+  "install_url": "https://plugins.docx2shelf.org/packages/store_profiles-1.0.0.zip",
+  "checksum": "sha256:example_checksum_here"
+}

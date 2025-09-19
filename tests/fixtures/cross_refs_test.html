@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cross-References Test Document</title>
+</head>
+<body>
+    <h1>Cross-References Test Document</h1>
+
+    <h2>Introduction</h2>
+    <p>This document tests cross-reference functionality for the v1.2 implementation.</p>
+
+    <h2 id="section-methodology">Methodology</h2>
+    <p>See <a href="#section-results">Results section</a> for detailed findings.</p>
+    <p>Reference to <a href="#figure-1">Figure 1</a> shows the workflow.</p>
+
+    <figure id="figure-1">
+        <img src="images/workflow.png" alt="Workflow diagram">
+        <figcaption>Figure 1: Processing Workflow</figcaption>
+    </figure>
+
+    <h2 id="section-results">Results</h2>
+    <p>The results are summarized in <a href="#table-1">Table 1</a>.</p>
+    <p>Additional analysis is provided in the <a href="#appendix">Appendix</a>.</p>
+
+    <table id="table-1">
+        <caption>Table 1: Test Results</caption>
+        <tr>
+            <th>Test Case</th>
+            <th>Result</th>
+            <th>Status</th>
+        </tr>
+        <tr>
+            <td>Cross-reference linking</td>
+            <td>Pass</td>
+            <td>✓</td>
+        </tr>
+        <tr>
+            <td>Anchor generation</td>
+            <td>Pass</td>
+            <td>✓</td>
+        </tr>
+    </table>
+
+    <h2 id="appendix">Appendix</h2>
+    <p>Detailed technical specifications.</p>
+    <p>Cross-reference back to <a href="#section-methodology">Methodology</a>.</p>
+
+    <!--XE "Cross-references"-->
+    <!--XE "Anchors"-->
+    <!--XE "EPUB:semantic markup"-->
+</body>
+</html>

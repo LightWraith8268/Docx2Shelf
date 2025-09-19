@@ -1,0 +1,16 @@
+{
+  "name": "anthology_builder",
+  "display_name": "Anthology Builder",
+  "version": "1.0.0",
+  "description": "Merges multiple manuscripts into collections",
+  "author": "Docx2Shelf Team",
+  "license": "MIT",
+  "homepage": "https://github.com/LightWraith8268/Docx2Shelf",
+  "tags": ["anthology", "collection", "multi-book"],
+  "category": "workflow",
+  "dependencies": [],
+  "docx2shelf_version": ">=1.2.4",
+  "entry_point": "anthology_builder.create_plugin",
+  "install_url": "https://plugins.docx2shelf.org/packages/anthology_builder-1.0.0.zip",
+  "checksum": "sha256:example_checksum_here"
+}

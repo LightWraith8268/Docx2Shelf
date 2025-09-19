@@ -1,0 +1,46 @@
+apiVersion: v2
+name: docx2shelf
+description: A Helm chart for Docx2Shelf EPUB converter
+type: application
+version: 1.2.6
+appVersion: "1.2.6"
+
+home: https://github.com/docx2shelf/docx2shelf
+sources:
+- https://github.com/docx2shelf/docx2shelf
+
+maintainers:
+- name: Docx2Shelf Contributors
+  email: maintainers@docx2shelf.io
+
+keywords:
+- epub
+- converter
+- docx
+- ebook
+- publishing
+
+annotations:
+  category: Publishing
+  artifacthub.io/license: MIT
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/containsSecurityUpdates: "true"
+  artifacthub.io/changes: |
+    - Added production deployment capabilities
+    - Implemented comprehensive monitoring and observability
+    - Enhanced plugin system with security isolation
+    - Built enterprise integration APIs
+
+dependencies:
+- name: prometheus
+  version: "15.x.x"
+  repository: https://prometheus-community.github.io/helm-charts
+  condition: prometheus.enabled
+  tags:
+    - monitoring
+- name: grafana
+  version: "6.x.x"
+  repository: https://grafana.github.io/helm-charts
+  condition: grafana.enabled
+  tags:
+    - monitoring

@@ -93,6 +93,10 @@ class BuildOptions:
     line_height: Optional[str] = None
     quiet: bool = False
     verbose: bool = False
+    # Advanced typography controls
+    typography_preset: Optional[str] = None  # professional|modern|academic|custom
+    custom_typography_config: Optional[str] = None  # Path to custom typography config
+    advanced_typography: bool = False  # Enable advanced typography features
 
 
 def build_output_filename(title: str, series: Optional[str], series_index: Optional[str]) -> str:

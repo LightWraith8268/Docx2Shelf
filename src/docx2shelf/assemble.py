@@ -10,6 +10,7 @@ from .fonts import process_embedded_fonts, warn_about_font_licensing
 from .images import process_images, get_media_type_for_image
 from .accessibility import process_accessibility_features, create_accessibility_summary
 from .language import generate_language_css, add_language_attributes_to_html, apply_language_defaults
+from .figures import process_figures_and_tables, FigureProcessor, FigureConfig
 from .tools import epubcheck_cmd
 
 
@@ -591,6 +592,13 @@ def assemble_epub(
                     )
                     book.add_item(item)
 
+    # Initialize figure processor for semantic markup
+    figure_config = FigureConfig(
+        auto_number=True,
+        generate_lists=opts.generate_figure_lists if hasattr(opts, 'generate_figure_lists') else True
+    )
+    figure_processor = FigureProcessor(figure_config)
+
     # Process accessibility features
     if not opts.quiet:
         print("🔍 Processing EPUB Accessibility features...")
@@ -628,7 +636,15 @@ def assemble_epub(
         for chap_num, (chapter_title, chunk_idx) in enumerate(manual_chapters, start=1):
             if chunk_idx < len(html_chunks):
                 chunk = html_chunks[chunk_idx]
-                chunk2, h1_id, subs = _inject_manual_chapter_ids(chunk, chap_num, chapter_title)
+
+                # Process figures and tables for semantic markup
+                chunk_with_figures = figure_processor.process_content(
+                    chunk,
+                    chapter_title=chapter_title,
+                    chapter_id=f"chap_{chap_num:03d}"
+                )
+
+                chunk2, h1_id, subs = _inject_manual_chapter_ids(chunk_with_figures, chap_num, chapter_title)
                 chap_fn = f"text/chap_{chap_num:03d}.xhtml"
                 chap = _html_item(chapter_title, chap_fn, chunk2, meta.language)
                 chap.add_item(style_item)
@@ -669,7 +685,14 @@ def assemble_epub(
     else:
         # Auto mode (default): scan headings as before
         for i, chunk in enumerate(html_chunks, start=1):
-            chunk2, h1_id, subs = _inject_heading_ids(chunk, i, opts.toc_depth)
+            # Process figures and tables for semantic markup
+            chunk_with_figures = figure_processor.process_content(
+                chunk,
+                chapter_title=f"Chapter {i}",
+                chapter_id=f"chap_{i:03d}"
+            )
+
+            chunk2, h1_id, subs = _inject_heading_ids(chunk_with_figures, i, opts.toc_depth)
             chap_fn = f"text/chap_{i:03d}.xhtml"
             chap = _html_item(f"Chapter {i}", chap_fn, chunk2, meta.language)
             chap.add_item(style_item)
@@ -686,6 +709,10 @@ def assemble_epub(
     # TOC and spine
     # TOC by depth (now supports up to 6 levels)
     toc_items = [title_page, copyright_page] + matter_items
+
+    # Add List of Figures/Tables to TOC if they exist
+    if list_items:
+        toc_items.extend(list_items)
     depth = max(1, min(6, opts.toc_depth))
 
     def build_nested_toc(chap_link, sub_links, current_depth=2):
@@ -735,7 +762,33 @@ def assemble_epub(
                     start_reading_link = chap_link.href
                 break
 
-    book.spine = ["nav", title_page, copyright_page] + matter_items + chapters
+    # Generate List of Figures and Tables pages if figures/tables were found
+    list_items = []
+    if figure_processor.get_figure_count() > 0:
+        lof_html = figure_processor.generate_list_of_figures()
+        if lof_html:
+            lof_item = _html_item(
+                figure_config.list_of_figures_title,
+                "text/list-of-figures.xhtml",
+                lof_html,
+                meta.language
+            )
+            book.add_item(lof_item)
+            list_items.append(lof_item)
+
+    if figure_processor.get_table_count() > 0:
+        lot_html = figure_processor.generate_list_of_tables()
+        if lot_html:
+            lot_item = _html_item(
+                figure_config.list_of_tables_title,
+                "text/list-of-tables.xhtml",
+                lot_html,
+                meta.language
+            )
+            book.add_item(lot_item)
+            list_items.append(lot_item)
+
+    book.spine = ["nav", title_page, copyright_page] + matter_items + list_items + chapters
 
     # Optional page-list nav (informational; support varies)
     if opts.page_list:

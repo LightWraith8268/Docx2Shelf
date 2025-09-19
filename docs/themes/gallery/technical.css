@@ -1,0 +1,573 @@
+/*
+ * Theme Name: Technical Manual
+ * Description: Clean, professional theme for technical documentation and programming books
+ * Best for: Technical manuals, programming guides, API documentation, software tutorials
+ * Platforms tested: Kindle, Apple Books, Kobo, Adobe Digital Editions
+ * Author: Docx2Shelf Team
+ * License: MIT
+ * Version: 1.0.0
+ */
+
+/* Base Typography */
+body {
+    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333333;
+    background: #ffffff;
+    margin: 1.5em;
+    text-align: left;
+}
+
+/* Headings */
+h1 {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 2em;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 2em 0 1em 0;
+    padding-bottom: 0.5em;
+    border-bottom: 3px solid #3498db;
+}
+
+h2 {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 1.5em;
+    font-weight: 600;
+    color: #34495e;
+    margin: 1.8em 0 1em 0;
+    padding-bottom: 0.3em;
+    border-bottom: 2px solid #95a5a6;
+}
+
+h3 {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 1.25em;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 1.5em 0 0.8em 0;
+}
+
+h4 {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #34495e;
+    margin: 1.2em 0 0.6em 0;
+}
+
+h5, h6 {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 1em;
+    font-weight: 600;
+    color: #7f8c8d;
+    margin: 1em 0 0.5em 0;
+}
+
+/* Paragraphs */
+p {
+    margin: 0 0 1em 0;
+    text-indent: 0;
+    orphans: 2;
+    widows: 2;
+}
+
+/* Code Elements */
+code {
+    font-family: "Source Code Pro", "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 0.9em;
+    background: #f8f9fa;
+    color: #e74c3c;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    border: 1px solid #e9ecef;
+}
+
+pre {
+    font-family: "Source Code Pro", "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 0.85em;
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 5px;
+    overflow-x: auto;
+    line-height: 1.4;
+    border-left: 4px solid #3498db;
+}
+
+pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+}
+
+/* Syntax Highlighting for Code Blocks */
+.code-block {
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 5px;
+    border-left: 4px solid #3498db;
+    overflow-x: auto;
+}
+
+.code-block .keyword {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.code-block .string {
+    color: #27ae60;
+}
+
+.code-block .comment {
+    color: #95a5a6;
+    font-style: italic;
+}
+
+.code-block .function {
+    color: #f39c12;
+}
+
+.code-block .number {
+    color: #9b59b6;
+}
+
+/* Special Content Boxes */
+.info-box {
+    background: #ebf3fd;
+    border: 1px solid #bee5eb;
+    border-left: 4px solid #17a2b8;
+    padding: 1em;
+    margin: 1.5em 0;
+    border-radius: 4px;
+}
+
+.info-box h4 {
+    color: #17a2b8;
+    margin-top: 0;
+}
+
+.warning-box {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-left: 4px solid #f39c12;
+    padding: 1em;
+    margin: 1.5em 0;
+    border-radius: 4px;
+}
+
+.warning-box h4 {
+    color: #f39c12;
+    margin-top: 0;
+}
+
+.error-box {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-left: 4px solid #e74c3c;
+    padding: 1em;
+    margin: 1.5em 0;
+    border-radius: 4px;
+}
+
+.error-box h4 {
+    color: #e74c3c;
+    margin-top: 0;
+}
+
+.success-box {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-left: 4px solid #27ae60;
+    padding: 1em;
+    margin: 1.5em 0;
+    border-radius: 4px;
+}
+
+.success-box h4 {
+    color: #27ae60;
+    margin-top: 0;
+}
+
+/* API Documentation Elements */
+.api-method {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 0.8em;
+    margin: 1em 0;
+}
+
+.api-method .method-type {
+    font-family: "Source Code Pro", monospace;
+    font-weight: bold;
+    font-size: 0.9em;
+    padding: 0.2em 0.5em;
+    border-radius: 3px;
+    margin-right: 0.5em;
+}
+
+.api-method .method-get {
+    background: #27ae60;
+    color: white;
+}
+
+.api-method .method-post {
+    background: #3498db;
+    color: white;
+}
+
+.api-method .method-put {
+    background: #f39c12;
+    color: white;
+}
+
+.api-method .method-delete {
+    background: #e74c3c;
+    color: white;
+}
+
+.api-method .endpoint {
+    font-family: "Source Code Pro", monospace;
+    font-size: 0.9em;
+    background: #34495e;
+    color: #ecf0f1;
+    padding: 0.2em 0.5em;
+    border-radius: 3px;
+}
+
+/* Lists */
+ul, ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+li {
+    margin: 0.3em 0;
+    line-height: 1.5;
+}
+
+li code {
+    font-size: 0.8em;
+}
+
+/* Tables */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5em 0;
+    border: 1px solid #e9ecef;
+}
+
+th {
+    background: #f8f9fa;
+    color: #2c3e50;
+    font-weight: 600;
+    padding: 0.8em;
+    text-align: left;
+    border-bottom: 2px solid #dee2e6;
+}
+
+td {
+    padding: 0.8em;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: top;
+}
+
+tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+td code {
+    font-size: 0.8em;
+}
+
+/* Blockquotes */
+blockquote {
+    margin: 1.5em 0;
+    padding: 1em 1.5em;
+    border-left: 4px solid #3498db;
+    background: #f8f9fa;
+    font-style: italic;
+    color: #34495e;
+}
+
+blockquote p {
+    margin: 0;
+}
+
+blockquote cite {
+    display: block;
+    margin-top: 0.5em;
+    font-size: 0.9em;
+    color: #7f8c8d;
+    font-style: normal;
+}
+
+/* Links */
+a {
+    color: #3498db;
+    text-decoration: underline;
+}
+
+a:hover {
+    color: #2980b9;
+    text-decoration: none;
+}
+
+a code {
+    color: inherit;
+}
+
+/* Table of Contents */
+.toc {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 1.5em;
+    margin: 2em 0;
+}
+
+.toc h2 {
+    color: #2c3e50;
+    margin-top: 0;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5em;
+}
+
+.toc ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.toc li {
+    margin: 0.3em 0;
+}
+
+.toc a {
+    text-decoration: none;
+    color: #34495e;
+    font-weight: 500;
+}
+
+.toc a:hover {
+    color: #3498db;
+}
+
+/* Step-by-step Instructions */
+.steps {
+    counter-reset: step-counter;
+}
+
+.step {
+    counter-increment: step-counter;
+    margin: 1.5em 0;
+    padding: 1em;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    position: relative;
+    padding-left: 3em;
+}
+
+.step::before {
+    content: counter(step-counter);
+    position: absolute;
+    left: 0.8em;
+    top: 0.8em;
+    background: #3498db;
+    color: white;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+/* Mobile Optimizations */
+@media screen and (max-width: 768px) {
+    body {
+        font-size: 15px;
+        margin: 1em;
+    }
+
+    h1 {
+        font-size: 1.8em;
+        margin: 1.5em 0 0.8em 0;
+    }
+
+    h2 {
+        font-size: 1.4em;
+        margin: 1.3em 0 0.8em 0;
+    }
+
+    h3 {
+        font-size: 1.2em;
+        margin: 1.2em 0 0.6em 0;
+    }
+
+    pre, .code-block {
+        font-size: 0.8em;
+        padding: 0.8em;
+        overflow-x: scroll;
+    }
+
+    .info-box, .warning-box, .error-box, .success-box {
+        padding: 0.8em;
+        margin: 1em 0;
+    }
+
+    table {
+        font-size: 0.9em;
+    }
+
+    th, td {
+        padding: 0.5em;
+    }
+
+    .step {
+        padding: 0.8em 0.8em 0.8em 2.5em;
+    }
+
+    .step::before {
+        left: 0.5em;
+        top: 0.5em;
+        width: 1.2em;
+        height: 1.2em;
+        font-size: 0.8em;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1a1a1a;
+        color: #e6e6e6;
+    }
+
+    h1, h2, h3, h4 {
+        color: #ffffff;
+    }
+
+    h1 {
+        border-bottom-color: #3498db;
+    }
+
+    h2 {
+        border-bottom-color: #7f8c8d;
+    }
+
+    code {
+        background: #2c2c2c;
+        color: #f39c12;
+        border-color: #404040;
+    }
+
+    pre, .code-block {
+        background: #2c2c2c;
+        color: #e6e6e6;
+    }
+
+    .info-box {
+        background: #1a2a3a;
+        border-color: #2a4a5a;
+    }
+
+    .warning-box {
+        background: #3a2a1a;
+        border-color: #5a4a2a;
+    }
+
+    .error-box {
+        background: #3a1a1a;
+        border-color: #5a2a2a;
+    }
+
+    .success-box {
+        background: #1a3a1a;
+        border-color: #2a5a2a;
+    }
+
+    .api-method {
+        background: #2c2c2c;
+        border-color: #404040;
+    }
+
+    table {
+        border-color: #404040;
+    }
+
+    th {
+        background: #2c2c2c;
+        color: #ffffff;
+        border-bottom-color: #404040;
+    }
+
+    td {
+        border-bottom-color: #404040;
+    }
+
+    tr:nth-child(even) {
+        background: #2a2a2a;
+    }
+
+    blockquote {
+        background: #2c2c2c;
+        color: #cccccc;
+        border-left-color: #3498db;
+    }
+
+    .toc {
+        background: #2c2c2c;
+        border-color: #404040;
+    }
+
+    .step {
+        border-color: #404040;
+        background: #2a2a2a;
+    }
+}
+
+/* Print Optimizations */
+@media print {
+    body {
+        font-size: 12pt;
+        color: #000;
+        background: #fff;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        color: #000;
+        page-break-after: avoid;
+    }
+
+    pre, .code-block {
+        page-break-inside: avoid;
+        border: 1px solid #000;
+        background: #f8f8f8;
+        color: #000;
+    }
+
+    .info-box, .warning-box, .error-box, .success-box {
+        page-break-inside: avoid;
+        background: #f8f8f8;
+        border: 1px solid #666;
+    }
+
+    a {
+        color: #000;
+        text-decoration: underline;
+    }
+
+    .step {
+        page-break-inside: avoid;
+        border: 1px solid #666;
+    }
+}

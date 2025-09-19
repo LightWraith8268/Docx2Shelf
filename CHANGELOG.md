@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.2.6] - 2025-01-19
+### Operational Excellence & Enterprise Deployment
+
+#### Production Deployment & Monitoring
+- **Kubernetes orchestration**: Complete production-ready manifests including deployment, service, configmap, HPA, and ServiceMonitor configurations
+- **Helm chart**: Comprehensive Helm chart with configurable values, dependency management, and production defaults
+- **Observability framework**: Integrated Prometheus metrics collection, health checks, and system resource monitoring
+- **Auto-scaling**: Horizontal Pod Autoscaler with CPU, memory, and custom metrics scaling policies
+- **Container security**: Security contexts, read-only root filesystem, non-root user execution, and capability dropping
+
+#### Advanced Plugin System
+- **Plugin sandboxing**: Security isolation with import restrictions, resource limits, and execution context isolation
+- **Hot-reload architecture**: Zero-downtime plugin updates with automatic file monitoring and module reloading
+- **Resource monitoring**: Real-time tracking of plugin memory usage, CPU consumption, and execution time
+- **Performance profiling**: Comprehensive metrics collection with top resource consumer analysis and execution statistics
+- **Cross-platform compatibility**: Windows and Unix resource handling with graceful platform-specific feature degradation
+
+#### Enterprise Integration & APIs
+- **REST API**: Complete OpenAPI 3.0 specification with authentication, rate limiting, and comprehensive endpoints
+- **Webhook integration**: Event-driven notifications with HMAC signature verification, retry logic, and event filtering
+- **Database persistence**: SQLite backend with conversion job tracking, audit trails, and API key management
+- **Rate limiting**: Token bucket algorithm with per-client tracking and configurable burst sizes
+- **Enterprise authentication**: API key-based authentication with permissions and usage tracking
+
+#### Technical Infrastructure
+- **Monitoring stack**: MetricsCollector, HealthChecker, SystemMonitor, and ConversionMonitor with Prometheus export
+- **Plugin management**: AdvancedPluginManager with sandbox execution, hot-reload, and performance profiling
+- **Enterprise API manager**: Job queue management, webhook notifications, and audit logging
+- **Container deployment**: Production-ready Docker configuration with multi-stage builds and security hardening
+
+#### Testing & Quality Assurance
+- **Comprehensive test suite**: 25 test cases covering monitoring, plugin system, enterprise features, and Kubernetes integration
+- **Integration testing**: End-to-end workflow validation with all v1.2.6 components working together
+- **Cross-platform testing**: Windows and Unix compatibility validation with platform-specific feature handling
+- **Performance testing**: Plugin resource usage validation and monitoring system verification
+
 ## [1.1.1]
 ### Added
 - Comprehensive test suite with golden EPUB fixtures for regression detection

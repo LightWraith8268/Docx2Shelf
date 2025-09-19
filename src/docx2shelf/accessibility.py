@@ -2,8 +2,75 @@ from __future__ import annotations
 
 import re
 import sys
+from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
+
+
+class AccessibilityFeature(Enum):
+    """EPUB 3 accessibility features."""
+    ARIA_LANDMARKS = "aria-landmarks"
+    HEADING_STRUCTURE = "heading-structure"
+    PAGE_NAVIGATION = "page-navigation"
+    TABLE_OF_CONTENTS = "table-of-contents"
+    ALT_TEXT = "alt-text"
+    LONG_DESCRIPTIONS = "long-descriptions"
+    SEMANTIC_MARKUP = "semantic-markup"
+    READING_ORDER = "reading-order"
+    HIGH_CONTRAST = "high-contrast"
+    LARGE_TEXT = "large-text"
+    KEYBOARD_NAV = "keyboard-navigation"
+    SCREEN_READER = "screen-reader-optimized"
+
+
+@dataclass
+class AccessibilityConfiguration:
+    """Configuration for accessibility features."""
+
+    # WCAG compliance level
+    wcag_level: str = "AA"  # A, AA, AAA
+
+    # Enabled features
+    enabled_features: List[AccessibilityFeature] = field(default_factory=lambda: [
+        AccessibilityFeature.ARIA_LANDMARKS,
+        AccessibilityFeature.HEADING_STRUCTURE,
+        AccessibilityFeature.TABLE_OF_CONTENTS,
+        AccessibilityFeature.SEMANTIC_MARKUP,
+        AccessibilityFeature.READING_ORDER,
+        AccessibilityFeature.SCREEN_READER
+    ])
+
+    # Language and localization
+    primary_language: str = "en"
+    language_direction: str = "ltr"  # ltr, rtl
+
+    # Visual accessibility
+    high_contrast_mode: bool = False
+    large_text_mode: bool = False
+    minimum_font_size: str = "12pt"
+    minimum_contrast_ratio: float = 4.5  # WCAG AA standard
+
+    # Navigation aids
+    skip_links: bool = True
+    page_list: bool = False
+    landmark_navigation: bool = True
+    heading_navigation: bool = True
+
+    # Screen reader optimization
+    reading_order_hints: bool = True
+    aria_descriptions: bool = True
+    semantic_roles: bool = True
+
+    # Alternative content
+    alt_text_required: bool = True
+    long_descriptions: bool = False
+
+    # Metadata
+    accessibility_summary: str = "This publication conforms to WCAG 2.1 Level AA."
+    accessibility_features: List[str] = field(default_factory=list)
+    accessibility_hazards: List[str] = field(default_factory=lambda: ["none"])
+    accessibility_api: str = "ARIA"
 
 
 def check_image_alt_text(html_chunks: List[str]) -> List[Tuple[str, str]]:
@@ -315,3 +382,170 @@ def create_accessibility_summary(
     ])
 
     return "\n".join(summary)
+
+
+def generate_accessibility_css(config: AccessibilityConfiguration) -> str:
+    """Generate CSS for accessibility features."""
+    css_parts = []
+
+    # Skip links styling
+    if config.skip_links:
+        css_parts.append("""
+/* Skip Navigation Links */
+.skip-links {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 0 0 4px 4px;
+    list-style: none;
+    margin: 0;
+    z-index: 1000;
+}
+
+.skip-links a {
+    color: #fff;
+    text-decoration: none;
+    padding: 4px 8px;
+    display: block;
+}
+
+.skip-links a:focus {
+    position: relative;
+    top: 40px;
+    left: 0;
+}""")
+
+    # High contrast mode
+    if config.high_contrast_mode:
+        css_parts.append("""
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    body {
+        background: #000 !important;
+        color: #fff !important;
+    }
+
+    a {
+        color: #00ff00 !important;
+    }
+
+    a:visited {
+        color: #ff00ff !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        color: #ffff00 !important;
+    }
+}""")
+
+    # Large text support
+    if config.large_text_mode:
+        css_parts.append(f"""
+/* Large Text Support */
+@media (min-resolution: 192dpi) and (prefers-reduced-motion: no-preference) {{
+    body {{
+        font-size: {config.minimum_font_size};
+    }}
+}}
+
+.large-text body {{
+    font-size: calc({config.minimum_font_size} * 1.2);
+    line-height: 1.8;
+}}""")
+
+    # Focus indicators
+    css_parts.append("""
+/* Enhanced Focus Indicators */
+*:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+*:focus-visible {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}""")
+
+    # Screen reader optimizations
+    css_parts.append("""
+/* Screen Reader Optimizations */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: inherit;
+}""")
+
+    # Motion preferences
+    css_parts.append("""
+/* Respect Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}""")
+
+    return "\n".join(css_parts)
+
+
+def create_default_accessibility_config() -> AccessibilityConfiguration:
+    """Create a default accessibility configuration."""
+    return AccessibilityConfiguration(
+        accessibility_features=[
+            "structuralNavigation",
+            "alternativeText",
+            "tableOfContents",
+            "readingOrder"
+        ]
+    )
+
+
+def create_enhanced_accessibility_config() -> AccessibilityConfiguration:
+    """Create an enhanced accessibility configuration for maximum compliance."""
+    return AccessibilityConfiguration(
+        wcag_level="AAA",
+        enabled_features=list(AccessibilityFeature),
+        minimum_contrast_ratio=7.0,
+        large_text_mode=True,
+        long_descriptions=True,
+        accessibility_features=[
+            "structuralNavigation",
+            "alternativeText",
+            "tableOfContents",
+            "readingOrder",
+            "highContrast",
+            "largeText",
+            "keyboardNavigation",
+            "screenReaderOptimized"
+        ],
+        accessibility_summary="This publication conforms to WCAG 2.1 Level AAA and includes enhanced accessibility features for users with disabilities."
+    )

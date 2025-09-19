@@ -6,12 +6,26 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 
 ## Features
 
+### Core Conversion
 -   **Multiple Input Formats**: Convert from DOCX, Markdown, TXT, and HTML files
 -   **Professional EPUB Output**: Creates valid EPUB 3 files with proper metadata and structure
 -   **Smart Content Organization**: Automatically splits content into chapters based on headings or page breaks
 -   **Beautiful Typography**: Choose from built-in themes (serif, sans, printlike) or add custom CSS
+-   **Cross-References & Indexing**: Preserves Word cross-references and generates searchable indexes
+-   **Math Support**: MathML, SVG, and PNG fallbacks for equations with accessibility features
+
+### Publishing & Metadata
 -   **Comprehensive Metadata**: Full support for title, author, ISBN, series info, and publishing details
 -   **Publishing-Ready**: Built-in validation and compatibility checks for major ebook stores
+-   **ONIX 3.0 Export**: Generate industry-standard metadata for retailers
+-   **Store Profiles**: KDP, Apple Books, Kobo, Google Play, and B&N compatibility validation
+-   **Accessibility Features**: WCAG compliance, screen reader support, and dyslexic-friendly themes
+
+### Advanced Workflows
+-   **Anthology & Series Builder**: Merge multiple manuscripts into collections or series
+-   **GUI Applications**: Cross-platform desktop app and web-based interface
+-   **Performance Optimizations**: Streaming processing, build cache, and parallel image processing
+-   **Plugin Marketplace**: Discover, install, and manage community plugins
 -   **Plugin Support**: Extend functionality with custom plugins for specialized workflows
 -   **No Internet Required**: Works completely offline - your manuscripts never leave your computer
 
@@ -54,7 +68,7 @@ docker run -v $(pwd):/workspace ghcr.io/lightwraith8268/docx2shelf build --input
 
 #### Quick Install Scripts
 
-**Windows**: Download and run `install.bat` from the [releases page](https://github.com/LightWraith8268/Docx2Shelf/releases), or:
+**Windows**: The `install.bat` script automatically installs Docx2Shelf and adds it to your system PATH for global usage:
 ```cmd
 curl -L -o install.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat && install.bat
 ```
@@ -62,9 +76,26 @@ curl -L -o install.bat https://github.com/LightWraith8268/Docx2Shelf/releases/la
 Invoke-WebRequest -Uri "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat" -OutFile "install.bat"; .\install.bat
 ```
 
-**macOS/Linux**: Download and run `install.sh` from the [releases page](https://github.com/LightWraith8268/Docx2Shelf/releases), or:
+Features:
+- Automatically detects and installs Python dependencies
+- Installs pipx if not present
+- Adds docx2shelf to system PATH permanently
+- Verifies installation and provides troubleshooting
+- Works with both `python` and `py` commands
+
+**macOS/Linux**: The `install.sh` script provides flexible installation options:
 ```bash
 curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh | bash
+```
+
+Options:
+```bash
+# Install with specific method and extras
+./install.sh --method pipx --extras docx --with-tools pandoc
+
+# Available methods: pipx (default), pip-user, pip-system
+# Available extras: none, docx (default), pandoc, all
+# Available tools: none (default), pandoc, epubcheck, all
 ```
 
 ### Updating Docx2Shelf
@@ -98,8 +129,32 @@ docx2shelf build \
 -   **Dry run**: Add `--dry-run` to print the planned manifest/spine without creating the EPUB.
 -   **Inspect sources**: Add `--inspect` to emit a `.src/` folder next to the EPUB for debugging.
 
-## CLI Options (Selected)
+## CLI Commands & Options
 
+### Core Commands
+```bash
+# Build EPUB from manuscript
+docx2shelf build --input manuscript.docx --title "Book Title" --author "Author"
+
+# Anthology and series building
+docx2shelf anthology create --name "My Collection" --output anthology.epub
+docx2shelf series build --series "Fantasy Series" --auto-also-by
+
+# GUI applications
+docx2shelf gui              # Launch desktop GUI
+docx2shelf web              # Start web interface
+
+# Plugin management
+docx2shelf plugins list     # List installed plugins
+docx2shelf plugins install plugin-name
+docx2shelf plugins marketplace search "keyword"
+
+# Tools and validation
+docx2shelf tools install pandoc
+docx2shelf checklist --epub book.epub --store kdp
+```
+
+### Build Options
 -   **Required**: `--input` (path to manuscript file or directory), `--title`, `--cover` (author defaults are configurable).
 -   **Metadata**: `--author`, `--language`, `--isbn`, `--publisher`, `--pubdate YYYY-MM-DD`, `--uuid`, `--seriesName`, `--seriesIndex`, `--title-sort`, `--author-sort`, `--subjects`, `--keywords`.
 -   **Conversion**: `--split-at h1|h2|pagebreak`, `--toc-depth N`, `--theme serif|sans|printlike`, `--css EXTRA.css`.
@@ -120,72 +175,210 @@ docx2shelf tools install pandoc
 docx2shelf tools install epubcheck
 ```
 
-### Plugins & Extensions
+### Anthology & Series Building
 
-Docx2Shelf features a powerful plugin system that allows you to extend functionality with custom processing logic. Plugins can modify DOCX files before conversion, transform HTML content after conversion, or enhance metadata dynamically.
-
-#### Quick Plugin Usage
+Create professional multi-book collections and series with automatic cross-referencing:
 
 ```bash
-# List all plugins (loaded and available)
-docx2shelf plugins list
+# Create an anthology from multiple manuscripts
+docx2shelf anthology create \
+  --name "Science Fiction Collection" \
+  --editor "Editor Name" \
+  --add story1.docx --add story2.docx --add story3.docx \
+  --output anthology.epub
 
-# Load a custom plugin
-docx2shelf plugins load /path/to/my_plugin.py
-
-# Enable/disable plugins
-docx2shelf plugins enable my_plugin
-docx2shelf plugins disable my_plugin
-
-# Get plugin information
-docx2shelf plugins info my_plugin
+# Build a book series with auto-generated "Also By" pages
+docx2shelf series build \
+  --series "Fantasy Chronicles" \
+  --author "Series Author" \
+  --auto-also-by \
+  --add book1.epub --add book2.epub --add book3.epub
 ```
 
-#### Creating Custom Plugins
+**Features:**
+- Automatic table of contents with grouped stories
+- Story sorting by title, author, or custom order
+- Cross-references between books in series
+- Auto-generated "Also By This Author" pages
+- Series metadata and navigation
+- Professional anthology formatting
 
-Docx2Shelf supports three types of plugin hooks:
+### GUI Applications
 
-1. **PreConvertHook** - Process DOCX files before conversion
-2. **PostConvertHook** - Transform HTML content after conversion
-3. **MetadataResolverHook** - Add or modify metadata dynamically
+#### Desktop GUI
+Cross-platform desktop application with drag-and-drop support:
 
-**Example Plugin:**
+```bash
+docx2shelf gui
+```
+
+**Features:**
+- Drag-and-drop file conversion
+- Visual metadata editor
+- Live preview of EPUB structure
+- Progress tracking and status updates
+- Theme selection and customization
+- Batch processing support
+- Works on Windows, macOS, and Linux
+
+#### Web Interface
+Modern web-based builder for teams and remote access:
+
+```bash
+# Start local web server
+docx2shelf web --port 8080
+
+# Access at http://localhost:8080
+```
+
+**Features:**
+- Modern responsive web interface
+- Project management and organization
+- Collaborative editing capabilities
+- REST API for automation
+- File upload and cloud storage integration
+- Mobile-friendly design
+- Real-time conversion status
+
+### Plugin Ecosystem & Marketplace
+
+Docx2Shelf features a comprehensive plugin system with marketplace integration:
+
+#### Plugin Management
+```bash
+# Browse marketplace
+docx2shelf plugins marketplace search "keyword"
+docx2shelf plugins marketplace list --popular
+
+# Install plugin bundles (recommended)
+docx2shelf plugins bundles install publishing    # Store validation tools
+docx2shelf plugins bundles install workflow      # Multi-book tools
+docx2shelf plugins bundles install accessibility # A11y tools
+docx2shelf plugins bundles install cloud         # Cloud connectors
+docx2shelf plugins bundles install premium       # Everything
+
+# Install individual plugins
+docx2shelf plugins marketplace install store_profiles
+docx2shelf plugins marketplace install anthology_builder
+
+# Manage installed plugins
+docx2shelf plugins list --core-only              # Show core plugins only
+docx2shelf plugins list --marketplace-only       # Show marketplace plugins
+docx2shelf plugins enable plugin-name
+docx2shelf plugins disable plugin-name           # (Core essentials cannot be disabled)
+docx2shelf plugins marketplace update plugin-name
+
+# Create new plugins
+docx2shelf plugins create-template my-plugin
+```
+
+#### Installation with Plugin Bundles
+
+Install Docx2Shelf with plugin bundles for your use case:
+
+```bash
+# Windows - with publishing bundle
+.\install.bat --with-plugins publishing
+
+# macOS/Linux - with workflow bundle
+./install.sh --with-plugins workflow
+
+# Premium installation (all plugins)
+./install.sh --with-plugins premium --with-tools all
+```
+
+#### Core Built-in Plugins
+
+**Always included with Docx2Shelf installation:**
+
+**Essential Processing (Cannot be disabled):**
+1. **Math Handler** - Converts OMML/MathML equations to multiple formats (SVG, PNG)
+2. **Cross-Reference Handler** - Preserves Word cross-references with stable anchor IDs
+3. **Index Generator** - Creates searchable indexes from Word XE fields
+4. **Notes Manager** - Handles footnotes/endnotes with back-references
+5. **Figures & Tables Handler** - Semantic HTML conversion for accessibility
+
+**Core Features (Can be disabled):**
+6. **HTML Cleanup** - Basic HTML optimization and whitespace removal
+7. **Accessibility Auditor** - WCAG compliance checking and validation
+8. **Performance Monitor** - Conversion performance tracking and optimization
+
+#### Marketplace Plugins
+
+**Available for download via plugin marketplace:**
+
+**Publishing Bundle:**
+- **Store Profile Manager** - KDP, Apple Books, Kobo validation
+- **ONIX Export Handler** - Industry-standard metadata for retailers
+- **Kindle Previewer Integration** - Amazon compatibility testing
+
+**Workflow Bundle:**
+- **Anthology Builder** - Merge multiple manuscripts into collections
+- **Series Builder** - Book series with automatic cross-referencing
+- **Web Builder** - Browser-based conversion interface
+
+**Accessibility Bundle:**
+- **Media Overlays Handler** - SMIL audio synchronization for read-aloud
+- **Dyslexic-Friendly Themes** - Enhanced readability themes
+
+**Cloud Integration Bundle:**
+- **Google Docs Connector** - Import directly from Google Docs
+- **OneDrive Connector** - Import from Microsoft OneDrive
+
+**Theme & Styling:**
+- **Advanced Theme Pack** - Premium themes and styling options
+- **Custom CSS Builder** - Visual theme editor and generator
+
+#### Plugin Development
+
+Create custom plugins with three hook types:
+
 ```python
-from docx2shelf.plugins import BasePlugin, PostConvertHook
-from typing import Dict, Any, List
+from docx2shelf.plugins import BasePlugin, PreConvertHook, PostConvertHook, MetadataResolverHook
 
 class MyPlugin(BasePlugin):
     def __init__(self):
         super().__init__("my_plugin", "1.0.0")
 
-    def get_hooks(self) -> Dict[str, List]:
-        return {'post_convert': [MyHTMLProcessor()]}
+    def get_hooks(self):
+        return {
+            'pre_convert': [MyPreProcessor()],
+            'post_convert': [MyPostProcessor()],
+            'metadata_resolver': [MyMetadataEnhancer()]
+        }
 
-class MyHTMLProcessor(PostConvertHook):
-    def transform_html(self, html_content: str, context: Dict[str, Any]) -> str:
-        # Your custom HTML transformation
-        return html_content.replace("old_text", "new_text")
+class MyPreProcessor(PreConvertHook):
+    def process_docx(self, docx_path, context):
+        # Modify DOCX before conversion
+        return docx_path
+
+class MyPostProcessor(PostConvertHook):
+    def transform_html(self, html_content, context):
+        # Transform HTML after conversion
+        return html_content
+
+class MyMetadataEnhancer(MetadataResolverHook):
+    def resolve_metadata(self, metadata, context):
+        # Enhance or modify metadata
+        return metadata
 ```
 
-#### Plugin Examples Included
+#### Plugin Marketplace
 
-Docx2Shelf comes with example plugins to help you get started:
+The marketplace provides:
+- **Plugin Discovery**: Search and browse community plugins
+- **Version Management**: Automatic updates and dependency resolution
+- **Security**: Checksum verification and trusted publishers
+- **Templates**: Starter templates for common plugin types
+- **Documentation**: Comprehensive plugin development guides
 
-- **Basic Template** (`docs/plugins/examples/basic_template.py`) - Complete template showing all hook types
-- **HTML Cleaner** (`docs/plugins/examples/html_cleaner.py`) - Advanced HTML post-processing with smart quotes, CSS classes, and cleanup
-- **Metadata Enhancer** (`docs/plugins/examples/metadata_enhancer.py`) - Auto-generates descriptions, detects genres, estimates reading time
-
-#### Plugin Installation
-
-Plugins can be loaded from several locations:
-
-1. **User plugins directory**:
-   - Linux/macOS: `~/.local/share/docx2shelf/plugins/`
-   - Windows: `%APPDATA%/Docx2Shelf/plugins/`
-2. **Project-specific**: Place plugins in your project directory
-3. **Manual loading**: Use `docx2shelf plugins load <path>` for any location
-
-For complete plugin development documentation, see [`docs/plugins/README.md`](docs/plugins/README.md).
+**Popular Plugin Categories:**
+- Document hygiene and cleanup
+- Advanced typography and formatting
+- Metadata enhancement and validation
+- Store-specific optimizations
+- Accessibility improvements
+- Custom output formats
 
 ### Document Connectors
 Import from various sources (requires explicit opt-in):

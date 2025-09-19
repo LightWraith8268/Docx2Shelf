@@ -253,7 +253,13 @@ plugin_manager = PluginManager()
 
 
 def load_default_plugins() -> None:
-    """Load default plugins from multiple discovery locations."""
+    """Load core built-in plugins and discover user plugins."""
+    from .plugin_types import PluginClassification
+
+    # First, load core built-in plugins
+    load_core_builtin_plugins()
+
+    # Then load user plugins from discovery locations
     from docx2shelf.utils import get_user_data_dir
 
     # Load from user plugins directory
@@ -268,7 +274,54 @@ def load_default_plugins() -> None:
     cwd_plugins_dir = Path.cwd() / "plugins"
     plugin_manager.load_plugins_from_directory(cwd_plugins_dir)
 
-    logger.info(f"Loaded {len(plugin_manager.plugins)} plugins from discovery locations")
+    core_count = len(PluginClassification.get_core_plugins())
+    total_count = len(plugin_manager.plugins)
+    user_count = total_count - core_count
+
+    logger.info(f"Loaded {core_count} core plugins + {user_count} user plugins ({total_count} total)")
+
+
+def load_core_builtin_plugins() -> None:
+    """Load core built-in plugins that are always available."""
+    from .plugin_types import PluginClassification
+
+    # Register the example cleanup plugin that's already implemented
+    cleanup_plugin = ExampleCleanupPlugin()
+    plugin_manager.register_plugin(cleanup_plugin)
+
+    # Register placeholder plugins for core functionality
+    # These would normally be imported from their respective modules
+    core_plugins = PluginClassification.get_core_plugins()
+
+    for plugin_id in core_plugins:
+        if plugin_id == 'html_cleanup':
+            continue  # Already registered above
+
+        plugin_info = PluginClassification.get_plugin_info(plugin_id)
+
+        # Create placeholder plugin for demonstration
+        # In a real implementation, these would be imported from their modules
+        placeholder_plugin = CoreBuiltinPlugin(
+            plugin_id,
+            plugin_info['name'],
+            plugin_info['description'],
+            plugin_info.get('essential', False)
+        )
+        plugin_manager.register_plugin(placeholder_plugin)
+
+
+class CoreBuiltinPlugin(BasePlugin):
+    """Placeholder for core built-in plugins."""
+
+    def __init__(self, plugin_id: str, name: str, description: str, essential: bool = False):
+        super().__init__(plugin_id, "1.0.0")
+        self.display_name = name
+        self.description = description
+        self.essential = essential
+
+    def get_hooks(self) -> Dict[str, List[PluginHook]]:
+        """Core plugins would return their actual hooks here."""
+        return {}
 
 
 def discover_available_plugins() -> List[Dict[str, Any]]:

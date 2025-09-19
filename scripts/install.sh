@@ -7,9 +7,10 @@ set -euo pipefail
 METHOD="pipx"           # pipx | pip-user | pip-system
 EXTRAS="docx"           # none | docx | pandoc | all
 WITH_TOOLS="none"       # none | pandoc | epubcheck | all
+WITH_PLUGINS="none"     # none | publishing | workflow | accessibility | cloud | premium
 
 usage() {
-  echo "Usage: $0 [--method pipx|pip-user|pip-system] [--extras none|docx|pandoc|all] [--with-tools none|pandoc|epubcheck|all]"
+  echo "Usage: $0 [--method pipx|pip-user|pip-system] [--extras none|docx|pandoc|all] [--with-tools none|pandoc|epubcheck|all] [--with-plugins none|publishing|workflow|accessibility|cloud|premium]"
   exit 1
 }
 
@@ -18,6 +19,7 @@ while [[ $# -gt 0 ]]; do
     --method) METHOD="${2:-}"; shift 2;;
     --extras) EXTRAS="${2:-}"; shift 2;;
     --with-tools) WITH_TOOLS="${2:-}"; shift 2;;
+    --with-plugins) WITH_PLUGINS="${2:-}"; shift 2;;
     -h|--help) usage;;
     *) echo "Unknown arg: $1"; usage;;
   esac
@@ -88,6 +90,27 @@ case "$WITH_TOOLS" in
     docx2shelf tools install pandoc || true
     docx2shelf tools install epubcheck || true ;;
   *) echo "Invalid --with-tools: $WITH_TOOLS" ;;
+esac
+
+# Optional plugin bundles installation
+case "$WITH_PLUGINS" in
+  none) ;;
+  publishing)
+    echo "Installing Publishing Bundle (Store Profiles, ONIX Export, Kindle Previewer)..."
+    docx2shelf plugins bundles install publishing || true ;;
+  workflow)
+    echo "Installing Workflow Bundle (Anthology Builder, Series Builder, Web Interface)..."
+    docx2shelf plugins bundles install workflow || true ;;
+  accessibility)
+    echo "Installing Accessibility Bundle (Media Overlays, Dyslexic Themes)..."
+    docx2shelf plugins bundles install accessibility || true ;;
+  cloud)
+    echo "Installing Cloud Integration Bundle (Google Docs, OneDrive)..."
+    docx2shelf plugins bundles install cloud || true ;;
+  premium)
+    echo "Installing Premium Bundle (All marketplace plugins)..."
+    docx2shelf plugins bundles install premium || true ;;
+  *) echo "Invalid --with-plugins: $WITH_PLUGINS" ;;
 esac
 
 echo "Done. Try: docx2shelf --help"

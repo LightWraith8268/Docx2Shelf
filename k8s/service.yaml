@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: docx2shelf
+  labels:
+    app: docx2shelf
+spec:
+  selector:
+    app: docx2shelf
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  - name: health
+    port: 8081
+    targetPort: health
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docx2shelf-metrics
+  labels:
+    app: docx2shelf
+    service: metrics
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  selector:
+    app: docx2shelf
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: http
+    protocol: TCP
+  type: ClusterIP
