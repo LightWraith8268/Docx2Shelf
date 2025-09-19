@@ -17,7 +17,7 @@
 #### Ecosystem Integration (Retained)
 - **Writing tool integration**: Import from Scrivener, Notion, and Google Docs
 - **Publishing platform connectors**: Automated sync with KDP, Apple Books, and Kobo
-- **Template gallery**: Community templates and configuration sharing
+- **Template gallery**: Pre-made themes and configuration templates
 
 #### Technical Improvements
 - **Cleaner test suite**: Removed community-related tests, focused on marketplace and ecosystem

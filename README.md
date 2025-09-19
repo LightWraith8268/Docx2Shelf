@@ -40,7 +40,7 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 -   **Plugin Marketplace**: Discover, install, and manage community plugins with ratings and reviews
 -   **Writing Tool Integration**: Import from Scrivener, Notion, and Google Docs with seamless conversion
 -   **Publishing Connectors**: Direct integration with KDP, Apple Books, and Kobo for automated publishing
--   **Template Gallery**: Community-contributed themes and configuration templates
+-   **Template Gallery**: Pre-made themes and configuration templates
 -   **Streamlined Focus**: Simplified architecture focusing on core conversion and marketplace features
 
 ## Installation

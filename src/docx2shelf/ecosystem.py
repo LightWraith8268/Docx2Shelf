@@ -497,7 +497,7 @@ class PublishingPlatformConnector:
 
 
 class TemplateGallery:
-    """Community template gallery system."""
+    """Template gallery system for pre-made themes and configurations."""
 
     def __init__(self, cache_dir: Optional[Path] = None):
         self.cache_dir = cache_dir or Path.home() / ".docx2shelf" / "templates"
