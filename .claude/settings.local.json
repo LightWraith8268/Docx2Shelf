@@ -22,7 +22,21 @@
       "Bash(gh release delete:*)",
       "Bash(git rebase:*)",
       "Bash(gh release upload:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(cmd /c:*)",
+      "Bash(git rm:*)",
+      "Bash(for file in .github/workflows/release*.yml .github/workflows/automated*.yml)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(head:*)",
+      "Bash(done)",
+      "Bash(for file in .github/workflows/*release*.yml)",
+      "Bash(find:*)",
+      "Bash(while read file)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(curl -L -o install_new.bat https://raw.githubusercontent.com/LightWraith8268/Docx2Shelf/main/install.bat)",
+      "Bash(copy install_fixed.bat install.bat)",
+      "Bash(copy install.bat install_backup.bat)"
     ],
     "deny": [],
     "ask": []

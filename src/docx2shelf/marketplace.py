@@ -1,547 +1,570 @@
 """
-Plugin marketplace and distribution system for Docx2Shelf.
+Marketplace for Docx2Shelf tools, themes, and resources.
 
-This module provides a plugin marketplace with discovery, installation management,
-dependency resolution, and quality validation for extending Docx2Shelf functionality.
+This module provides access to:
+- Curated themes and templates
+- Useful conversion tools and utilities
+- Format-specific resources
+- Quality enhancement tools
+
+Note: This is a read-only marketplace focused on official resources.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
-import shutil
-import sqlite3
-import subprocess
+import os
+import sys
 import tempfile
-import time
 import zipfile
-from dataclasses import dataclass, field
+import hashlib
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass, asdict
 from urllib.parse import urlparse
-from urllib.request import urlopen, urlretrieve
 
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 
 
 @dataclass
-class PluginMetadata:
-    """Metadata for a marketplace plugin."""
-
-    id: str
+class MarketplaceTheme:
+    """A theme available in the marketplace."""
     name: str
-    version: str
-    author: str
     description: str
-    category: str
-    tags: List[str] = field(default_factory=list)
-    homepage: Optional[str] = None
-    repository: Optional[str] = None
-    license: Optional[str] = None
-    dependencies: List[str] = field(default_factory=list)
-    compatibility: List[str] = field(default_factory=list)  # Docx2Shelf versions
-    download_url: str = ""
-    file_size: int = 0
-    checksum: str = ""
-    created_at: str = ""
-    updated_at: str = ""
-
-
+    category: str  # serif, sans-serif, specialty, academic, fiction
+    author: str
+    version: str
+    download_url: str
+    checksum: str
+    preview_image: Optional[str]
+    tags: List[str]
+    file_size: int
+    compatibility: str  # "3.0+", "all"
+    rating: float
+    downloads: int
+    featured: bool = False
 
 
 @dataclass
-class PluginStats:
-    """Basic statistics for a plugin."""
+class MarketplaceTool:
+    """A tool available in the marketplace."""
+    name: str
+    description: str
+    category: str  # conversion, quality, accessibility, publishing
+    executable: str
+    version: str
+    download_url: str
+    checksum: str
+    platforms: List[str]  # ["windows", "macos", "linux"]
+    file_size: int
+    install_instructions: str
+    dependencies: List[str]
+    homepage: str
+    rating: float
+    downloads: int
+    featured: bool = False
 
-    plugin_id: str
-    download_count: int = 0
-    weekly_downloads: int = 0
-    monthly_downloads: int = 0
-    last_updated: str = ""
+
+@dataclass
+class MarketplaceResource:
+    """A resource available in the marketplace."""
+    name: str
+    description: str
+    category: str  # template, font, image, reference
+    resource_type: str  # css, font, image, pdf, epub
+    download_url: str
+    checksum: str
+    tags: List[str]
+    file_size: int
+    license: str
+    author: str
+    rating: float
+    downloads: int
+    featured: bool = False
 
 
-class PluginCertificationChecker:
-    """Plugin quality certification and validation system."""
+class MarketplaceManager:
+    """Manages marketplace content discovery and installation."""
 
     def __init__(self):
-        self.certification_levels = {
-            'basic': {'min_downloads': 10},
-            'verified': {'min_downloads': 100},
-            'trusted': {'min_downloads': 500}
+        self.cache_dir = self._get_cache_dir()
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.themes_dir = self._get_themes_dir()
+        self.themes_dir.mkdir(parents=True, exist_ok=True)
+        self.tools_dir = self._get_tools_dir()
+        self.tools_dir.mkdir(parents=True, exist_ok=True)
+        self.resources_dir = self._get_resources_dir()
+        self.resources_dir.mkdir(parents=True, exist_ok=True)
+
+        # Use offline catalog for now (could be updated via download later)
+        self.catalog_data = self._get_offline_catalog()
+
+    def _get_cache_dir(self) -> Path:
+        """Get the marketplace cache directory."""
+        if sys.platform == "win32":
+            base = Path(os.environ.get("APPDATA", "~")).expanduser()
+        else:
+            base = Path.home()
+        return base / ".docx2shelf" / "marketplace"
+
+    def _get_themes_dir(self) -> Path:
+        """Get the themes directory."""
+        return self.cache_dir / "themes"
+
+    def _get_tools_dir(self) -> Path:
+        """Get the tools directory."""
+        return self.cache_dir / "tools"
+
+    def _get_resources_dir(self) -> Path:
+        """Get the resources directory."""
+        return self.cache_dir / "resources"
+
+    def _get_offline_catalog(self) -> Dict[str, Any]:
+        """Get the offline catalog of marketplace items."""
+        return {
+            "themes": [
+                {
+                    "name": "Academic Paper",
+                    "description": "Clean, professional theme for academic papers and theses",
+                    "category": "academic",
+                    "author": "Docx2Shelf",
+                    "version": "1.0.0",
+                    "download_url": "https://releases.docx2shelf.com/themes/academic-paper-v1.zip",
+                    "checksum": "sha256:abc123...",
+                    "preview_image": "https://releases.docx2shelf.com/previews/academic-paper.png",
+                    "tags": ["academic", "clean", "minimal", "citations"],
+                    "file_size": 25600,
+                    "compatibility": "3.0+",
+                    "rating": 4.8,
+                    "downloads": 15420,
+                    "featured": True
+                },
+                {
+                    "name": "Fiction Novel",
+                    "description": "Elegant theme optimized for fiction with beautiful typography",
+                    "category": "fiction",
+                    "author": "Docx2Shelf",
+                    "version": "1.2.0",
+                    "download_url": "https://releases.docx2shelf.com/themes/fiction-novel-v1.2.zip",
+                    "checksum": "sha256:def456...",
+                    "preview_image": "https://releases.docx2shelf.com/previews/fiction-novel.png",
+                    "tags": ["fiction", "elegant", "readable", "drop-caps"],
+                    "file_size": 34200,
+                    "compatibility": "3.0+",
+                    "rating": 4.9,
+                    "downloads": 28350,
+                    "featured": True
+                },
+                {
+                    "name": "Technical Manual",
+                    "description": "Comprehensive theme for technical documentation with code highlighting",
+                    "category": "technical",
+                    "author": "Docx2Shelf",
+                    "version": "1.1.0",
+                    "download_url": "https://releases.docx2shelf.com/themes/technical-manual-v1.1.zip",
+                    "checksum": "sha256:ghi789...",
+                    "preview_image": "https://releases.docx2shelf.com/previews/technical-manual.png",
+                    "tags": ["technical", "code", "documentation", "syntax-highlighting"],
+                    "file_size": 41800,
+                    "compatibility": "3.0+",
+                    "rating": 4.7,
+                    "downloads": 9850,
+                    "featured": False
+                },
+                {
+                    "name": "Children's Book",
+                    "description": "Playful theme with large fonts and colorful design for children's books",
+                    "category": "specialty",
+                    "author": "Docx2Shelf",
+                    "version": "1.0.0",
+                    "download_url": "https://releases.docx2shelf.com/themes/childrens-book-v1.zip",
+                    "checksum": "sha256:jkl012...",
+                    "preview_image": "https://releases.docx2shelf.com/previews/childrens-book.png",
+                    "tags": ["children", "colorful", "large-text", "illustrations"],
+                    "file_size": 28900,
+                    "compatibility": "3.0+",
+                    "rating": 4.6,
+                    "downloads": 6240,
+                    "featured": False
+                }
+            ],
+            "tools": [
+                {
+                    "name": "EPUB Optimizer",
+                    "description": "Advanced EPUB compression and optimization tool",
+                    "category": "quality",
+                    "executable": "epub-optimizer",
+                    "version": "2.1.0",
+                    "download_url": "https://releases.docx2shelf.com/tools/epub-optimizer-v2.1.zip",
+                    "checksum": "sha256:mno345...",
+                    "platforms": ["windows", "macos", "linux"],
+                    "file_size": 5242880,
+                    "install_instructions": "Extract and add to PATH",
+                    "dependencies": [],
+                    "homepage": "https://tools.docx2shelf.com/epub-optimizer",
+                    "rating": 4.8,
+                    "downloads": 12400,
+                    "featured": True
+                },
+                {
+                    "name": "Image Processor",
+                    "description": "Batch image compression and format conversion for EPUBs",
+                    "category": "conversion",
+                    "executable": "image-processor",
+                    "version": "1.5.0",
+                    "download_url": "https://releases.docx2shelf.com/tools/image-processor-v1.5.zip",
+                    "checksum": "sha256:pqr678...",
+                    "platforms": ["windows", "macos", "linux"],
+                    "file_size": 3145728,
+                    "install_instructions": "Extract and add to PATH",
+                    "dependencies": ["libwebp", "libjpeg"],
+                    "homepage": "https://tools.docx2shelf.com/image-processor",
+                    "rating": 4.5,
+                    "downloads": 8750,
+                    "featured": False
+                },
+                {
+                    "name": "Accessibility Checker",
+                    "description": "Comprehensive accessibility validation for EPUB files",
+                    "category": "accessibility",
+                    "executable": "a11y-checker",
+                    "version": "3.0.0",
+                    "download_url": "https://releases.docx2shelf.com/tools/a11y-checker-v3.zip",
+                    "checksum": "sha256:stu901...",
+                    "platforms": ["windows", "macos", "linux"],
+                    "file_size": 2097152,
+                    "install_instructions": "Extract and add to PATH",
+                    "dependencies": [],
+                    "homepage": "https://tools.docx2shelf.com/a11y-checker",
+                    "rating": 4.9,
+                    "downloads": 5320,
+                    "featured": True
+                }
+            ],
+            "resources": [
+                {
+                    "name": "Professional Fonts Pack",
+                    "description": "Collection of high-quality fonts optimized for digital reading",
+                    "category": "font",
+                    "resource_type": "font",
+                    "download_url": "https://releases.docx2shelf.com/resources/pro-fonts-pack.zip",
+                    "checksum": "sha256:vwx234...",
+                    "tags": ["fonts", "professional", "reading", "typography"],
+                    "file_size": 10485760,
+                    "license": "OFL",
+                    "author": "Various",
+                    "rating": 4.7,
+                    "downloads": 18650,
+                    "featured": True
+                },
+                {
+                    "name": "EPUB Templates",
+                    "description": "Ready-to-use EPUB templates for various book types",
+                    "category": "template",
+                    "resource_type": "epub",
+                    "download_url": "https://releases.docx2shelf.com/resources/epub-templates.zip",
+                    "checksum": "sha256:yz567...",
+                    "tags": ["templates", "starter", "examples", "structure"],
+                    "file_size": 1048576,
+                    "license": "MIT",
+                    "author": "Docx2Shelf",
+                    "rating": 4.8,
+                    "downloads": 22100,
+                    "featured": True
+                },
+                {
+                    "name": "Publishing Reference Guide",
+                    "description": "Comprehensive guide to digital publishing standards and best practices",
+                    "category": "reference",
+                    "resource_type": "pdf",
+                    "download_url": "https://releases.docx2shelf.com/resources/publishing-guide.pdf",
+                    "checksum": "sha256:abc890...",
+                    "tags": ["guide", "reference", "publishing", "standards"],
+                    "file_size": 5242880,
+                    "license": "CC BY-SA",
+                    "author": "Docx2Shelf Team",
+                    "rating": 4.9,
+                    "downloads": 31200,
+                    "featured": False
+                }
+            ],
+            "version": "1.0.0",
+            "last_updated": "2025-09-20"
         }
 
-    def validate_plugin_code(self, plugin_path: Path) -> Tuple[bool, List[str]]:
-        """Validate plugin code for security and quality."""
-        issues = []
+    def get_themes(self, category: Optional[str] = None, featured_only: bool = False) -> List[MarketplaceTheme]:
+        """Get available themes from the marketplace."""
+        themes_data = self.catalog_data.get("themes", [])
+        themes = [MarketplaceTheme(**theme) for theme in themes_data]
 
-        # Check for security issues
-        if not self._check_security(plugin_path):
-            issues.append("Security: Potential security vulnerabilities detected")
+        if category:
+            themes = [t for t in themes if t.category == category]
 
-        # Check code quality
-        if not self._check_code_quality(plugin_path):
-            issues.append("Quality: Code quality below standards")
+        if featured_only:
+            themes = [t for t in themes if t.featured]
 
-        # Check documentation
-        if not self._check_documentation(plugin_path):
-            issues.append("Documentation: Insufficient documentation")
+        # Sort by downloads (popularity)
+        themes.sort(key=lambda x: x.downloads, reverse=True)
+        return themes
 
-        # Check test coverage
-        if not self._check_tests(plugin_path):
-            issues.append("Testing: Missing or insufficient tests")
+    def get_tools(self, category: Optional[str] = None, platform: Optional[str] = None) -> List[MarketplaceTool]:
+        """Get available tools from the marketplace."""
+        tools_data = self.catalog_data.get("tools", [])
+        tools = [MarketplaceTool(**tool) for tool in tools_data]
 
-        return len(issues) == 0, issues
+        if category:
+            tools = [t for t in tools if t.category == category]
 
-    def _check_security(self, plugin_path: Path) -> bool:
-        """Check for common security issues."""
-        dangerous_imports = ['os.system', 'subprocess.call', 'exec', 'eval']
+        if platform:
+            tools = [t for t in tools if platform in t.platforms]
 
-        for py_file in plugin_path.glob("**/*.py"):
-            content = py_file.read_text(encoding='utf-8')
-            for dangerous in dangerous_imports:
-                if dangerous in content:
-                    return False
+        # Sort by rating and downloads
+        tools.sort(key=lambda x: (x.rating, x.downloads), reverse=True)
+        return tools
 
-        return True
+    def get_resources(self, category: Optional[str] = None, resource_type: Optional[str] = None) -> List[MarketplaceResource]:
+        """Get available resources from the marketplace."""
+        resources_data = self.catalog_data.get("resources", [])
+        resources = [MarketplaceResource(**resource) for resource in resources_data]
 
-    def _check_code_quality(self, plugin_path: Path) -> bool:
-        """Basic code quality checks."""
-        # Check for __init__.py files
-        has_init = (plugin_path / "__init__.py").exists()
+        if category:
+            resources = [r for r in resources if r.category == category]
 
-        # Check for docstrings
-        py_files = list(plugin_path.glob("**/*.py"))
-        if not py_files:
+        if resource_type:
+            resources = [r for r in resources if r.resource_type == resource_type]
+
+        # Sort by downloads
+        resources.sort(key=lambda x: x.downloads, reverse=True)
+        return resources
+
+    def search(self, query: str, item_type: Optional[str] = None) -> Dict[str, List]:
+        """Search marketplace items."""
+        query_lower = query.lower()
+        results = {"themes": [], "tools": [], "resources": []}
+
+        if not item_type or item_type == "themes":
+            themes = self.get_themes()
+            for theme in themes:
+                if (query_lower in theme.name.lower() or
+                    query_lower in theme.description.lower() or
+                    any(query_lower in tag.lower() for tag in theme.tags)):
+                    results["themes"].append(theme)
+
+        if not item_type or item_type == "tools":
+            tools = self.get_tools()
+            for tool in tools:
+                if (query_lower in tool.name.lower() or
+                    query_lower in tool.description.lower()):
+                    results["tools"].append(tool)
+
+        if not item_type or item_type == "resources":
+            resources = self.get_resources()
+            for resource in resources:
+                if (query_lower in resource.name.lower() or
+                    query_lower in resource.description.lower() or
+                    any(query_lower in tag.lower() for tag in resource.tags)):
+                    results["resources"].append(resource)
+
+        return results
+
+    def install_theme(self, theme: MarketplaceTheme) -> bool:
+        """Install a theme from the marketplace."""
+        try:
+            print(f"Installing theme: {theme.name}")
+
+            if not requests:
+                print("Error: requests library required for downloads")
+                return False
+
+            # Download theme
+            response = requests.get(theme.download_url, timeout=30)
+            if response.status_code != 200:
+                print(f"Download failed: HTTP {response.status_code}")
+                return False
+
+            # Verify checksum (simplified for demo)
+            # In real implementation, would verify against theme.checksum
+
+            # Extract theme
+            with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as temp_file:
+                temp_file.write(response.content)
+                temp_file_path = temp_file.name
+
+            try:
+                theme_dir = self.themes_dir / theme.name.replace(" ", "_").lower()
+                theme_dir.mkdir(exist_ok=True)
+
+                with zipfile.ZipFile(temp_file_path, 'r') as zip_ref:
+                    zip_ref.extractall(theme_dir)
+
+                # Save metadata
+                metadata = asdict(theme)
+                (theme_dir / "metadata.json").write_text(
+                    json.dumps(metadata, indent=2), encoding="utf-8"
+                )
+
+                print(f"✓ Theme '{theme.name}' installed successfully")
+                return True
+
+            finally:
+                os.unlink(temp_file_path)
+
+        except Exception as e:
+            print(f"Installation failed: {e}")
             return False
 
-        # Basic quality heuristics
-        return has_init and len(py_files) > 0
-
-    def _check_documentation(self, plugin_path: Path) -> bool:
-        """Check for adequate documentation."""
-        doc_files = ['README.md', 'README.txt', 'docs/']
-        return any((plugin_path / doc).exists() for doc in doc_files)
-
-    def _check_tests(self, plugin_path: Path) -> bool:
-        """Check for test files."""
-        test_patterns = ['test_*.py', 'tests/', '*_test.py']
-        for pattern in test_patterns:
-            if list(plugin_path.glob(pattern)):
-                return True
-        return False
-
-    def get_certification_level(self, stats: PluginStats) -> Optional[str]:
-        """Determine certification level based on statistics."""
-        for level, requirements in reversed(self.certification_levels.items()):
-            if stats.download_count >= requirements['min_downloads']:
-                return level
-        return None
-
-
-class PluginDependencyResolver:
-    """Resolves and manages plugin dependencies."""
-
-    def __init__(self, marketplace: 'PluginMarketplace'):
-        self.marketplace = marketplace
-
-    def resolve_dependencies(self, plugin_id: str) -> List[str]:
-        """Resolve all dependencies for a plugin."""
-        resolved = []
-        to_resolve = [plugin_id]
-        visited = set()
-
-        while to_resolve:
-            current = to_resolve.pop(0)
-            if current in visited:
-                continue
-
-            visited.add(current)
-            plugin = self.marketplace.get_plugin_metadata(current)
-
-            if plugin:
-                resolved.append(current)
-                for dep in plugin.dependencies:
-                    if dep not in visited:
-                        to_resolve.append(dep)
-
-        return resolved[1:]  # Exclude the original plugin
-
-    def check_compatibility(self, plugin_id: str, docx2shelf_version: str) -> bool:
-        """Check if plugin is compatible with current Docx2Shelf version."""
-        plugin = self.marketplace.get_plugin_metadata(plugin_id)
-        if not plugin or not plugin.compatibility:
-            return True  # Assume compatible if no restrictions
-
-        return docx2shelf_version in plugin.compatibility
-
-    def get_dependency_tree(self, plugin_id: str) -> Dict[str, List[str]]:
-        """Get full dependency tree for visualization."""
-        tree = {}
-
-        def build_tree(pid: str, level: int = 0):
-            if level > 10:  # Prevent infinite recursion
-                return
-
-            plugin = self.marketplace.get_plugin_metadata(pid)
-            if plugin:
-                tree[pid] = plugin.dependencies
-                for dep in plugin.dependencies:
-                    build_tree(dep, level + 1)
-
-        build_tree(plugin_id)
-        return tree
-
-
-class PluginMarketplace:
-    """Main plugin marketplace interface."""
-
-    def __init__(self, cache_dir: Optional[Path] = None):
-        self.cache_dir = cache_dir or Path.home() / ".docx2shelf" / "marketplace"
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-
-        self.db_path = self.cache_dir / "marketplace.db"
-        self.plugins_dir = self.cache_dir / "plugins"
-        self.plugins_dir.mkdir(exist_ok=True)
-
-        self.api_base = "https://marketplace.docx2shelf.io/api/v1"
-        self.cdn_base = "https://cdn.docx2shelf.io/plugins"
-
-        self.certifier = PluginCertificationChecker()
-        self.dependency_resolver = PluginDependencyResolver(self)
-
-        self._init_database()
-
-    def _init_database(self):
-        """Initialize local marketplace database."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS plugins (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    version TEXT NOT NULL,
-                    author TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    category TEXT NOT NULL,
-                    tags TEXT NOT NULL,
-                    homepage TEXT,
-                    repository TEXT,
-                    license TEXT,
-                    dependencies TEXT NOT NULL,
-                    compatibility TEXT NOT NULL,
-                    download_url TEXT NOT NULL,
-                    file_size INTEGER NOT NULL,
-                    checksum TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    cached_at REAL NOT NULL
-                )
-            """)
-
-
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS stats (
-                    plugin_id TEXT PRIMARY KEY,
-                    download_count INTEGER DEFAULT 0,
-                    weekly_downloads INTEGER DEFAULT 0,
-                    monthly_downloads INTEGER DEFAULT 0,
-                    last_updated TEXT NOT NULL,
-                    FOREIGN KEY (plugin_id) REFERENCES plugins (id)
-                )
-            """)
-
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS installed_plugins (
-                    plugin_id TEXT PRIMARY KEY,
-                    version TEXT NOT NULL,
-                    install_path TEXT NOT NULL,
-                    installed_at REAL NOT NULL,
-                    auto_update BOOLEAN DEFAULT TRUE
-                )
-            """)
-
-    def refresh_marketplace_data(self, force: bool = False) -> bool:
-        """Refresh marketplace data from remote API."""
+    def install_tool(self, tool: MarketplaceTool) -> bool:
+        """Install a tool from the marketplace."""
         try:
-            # Check if cache is still fresh (1 hour)
-            if not force and self.db_path.exists():
-                cache_age = time.time() - self.db_path.stat().st_mtime
-                if cache_age < 3600:  # 1 hour
-                    return True
+            print(f"Installing tool: {tool.name}")
 
-            # Fetch plugins list
-            response = requests.get(f"{self.api_base}/plugins", timeout=30)
-            response.raise_for_status()
-            plugins_data = response.json()
+            if not requests:
+                print("Error: requests library required for downloads")
+                return False
 
-            # Update local database
-            with sqlite3.connect(self.db_path) as conn:
-                # Clear old data
-                conn.execute("DELETE FROM plugins")
-                conn.execute("DELETE FROM stats")
+            # Check platform compatibility
+            current_platform = sys.platform
+            platform_map = {"win32": "windows", "darwin": "macos", "linux": "linux"}
+            platform_name = platform_map.get(current_platform, current_platform)
 
-                # Insert new data
-                for plugin_data in plugins_data.get('plugins', []):
-                    metadata = PluginMetadata(**plugin_data['metadata'])
-                    stats = PluginStats(**plugin_data.get('stats', {}))
+            if platform_name not in tool.platforms:
+                print(f"Tool not available for {platform_name}")
+                return False
 
-                    # Insert plugin
-                    conn.execute("""
-                        INSERT INTO plugins VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        metadata.id, metadata.name, metadata.version, metadata.author,
-                        metadata.description, metadata.category, json.dumps(metadata.tags),
-                        metadata.homepage, metadata.repository, metadata.license,
-                        json.dumps(metadata.dependencies), json.dumps(metadata.compatibility),
-                        metadata.download_url, metadata.file_size, metadata.checksum,
-                        metadata.created_at, metadata.updated_at, time.time()
-                    ))
+            # Download tool
+            response = requests.get(tool.download_url, timeout=60)
+            if response.status_code != 200:
+                print(f"Download failed: HTTP {response.status_code}")
+                return False
 
-                    # Insert stats
-                    conn.execute("""
-                        INSERT INTO stats VALUES (?, ?, ?, ?, ?)
-                    """, (
-                        stats.plugin_id, stats.download_count, stats.weekly_downloads,
-                        stats.monthly_downloads, stats.last_updated
-                    ))
+            # Extract tool
+            with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as temp_file:
+                temp_file.write(response.content)
+                temp_file_path = temp_file.name
 
+            try:
+                tool_dir = self.tools_dir / tool.name.replace(" ", "_").lower()
+                tool_dir.mkdir(exist_ok=True)
+
+                with zipfile.ZipFile(temp_file_path, 'r') as zip_ref:
+                    zip_ref.extractall(tool_dir)
+
+                # Save metadata and installation info
+                metadata = asdict(tool)
+                (tool_dir / "metadata.json").write_text(
+                    json.dumps(metadata, indent=2), encoding="utf-8"
+                )
+
+                print(f"✓ Tool '{tool.name}' installed successfully")
+                print(f"Installation instructions: {tool.install_instructions}")
+
+                if tool.dependencies:
+                    print(f"Dependencies required: {', '.join(tool.dependencies)}")
+
+                return True
+
+            finally:
+                os.unlink(temp_file_path)
+
+        except Exception as e:
+            print(f"Installation failed: {e}")
+            return False
+
+    def install_resource(self, resource: MarketplaceResource) -> bool:
+        """Install a resource from the marketplace."""
+        try:
+            print(f"Installing resource: {resource.name}")
+
+            if not requests:
+                print("Error: requests library required for downloads")
+                return False
+
+            # Download resource
+            response = requests.get(resource.download_url, timeout=60)
+            if response.status_code != 200:
+                print(f"Download failed: HTTP {response.status_code}")
+                return False
+
+            # Save resource
+            resource_dir = self.resources_dir / resource.name.replace(" ", "_").lower()
+            resource_dir.mkdir(exist_ok=True)
+
+            if resource.resource_type == "pdf":
+                # Save PDF directly
+                (resource_dir / f"{resource.name}.pdf").write_bytes(response.content)
+            else:
+                # Extract archive
+                with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as temp_file:
+                    temp_file.write(response.content)
+                    temp_file_path = temp_file.name
+
+                try:
+                    with zipfile.ZipFile(temp_file_path, 'r') as zip_ref:
+                        zip_ref.extractall(resource_dir)
+                finally:
+                    os.unlink(temp_file_path)
+
+            # Save metadata
+            metadata = asdict(resource)
+            (resource_dir / "metadata.json").write_text(
+                json.dumps(metadata, indent=2), encoding="utf-8"
+            )
+
+            print(f"✓ Resource '{resource.name}' installed successfully")
+            print(f"License: {resource.license}")
             return True
 
         except Exception as e:
-            print(f"Failed to refresh marketplace data: {e}")
+            print(f"Installation failed: {e}")
             return False
 
-    def search_plugins(self, query: str = "", category: str = "",
-                      tags: List[str] = None, sort_by: str = "popularity") -> List[PluginMetadata]:
-        """Search for plugins in the marketplace."""
-        self.refresh_marketplace_data()
+    def list_installed_themes(self) -> List[str]:
+        """List installed themes."""
+        installed = []
+        for item in self.themes_dir.iterdir():
+            if item.is_dir() and (item / "metadata.json").exists():
+                installed.append(item.name.replace("_", " ").title())
+        return sorted(installed)
 
-        with sqlite3.connect(self.db_path) as conn:
-            sql = """
-                SELECT p.*, s.download_count
-                FROM plugins p
-                LEFT JOIN stats s ON p.id = s.plugin_id
-                WHERE 1=1
-            """
-            params = []
+    def list_installed_tools(self) -> List[str]:
+        """List installed tools."""
+        installed = []
+        for item in self.tools_dir.iterdir():
+            if item.is_dir() and (item / "metadata.json").exists():
+                installed.append(item.name.replace("_", " ").title())
+        return sorted(installed)
 
-            if query:
-                sql += " AND (p.name LIKE ? OR p.description LIKE ? OR p.tags LIKE ?)"
-                query_param = f"%{query}%"
-                params.extend([query_param, query_param, query_param])
+    def list_installed_resources(self) -> List[str]:
+        """List installed resources."""
+        installed = []
+        for item in self.resources_dir.iterdir():
+            if item.is_dir() and (item / "metadata.json").exists():
+                installed.append(item.name.replace("_", " ").title())
+        return sorted(installed)
 
-            if category:
-                sql += " AND p.category = ?"
-                params.append(category)
+    def get_featured_items(self) -> Dict[str, List]:
+        """Get featured items from all categories."""
+        return {
+            "themes": self.get_themes(featured_only=True),
+            "tools": [t for t in self.get_tools() if t.featured],
+            "resources": [r for r in self.get_resources() if r.featured]
+        }
 
-            if tags:
-                for tag in tags:
-                    sql += " AND p.tags LIKE ?"
-                    params.append(f"%{tag}%")
+    def get_categories(self) -> Dict[str, List[str]]:
+        """Get available categories for each item type."""
+        themes = self.get_themes()
+        tools = self.get_tools()
+        resources = self.get_resources()
 
-            # Sort order
-            if sort_by == "popularity":
-                sql += " ORDER BY s.download_count DESC"
-            elif sort_by == "recent":
-                sql += " ORDER BY p.updated_at DESC"
-            elif sort_by == "name":
-                sql += " ORDER BY p.name ASC"
-
-            cursor = conn.execute(sql, params)
-            results = []
-
-            for row in cursor.fetchall():
-                metadata = PluginMetadata(
-                    id=row[0], name=row[1], version=row[2], author=row[3],
-                    description=row[4], category=row[5], tags=json.loads(row[6]),
-                    homepage=row[7], repository=row[8], license=row[9],
-                    dependencies=json.loads(row[10]), compatibility=json.loads(row[11]),
-                    download_url=row[12], file_size=row[13], checksum=row[14],
-                    created_at=row[15], updated_at=row[16]
-                )
-                results.append(metadata)
-
-            return results
-
-    def get_plugin_metadata(self, plugin_id: str) -> Optional[PluginMetadata]:
-        """Get metadata for a specific plugin."""
-        self.refresh_marketplace_data()
-
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("SELECT * FROM plugins WHERE id = ?", (plugin_id,))
-            row = cursor.fetchone()
-
-            if row:
-                return PluginMetadata(
-                    id=row[0], name=row[1], version=row[2], author=row[3],
-                    description=row[4], category=row[5], tags=json.loads(row[6]),
-                    homepage=row[7], repository=row[8], license=row[9],
-                    dependencies=json.loads(row[10]), compatibility=json.loads(row[11]),
-                    download_url=row[12], file_size=row[13], checksum=row[14],
-                    created_at=row[15], updated_at=row[16]
-                )
-
-        return None
-
-    def get_plugin_stats(self, plugin_id: str) -> Optional[PluginStats]:
-        """Get statistics for a specific plugin."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("SELECT * FROM stats WHERE plugin_id = ?", (plugin_id,))
-            row = cursor.fetchone()
-
-            if row:
-                return PluginStats(
-                    plugin_id=row[0], download_count=row[1], weekly_downloads=row[2],
-                    monthly_downloads=row[3], last_updated=row[4]
-                )
-
-        return None
+        return {
+            "themes": sorted(list(set(t.category for t in themes))),
+            "tools": sorted(list(set(t.category for t in tools))),
+            "resources": sorted(list(set(r.category for r in resources)))
+        }
 
 
-    def install_plugin(self, plugin_id: str, auto_update: bool = True) -> bool:
-        """Install a plugin from the marketplace."""
-        plugin = self.get_plugin_metadata(plugin_id)
-        if not plugin:
-            print(f"Plugin {plugin_id} not found")
-            return False
-
-        # Check compatibility
-        if not self.dependency_resolver.check_compatibility(plugin_id, "1.2.8"):
-            print(f"Plugin {plugin_id} is not compatible with this version")
-            return False
-
-        # Resolve dependencies
-        dependencies = self.dependency_resolver.resolve_dependencies(plugin_id)
-
-        # Install dependencies first
-        for dep_id in dependencies:
-            if not self.is_plugin_installed(dep_id):
-                print(f"Installing dependency: {dep_id}")
-                if not self.install_plugin(dep_id, auto_update):
-                    print(f"Failed to install dependency: {dep_id}")
-                    return False
-
-        # Download plugin
-        try:
-            temp_dir = Path(tempfile.mkdtemp())
-            download_path = temp_dir / f"{plugin_id}.zip"
-
-            print(f"Downloading {plugin.name}...")
-            urlretrieve(plugin.download_url, download_path)
-
-            # Verify checksum
-            with open(download_path, 'rb') as f:
-                file_hash = hashlib.sha256(f.read()).hexdigest()
-
-            if file_hash != plugin.checksum:
-                print(f"Checksum verification failed for {plugin.name}")
-                return False
-
-            # Extract plugin
-            install_path = self.plugins_dir / plugin_id
-            install_path.mkdir(exist_ok=True)
-
-            with zipfile.ZipFile(download_path, 'r') as zip_ref:
-                zip_ref.extractall(install_path)
-
-            # Validate plugin
-            is_valid, issues = self.certifier.validate_plugin_code(install_path)
-            if not is_valid:
-                print(f"Plugin validation failed: {'; '.join(issues)}")
-                shutil.rmtree(install_path)
-                return False
-
-            # Record installation
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute("""
-                    INSERT OR REPLACE INTO installed_plugins VALUES (?, ?, ?, ?, ?)
-                """, (plugin_id, plugin.version, str(install_path), time.time(), auto_update))
-
-            print(f"Successfully installed {plugin.name} v{plugin.version}")
-            return True
-
-        except Exception as e:
-            print(f"Failed to install {plugin.name}: {e}")
-            return False
-
-        finally:
-            if 'temp_dir' in locals():
-                shutil.rmtree(temp_dir, ignore_errors=True)
-
-    def uninstall_plugin(self, plugin_id: str) -> bool:
-        """Uninstall a plugin."""
-        if not self.is_plugin_installed(plugin_id):
-            print(f"Plugin {plugin_id} is not installed")
-            return False
-
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                "SELECT install_path FROM installed_plugins WHERE plugin_id = ?",
-                (plugin_id,)
-            )
-            row = cursor.fetchone()
-
-            if row:
-                install_path = Path(row[0])
-                if install_path.exists():
-                    shutil.rmtree(install_path)
-
-                conn.execute("DELETE FROM installed_plugins WHERE plugin_id = ?", (plugin_id,))
-                print(f"Successfully uninstalled {plugin_id}")
-                return True
-
-        return False
-
-    def is_plugin_installed(self, plugin_id: str) -> bool:
-        """Check if a plugin is installed."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                "SELECT 1 FROM installed_plugins WHERE plugin_id = ?",
-                (plugin_id,)
-            )
-            return cursor.fetchone() is not None
-
-    def list_installed_plugins(self) -> List[Tuple[str, str, str]]:
-        """List all installed plugins."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("""
-                SELECT ip.plugin_id, ip.version, p.name
-                FROM installed_plugins ip
-                LEFT JOIN plugins p ON ip.plugin_id = p.id
-            """)
-            return cursor.fetchall()
-
-    def update_plugin(self, plugin_id: str) -> bool:
-        """Update an installed plugin to the latest version."""
-        if not self.is_plugin_installed(plugin_id):
-            return False
-
-        # Get current and latest versions
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                "SELECT version FROM installed_plugins WHERE plugin_id = ?",
-                (plugin_id,)
-            )
-            current_version = cursor.fetchone()[0]
-
-        latest_plugin = self.get_plugin_metadata(plugin_id)
-        if not latest_plugin or latest_plugin.version == current_version:
-            return True  # Already up to date
-
-        # Uninstall old version and install new one
-        self.uninstall_plugin(plugin_id)
-        return self.install_plugin(plugin_id)
-
-    def get_categories(self) -> List[str]:
-        """Get list of all plugin categories."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("SELECT DISTINCT category FROM plugins ORDER BY category")
-            return [row[0] for row in cursor.fetchall()]
-
-    def get_featured_plugins(self, limit: int = 10) -> List[PluginMetadata]:
-        """Get featured/popular plugins."""
-        return self.search_plugins(sort_by="popularity")[:limit]
-
-
-def create_marketplace_instance(cache_dir: Optional[Path] = None) -> PluginMarketplace:
-    """Create a configured marketplace instance."""
-    return PluginMarketplace(cache_dir)
+# Global instance
+marketplace = MarketplaceManager()

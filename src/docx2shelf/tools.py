@@ -121,7 +121,7 @@ def _verify_gpg_signature(file_path: Path, signature_url: str, trusted_keys: lis
             ], capture_output=True, text=True)
 
             if result.returncode == 0:
-                print(f"✓ GPG signature verified for {file_path.name}")
+                print(f"[OK] GPG signature verified for {file_path.name}")
             else:
                 print(f"Warning: GPG signature verification failed for {file_path.name}: {result.stderr}")
                 # Don't fail the download, just warn
@@ -397,79 +397,79 @@ def tools_doctor() -> int:
     import subprocess
     import sys
 
-    print("🔍 Docx2Shelf Tools Health Check")
+    print("[DOCTOR] Docx2Shelf Tools Health Check")
     print("=" * 40)
 
     issues_found = 0
 
     # Check Python version
-    print(f"✓ Python version: {sys.version}")
+    print(f"[OK] Python version: {sys.version}")
 
     # Check tools directory
     td = tools_dir()
-    print(f"✓ Tools directory: {td}")
+    print(f"[OK] Tools directory: {td}")
     print(f"  Exists: {'Yes' if td.exists() else 'No'}")
     print(f"  Writable: {'Yes' if os.access(td, os.W_OK) else 'No'}")
 
     # Check Pandoc
-    print("\n📚 Pandoc Status:")
+    print("\n[PANDOC] Pandoc Status:")
     pandoc_path_obj = pandoc_path()
     if pandoc_path_obj:
-        print(f"  ✓ Found at: {pandoc_path_obj}")
+        print(f"  [OK] Found at: {pandoc_path_obj}")
         try:
             result = subprocess.run([str(pandoc_path_obj), "--version"],
                                   capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 version_line = result.stdout.split('\n')[0] if result.stdout else "Unknown"
-                print(f"  ✓ Version: {version_line}")
+                print(f"  [OK] Version: {version_line}")
 
                 # Check if version matches pinned version
                 pinned = get_pinned_version("pandoc")
                 if pinned and pinned not in version_line:
-                    print(f"  ⚠️  Warning: Expected version {pinned}, got {version_line}")
+                    print(f"  [WARNING]  Warning: Expected version {pinned}, got {version_line}")
                     issues_found += 1
             else:
-                print(f"  ❌ Error running pandoc: {result.stderr}")
+                print(f"  [ERROR] Error running pandoc: {result.stderr}")
                 issues_found += 1
         except Exception as e:
-            print(f"  ❌ Error checking pandoc: {e}")
+            print(f"  [ERROR] Error checking pandoc: {e}")
             issues_found += 1
     else:
-        print("  ❌ Pandoc not found")
+        print("  [ERROR] Pandoc not found")
         issues_found += 1
 
         # Check if it's available in PATH
         system_pandoc = shutil.which("pandoc")
         if system_pandoc:
-            print(f"  ℹ️  System pandoc available at: {system_pandoc}")
+            print(f"  [INFO]  System pandoc available at: {system_pandoc}")
         else:
-            print("  ℹ️  No system pandoc found in PATH")
+            print("  [INFO]  No system pandoc found in PATH")
 
     # Check EPUBCheck
     print("\n📖 EPUBCheck Status:")
     epubcheck_cmd_list = epubcheck_cmd()
     if epubcheck_cmd_list:
-        print(f"  ✓ Found at: {epubcheck_cmd_list[0]}")
+        print(f"  [OK] Found at: {epubcheck_cmd_list[0]}")
         try:
             result = subprocess.run(epubcheck_cmd_list + ["--version"],
                                   capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 version_info = result.stdout.strip() if result.stdout else result.stderr.strip()
-                print(f"  ✓ Version: {version_info}")
+                print(f"  [OK] Version: {version_info}")
 
                 # Check if version matches pinned version
                 pinned = get_pinned_version("epubcheck")
                 if pinned and pinned not in version_info:
-                    print(f"  ⚠️  Warning: Expected version {pinned}, got {version_info}")
+                    print(f"  [WARNING]  Warning: Expected version {pinned}, got {version_info}")
                     issues_found += 1
             else:
-                print(f"  ❌ Error running epubcheck: {result.stderr}")
+                print(f"  [ERROR] Error running epubcheck: {result.stderr}")
                 issues_found += 1
         except Exception as e:
-            print(f"  ❌ Error checking epubcheck: {e}")
+            print(f"  [ERROR] Error checking epubcheck: {e}")
             issues_found += 1
     else:
-        print("  ❌ EPUBCheck not found")
+        print("  [ERROR] EPUBCheck not found")
         issues_found += 1
 
     # Check Java (for EPUBCheck)
@@ -479,15 +479,15 @@ def tools_doctor() -> int:
                               capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
             java_version = result.stderr.split('\n')[0] if result.stderr else "Unknown"
-            print(f"  ✓ Java available: {java_version}")
+            print(f"  [OK] Java available: {java_version}")
         else:
-            print("  ❌ Java not working properly")
+            print("  [ERROR] Java not working properly")
             issues_found += 1
     except FileNotFoundError:
-        print("  ❌ Java not found (required for EPUBCheck)")
+        print("  [ERROR] Java not found (required for EPUBCheck)")
         issues_found += 1
     except Exception as e:
-        print(f"  ❌ Error checking Java: {e}")
+        print(f"  [ERROR] Error checking Java: {e}")
         issues_found += 1
 
     # Check version pins configuration
@@ -505,16 +505,16 @@ def tools_doctor() -> int:
         print("  No custom pins set")
 
     # Check PATH
-    print("\n🛤️  PATH Diagnostics:")
+    print("\n[PATH]  PATH Diagnostics:")
     path_dirs = os.environ.get("PATH", "").split(os.pathsep)
     tools_in_path = []
 
     for tool in ["pandoc", "java", "python", "pip", "pipx"]:
         found = shutil.which(tool)
         if found:
-            tools_in_path.append(f"  ✓ {tool}: {found}")
+            tools_in_path.append(f"  [OK] {tool}: {found}")
         else:
-            tools_in_path.append(f"  ❌ {tool}: not found")
+            tools_in_path.append(f"  [ERROR] {tool}: not found")
 
     for tool_info in tools_in_path:
         print(tool_info)
@@ -522,10 +522,10 @@ def tools_doctor() -> int:
     # Summary
     print("\n" + "=" * 40)
     if issues_found == 0:
-        print("🎉 All systems operational!")
+        print("[SUCCESS] All systems operational!")
         return 0
     else:
-        print(f"⚠️  Found {issues_found} issue(s)")
+        print(f"[WARNING]  Found {issues_found} issue(s)")
         print("\nRecommended actions:")
         print("- Run 'docx2shelf tools install pandoc' to install Pandoc")
         print("- Run 'docx2shelf tools install epubcheck' to install EPUBCheck")
@@ -575,7 +575,7 @@ echo "Offline installation complete!"
         if os.name != "nt":
             install_script.chmod(0o755)
 
-        print(f"✓ Offline bundle prepared in {bundle_dir}")
+        print(f"[OK] Offline bundle prepared in {bundle_dir}")
         print("Bundle includes cached tool downloads for air-gapped installation.")
 
     except Exception as e:

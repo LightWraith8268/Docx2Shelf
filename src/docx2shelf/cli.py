@@ -402,6 +402,9 @@ def _arg_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("update", help="Update docx2shelf to the latest version")
 
+    # Environment diagnostic command
+    sub.add_parser("doctor", help="Run comprehensive environment diagnostics")
+
     # --- Checklist subcommand ---
     check = sub.add_parser("checklist", help="Run publishing store compatibility checklists")
     check.add_argument("--metadata", help="Path to metadata.txt file (default: ./metadata.txt)")
@@ -2411,6 +2414,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_ai_command(args)
     if args.command == "update":
         return run_update(args)
+    if args.command == "doctor":
+        return run_doctor(args)
     if args.command == "checklist":
         return run_checklist(args)
     if args.command == "quality":
@@ -2422,6 +2427,138 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     parser.print_help()
     return 1
+
+
+def run_doctor(args: argparse.Namespace) -> int:
+    """Run comprehensive environment diagnostics."""
+    import sys
+    import shutil
+    import platform
+    from pathlib import Path
+
+    print("[DOCTOR] Docx2Shelf Environment Diagnostics")
+    print("=" * 50)
+
+    issues_found = 0
+    warnings_found = 0
+
+    # System Information
+    print("\n[SYSTEM] System Information:")
+    print(f"  OS: {platform.system()} {platform.release()}")
+    print(f"  Architecture: {platform.machine()}")
+    print(f"  Python: {sys.version.split()[0]} ({sys.executable})")
+
+    # Python version check
+    if sys.version_info >= (3, 11):
+        print(f"  [OK] Python version is compatible")
+    else:
+        print(f"  [ERROR] Python {sys.version_info.major}.{sys.version_info.minor} is too old (requires 3.11+)")
+        issues_found += 1
+
+    # Package installation check
+    print(f"\n[PACKAGE] Docx2Shelf Installation:")
+    try:
+        from importlib import metadata
+        version = metadata.version("docx2shelf")
+        print(f"  [OK] Docx2Shelf {version} installed")
+    except Exception as e:
+        print(f"  [ERROR] Could not determine docx2shelf version: {e}")
+        issues_found += 1
+
+    # Dependencies check
+    print(f"\n[DEPS] Core Dependencies:")
+    core_deps = ["ebooklib", "lxml"]
+    for dep in core_deps:
+        try:
+            __import__(dep)
+            print(f"  [OK] {dep} available")
+        except ImportError:
+            print(f"  [ERROR] {dep} not available")
+            issues_found += 1
+
+    # Optional dependencies
+    optional_deps = {
+        "python-docx": "DOCX fallback support",
+        "pypandoc": "Pandoc Python integration",
+        "requests": "Update and marketplace features",
+        "fastapi": "Enterprise API features",
+        "sqlalchemy": "Enterprise database features"
+    }
+
+    print(f"\n[OPTIONAL] Optional Dependencies:")
+    for dep, description in optional_deps.items():
+        try:
+            __import__(dep.replace("-", "_"))
+            print(f"  [OK] {dep} - {description}")
+        except ImportError:
+            print(f"  [INFO] {dep} not installed - {description}")
+
+    # Tools check (reuse existing tools_doctor)
+    print(f"\n[TOOLS] External Tools:")
+    from .tools import tools_doctor
+    tools_result = tools_doctor()
+    if tools_result != 0:
+        issues_found += tools_result
+
+    # File system checks
+    print(f"\n[FILESYSTEM] File System Access:")
+
+    # Check write access to current directory
+    try:
+        test_file = Path("docx2shelf_test_write.tmp")
+        test_file.write_text("test")
+        test_file.unlink()
+        print(f"  [OK] Current directory is writable")
+    except Exception as e:
+        print(f"  [WARNING] Current directory write test failed: {e}")
+        warnings_found += 1
+
+    # Check temp directory
+    import tempfile
+    try:
+        temp_dir = Path(tempfile.gettempdir())
+        print(f"  [OK] Temp directory: {temp_dir}")
+        if temp_dir.exists() and temp_dir.is_dir():
+            print(f"  [OK] Temp directory accessible")
+        else:
+            print(f"  [ERROR] Temp directory not accessible")
+            issues_found += 1
+    except Exception as e:
+        print(f"  [ERROR] Temp directory check failed: {e}")
+        issues_found += 1
+
+    # Memory check
+    print(f"\n[MEMORY] Memory Information:")
+    try:
+        import psutil
+        memory = psutil.virtual_memory()
+        print(f"  [OK] Available RAM: {memory.available // (1024**3)} GB")
+        if memory.available < 1024**3:  # Less than 1GB
+            print(f"  [WARNING] Low available memory may affect large document processing")
+            warnings_found += 1
+    except ImportError:
+        print(f"  [INFO] psutil not available - cannot check memory")
+
+    # Summary
+    print("\n" + "=" * 50)
+    total_issues = issues_found + warnings_found
+
+    if issues_found == 0 and warnings_found == 0:
+        print("[SUCCESS] All diagnostics passed! Environment is ready.")
+        return 0
+    elif issues_found == 0:
+        print(f"[OK] Environment functional with {warnings_found} warning(s)")
+        print("\nWarnings found but system should work normally.")
+        return 0
+    else:
+        print(f"[ERROR] Found {issues_found} critical issue(s) and {warnings_found} warning(s)")
+        print("\nRecommended actions:")
+        if sys.version_info < (3, 11):
+            print("- Update Python to version 3.11 or higher")
+        print("- Install missing dependencies: pip install docx2shelf[all]")
+        print("- Run 'docx2shelf tools install pandoc' for document conversion")
+        print("- Run 'docx2shelf tools install epubcheck' for validation")
+        return 1
 
 
 def run_plugins(args) -> int:

@@ -4,6 +4,54 @@ Offline Python CLI for converting manuscripts into valid EPUB 3 ebooks.
 
 Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors and publishers. It handles various aspects of ebook creation, including cover embedding, metadata management, content splitting, and CSS theming. It prefers Pandoc for high-fidelity conversions but includes a fallback for DOCX when Pandoc isn't available.
 
+## Feature Matrix
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| **Core Conversion** | | |
+| DOCX → EPUB 3 | ✅ **Available** | Full support with Pandoc + fallback |
+| Markdown → EPUB 3 | ✅ **Available** | Via Pandoc integration |
+| HTML/TXT → EPUB 3 | ✅ **Available** | Basic support |
+| Chapter Splitting | ✅ **Available** | By headings or page breaks |
+| Custom CSS Themes | ✅ **Available** | 3 built-in + custom CSS |
+| Cover Integration | ✅ **Available** | JPEG/PNG support |
+| **Metadata & Publishing** | | |
+| ISBN/UUID Generation | ✅ **Available** | Automatic generation |
+| Basic Metadata | ✅ **Available** | Title, author, description |
+| Series Support | ✅ **Available** | Calibre-compatible metadata |
+| ONIX 3.0 Export | 🚧 **Beta** | Basic implementation |
+| Store Profiles | 🚧 **Beta** | KDP/Kobo/Apple validation |
+| **Advanced Features** | | |
+| Image Processing | ✅ **Available** | Basic JPEG/PNG handling |
+| Cross-References | 🚧 **Beta** | Word cross-ref preservation |
+| Math Support | 🚧 **Beta** | MathML with fallbacks |
+| Plugin System | ✅ **Available** | Basic plugin support |
+| Marketplace | ✅ **Available** | Plugin discovery & install |
+| **Enterprise & API** | | |
+| Batch Processing | ✅ **Available** | Files + folder modes |
+| REST API | ✅ **Available** | FastAPI with auth |
+| Multi-User Support | ✅ **Available** | RBAC with API keys |
+| Job Management | ✅ **Available** | Progress tracking |
+| **Developer Tools** | | |
+| CLI Interface | ✅ **Available** | Full command suite |
+| Environment Doctor | 📋 **Planned** | Diagnostic tool |
+| Golden Tests | 📋 **Planned** | EPUB validation suite |
+| **Quality & Security** | | |
+| Basic EPUB Validation | ✅ **Available** | Structure validation |
+| EPUBCheck Integration | 📋 **Planned** | Industry-standard validation |
+| Security Hardening | 📋 **Planned** | SVG/JS sanitization |
+| Path Traversal Protection | 📋 **Planned** | Security improvements |
+| **CI/CD & Testing** | | |
+| Basic Tests | ✅ **Available** | Unit test coverage |
+| Matrix Testing | 📋 **Planned** | Multi-OS/Python versions |
+| Pre-commit Hooks | 📋 **Planned** | Code quality automation |
+| Release Automation | 🚧 **Beta** | GitHub releases |
+
+**Legend:**
+- ✅ **Available**: Fully implemented and tested
+- 🚧 **Beta**: Implemented but may have limitations
+- 📋 **Planned**: On the roadmap for future versions
+
 ## Features
 
 ### Core Conversion
