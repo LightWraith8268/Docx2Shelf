@@ -7,12 +7,57 @@ setlocal enabledelayedexpansion
 :: - Automatic Python 3.11+ installation if not found
 :: - Multiple installation fallback methods
 :: - Automatic PATH configuration
+:: - Optional custom installation location
 :: - User-friendly error handling and diagnostics
+::
+:: Usage:
+::   install.bat                    - Standard installation
+::   install.bat --path "C:\Tools"  - Install to custom location
+
+:: Parse command line arguments
+set "CUSTOM_INSTALL_PATH="
+set "SHOW_HELP="
+
+:parse_args
+if "%~1"=="" goto :args_done
+if /i "%~1"=="--help" set "SHOW_HELP=1"
+if /i "%~1"=="-h" set "SHOW_HELP=1"
+if /i "%~1"=="--path" (
+    set "CUSTOM_INSTALL_PATH=%~2"
+    shift
+)
+shift
+goto :parse_args
+
+:args_done
+
+:: Show help if requested
+if defined SHOW_HELP (
+    echo Docx2Shelf Windows Installer
+    echo.
+    echo Usage:
+    echo   install.bat                     - Standard installation
+    echo   install.bat --path "C:\Tools"   - Install to custom location
+    echo   install.bat --help              - Show this help
+    echo.
+    echo Standard installation uses system-appropriate locations:
+    echo   - Python: User profile %%LocalAppData%%\Programs\Python
+    echo   - Docx2Shelf: pipx managed location or Python Scripts
+    echo.
+    echo Custom installation allows you to specify a target directory.
+    pause
+    exit /b 0
+)
 
 echo ========================================
 echo    Docx2Shelf Windows Installer
 echo ========================================
 echo.
+
+if defined CUSTOM_INSTALL_PATH (
+    echo Custom installation path: %CUSTOM_INSTALL_PATH%
+    echo.
+)
 
 :: Check for Python
 echo Checking for Python installation...
@@ -69,7 +114,7 @@ echo Python found: %PYTHON_CMD%
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
-for /f "tokens=2" %%v in ('%PYTHON_CMD% -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2^>nul') do set "PYTHON_VERSION=%%v"
+for /f "delims=" %%v in ('%PYTHON_CMD% -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2^>nul') do set "PYTHON_VERSION=%%v"
 
 if defined PYTHON_VERSION (
     echo Python version: %PYTHON_VERSION%
@@ -143,10 +188,21 @@ echo Installing Docx2Shelf...
 
 :: Method 1: Try pipx with current package
 echo Method 1: Installing with pipx...
-pipx install docx2shelf[docx] --force
-if %errorlevel% equ 0 (
-    echo ✓ Installation successful with pipx
-    goto :verify_install
+if defined CUSTOM_INSTALL_PATH (
+    echo Installing to custom path: %CUSTOM_INSTALL_PATH%
+    if not exist "%CUSTOM_INSTALL_PATH%" mkdir "%CUSTOM_INSTALL_PATH%"
+    %PYTHON_CMD% -m pip install --target "%CUSTOM_INSTALL_PATH%" docx2shelf[docx] --upgrade
+    if %errorlevel% equ 0 (
+        echo ✓ Installation successful to custom path
+        set "CUSTOM_INSTALL_SUCCESS=1"
+        goto :verify_install
+    )
+) else (
+    pipx install docx2shelf[docx] --force
+    if %errorlevel% equ 0 (
+        echo ✓ Installation successful with pipx
+        goto :verify_install
+    )
 )
 
 echo ❌ pipx installation failed. Trying fallback methods...
@@ -182,7 +238,7 @@ if %errorlevel% equ 0 (
 
 :: Method 5: Try from GitHub (development version)
 echo Method 5: Trying development version from GitHub...
-%PYTHON_CMD% -m pip install --user git+https://github.com/anthropics/docx2shelf.git
+%PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
 if %errorlevel% equ 0 (
     echo ✓ Installation successful from GitHub
     goto :verify_install
@@ -216,9 +272,29 @@ exit /b 1
 
 :: Verify installation and update PATH if needed
 echo Verifying installation...
-docx2shelf --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo docx2shelf not found on PATH. Attempting to locate and add to PATH...
+
+if defined CUSTOM_INSTALL_SUCCESS (
+    :: For custom installations, add the path and create a launcher script
+    echo Setting up custom installation...
+    set "DOCX2SHELF_SCRIPT=%CUSTOM_INSTALL_PATH%\docx2shelf.bat"
+
+    :: Create a launcher batch file
+    echo @echo off > "%DOCX2SHELF_SCRIPT%"
+    echo %PYTHON_CMD% "%CUSTOM_INSTALL_PATH%\docx2shelf\cli.py" %%* >> "%DOCX2SHELF_SCRIPT%"
+
+    :: Add custom path to PATH
+    set "PATH=%PATH%;%CUSTOM_INSTALL_PATH%"
+
+    :: Add to permanent PATH for current user
+    echo Adding %CUSTOM_INSTALL_PATH% to user PATH permanently...
+    powershell -Command "$env:Path = [Environment]::GetEnvironmentVariable('Path','User'); if ($env:Path -notlike '*%CUSTOM_INSTALL_PATH%*') { [Environment]::SetEnvironmentVariable('Path', $env:Path + ';%CUSTOM_INSTALL_PATH%', 'User') }"
+
+    echo ✓ Custom installation configured
+) else (
+    :: Standard verification
+    docx2shelf --help >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo docx2shelf not found on PATH. Attempting to locate and add to PATH...
 
     :: Find potential paths where docx2shelf might be installed
     set "FOUND_PATH="
@@ -268,7 +344,12 @@ if %errorlevel% neq 0 (
 :: Final verification
 echo.
 echo Final verification...
-docx2shelf --version
+docx2shelf --help >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✓ docx2shelf is working correctly
+) else (
+    echo ⚠️  docx2shelf command verification failed
+)
 if %errorlevel% equ 0 (
     echo.
     echo ========================================
@@ -276,12 +357,15 @@ if %errorlevel% equ 0 (
     echo ========================================
     echo.
     echo Docx2Shelf is now installed and available globally.
+    if defined CUSTOM_INSTALL_PATH (
+        echo Custom installation location: %CUSTOM_INSTALL_PATH%
+    )
     echo.
     echo Quick start:
     echo   docx2shelf --help          - Show help
-    echo   docx2shelf                 - Interactive mode
-    echo   docx2shelf gui             - Launch GUI
-    echo   docx2shelf web             - Start web interface
+    echo   docx2shelf build           - Build EPUB from DOCX
+    echo   docx2shelf wizard          - Interactive wizard
+    echo   docx2shelf ai --help       - AI-powered features
     echo.
     echo If you're using a new terminal window and get "command not found",
     echo restart your terminal or Command Prompt to refresh the PATH.
