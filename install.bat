@@ -117,6 +117,11 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+:: Add Python Scripts directory to PATH if needed
+echo.
+echo Configuring PATH for docx2shelf command...
+call :add_scripts_to_path
+
 :: Verify installation
 echo.
 echo Verifying installation...
@@ -135,8 +140,6 @@ if %errorlevel% equ 0 (
     echo   docx2shelf wizard          - Interactive wizard
     echo   docx2shelf enterprise      - Enterprise features
     echo.
-    echo If you get "command not found" errors, restart your terminal.
-    echo.
     echo Installation completed successfully!
     pause
 ) else (
@@ -145,16 +148,22 @@ if %errorlevel% equ 0 (
     echo    Installation Issues Detected
     echo ========================================
     echo.
-    echo Docx2Shelf was installed but may not be on PATH.
+    echo Docx2Shelf was installed but the command is not accessible.
     echo.
-    echo Solutions:
-    echo 1. Restart your Command Prompt/Terminal
+    echo This is usually due to PATH configuration. Solutions:
+    echo.
+    echo 1. RESTART this Command Prompt and try again
     echo 2. Log out and log back in to Windows
+    echo 3. Open a new Command Prompt window
     echo.
-    echo If issues persist, you may need to manually add Python Scripts
-    echo directory to your PATH environment variable.
+    echo Alternative: Use the full path to run docx2shelf:
+    if exist "!SCRIPTS_DIR!\docx2shelf.exe" (
+        echo   "!SCRIPTS_DIR!\docx2shelf.exe" --help
+    ) else (
+        echo   Check your Python Scripts directory for docx2shelf.exe
+    )
     echo.
-    echo Installation completed with warnings.
+    echo The installation was successful, but requires a terminal restart.
     pause
 )
 
@@ -276,4 +285,59 @@ if !errorlevel! equ 0 (
 
 :: Fallback: Use whatever we had before
 echo Could not detect upgraded Python, using previous command: !PYTHON_CMD!
+exit /b 0
+
+:add_scripts_to_path
+:: Add Python Scripts directory to PATH for current session and permanently
+echo Checking Python Scripts directory...
+
+:: Detect the Scripts directory based on the Python command being used
+set "SCRIPTS_DIR="
+
+if "!PYTHON_CMD!"=="python" (
+    for /f "tokens=*" %%A in ('python -c "import sys, os; print(os.path.join(sys.prefix, 'Scripts'))" 2^>nul') do set "SCRIPTS_DIR=%%A"
+) else if "!PYTHON_CMD!"=="py" (
+    for /f "tokens=*" %%A in ('py -c "import sys, os; print(os.path.join(sys.prefix, 'Scripts'))" 2^>nul') do set "SCRIPTS_DIR=%%A"
+) else (
+    :: For direct path commands, try to derive Scripts directory
+    for /f "tokens=*" %%A in ('!PYTHON_CMD! -c "import sys, os; print(os.path.join(sys.prefix, 'Scripts'))" 2^>nul') do set "SCRIPTS_DIR=%%A"
+)
+
+:: Fallback: Check common user Scripts location
+if "!SCRIPTS_DIR!"=="" (
+    set "SCRIPTS_DIR=%APPDATA%\Python\Python311\Scripts"
+)
+
+:: Check if Scripts directory exists and contains docx2shelf
+if exist "!SCRIPTS_DIR!\docx2shelf.exe" (
+    echo Found docx2shelf.exe in: !SCRIPTS_DIR!
+
+    :: Check if Scripts directory is already in PATH
+    echo %PATH% | findstr /i "!SCRIPTS_DIR!" >nul
+    if !errorlevel! neq 0 (
+        echo Adding Scripts directory to PATH...
+
+        :: Add to current session PATH
+        set "PATH=%PATH%;!SCRIPTS_DIR!"
+
+        :: Add to user PATH permanently (registry)
+        for /f "tokens=2*" %%A in ('reg query "HKCU\Environment" /v PATH 2^>nul') do set "CURRENT_USER_PATH=%%B"
+        if "!CURRENT_USER_PATH!"=="" (
+            reg add "HKCU\Environment" /v PATH /t REG_EXPAND_SZ /d "!SCRIPTS_DIR!" /f >nul 2>&1
+        ) else (
+            echo !CURRENT_USER_PATH! | findstr /i "!SCRIPTS_DIR!" >nul
+            if !errorlevel! neq 0 (
+                reg add "HKCU\Environment" /v PATH /t REG_EXPAND_SZ /d "!CURRENT_USER_PATH!;!SCRIPTS_DIR!" /f >nul 2>&1
+            )
+        )
+
+        echo ✓ Scripts directory added to PATH
+    ) else (
+        echo ✓ Scripts directory already in PATH
+    )
+) else (
+    echo Warning: Could not find docx2shelf.exe in expected Scripts directory
+    echo Expected location: !SCRIPTS_DIR!
+)
+
 exit /b 0
