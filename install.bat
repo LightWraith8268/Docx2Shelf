@@ -59,19 +59,81 @@ if %errorlevel% neq 0 (
 
 echo pipx is available
 
-:: Install Docx2Shelf with pipx
+:: Install Docx2Shelf with enhanced error handling
 echo Installing Docx2Shelf...
+
+:: Method 1: Try pipx with current package
+echo Method 1: Installing with pipx...
 pipx install docx2shelf[docx] --force
-if %errorlevel% neq 0 (
-    echo ERROR: Failed to install docx2shelf with pipx
-    echo Trying with pip as fallback...
-    %PYTHON_CMD% -m pip install --user docx2shelf[docx]
-    if %errorlevel% neq 0 (
-        echo ERROR: Installation failed completely
-        pause
-        exit /b 1
-    )
+if %errorlevel% equ 0 (
+    echo ✓ Installation successful with pipx
+    goto :verify_install
 )
+
+echo ❌ pipx installation failed. Trying fallback methods...
+
+:: Method 2: Try with pip and user install
+echo Method 2: Installing with pip (user)...
+%PYTHON_CMD% -m pip install --user docx2shelf[docx] --upgrade
+if %errorlevel% equ 0 (
+    echo ✓ Installation successful with pip (user)
+    goto :verify_install
+)
+
+:: Method 3: Try without extras
+echo Method 3: Installing without extras...
+%PYTHON_CMD% -m pip install --user docx2shelf --upgrade
+if %errorlevel% equ 0 (
+    echo ✓ Installation successful without extras
+    echo ⚠️  Note: Installing DOCX support separately...
+    %PYTHON_CMD% -m pip install --user python-docx
+    goto :verify_install
+)
+
+:: Method 4: Try installing dependencies individually
+echo Method 4: Installing dependencies separately...
+echo Installing core dependencies...
+%PYTHON_CMD% -m pip install --user ebooklib
+%PYTHON_CMD% -m pip install --user python-docx
+%PYTHON_CMD% -m pip install --user docx2shelf
+if %errorlevel% equ 0 (
+    echo ✓ Installation successful with separate dependencies
+    goto :verify_install
+)
+
+:: Method 5: Try from GitHub (development version)
+echo Method 5: Trying development version from GitHub...
+%PYTHON_CMD% -m pip install --user git+https://github.com/anthropics/docx2shelf.git
+if %errorlevel% equ 0 (
+    echo ✓ Installation successful from GitHub
+    goto :verify_install
+)
+
+:: All methods failed
+echo.
+echo ❌ All installation methods failed
+echo.
+echo Diagnostic information:
+echo Python version:
+%PYTHON_CMD% --version
+echo.
+echo Pip version:
+%PYTHON_CMD% -m pip --version
+echo.
+echo Available packages (docx2shelf):
+%PYTHON_CMD% -m pip search docx2shelf 2>nul || echo "Search not available"
+echo.
+echo Possible solutions:
+echo 1. Check your internet connection
+echo 2. Update pip: %PYTHON_CMD% -m pip install --upgrade pip
+echo 3. Clear pip cache: %PYTHON_CMD% -m pip cache purge
+echo 4. Try manual installation from source
+echo 5. Contact support with the information above
+echo.
+pause
+exit /b 1
+
+:verify_install
 
 :: Verify installation and update PATH if needed
 echo Verifying installation...

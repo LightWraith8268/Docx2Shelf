@@ -1,5 +1,119 @@
 # Changelog
 
+## [1.3.3] - 2025-01-20
+### Advanced AI Integration - Epic 27
+
+#### AI-Powered Metadata Enhancement
+- **Intelligent metadata suggestions**: AI analysis of document content to suggest titles, descriptions, genres, and keywords with confidence scoring
+- **Interactive enhancement mode**: User-guided metadata enhancement with real-time AI suggestions and manual selection options
+- **Automatic application**: High-confidence AI suggestions automatically applied to empty metadata fields during build process
+- **Enhanced metadata validation**: AI-powered detection of metadata quality issues with suggestions for improvement
+
+#### Advanced Genre Detection & Keyword Generation
+- **Multi-method genre detection**: Combines AI analysis, keyword pattern matching, and structural analysis for accurate genre classification
+- **Intelligent keyword extraction**: Semantic analysis and frequency-based keyword generation with relevance scoring
+- **BISAC code suggestions**: Automated Book Industry Standards code recommendations based on content analysis
+- **Context-aware analysis**: Genre detection considers both content themes and existing metadata for improved accuracy
+
+#### Smart Image Alt-Text Generation
+- **AI-powered alt-text**: Automated generation of descriptive alt-text for images using AI vision models
+- **Accessibility compliance**: WCAG 2.1 AA compliance checking with automated accessibility auditing
+- **Context-aware descriptions**: Alt-text generation considers surrounding content and document context
+- **Multiple suggestion sources**: Combines AI analysis, rule-based generation, and template-based approaches
+
+#### Comprehensive AI Integration Framework
+- **Model management**: Support for both local transformer models and OpenAI API with automatic fallback handling
+- **Cross-platform compatibility**: AI features work seamlessly across Windows, macOS, and Linux systems
+- **Caching & performance**: Intelligent caching of AI results with configurable cache management and optimization
+- **Graceful degradation**: Full functionality maintained when AI dependencies are unavailable
+
+#### Enhanced User Workflows
+- **Wizard integration**: AI features seamlessly integrated into interactive conversion wizard with guided enhancement steps
+- **CLI AI commands**: Dedicated `docx2shelf ai` subcommands for metadata enhancement, genre detection, and alt-text generation
+- **Build-time integration**: AI features automatically available during standard build process with `--ai-enhance` and `--ai-genre` flags
+- **Configuration management**: Flexible AI configuration system with user-customizable settings and model preferences
+
+#### Technical Infrastructure
+- **Optional dependencies**: AI features gracefully handle missing dependencies with clear fallback messaging
+- **Error handling**: Comprehensive error recovery with informative user feedback and troubleshooting guidance
+- **Performance optimization**: Efficient AI processing with request batching and result caching
+- **Extensible architecture**: Clean plugin-style architecture supporting future AI model integrations
+
+## [1.3.2] - 2025-01-19
+### Windows Installer Improvements & Distribution - Epic 26
+
+#### Enhanced Windows Installer
+- **Robust package resolution**: Improved installer with multiple fallback installation methods for PyPI connectivity issues
+- **Advanced error handling**: 5-tier fallback system with pip, pipx, individual dependency installation, and GitHub source options
+- **Enhanced installer script**: New `install_enhanced.bat` with command-line options, development mode, and local installation support
+- **Diagnostic capabilities**: Comprehensive error reporting with system information, dependency checking, and troubleshooting guidance
+
+#### Offline Installation System
+- **Bundled dependencies**: Complete offline installer creation tool that packages all dependencies for air-gapped environments
+- **Cross-platform support**: Offline installers for Windows (batch), Python (cross-platform), and Unix (shell) systems
+- **Integrity verification**: SHA-256 and MD5 checksums for all bundled packages with automated verification
+- **Self-contained packages**: ZIP-based distribution with complete installation scripts and verification data
+
+#### Installation Validation & Diagnostics
+- **Comprehensive validation**: Multi-layer validation system checking Python environment, dependencies, command availability, and functionality
+- **Intelligent diagnostics**: Automated diagnostic tool with detailed system analysis, PATH detection, and installation troubleshooting
+- **Interactive troubleshooting**: Step-by-step guidance for fixing installation issues with automated resolution suggestions
+- **Detailed reporting**: JSON-based diagnostic reports with system information and actionable recommendations
+
+#### Automated Testing Infrastructure
+- **CI/CD integration**: Comprehensive GitHub Actions workflow testing installers across Python versions and installation methods
+- **Cross-platform testing**: Automated testing on Windows, Ubuntu with compatibility validation for all installer types
+- **Integration testing**: End-to-end testing pipeline with functionality verification and comprehensive reporting
+- **Local testing suite**: Python-based test runner for local validation of installer functionality and reliability
+
+#### Distribution & Deployment
+- **Multiple installation methods**: Support for PyPI, pipx, local development, wheel-based, and offline installation modes
+- **Enhanced command availability**: Improved PATH management with automatic detection and permanent PATH updates
+- **Version compatibility**: Python 3.11+ compatibility checking with clear upgrade guidance and version validation
+- **Error recovery**: Graceful fallback mechanisms with user-friendly error messages and automated fix suggestions
+
+#### Technical Infrastructure
+- **Modular installer architecture**: Clean separation of standard, enhanced, and offline installation systems
+- **Comprehensive validation framework**: Multi-component validation with system, installation, dependency, and functionality checks
+- **Automated testing pipeline**: Complete test suite covering all installer types with CI/CD integration and reporting
+- **Cross-platform compatibility**: Windows batch scripts, Python cross-platform tools, and Unix shell script support
+
+## [1.3.1] - 2025-01-19
+### Enhanced User Experience - Epic 25
+
+#### Interactive Conversion Wizard
+- **Step-by-step guidance**: Comprehensive conversion wizard with 7 guided steps for streamlined EPUB creation
+- **Real-time preview**: Live preview generation with automatic browser opening during conversion process
+- **Session management**: Auto-save functionality with wizard state persistence and recovery
+- **Smart file detection**: Automatic metadata extraction from DOCX files and intelligent input validation
+- **Navigation controls**: Full wizard navigation with back/forward commands and help system
+
+#### Advanced Theme Editor
+- **Visual customization**: Interactive theme editor with comprehensive property management for typography, colors, layout, and advanced settings
+- **Live preview capabilities**: Browser-based theme preview with real-time CSS generation and instant visual feedback
+- **Theme property system**: Organized theme sections with validation, ranges, and choice-based property editing
+- **Custom CSS support**: Advanced CSS editor with syntax highlighting and custom rule integration
+- **Theme persistence**: Save, load, and export custom themes with JSON-based theme management
+
+#### Enhanced Error Handling
+- **Contextual help system**: Intelligent error analysis with contextual solutions and automated fix suggestions
+- **Interactive fix options**: User-friendly error resolution with confidence scoring and step-by-step guidance
+- **Automated remediation**: One-click fixes for common issues including tool installation and file validation
+- **Solution registry**: Comprehensive error pattern matching with 15+ automated solutions
+- **Graceful degradation**: Enhanced fallback mechanisms with user-friendly error messages
+
+#### CLI Integration
+- **Wizard command**: New `docx2shelf wizard` command with optional input file and session management
+- **Theme editor command**: Standalone `docx2shelf theme-editor` command with base theme selection
+- **Enhanced workflow**: Seamless integration between wizard, theme editor, and error handling systems
+- **User experience**: Improved command-line interface with better error messages and contextual help
+
+#### Technical Infrastructure
+- **Modular architecture**: Clean separation of wizard, theme editor, and error handling components
+- **Session persistence**: JSON-based wizard state management with auto-save and recovery
+- **Theme management**: Advanced theme property system with validation and CSS generation
+- **Error handling framework**: Comprehensive error analysis with pattern matching and solution registry
+
 ## [1.3.0] - 2025-01-19
 ### Performance & Optimization - Epic 24
 

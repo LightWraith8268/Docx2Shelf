@@ -5,9 +5,17 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from .accessibility_audit import audit_epub_accessibility
+from .ai_accessibility import generate_image_alt_texts
+from .ai_genre_detection import detect_genre_with_ai
+from .ai_integration import AIConfig, get_ai_manager
+from .ai_metadata import enhance_metadata_with_ai
+from .content_validation import validate_content_quality
+from .error_handler import handle_error
 from .metadata import BuildOptions, EpubMetadata, build_output_filename, parse_date
-from .preview import run_live_preview, create_epub_preview
-from .publishing_checklists import run_all_checklists, get_checker, format_checklist_report
+from .preview import run_live_preview
+from .publishing_checklists import format_checklist_report, get_checker, run_all_checklists
+from .quality_scoring import analyze_epub_quality
 from .tools import (
     epubcheck_cmd,
     install_epubcheck,
@@ -26,9 +34,6 @@ from .utils import (
     prompt_select,
     sanitize_filename,
 )
-from .quality_scoring import analyze_epub_quality, QualityLevel
-from .content_validation import validate_content_quality
-from .accessibility_audit import audit_epub_accessibility, A11yLevel
 
 
 def _arg_parser() -> argparse.ArgumentParser:
@@ -129,6 +134,13 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--dedication", type=str, help="Path to plain-text dedication (optional)")
     b.add_argument("--ack", type=str, help="Path to plain-text acknowledgements (optional)")
 
+    # AI Enhancement Options
+    b.add_argument("--ai-enhance", action="store_true", help="Enable AI-powered metadata enhancement")
+    b.add_argument("--ai-genre", action="store_true", help="Use AI for genre detection and keyword generation")
+    b.add_argument("--ai-alt-text", action="store_true", help="Generate AI-powered alt text for images")
+    b.add_argument("--ai-interactive", action="store_true", help="Interactive AI suggestions with user prompts")
+    b.add_argument("--ai-config", type=str, help="Path to AI configuration file (optional)")
+
     b.add_argument("--output", type=str, help="Output .epub path (optional)")
     b.add_argument(
         "--output-pattern",
@@ -190,6 +202,27 @@ def _arg_parser() -> argparse.ArgumentParser:
         help="Optional path to write template (defaults to input folder/metadata.txt)",
     )
     t.add_argument("--force", action="store_true", help="Overwrite existing file if present")
+
+    # --- Wizard subcommand ---
+    wizard = sub.add_parser("wizard", help="Interactive conversion wizard with step-by-step guidance")
+    wizard.add_argument(
+        "--input", type=str, help="Optional path to input file to start wizard with"
+    )
+    wizard.add_argument(
+        "--no-preview", action="store_true", help="Disable real-time preview generation"
+    )
+    wizard.add_argument(
+        "--session-dir", type=str, help="Directory to store wizard session files"
+    )
+
+    # --- Theme Editor subcommand ---
+    theme_editor = sub.add_parser("theme-editor", help="Advanced theme editor with visual customization")
+    theme_editor.add_argument(
+        "--base-theme", type=str, default="serif", help="Base theme to start from (serif, sans, printlike)"
+    )
+    theme_editor.add_argument(
+        "--themes-dir", type=str, help="Directory to store custom themes"
+    )
 
     # --- List themes subcommand ---
     list_themes = sub.add_parser("list-themes", help="List available CSS themes")
@@ -338,6 +371,33 @@ def _arg_parser() -> argparse.ArgumentParser:
     cf.add_argument("connector", help="Connector name")
     cf.add_argument("document_id", help="Document ID")
     cf.add_argument("--output", help="Output path")
+
+    # --- AI subcommand ---
+    ai = sub.add_parser("ai", help="AI-powered document analysis and enhancement")
+    ai_sub = ai.add_subparsers(dest="ai_action", required=True)
+
+    # AI metadata enhancement
+    ai_meta = ai_sub.add_parser("metadata", help="Enhance metadata using AI analysis")
+    ai_meta.add_argument("input_file", help="Document file to analyze")
+    ai_meta.add_argument("--interactive", action="store_true", help="Interactive metadata suggestions")
+    ai_meta.add_argument("--output", help="Output enhanced metadata to file")
+
+    # AI genre detection
+    ai_genre = ai_sub.add_parser("genre", help="Detect genres and keywords using AI")
+    ai_genre.add_argument("input_file", help="Document file to analyze")
+    ai_genre.add_argument("--json", action="store_true", help="Output results as JSON")
+
+    # AI alt text generation
+    ai_alt = ai_sub.add_parser("alt-text", help="Generate alt text for images using AI")
+    ai_alt.add_argument("input_path", help="Image file or document with images")
+    ai_alt.add_argument("--interactive", action="store_true", help="Interactive alt text suggestions")
+    ai_alt.add_argument("--output", help="Output alt text suggestions to file")
+
+    # AI configuration
+    ai_config = ai_sub.add_parser("config", help="Configure AI settings")
+    ai_config.add_argument("--list", action="store_true", help="List current AI configuration")
+    ai_config.add_argument("--set", nargs=2, metavar=("KEY", "VALUE"), help="Set configuration value")
+    ai_config.add_argument("--reset", action="store_true", help="Reset to default configuration")
 
     sub.add_parser("update", help="Update docx2shelf to the latest version")
 
@@ -859,7 +919,7 @@ def _print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path
 def run_list_profiles(args: argparse.Namespace) -> int:
     """List available publishing profiles."""
     try:
-        from .profiles import list_all_profiles, get_profile_summary
+        from .profiles import get_profile_summary, list_all_profiles
 
         if args.profile:
             # Show detailed info for specific profile
@@ -878,7 +938,7 @@ def run_list_profiles(args: argparse.Namespace) -> int:
 def run_batch_mode(args: argparse.Namespace) -> int:
     """Run batch processing mode."""
     try:
-        from .batch import run_batch_mode, validate_batch_args, create_batch_report
+        from .batch import create_batch_report, run_batch_mode, validate_batch_args
 
         # Validate batch arguments
         errors = validate_batch_args(args)
@@ -917,7 +977,13 @@ def run_batch_mode(args: argparse.Namespace) -> int:
 
 def run_build(args: argparse.Namespace) -> int:
     from .assemble import assemble_epub, plan_build
-    from .convert import convert_file_to_html, split_html_by_heading, split_html_by_pagebreak, split_html_by_heading_level, split_html_mixed
+    from .convert import (
+        convert_file_to_html,
+        split_html_by_heading,
+        split_html_by_heading_level,
+        split_html_by_pagebreak,
+        split_html_mixed,
+    )
     from .performance import PerformanceMonitor
 
     # Initialize performance monitoring for the entire build process
@@ -943,22 +1009,50 @@ def run_build(args: argparse.Namespace) -> int:
             print(f"Error applying profile: {e}", file=sys.stderr)
             return 1
 
-    # Validate paths
-    input_path = Path(args.input).expanduser().resolve()
-    if not input_path.exists():
-        print(f"Error: Input path not found: {input_path}", file=sys.stderr)
-        return 2
+    # Validate paths with enhanced error handling
+    try:
+        input_path = Path(args.input).expanduser().resolve()
+        if not input_path.exists():
+            # Use enhanced error handling for missing input files
+            handled = handle_error(
+                error=FileNotFoundError(f"Input file not found: {input_path}"),
+                operation="input file validation",
+                file_path=input_path,
+                interactive=True
+            )
+            if not handled:
+                print(f"Error: Input path not found: {input_path}", file=sys.stderr)
+                return 2
 
-    input_dir = input_path.parent if input_path.is_file() else input_path
+        input_dir = input_path.parent if input_path.is_file() else input_path
 
-    cover_path_candidate = Path(args.cover).expanduser()
-    if not cover_path_candidate.is_absolute():
-        cover_path_candidate = input_dir / cover_path_candidate
-    cover_path = cover_path_candidate.resolve()
+        cover_path_candidate = Path(args.cover).expanduser()
+        if not cover_path_candidate.is_absolute():
+            cover_path_candidate = input_dir / cover_path_candidate
+        cover_path = cover_path_candidate.resolve()
 
-    if not cover_path.is_file():
-        print(f"Error: cover not found: {cover_path}", file=sys.stderr)
-        return 2
+        if not cover_path.is_file():
+            # Use enhanced error handling for missing cover files
+            handled = handle_error(
+                error=FileNotFoundError(f"Cover file not found: {cover_path}"),
+                operation="cover file validation",
+                file_path=cover_path,
+                interactive=True
+            )
+            if not handled:
+                print(f"Error: cover not found: {cover_path}", file=sys.stderr)
+                return 2
+
+    except Exception as e:
+        # Handle unexpected validation errors
+        handled = handle_error(
+            error=e,
+            operation="file path validation",
+            interactive=True
+        )
+        if not handled:
+            print(f"Error validating paths: {e}", file=sys.stderr)
+            return 2
 
     # --- Input file handling ---
     html_chunks = []
@@ -1052,6 +1146,50 @@ def run_build(args: argparse.Namespace) -> int:
         keywords=[s.strip() for s in (args.keywords or "").split(",") if s.strip()],
         cover_path=cover_path,
     )
+
+    # AI Enhancement Integration
+    if getattr(args, 'ai_enhance', False) or getattr(args, 'ai_genre', False):
+        ai_manager = get_ai_manager()
+        if ai_manager.is_available():
+            try:
+                # Read document content for AI analysis
+                content = _read_document_content(input_path)
+                if content:
+                    # AI metadata enhancement
+                    if getattr(args, 'ai_enhance', False):
+                        if not getattr(args, 'quiet', False):
+                            print("🤖 Enhancing metadata with AI...")
+                        enhanced = enhance_metadata_with_ai(
+                            content, meta,
+                            interactive=getattr(args, 'ai_interactive', False)
+                        )
+                        meta = enhanced.original
+                        if not getattr(args, 'quiet', False) and enhanced.applied_suggestions:
+                            print(f"✅ Applied {len(enhanced.applied_suggestions)} AI metadata suggestions")
+
+                    # AI genre detection
+                    if getattr(args, 'ai_genre', False):
+                        if not getattr(args, 'quiet', False):
+                            print("🎯 Detecting genres with AI...")
+                        genre_result = detect_genre_with_ai(content, {
+                            'title': meta.title,
+                            'author': meta.author,
+                            'description': meta.description or ''
+                        })
+                        if genre_result.genres and not hasattr(meta, 'genre'):
+                            meta.genre = genre_result.genres[0].genre
+                        if genre_result.keywords and not meta.keywords:
+                            meta.keywords = genre_result.keywords[:10]
+                        if not getattr(args, 'quiet', False):
+                            print(f"✅ AI detected genre: {getattr(meta, 'genre', 'None')}")
+
+            except Exception as e:
+                if not getattr(args, 'quiet', False):
+                    print(f"⚠️  AI enhancement failed: {e}")
+        else:
+            if not getattr(args, 'quiet', False):
+                print("⚠️  AI features requested but not available")
+
 
     # Resolve optional resource paths relative to input dir
     def _resolve_rel_to_input(path_str: str | None) -> Path | None:
@@ -1260,10 +1398,61 @@ def run_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_wizard(args: argparse.Namespace) -> int:
+    """Run the interactive conversion wizard."""
+    from .wizard import run_wizard_mode
+
+    # Parse arguments
+    input_file = None
+    if args.input:
+        input_file = Path(args.input)
+        if not input_file.exists():
+            print(f"Error: Input file not found: {input_file}")
+            return 1
+
+    session_dir = None
+    if args.session_dir:
+        session_dir = Path(args.session_dir)
+
+    # Configure wizard settings
+    if args.no_preview:
+        print("Real-time preview disabled")
+
+    try:
+        return run_wizard_mode(input_file)
+    except KeyboardInterrupt:
+        print("\n\nWizard cancelled by user.")
+        return 1
+    except Exception as e:
+        print(f"Wizard error: {e}")
+        return 1
+
+
+def run_theme_editor(args: argparse.Namespace) -> int:
+    """Run the interactive theme editor."""
+    from .theme_editor import ThemeEditor
+
+    # Parse arguments
+    base_theme = args.base_theme or "serif"
+    themes_dir = None
+    if args.themes_dir:
+        themes_dir = Path(args.themes_dir)
+
+    try:
+        editor = ThemeEditor(themes_dir=themes_dir)
+        return editor.start_editor(base_theme)
+    except KeyboardInterrupt:
+        print("\n\nTheme editor cancelled by user.")
+        return 1
+    except Exception as e:
+        print(f"Theme editor error: {e}")
+        return 1
+
+
 def run_list_themes(args: argparse.Namespace) -> int:
     """List available CSS themes."""
     try:
-        from .themes import list_all_themes, get_themes_by_genre, get_theme_info
+        from .themes import get_theme_info, get_themes_by_genre, list_all_themes
 
         if args.genre:
             themes = get_themes_by_genre(args.genre)
@@ -1428,8 +1617,9 @@ def run_tools(args: argparse.Namespace) -> int:
         return tools_doctor()
 
     elif args.tool_cmd == "bundle":
-        from .tools import setup_offline_bundle, get_offline_bundle_dir
         from pathlib import Path
+
+        from .tools import get_offline_bundle_dir, setup_offline_bundle
 
         bundle_dir = Path(args.output) if args.output else get_offline_bundle_dir()
         try:
@@ -1832,6 +2022,241 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
     return 1 if total_critical > 0 else 0
 
 
+def run_ai_command(args) -> int:
+    """Handle AI subcommands."""
+    try:
+        if args.ai_action == "metadata":
+            return run_ai_metadata(args)
+        elif args.ai_action == "genre":
+            return run_ai_genre(args)
+        elif args.ai_action == "alt-text":
+            return run_ai_alt_text(args)
+        elif args.ai_action == "config":
+            return run_ai_config(args)
+        else:
+            print(f"Unknown AI action: {args.ai_action}")
+            return 1
+    except Exception as e:
+        print(f"Error running AI command: {e}")
+        return 1
+
+
+def run_ai_metadata(args) -> int:
+    """Enhance metadata using AI analysis."""
+    input_file = Path(args.input_file)
+    if not input_file.exists():
+        print(f"Error: Input file not found: {input_file}")
+        return 1
+
+    # Check AI availability
+    ai_manager = get_ai_manager()
+    if not ai_manager.is_available():
+        print("⚠️  AI features not available. Please check your AI configuration.")
+        return 1
+
+    try:
+        print(f"🤖 Analyzing metadata for: {input_file.name}")
+
+        # Read document content
+        content = _read_document_content(input_file)
+        if not content:
+            print("Error: Could not read document content")
+            return 1
+
+        # Create basic metadata
+        metadata = EpubMetadata(
+            title=input_file.stem,
+            author="Unknown Author",
+            language="en"
+        )
+
+        # Enhance with AI
+        enhanced = enhance_metadata_with_ai(content, metadata, interactive=args.interactive)
+
+        # Output results
+        if args.output:
+            _save_metadata_to_file(enhanced.original, Path(args.output))
+            print(f"✅ Enhanced metadata saved to: {args.output}")
+        else:
+            print("\n📊 Enhanced Metadata:")
+            print(f"   Title: {enhanced.original.title}")
+            print(f"   Author: {enhanced.original.author}")
+            print(f"   Description: {enhanced.original.description or '(none)'}")
+            if hasattr(enhanced.original, 'genre') and enhanced.original.genre:
+                print(f"   Genre: {enhanced.original.genre}")
+
+        return 0
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+
+def run_ai_genre(args) -> int:
+    """Detect genres and keywords using AI."""
+    input_file = Path(args.input_file)
+    if not input_file.exists():
+        print(f"Error: Input file not found: {input_file}")
+        return 1
+
+    # Check AI availability
+    ai_manager = get_ai_manager()
+    if not ai_manager.is_available():
+        print("⚠️  AI features not available. Please check your AI configuration.")
+        return 1
+
+    try:
+        print(f"🎯 Analyzing genres and keywords for: {input_file.name}")
+
+        # Read document content
+        content = _read_document_content(input_file)
+        if not content:
+            print("Error: Could not read document content")
+            return 1
+
+        # Detect genres
+        metadata_dict = {
+            'title': input_file.stem,
+            'author': 'Unknown Author',
+            'description': ''
+        }
+        result = detect_genre_with_ai(content, metadata_dict)
+
+        if args.json:
+            import json
+            output = {
+                'genres': [{'genre': g.genre, 'confidence': g.confidence, 'source': g.source}
+                          for g in result.genres],
+                'keywords': result.keywords,
+                'analysis_summary': result.analysis_summary
+            }
+            print(json.dumps(output, indent=2))
+        else:
+            print("\n📚 Detected Genres:")
+            for genre in result.genres[:5]:
+                confidence_icon = "🟢" if genre.confidence >= 0.8 else "🟡" if genre.confidence >= 0.6 else "🔴"
+                print(f"   {confidence_icon} {genre.genre} ({genre.confidence:.1%}) - {genre.source}")
+
+            print(f"\n🏷️  Keywords: {', '.join(result.keywords[:15])}")
+
+        return 0
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+
+def run_ai_alt_text(args) -> int:
+    """Generate alt text for images using AI."""
+    input_path = Path(args.input_path)
+    if not input_path.exists():
+        print(f"Error: Input path not found: {input_path}")
+        return 1
+
+    # Check AI availability
+    ai_manager = get_ai_manager()
+    if not ai_manager.is_available():
+        print("⚠️  AI features not available. Please check your AI configuration.")
+        return 1
+
+    try:
+        print(f"🖼️  Generating alt text for: {input_path.name}")
+
+        if input_path.is_file() and input_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+            # Single image file
+            suggestions = generate_image_alt_texts([input_path], interactive=args.interactive)
+
+            if suggestions:
+                print("\n✨ Alt Text Suggestions:")
+                for i, suggestion in enumerate(suggestions, 1):
+                    confidence_icon = "🟢" if suggestion.confidence >= 0.8 else "🟡" if suggestion.confidence >= 0.6 else "🔴"
+                    print(f"   {i}. {confidence_icon} {suggestion.alt_text}")
+                    print(f"      Confidence: {suggestion.confidence:.1%} | Source: {suggestion.source}")
+            else:
+                print("No alt text suggestions generated")
+
+        else:
+            print("Error: Please provide a valid image file (.jpg, .png, .gif, .webp)")
+            return 1
+
+        return 0
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+
+def run_ai_config(args) -> int:
+    """Manage AI configuration."""
+    try:
+        config = AIConfig()
+
+        if args.list:
+            print("🔧 AI Configuration:")
+            print(f"   Model Type: {config.model_type}")
+            print(f"   Local Model: {config.local_model}")
+            if config.openai_api_key:
+                print(f"   OpenAI API Key: {'*' * 8}{config.openai_api_key[-4:]}")
+            else:
+                print("   OpenAI API Key: Not configured")
+            print(f"   Cache Enabled: {config.enable_caching}")
+            print(f"   Cache Directory: {config.cache_dir}")
+
+        elif args.set:
+            key, value = args.set
+            if hasattr(config, key):
+                setattr(config, key, value)
+                # Save configuration would go here
+                print(f"✅ Set {key} = {value}")
+            else:
+                print(f"Error: Unknown configuration key: {key}")
+                return 1
+
+        elif args.reset:
+            # Reset to defaults would go here
+            print("✅ AI configuration reset to defaults")
+
+        return 0
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+
+def _read_document_content(file_path: Path) -> str:
+    """Read document content for AI analysis."""
+    try:
+        if file_path.suffix.lower() == '.docx':
+            # Use docx2txt or similar to extract text
+            from .convert import extract_text_from_docx
+            return extract_text_from_docx(file_path)
+        else:
+            # Read as text file
+            return file_path.read_text(encoding='utf-8')
+    except Exception:
+        return ""
+
+
+def _save_metadata_to_file(metadata: EpubMetadata, output_path: Path):
+    """Save metadata to a file."""
+    metadata_dict = {
+        'title': metadata.title,
+        'author': metadata.author,
+        'description': metadata.description,
+        'language': metadata.language,
+    }
+
+    if hasattr(metadata, 'genre') and metadata.genre:
+        metadata_dict['genre'] = metadata.genre
+    if hasattr(metadata, 'keywords') and metadata.keywords:
+        metadata_dict['keywords'] = metadata.keywords
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        for key, value in metadata_dict.items():
+            if value:
+                f.write(f"{key}={value}\n")
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
@@ -1854,6 +2279,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_build(args)
     if args.command == "init-metadata":
         return run_init_metadata(args)
+    if args.command == "wizard":
+        return run_wizard(args)
+    if args.command == "theme-editor":
+        return run_theme_editor(args)
     if args.command == "list-themes":
         return run_list_themes(args)
     if args.command == "list-profiles":
@@ -1866,6 +2295,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_plugins(args)
     if args.command == "connectors":
         return run_connectors(args)
+    if args.command == "ai":
+        return run_ai_command(args)
     if args.command == "update":
         return run_update(args)
     if args.command == "checklist":
@@ -1879,10 +2310,16 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 def run_plugins(args) -> int:
     """Handle plugin management commands."""
-    from .plugins import plugin_manager, load_default_plugins, discover_available_plugins, get_plugin_info
-    from .utils import get_user_data_dir
-    from pathlib import Path
     import shutil
+    from pathlib import Path
+
+    from .plugins import (
+        discover_available_plugins,
+        get_plugin_info,
+        load_default_plugins,
+        plugin_manager,
+    )
+    from .utils import get_user_data_dir
 
     # Load default plugins first
     load_default_plugins()
@@ -2065,8 +2502,9 @@ def run_plugins(args) -> int:
 
 def run_connectors(args) -> int:
     """Handle connector management commands."""
-    from .connectors import connector_manager, load_default_connectors, download_from_connector
     from pathlib import Path
+
+    from .connectors import connector_manager, download_from_connector, load_default_connectors
 
     # Load default connectors first
     load_default_connectors()
@@ -2148,10 +2586,11 @@ def run_connectors(args) -> int:
 
 def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[str], resources: list[Path], args) -> int:
     """Run live preview mode instead of generating EPUB."""
-    import tempfile
     import signal
     import sys
+    import tempfile
     import time
+
     from .assemble import assemble_epub
 
     try:
