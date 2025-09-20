@@ -183,48 +183,78 @@ if %errorlevel% neq 0 (
 
 echo pipx is available
 
+:: Check for Git availability
+echo Checking for Git installation...
+git --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ⚠️  Git not found in PATH. GitHub installation will not work.
+    echo Git is required to install from GitHub repository.
+    echo.
+    echo Please install Git from: https://git-scm.com/download/windows
+    echo Or use an alternative installation method.
+    echo.
+    set "GIT_AVAILABLE=0"
+) else (
+    echo ✓ Git is available
+    set "GIT_AVAILABLE=1"
+)
+
 :: Install Docx2Shelf with enhanced error handling
 echo Installing Docx2Shelf...
 
-:: Method 1: Try from GitHub (primary source)
-echo Method 1: Installing from GitHub repository...
-if defined CUSTOM_INSTALL_PATH (
-    echo Installing to custom path: %CUSTOM_INSTALL_PATH%
-    if not exist "%CUSTOM_INSTALL_PATH%" mkdir "%CUSTOM_INSTALL_PATH%"
-    %PYTHON_CMD% -m pip install --target "%CUSTOM_INSTALL_PATH%" git+https://github.com/LightWraith8268/Docx2Shelf.git
+if "%GIT_AVAILABLE%"=="1" (
+    :: Method 1: Try from GitHub (primary source)
+    echo Method 1: Installing from GitHub repository...
+    if defined CUSTOM_INSTALL_PATH (
+        echo Installing to custom path: %CUSTOM_INSTALL_PATH%
+        if not exist "%CUSTOM_INSTALL_PATH%" mkdir "%CUSTOM_INSTALL_PATH%"
+        %PYTHON_CMD% -m pip install --target "%CUSTOM_INSTALL_PATH%" git+https://github.com/LightWraith8268/Docx2Shelf.git
+        if %errorlevel% equ 0 (
+            echo ✓ Installation successful to custom path
+            set "CUSTOM_INSTALL_SUCCESS=1"
+            goto :verify_install
+        )
+    ) else (
+        %PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
+        if %errorlevel% equ 0 (
+            echo ✓ Installation successful from GitHub
+            goto :verify_install
+        )
+    )
+
+    echo ❌ GitHub installation failed. Trying alternative methods...
+) else (
+    echo Method 1: Skipping GitHub installation (Git not available)
+    echo Trying alternative installation methods...
+)
+
+:: Method 2: Try with pipx from GitHub (if Git available)
+if "%GIT_AVAILABLE%"=="1" (
+    echo Method 2: Installing with pipx from GitHub...
+    pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git --force
     if %errorlevel% equ 0 (
-        echo ✓ Installation successful to custom path
-        set "CUSTOM_INSTALL_SUCCESS=1"
+        echo ✓ Installation successful with pipx
         goto :verify_install
     )
 ) else (
-    %PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
-    if %errorlevel% equ 0 (
-        echo ✓ Installation successful from GitHub
-        goto :verify_install
-    )
+    echo Method 2: Skipping pipx GitHub install (Git not available)
 )
 
-echo ❌ GitHub installation failed. Trying alternative methods...
-
-:: Method 2: Try with pipx from GitHub
-echo Method 2: Installing with pipx from GitHub...
-pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git --force
-if %errorlevel% equ 0 (
-    echo ✓ Installation successful with pipx
-    goto :verify_install
-)
-
-:: Method 3: Try installing dependencies separately then from GitHub
-echo Method 3: Installing dependencies first...
-echo Installing core dependencies...
+:: Method 3: Try installing dependencies separately (Git-free fallback)
+echo Method 3: Installing core dependencies separately...
 %PYTHON_CMD% -m pip install --user ebooklib python-docx lxml
 if %errorlevel% equ 0 (
-    echo Dependencies installed, now installing docx2shelf...
-    %PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git --no-deps
-    if %errorlevel% equ 0 (
-        echo ✓ Installation successful with separate dependencies
-        goto :verify_install
+    echo Dependencies installed successfully
+    if "%GIT_AVAILABLE%"=="1" (
+        echo Now installing docx2shelf from GitHub...
+        %PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git --no-deps
+        if %errorlevel% equ 0 (
+            echo ✓ Installation successful with separate dependencies
+            goto :verify_install
+        )
+    ) else (
+        echo ℹ️  Dependencies installed, but cannot install docx2shelf without Git
+        echo Please install Git and run the installer again, or install docx2shelf manually
     )
 )
 
@@ -237,6 +267,33 @@ if exist "pyproject.toml" (
         echo ✓ Installation successful from local source
         goto :verify_install
     )
+)
+
+:: Method 5: Manual installation guidance
+if "%GIT_AVAILABLE%"=="0" (
+    echo.
+    echo ======================================
+    echo    Manual Installation Required
+    echo ======================================
+    echo.
+    echo Git is required to install docx2shelf from GitHub.
+    echo.
+    echo Options:
+    echo 1. Install Git from: https://git-scm.com/download/windows
+    echo    Then run this installer again
+    echo.
+    echo 2. Download the source code manually:
+    echo    - Go to: https://github.com/LightWraith8268/Docx2Shelf
+    echo    - Click "Code" → "Download ZIP"
+    echo    - Extract and run: %PYTHON_CMD% -m pip install --user -e .
+    echo.
+    echo 3. Use Git Bash (if available):
+    echo    - Install Git with Git Bash option
+    echo    - Run this installer from Git Bash
+    echo.
+    echo Press any key to continue...
+    pause >nul
+    exit /b 1
 )
 
 :: All methods failed
@@ -359,17 +416,20 @@ if %VERIFICATION_RESULT% equ 0 (
         echo 📁 Custom installation location: %CUSTOM_INSTALL_PATH%
     )
     echo 📦 Installation source: GitHub repository
+    echo 🎉 Installation completed successfully!
     echo.
     echo Quick start:
     echo   docx2shelf --help          - Show help
     echo   docx2shelf build           - Build EPUB from DOCX
     echo   docx2shelf wizard          - Interactive wizard
     echo   docx2shelf ai --help       - AI-powered features
+    echo   docx2shelf enterprise      - Enterprise features (v1.3.4+)
     echo.
     echo If you're using a new terminal window and get "command not found",
     echo restart your terminal or Command Prompt to refresh the PATH.
     echo.
-    echo Press any key to continue...
+    echo ⚠️  IMPORTANT: Close this window when ready to continue.
+    echo Press any key to exit installer...
     pause >nul
 ) else (
     echo.
@@ -389,7 +449,8 @@ if %VERIFICATION_RESULT% equ 0 (
         echo   "!FOUND_PATH!\docx2shelf.exe" --help
     )
     echo.
-    echo Press any key to continue...
+    echo ⚠️  IMPORTANT: Installation had issues. Please read above for solutions.
+    echo Press any key to exit installer...
     pause >nul
 )
 
@@ -438,12 +499,16 @@ if %errorlevel% neq 0 (
         echo.
         echo Please check your internet connection and try again
         echo Or download Python manually from https://python.org
+        echo.
+        pause
         exit /b 1
     )
 )
 
 if not exist "%PYTHON_INSTALLER%" (
     echo Python installer download failed
+    echo Please check your internet connection and try again
+    pause
     exit /b 1
 )
 
@@ -458,6 +523,7 @@ if %FILE_SIZE% LSS 10000000 (
     if /i not "!CONTINUE_ANYWAY!"=="y" (
         echo Installation cancelled
         del /f /q "%PYTHON_INSTALLER%" 2>nul
+        pause
         exit /b 1
     )
 ) else (
@@ -499,7 +565,9 @@ if %errorlevel% neq 0 (
         echo 1. Download from https://python.org
         echo 2. Run the installer as Administrator
         echo 3. Make sure to check "Add Python to PATH"
+        echo.
         del /f /q "%PYTHON_INSTALLER%" 2>nul
+        pause
         exit /b 1
     )
 )
