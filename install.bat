@@ -59,14 +59,26 @@ if %errorlevel% neq 0 (
             echo Note: Installation may fail due to version incompatibility.
         ) else (
             echo Python upgrade completed. Re-checking...
-            :: Re-detect Python command after upgrade
-            python --version >nul 2>&1
-            if !errorlevel! equ 0 (
-                set "PYTHON_CMD=python"
+            :: Refresh environment variables to pick up new PATH
+            call :refresh_environment
+
+            :: Re-detect Python command after upgrade with comprehensive checks
+            call :detect_python_after_upgrade
+
+            :: Verify the new Python version
+            echo Verifying new Python installation...
+            !PYTHON_CMD! --version
+            !PYTHON_CMD! -c "import sys; print('Python ' + str(sys.version_info.major) + '.' + str(sys.version_info.minor) + '.' + str(sys.version_info.micro))"
+
+            :: Final compatibility check
+            !PYTHON_CMD! -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
+            if !errorlevel! neq 0 (
+                echo WARNING: Upgraded Python still shows as incompatible.
+                echo This may require a system restart or manual PATH configuration.
+                echo Continuing with installation attempt...
             ) else (
-                set "PYTHON_CMD=py"
+                echo ✓ Python upgrade successful and compatible.
             )
-            echo Using updated Python: !PYTHON_CMD!
         )
     )
 ) else (
@@ -196,4 +208,72 @@ del /f /q "!PYTHON_INSTALLER!" 2>nul
 
 echo Python installation completed successfully.
 timeout /t 3 /nobreak >nul
+exit /b 0
+
+:refresh_environment
+:: Refresh environment variables without requiring a restart
+echo Refreshing environment variables...
+for /f "tokens=2*" %%A in ('reg query "HKCU\Environment" /v PATH 2^>nul') do set "USERPATH=%%B"
+for /f "tokens=2*" %%A in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v PATH 2^>nul') do set "SYSTEMPATH=%%B"
+set "PATH=%SYSTEMPATH%;%USERPATH%"
+exit /b 0
+
+:detect_python_after_upgrade
+:: Comprehensive Python detection after upgrade
+echo Detecting Python installation...
+
+:: Method 1: Try python command directly
+python --version >nul 2>&1
+if !errorlevel! equ 0 (
+    python -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=python"
+        echo Found compatible python command
+        exit /b 0
+    )
+)
+
+:: Method 2: Try py launcher
+py --version >nul 2>&1
+if !errorlevel! equ 0 (
+    py -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=py"
+        echo Found compatible py launcher
+        exit /b 0
+    )
+)
+
+:: Method 3: Try specific Python 3.11 installation paths
+set "PYTHON311_USER=%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+set "PYTHON311_SYSTEM=%PROGRAMFILES%\Python311\python.exe"
+
+if exist "!PYTHON311_USER!" (
+    "!PYTHON311_USER!" --version >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=!PYTHON311_USER!"
+        echo Found Python 3.11 in user directory
+        exit /b 0
+    )
+)
+
+if exist "!PYTHON311_SYSTEM!" (
+    "!PYTHON311_SYSTEM!" --version >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=!PYTHON311_SYSTEM!"
+        echo Found Python 3.11 in system directory
+        exit /b 0
+    )
+)
+
+:: Method 4: Try py launcher with specific version
+py -3.11 --version >nul 2>&1
+if !errorlevel! equ 0 (
+    set "PYTHON_CMD=py -3.11"
+    echo Found Python 3.11 via py launcher
+    exit /b 0
+)
+
+:: Fallback: Use whatever we had before
+echo Could not detect upgraded Python, using previous command: !PYTHON_CMD!
 exit /b 0
