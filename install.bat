@@ -7,32 +7,17 @@ echo    Docx2Shelf Windows Installer
 echo ========================================
 echo.
 
-:: Check for Python
+:: Check for Python with intelligent version detection
 echo Checking for Python installation...
-python --version >nul 2>&1
-if %errorlevel% neq 0 (
-    py --version >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo Python not found on this system.
-        echo.
-        echo Docx2Shelf requires Python 3.11 or higher.
-        echo Please install Python from https://python.org
-        echo Make sure to check "Add Python to PATH" during installation.
-        echo.
-        pause
-        exit /b 1
-    ) else (
-        set "PYTHON_CMD=py"
-    )
-) else (
-    set "PYTHON_CMD=python"
-)
+call :detect_best_python
 
-echo Python found: %PYTHON_CMD%
+echo Python found: !PYTHON_CMD!
+echo Version details:
+!PYTHON_CMD! --version
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
-%PYTHON_CMD% -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
+!PYTHON_CMD! -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
 if %errorlevel% neq 0 (
     echo.
     echo WARNING: Your Python version is older than required.
@@ -115,7 +100,7 @@ echo Git is available.
 :: Install Docx2Shelf
 echo.
 echo Installing Docx2Shelf...
-%PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
+!PYTHON_CMD! -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
 
 :: Check if installation succeeded
 if %errorlevel% neq 0 (
@@ -232,6 +217,117 @@ del /f /q "!PYTHON_INSTALLER!" 2>nul
 echo Python installation completed successfully.
 timeout /t 3 /nobreak >nul
 exit /b 0
+
+:detect_best_python
+:: Detect the best available Python installation, preferring newer versions
+echo Scanning for Python installations...
+
+:: Method 1: Try specific Python 3.11+ installations first
+set "PYTHON311_USER=%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+set "PYTHON311_SYSTEM=%PROGRAMFILES%\Python311\python.exe"
+set "PYTHON312_USER=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+set "PYTHON312_SYSTEM=%PROGRAMFILES%\Python312\python.exe"
+
+:: Check for Python 3.12 first (newest)
+if exist "!PYTHON312_USER!" (
+    "!PYTHON312_USER!" -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=!PYTHON312_USER!"
+        echo Found Python 3.12 in user directory
+        exit /b 0
+    )
+)
+
+if exist "!PYTHON312_SYSTEM!" (
+    "!PYTHON312_SYSTEM!" -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=!PYTHON312_SYSTEM!"
+        echo Found Python 3.12 in system directory
+        exit /b 0
+    )
+)
+
+:: Check for Python 3.11
+if exist "!PYTHON311_USER!" (
+    "!PYTHON311_USER!" -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=!PYTHON311_USER!"
+        echo Found Python 3.11 in user directory
+        exit /b 0
+    )
+)
+
+if exist "!PYTHON311_SYSTEM!" (
+    "!PYTHON311_SYSTEM!" -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=!PYTHON311_SYSTEM!"
+        echo Found Python 3.11 in system directory
+        exit /b 0
+    )
+)
+
+:: Method 2: Try py launcher with specific versions
+py -3.12 --version >nul 2>&1
+if !errorlevel! equ 0 (
+    py -3.12 -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=py -3.12"
+        echo Found Python 3.12 via py launcher
+        exit /b 0
+    )
+)
+
+py -3.11 --version >nul 2>&1
+if !errorlevel! equ 0 (
+    py -3.11 -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=py -3.11"
+        echo Found Python 3.11 via py launcher
+        exit /b 0
+    )
+)
+
+:: Method 3: Try generic py launcher (uses latest installed)
+py --version >nul 2>&1
+if !errorlevel! equ 0 (
+    py -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=py"
+        echo Found compatible Python via py launcher
+        exit /b 0
+    ) else (
+        :: py exists but not compatible version
+        set "PYTHON_CMD=py"
+        echo Found Python via py launcher (version may be incompatible)
+        exit /b 0
+    )
+)
+
+:: Method 4: Try direct python command
+python --version >nul 2>&1
+if !errorlevel! equ 0 (
+    python -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    if !errorlevel! equ 0 (
+        set "PYTHON_CMD=python"
+        echo Found compatible Python via python command
+        exit /b 0
+    ) else (
+        :: python exists but not compatible version
+        set "PYTHON_CMD=python"
+        echo Found Python via python command (version may be incompatible)
+        exit /b 0
+    )
+)
+
+:: No Python found
+echo Python not found on this system.
+echo.
+echo Docx2Shelf requires Python 3.11 or higher.
+echo Please install Python from https://python.org
+echo Make sure to check "Add Python to PATH" during installation.
+echo.
+pause
+exit /b 1
 
 :refresh_environment
 :: Refresh environment variables without requiring a restart
