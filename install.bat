@@ -114,26 +114,25 @@ echo Python found: %PYTHON_CMD%
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
-%PYTHON_CMD% -c "import sys; print(sys.version_info.major, sys.version_info.minor, sep='.')" > "%TEMP%\python_version.txt" 2>nul
-set /p PYTHON_VERSION=<"%TEMP%\python_version.txt"
-del "%TEMP%\python_version.txt" 2>nul
 
-if defined PYTHON_VERSION (
-    echo Python version: %PYTHON_VERSION%
+:: Get Python version using simple approach
+%PYTHON_CMD% --version 2>&1 | findstr "Python" > nul
+if %errorlevel% equ 0 (
+    echo Python installation verified.
 
     :: Check if version is 3.11 or higher
-    echo Checking if Python %PYTHON_VERSION% meets minimum requirement (3.11+)...
+    echo Checking if Python meets minimum requirement (3.11+)...
     %PYTHON_CMD% -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
     set "VERSION_COMPATIBLE=%errorlevel%"
     echo Version check result: !VERSION_COMPATIBLE! (0=compatible, 1=incompatible)
     if !VERSION_COMPATIBLE! neq 0 (
         echo.
-        echo WARNING: Python %PYTHON_VERSION% is installed but Docx2Shelf requires Python 3.11+
+        echo WARNING: Your Python version is older than required. Docx2Shelf requires Python 3.11+
         echo.
         set /p "UPGRADE_PYTHON=Would you like to upgrade Python automatically? (Y/n): "
         if /i "!UPGRADE_PYTHON!"=="n" (
             echo Continuing with current Python version...
-            echo Note: Some features may not work correctly with Python %PYTHON_VERSION%
+            echo Note: Some features may not work correctly with your current Python version
         ) else (
             echo Upgrading Python to 3.11+...
             call :install_python
