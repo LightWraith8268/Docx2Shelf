@@ -78,11 +78,25 @@ if %errorlevel% neq 0 (
                 echo Continuing with installation attempt...
             ) else (
                 echo ✓ Python upgrade successful and compatible.
+
+                :: Upgrade pip to latest version and clear cache
+                echo Upgrading pip to latest version...
+                !PYTHON_CMD! -m pip install --upgrade pip
+                echo Clearing pip cache...
+                !PYTHON_CMD! -m pip cache purge >nul 2>&1
+                echo ✓ Pip upgraded and cache cleared.
             )
         )
     )
 ) else (
     echo Python version is compatible.
+
+    :: Check and upgrade pip even for compatible Python versions
+    echo Checking pip version...
+    !PYTHON_CMD! -m pip install --upgrade pip >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo ✓ Pip is up to date.
+    )
 )
 
 :: Check for Git
