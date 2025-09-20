@@ -43,7 +43,7 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 -   **Template Gallery**: Pre-made themes and configuration templates
 -   **Streamlined Focus**: Simplified architecture focusing on core conversion and marketplace features
 
-### Enterprise Features (New in v1.2.9)
+### Enterprise Features (New in v1.3.4)
 -   **Advanced Batch Processing**: Process multiple books with dual modes - individual files or folder-based book projects
 -   **REST API Server**: Full FastAPI-powered API with OpenAPI documentation, authentication, and rate limiting
 -   **Multi-User Support**: Role-based permissions (admin, user, viewer) with API key authentication
@@ -423,11 +423,11 @@ Check your EPUB against store requirements:
 docx2shelf checklist --epub my-book.epub --store kdp
 ```
 
-## Enterprise & Production Deployment (v1.2.9+)
+## Enterprise & Production Deployment (v1.3.4+)
 
 ### Enterprise API & Integration
 
-Docx2Shelf v1.2.9 introduces comprehensive enterprise-grade features for production environments and large-scale workflows:
+Docx2Shelf v1.3.4 introduces comprehensive enterprise-grade features for production environments and large-scale workflows:
 
 #### Advanced Batch Processing
 Process multiple books with enterprise-grade job management:
