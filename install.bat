@@ -186,62 +186,57 @@ echo pipx is available
 :: Install Docx2Shelf with enhanced error handling
 echo Installing Docx2Shelf...
 
-:: Method 1: Try pipx with current package
-echo Method 1: Installing with pipx...
+:: Method 1: Try from GitHub (primary source)
+echo Method 1: Installing from GitHub repository...
 if defined CUSTOM_INSTALL_PATH (
     echo Installing to custom path: %CUSTOM_INSTALL_PATH%
     if not exist "%CUSTOM_INSTALL_PATH%" mkdir "%CUSTOM_INSTALL_PATH%"
-    %PYTHON_CMD% -m pip install --target "%CUSTOM_INSTALL_PATH%" docx2shelf[docx] --upgrade
+    %PYTHON_CMD% -m pip install --target "%CUSTOM_INSTALL_PATH%" git+https://github.com/LightWraith8268/Docx2Shelf.git
     if %errorlevel% equ 0 (
         echo ✓ Installation successful to custom path
         set "CUSTOM_INSTALL_SUCCESS=1"
         goto :verify_install
     )
 ) else (
-    pipx install docx2shelf[docx] --force
+    %PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
     if %errorlevel% equ 0 (
-        echo ✓ Installation successful with pipx
+        echo ✓ Installation successful from GitHub
         goto :verify_install
     )
 )
 
-echo ❌ pipx installation failed. Trying fallback methods...
+echo ❌ GitHub installation failed. Trying alternative methods...
 
-:: Method 2: Try with pip and user install
-echo Method 2: Installing with pip (user)...
-%PYTHON_CMD% -m pip install --user docx2shelf[docx] --upgrade
+:: Method 2: Try with pipx from GitHub
+echo Method 2: Installing with pipx from GitHub...
+pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git --force
 if %errorlevel% equ 0 (
-    echo ✓ Installation successful with pip (user)
+    echo ✓ Installation successful with pipx
     goto :verify_install
 )
 
-:: Method 3: Try without extras
-echo Method 3: Installing without extras...
-%PYTHON_CMD% -m pip install --user docx2shelf --upgrade
-if %errorlevel% equ 0 (
-    echo ✓ Installation successful without extras
-    echo ⚠️  Note: Installing DOCX support separately...
-    %PYTHON_CMD% -m pip install --user python-docx
-    goto :verify_install
-)
-
-:: Method 4: Try installing dependencies individually
-echo Method 4: Installing dependencies separately...
+:: Method 3: Try installing dependencies separately then from GitHub
+echo Method 3: Installing dependencies first...
 echo Installing core dependencies...
-%PYTHON_CMD% -m pip install --user ebooklib
-%PYTHON_CMD% -m pip install --user python-docx
-%PYTHON_CMD% -m pip install --user docx2shelf
+%PYTHON_CMD% -m pip install --user ebooklib python-docx lxml
 if %errorlevel% equ 0 (
-    echo ✓ Installation successful with separate dependencies
-    goto :verify_install
+    echo Dependencies installed, now installing docx2shelf...
+    %PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git --no-deps
+    if %errorlevel% equ 0 (
+        echo ✓ Installation successful with separate dependencies
+        goto :verify_install
+    )
 )
 
-:: Method 5: Try from GitHub (development version)
-echo Method 5: Trying development version from GitHub...
-%PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
-if %errorlevel% equ 0 (
-    echo ✓ Installation successful from GitHub
-    goto :verify_install
+:: Method 4: Try development/editable install from local directory
+echo Method 4: Checking for local source...
+if exist "pyproject.toml" (
+    echo Found local source, installing in development mode...
+    %PYTHON_CMD% -m pip install --user -e .
+    if %errorlevel% equ 0 (
+        echo ✓ Installation successful from local source
+        goto :verify_install
+    )
 )
 
 :: All methods failed
@@ -345,21 +340,25 @@ if defined CUSTOM_INSTALL_SUCCESS (
 echo.
 echo Final verification...
 docx2shelf --help >nul 2>&1
-if %errorlevel% equ 0 (
+set "VERIFICATION_RESULT=%errorlevel%"
+
+if %VERIFICATION_RESULT% equ 0 (
     echo ✓ docx2shelf is working correctly
 ) else (
     echo ⚠️  docx2shelf command verification failed
 )
-if %errorlevel% equ 0 (
+
+if %VERIFICATION_RESULT% equ 0 (
     echo.
     echo ========================================
     echo    Installation Successful!
     echo ========================================
     echo.
-    echo Docx2Shelf is now installed and available globally.
+    echo ✅ Docx2Shelf is now installed and available globally.
     if defined CUSTOM_INSTALL_PATH (
-        echo Custom installation location: %CUSTOM_INSTALL_PATH%
+        echo 📁 Custom installation location: %CUSTOM_INSTALL_PATH%
     )
+    echo 📦 Installation source: GitHub repository
     echo.
     echo Quick start:
     echo   docx2shelf --help          - Show help
