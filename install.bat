@@ -62,14 +62,14 @@ if %errorlevel% neq 0 (
                 echo This may require a system restart or manual PATH configuration.
                 echo Continuing with installation attempt...
             ) else (
-                echo ✓ Python upgrade successful and compatible.
+                echo [SUCCESS] Python upgrade successful and compatible.
 
                 :: Upgrade pip to latest version and clear cache
                 echo Upgrading pip to latest version...
                 !PYTHON_CMD! -m pip install --upgrade pip
                 echo Clearing pip cache...
                 !PYTHON_CMD! -m pip cache purge >nul 2>&1
-                echo ✓ Pip upgraded and cache cleared.
+                echo [SUCCESS] Pip upgraded and cache cleared.
             )
         )
     )
@@ -80,7 +80,7 @@ if %errorlevel% neq 0 (
     echo Checking pip version...
     !PYTHON_CMD! -m pip install --upgrade pip >nul 2>&1
     if !errorlevel! equ 0 (
-        echo ✓ Pip is up to date.
+        echo [SUCCESS] Pip is up to date.
     )
 )
 
@@ -104,11 +104,11 @@ echo Installing Docx2Shelf...
 
 if !errorlevel! equ 0 (
     echo.
-    echo ✓ Installation successful!
+    echo [SUCCESS] Installation successful!
     echo.
 ) else (
     echo.
-    echo ❌ Installation failed. This is likely due to:
+    echo [ERROR] Installation failed. This is likely due to:
     echo 1. Python version incompatibility (requires 3.11+)
     echo 2. Network connectivity issues
     echo 3. Missing dependencies
@@ -444,9 +444,9 @@ if exist "!SCRIPTS_DIR!\docx2shelf.exe" (
             )
         )
 
-        echo ✓ Scripts directory added to PATH
+        echo [SUCCESS] Scripts directory added to PATH
     ) else (
-        echo ✓ Scripts directory already in PATH
+        echo [SUCCESS] Scripts directory already in PATH
     )
 ) else (
     echo Warning: Could not find docx2shelf.exe in expected Scripts directory

@@ -23,12 +23,70 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Function to show manual installation guidance
+show_manual_install_guidance() {
+    echo
+    echo "========================================"
+    echo "    Manual Installation Required"
+    echo "========================================"
+    echo
+    echo "Git is required to install docx2shelf from GitHub."
+    echo
+    echo "Options:"
+    echo "1. Install Git:"
+    if [[ "$OS" == "linux" ]]; then
+        echo "   Ubuntu/Debian: sudo apt-get install git"
+        echo "   CentOS/RHEL: sudo yum install git"
+        echo "   Fedora: sudo dnf install git"
+        echo "   Arch: sudo pacman -S git"
+    elif [[ "$OS" == "macos" ]]; then
+        echo "   Homebrew: brew install git"
+        echo "   Xcode: xcode-select --install"
+    fi
+    echo "   Or download from: https://git-scm.com"
+    echo "   Then run this installer again"
+    echo
+    echo "2. Download the source code manually:"
+    echo "   - Go to: https://github.com/LightWraith8268/Docx2Shelf"
+    echo "   - Click \"Code\" → \"Download ZIP\""
+    echo "   - Extract and run: $PYTHON_CMD -m pip install --user -e ."
+    echo
+    echo "Press any key to continue..."
+    read -n 1 -s
+}
+
+# Function to show installation failed guidance
+show_installation_failed_guidance() {
+    echo
+    echo -e "${RED}[ERROR] All installation methods failed${NC}"
+    echo
+    echo "Diagnostic information:"
+    echo "Python version:"
+    $PYTHON_CMD --version
+    echo
+    echo "Pip version:"
+    $PYTHON_CMD -m pip --version
+    echo
+    echo "Git available: $([[ $GIT_AVAILABLE -eq 1 ]] && echo "Yes" || echo "No")"
+    echo
+    echo "Possible solutions:"
+    echo "1. Check your internet connection"
+    echo "2. Update pip: $PYTHON_CMD -m pip install --upgrade pip"
+    echo "3. Clear pip cache: $PYTHON_CMD -m pip cache purge"
+    echo "4. Try manual installation from source"
+    echo "5. Contact support with the information above"
+    echo
+    echo "Press any key to continue..."
+    read -n 1 -s
+}
+
 # Variables
 CUSTOM_INSTALL_PATH=""
 SHOW_HELP=""
 PYTHON_CMD=""
 VERIFICATION_RESULT=""
 CUSTOM_INSTALL_SUCCESS=""
+INSTALLATION_SUCCESS=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -208,7 +266,7 @@ if [[ -n "$PYTHON_VERSION" ]]; then
 
     # Check if version is 3.11 or higher
     if $PYTHON_CMD -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)" 2>/dev/null; then
-        echo -e "${GREEN}✓ Python version is compatible${NC}"
+        echo -e "${GREEN}[SUCCESS] Python version is compatible${NC}"
     else
         echo
         echo -e "${YELLOW}WARNING: Python $PYTHON_VERSION is installed but Docx2Shelf requires Python 3.11+${NC}"
@@ -227,6 +285,30 @@ if [[ -n "$PYTHON_VERSION" ]]; then
     fi
 else
     echo -e "${YELLOW}Warning: Could not determine Python version${NC}"
+fi
+
+# Check for Git availability
+echo "Checking for Git installation..."
+if command -v git &> /dev/null; then
+    echo -e "${GREEN}[SUCCESS] Git is available${NC}"
+    GIT_AVAILABLE=1
+else
+    echo -e "${YELLOW}[WARNING] Git not found in PATH${NC}"
+    echo "Git is required to install from GitHub repository."
+    echo
+    echo "Please install Git:"
+    if [[ "$OS" == "linux" ]]; then
+        echo "  Ubuntu/Debian: sudo apt-get install git"
+        echo "  CentOS/RHEL: sudo yum install git"
+        echo "  Fedora: sudo dnf install git"
+        echo "  Arch: sudo pacman -S git"
+    elif [[ "$OS" == "macos" ]]; then
+        echo "  Homebrew: brew install git"
+        echo "  Xcode: xcode-select --install"
+    fi
+    echo "  Or download from: https://git-scm.com"
+    echo
+    GIT_AVAILABLE=0
 fi
 
 # Check if pipx is available
@@ -259,98 +341,104 @@ fi
 echo "Installing Docx2Shelf..."
 echo
 
-# Method 1: Try from GitHub (primary source)
-echo "Method 1: Installing from GitHub repository..."
-if [[ -n "$CUSTOM_INSTALL_PATH" ]]; then
-    echo "Installing to custom path: $CUSTOM_INSTALL_PATH"
-    mkdir -p "$CUSTOM_INSTALL_PATH"
-    if $PYTHON_CMD -m pip install --target "$CUSTOM_INSTALL_PATH" git+https://github.com/LightWraith8268/Docx2Shelf.git; then
-        echo -e "${GREEN}✓ Installation successful to custom path${NC}"
-        CUSTOM_INSTALL_SUCCESS=1
-    else
-        echo -e "${RED}❌ Custom path installation failed${NC}"
-    fi
-else
-    if $PYTHON_CMD -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git; then
-        echo -e "${GREEN}✓ Installation successful from GitHub${NC}"
-    else
-        echo -e "${RED}❌ GitHub installation failed. Trying alternative methods...${NC}"
-
-        # Method 2: Try with pipx from GitHub
-        echo "Method 2: Installing with pipx from GitHub..."
-        if pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git --force; then
-            echo -e "${GREEN}✓ Installation successful with pipx${NC}"
+if [[ $GIT_AVAILABLE -eq 1 ]]; then
+    # Method 1: Try from GitHub (primary source)
+    echo "Method 1: Installing from GitHub repository..."
+    if [[ -n "$CUSTOM_INSTALL_PATH" ]]; then
+        echo "Installing to custom path: $CUSTOM_INSTALL_PATH"
+        mkdir -p "$CUSTOM_INSTALL_PATH"
+        if $PYTHON_CMD -m pip install --target "$CUSTOM_INSTALL_PATH" git+https://github.com/LightWraith8268/Docx2Shelf.git; then
+            echo -e "${GREEN}[SUCCESS] Installation successful to custom path${NC}"
+            CUSTOM_INSTALL_SUCCESS=1
+            INSTALLATION_SUCCESS=1
         else
-            # Method 3: Try installing dependencies separately then from GitHub
-            echo "Method 3: Installing dependencies first..."
-            echo "Installing core dependencies..."
-            if $PYTHON_CMD -m pip install --user ebooklib python-docx lxml; then
-                echo "Dependencies installed, now installing docx2shelf..."
-                if $PYTHON_CMD -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git --no-deps; then
-                    echo -e "${GREEN}✓ Installation successful with separate dependencies${NC}"
-                else
-                    # Method 4: Try development/editable install from local directory
-                    echo "Method 4: Checking for local source..."
-                    if [[ -f "pyproject.toml" ]]; then
-                        echo "Found local source, installing in development mode..."
-                        if $PYTHON_CMD -m pip install --user -e .; then
-                            echo -e "${GREEN}✓ Installation successful from local source${NC}"
-                        else
-                            # All methods failed
-                            echo
-                            echo -e "${RED}❌ All installation methods failed${NC}"
-                            echo
-                            echo "Diagnostic information:"
-                            echo "Python version:"
-                            $PYTHON_CMD --version
-                            echo
-                            echo "Pip version:"
-                            $PYTHON_CMD -m pip --version
-                            echo
-                            echo "Possible solutions:"
-                            echo "1. Check your internet connection"
-                            echo "2. Update pip: $PYTHON_CMD -m pip install --upgrade pip"
-                            echo "3. Clear pip cache: $PYTHON_CMD -m pip cache purge"
-                            echo "4. Try manual installation from source"
-                            echo "5. Contact support with the information above"
-                            echo
-                            echo "Press any key to continue..."
-                            read -n 1 -s
-                            exit 1
-                        fi
-                    else
-                        # All methods failed
-                        echo
-                        echo -e "${RED}❌ All installation methods failed${NC}"
-                        echo
-                        echo "Diagnostic information:"
-                        echo "Python version:"
-                        $PYTHON_CMD --version
-                        echo
-                        echo "Pip version:"
-                        $PYTHON_CMD -m pip --version
-                        echo
-                        echo "Possible solutions:"
-                        echo "1. Check your internet connection"
-                        echo "2. Update pip: $PYTHON_CMD -m pip install --upgrade pip"
-                        echo "3. Clear pip cache: $PYTHON_CMD -m pip cache purge"
-                        echo "4. Try manual installation from source"
-                        echo "5. Contact support with the information above"
-                        echo
-                        echo "Press any key to continue..."
-                        read -n 1 -s
-                        exit 1
-                    fi
-                fi
-            else
-                echo -e "${RED}❌ Failed to install dependencies${NC}"
-                echo
-                echo "Press any key to continue..."
-                read -n 1 -s
-                exit 1
-            fi
+            echo -e "${RED}[ERROR] Custom path installation failed${NC}"
+        fi
+    else
+        if $PYTHON_CMD -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git; then
+            echo -e "${GREEN}[SUCCESS] Installation successful from GitHub${NC}"
+            INSTALLATION_SUCCESS=1
+        else
+            echo -e "${RED}[ERROR] GitHub installation failed. Trying alternative methods...${NC}"
         fi
     fi
+
+    # Method 2: Try with pipx from GitHub (if primary method failed)
+    if [[ -z "$INSTALLATION_SUCCESS" ]]; then
+        echo "Method 2: Installing with pipx from GitHub..."
+        if pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git --force; then
+            echo -e "${GREEN}[SUCCESS] Installation successful with pipx${NC}"
+            INSTALLATION_SUCCESS=1
+        else
+            echo -e "${RED}[ERROR] pipx installation failed. Trying alternative methods...${NC}"
+        fi
+    fi
+
+    # Method 3: Try installing dependencies separately then from GitHub
+    if [[ -z "$INSTALLATION_SUCCESS" ]]; then
+        echo "Method 3: Installing dependencies first..."
+        echo "Installing core dependencies..."
+        if $PYTHON_CMD -m pip install --user ebooklib python-docx lxml; then
+            echo "Dependencies installed, now installing docx2shelf..."
+            if $PYTHON_CMD -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git --no-deps; then
+                echo -e "${GREEN}[SUCCESS] Installation successful with separate dependencies${NC}"
+                INSTALLATION_SUCCESS=1
+            else
+                echo -e "${RED}[ERROR] GitHub install failed even with dependencies${NC}"
+            fi
+        else
+            echo -e "${RED}[ERROR] Failed to install dependencies${NC}"
+        fi
+    fi
+
+    # Method 4: Try development/editable install from local directory
+    if [[ -z "$INSTALLATION_SUCCESS" && -f "pyproject.toml" ]]; then
+        echo "Method 4: Checking for local source..."
+        echo "Found local source, installing in development mode..."
+        if $PYTHON_CMD -m pip install --user -e .; then
+            echo -e "${GREEN}[SUCCESS] Installation successful from local source${NC}"
+            INSTALLATION_SUCCESS=1
+        else
+            echo -e "${RED}[ERROR] Local source installation failed${NC}"
+        fi
+    fi
+else
+    echo "Method 1: Skipping GitHub installation (Git not available)"
+    echo "Method 2: Skipping pipx GitHub install (Git not available)"
+
+    # Method 3: Try installing dependencies separately (Git-free fallback)
+    echo "Method 3: Installing core dependencies separately..."
+    if $PYTHON_CMD -m pip install --user ebooklib python-docx lxml; then
+        echo -e "${YELLOW}[INFO]  Dependencies installed, but cannot install docx2shelf without Git${NC}"
+        echo "Please install Git and run the installer again, or install docx2shelf manually"
+        show_manual_install_guidance
+        exit 1
+    else
+        echo -e "${RED}[ERROR] Failed to install dependencies${NC}"
+    fi
+
+    # Method 4: Try development/editable install from local directory
+    if [[ -f "pyproject.toml" ]]; then
+        echo "Method 4: Checking for local source..."
+        echo "Found local source, installing in development mode..."
+        if $PYTHON_CMD -m pip install --user -e .; then
+            echo -e "${GREEN}[SUCCESS] Installation successful from local source${NC}"
+            INSTALLATION_SUCCESS=1
+        else
+            echo -e "${RED}[ERROR] Local source installation failed${NC}"
+        fi
+    fi
+fi
+
+# Check if installation was successful
+if [[ -z "$INSTALLATION_SUCCESS" ]]; then
+    # All methods failed
+    if [[ $GIT_AVAILABLE -eq 0 ]]; then
+        show_manual_install_guidance
+    else
+        show_installation_failed_guidance
+    fi
+    exit 1
 fi
 
 # Verify installation and update PATH if needed
@@ -386,11 +474,11 @@ EOF
         fi
     fi
 
-    echo -e "${GREEN}✓ Custom installation configured${NC}"
+    echo -e "${GREEN}[SUCCESS] Custom installation configured${NC}"
 else
     # Standard verification
     if command -v docx2shelf &> /dev/null; then
-        echo -e "${GREEN}✓ docx2shelf found on PATH${NC}"
+        echo -e "${GREEN}[SUCCESS] docx2shelf found on PATH${NC}"
     else
         echo "docx2shelf not found on PATH. Attempting to locate and add to PATH..."
 
@@ -445,10 +533,10 @@ echo
 echo "Final verification..."
 if command -v docx2shelf &> /dev/null && docx2shelf --help &> /dev/null; then
     VERIFICATION_RESULT=0
-    echo -e "${GREEN}✓ docx2shelf is working correctly${NC}"
+    echo -e "${GREEN}[SUCCESS] docx2shelf is working correctly${NC}"
 else
     VERIFICATION_RESULT=1
-    echo -e "${YELLOW}⚠️  docx2shelf command verification failed${NC}"
+    echo -e "${YELLOW}[WARNING]  docx2shelf command verification failed${NC}"
 fi
 
 if [[ $VERIFICATION_RESULT -eq 0 ]]; then
