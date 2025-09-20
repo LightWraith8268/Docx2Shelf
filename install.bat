@@ -368,6 +368,9 @@ if %VERIFICATION_RESULT% equ 0 (
     echo.
     echo If you're using a new terminal window and get "command not found",
     echo restart your terminal or Command Prompt to refresh the PATH.
+    echo.
+    echo Press any key to continue...
+    pause >nul
 ) else (
     echo.
     echo ========================================
@@ -385,10 +388,11 @@ if %VERIFICATION_RESULT% equ 0 (
     if defined FOUND_PATH (
         echo   "!FOUND_PATH!\docx2shelf.exe" --help
     )
+    echo.
+    echo Press any key to continue...
+    pause >nul
 )
 
-echo.
-pause
 goto :eof
 
 :install_python
