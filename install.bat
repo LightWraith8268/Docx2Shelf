@@ -101,16 +101,14 @@ echo Git is available.
 echo.
 echo Installing Docx2Shelf...
 !PYTHON_CMD! -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
-set "PIP_EXIT_CODE=!errorlevel!"
 
-:: Check if installation succeeded
-echo Pip installation exit code: [!PIP_EXIT_CODE!]
-echo Debugging: Comparing !PIP_EXIT_CODE! with 0
-if "!PIP_EXIT_CODE!"=="0" (
-    echo ✓ Pip installation completed successfully.
+if !errorlevel! equ 0 (
+    echo.
+    echo ✓ Installation successful!
+    echo.
 ) else (
     echo.
-    echo Installation failed with exit code [!PIP_EXIT_CODE!]. This is likely due to:
+    echo ❌ Installation failed. This is likely due to:
     echo 1. Python version incompatibility (requires 3.11+)
     echo 2. Network connectivity issues
     echo 3. Missing dependencies
