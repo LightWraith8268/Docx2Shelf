@@ -120,9 +120,8 @@ if defined PYTHON_VERSION (
     echo Python version: %PYTHON_VERSION%
 
     :: Check if version is 3.11 or higher
-    %PYTHON_CMD% -c "import sys; print(f'Version check: {sys.version_info >= (3, 11)}'); exit(0 if sys.version_info >= (3, 11) else 1)"
-    set "VERSION_CHECK_RESULT=%errorlevel%"
-    if %VERSION_CHECK_RESULT% neq 0 (
+    %PYTHON_CMD% -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
+    if %errorlevel% neq 0 (
         echo.
         echo WARNING: Python %PYTHON_VERSION% is installed but Docx2Shelf requires Python 3.11+
         echo.
