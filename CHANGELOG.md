@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.5] - 2025-01-20
+### Environment Diagnostics & Quality Improvements
+
+#### New Features
+- **Feature Matrix**: Added comprehensive feature status matrix to README showing Available/Beta/Planned features for better user guidance
+- **Environment Doctor**: Implemented top-level `docx2shelf doctor` command for comprehensive environment diagnostics
+  - System information checking (OS, Python version, architecture)
+  - Package installation verification
+  - Core and optional dependency validation
+  - External tools status (Pandoc, EPUBCheck)
+  - File system access testing
+  - Memory availability checking
+  - Actionable recommendations for resolving issues
+
+#### Quality & Compatibility Improvements
+- **ASCII Compatibility**: Replaced all Unicode characters (✓, ❌, ⚠️, etc.) with ASCII equivalents across all components
+- **Universal Terminal Support**: Fixed display issues in Windows Command Prompt and ensured compatibility across all terminal types
+- **Enhanced Install Scripts**: Improved Windows and Linux installers with ASCII-only output for better compatibility
+
+#### Bug Fixes
+- Fixed character encoding issues in install.bat causing command execution errors
+- Resolved false positive error detection in Windows installer
+- Improved Python version detection and upgrade functionality in installers
+
 ## [1.3.4] - 2025-01-20
 ### Enterprise Features - Epic 30
 
