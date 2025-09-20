@@ -120,8 +120,10 @@ if defined PYTHON_VERSION (
     echo Python version: %PYTHON_VERSION%
 
     :: Check if version is 3.11 or higher
+    echo Checking if Python %PYTHON_VERSION% meets minimum requirement (3.11+)...
     %PYTHON_CMD% -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
     set "VERSION_COMPATIBLE=%errorlevel%"
+    echo Version check result: !VERSION_COMPATIBLE! (0=compatible, 1=incompatible)
     if !VERSION_COMPATIBLE! neq 0 (
         echo.
         echo WARNING: Python %PYTHON_VERSION% is installed but Docx2Shelf requires Python 3.11+
@@ -217,13 +219,21 @@ if "%GIT_AVAILABLE%"=="1" (
         )
     ) else (
         echo Installing docx2shelf with pip...
-        %PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
+        %PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git > "%TEMP%\docx2shelf_install.log" 2>&1
         set "INSTALL_RESULT=%errorlevel%"
-        if !INSTALL_RESULT! equ 0 (
+
+        :: Check if installation actually succeeded by looking for error patterns
+        findstr /C:"ERROR:" "%TEMP%\docx2shelf_install.log" >nul
+        if !errorlevel! equ 0 (
+            echo ❌ Installation failed - Python version incompatibility detected
+            echo See error log: %TEMP%\docx2shelf_install.log
+            type "%TEMP%\docx2shelf_install.log"
+        ) else if !INSTALL_RESULT! equ 0 (
             echo ✓ Installation successful from GitHub
             goto :verify_install
         ) else (
             echo ❌ Installation failed (exit code: !INSTALL_RESULT!)
+            type "%TEMP%\docx2shelf_install.log"
         )
     )
 
@@ -337,14 +347,14 @@ if defined CUSTOM_INSTALL_SUCCESS (
 
     :: Create a launcher batch file
     echo @echo off > "%DOCX2SHELF_SCRIPT%"
-    echo %PYTHON_CMD% "%CUSTOM_INSTALL_PATH%\docx2shelf\cli.py" %%* >> "%DOCX2SHELF_SCRIPT%"
+    echo %PYTHON_CMD% "%CUSTOM_INSTALL_PATH%\docx2shelf\cli.py" %%%%* >> "%DOCX2SHELF_SCRIPT%"
 
     :: Add custom path to PATH
     set "PATH=%PATH%;%CUSTOM_INSTALL_PATH%"
 
     :: Add to permanent PATH for current user
-    echo Adding %CUSTOM_INSTALL_PATH% to user PATH permanently...
-    powershell -Command "$env:Path = [Environment]::GetEnvironmentVariable('Path','User'); if ($env:Path -notlike '*%CUSTOM_INSTALL_PATH%*') { [Environment]::SetEnvironmentVariable('Path', $env:Path + ';%CUSTOM_INSTALL_PATH%', 'User') }"
+    echo Adding !CUSTOM_INSTALL_PATH! to user PATH permanently...
+    powershell -Command "$customPath = '!CUSTOM_INSTALL_PATH!'; $userPath = [Environment]::GetEnvironmentVariable('Path','User'); if ($userPath -notlike '*' + $customPath + '*') { [Environment]::SetEnvironmentVariable('Path', $userPath + ';' + $customPath, 'User') }"
 
     echo ✓ Custom installation configured
 ) else (
@@ -389,7 +399,7 @@ if defined CUSTOM_INSTALL_SUCCESS (
 
         :: Add to permanent PATH for current user
         echo Adding !FOUND_PATH! to user PATH permanently...
-        powershell -Command "$env:Path = [Environment]::GetEnvironmentVariable('Path','User'); if ($env:Path -notlike '*!FOUND_PATH!*') { [Environment]::SetEnvironmentVariable('Path', $env:Path + ';!FOUND_PATH!', 'User') }"
+        powershell -Command "$foundPath = '!FOUND_PATH!'; $userPath = [Environment]::GetEnvironmentVariable('Path','User'); if ($userPath -notlike '*' + $foundPath + '*') { [Environment]::SetEnvironmentVariable('Path', $userPath + ';' + $foundPath, 'User') }"
 
         echo PATH updated successfully
     ) else (
