@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.2.9] - 2025-01-20
+### Enterprise Features - Epic 30
+
+#### Advanced Batch Processing & Automation
+- **Dual processing modes**: Support for both individual file processing and folder-based book projects where each subfolder represents a complete book
+- **Enterprise-grade job management**: Comprehensive batch job tracking with progress monitoring, error logging, and detailed reporting
+- **Concurrent processing**: Multi-threaded job execution with configurable concurrency limits and resource management
+- **Webhook integration**: Real-time job status notifications via HTTP webhooks with retry logic and security signatures
+- **Job persistence**: SQLite-based job storage with audit trails and cleanup automation
+
+#### Comprehensive REST API
+- **FastAPI-powered API server**: Full REST API with OpenAPI documentation, authentication, and rate limiting
+- **User management**: Multi-user support with role-based permissions (admin, user, viewer) and API key authentication
+- **Batch job API**: Complete CRUD operations for batch jobs with status monitoring and cancellation support
+- **Conversion API**: Individual document conversion endpoints with background processing and progress tracking
+- **Statistics & reporting**: Comprehensive usage analytics, performance metrics, and export capabilities
+
+#### Enterprise Configuration Management
+- **Centralized configuration**: YAML/JSON-based configuration system with validation and hot-reloading
+- **User management**: Complete user lifecycle management with permissions, API keys, and audit logging
+- **Webhook management**: Dynamic webhook endpoint configuration with event filtering and security
+- **Performance tuning**: Configurable limits for concurrent jobs, file counts, timeouts, and cleanup policies
+
+#### Command Line Integration
+- **Enterprise CLI commands**: New `docx2shelf enterprise` command suite for all enterprise functionality
+- **Batch processing**: Command-line batch job creation with configuration file support and monitoring
+- **Job management**: CLI tools for listing, monitoring, cancelling, and cleaning up batch jobs
+- **API server control**: Built-in API server management with configuration and status monitoring
+- **Reporting tools**: Command-line access to statistics, usage analytics, and data export
+
+#### Technical Infrastructure
+- **Database integration**: SQLite backend for job persistence, user management, and audit logging
+- **Rate limiting**: Token bucket rate limiting with per-user and global limits
+- **Security features**: HMAC webhook signatures, API key authentication, and audit trail logging
+- **Graceful degradation**: Enterprise features remain optional with clear dependency messaging
+- **Extensible architecture**: Plugin-ready design for future enterprise integrations
+
 ## [1.3.3] - 2025-01-20
 ### Advanced AI Integration - Epic 27
 

@@ -12,6 +12,7 @@ from .ai_integration import AIConfig, get_ai_manager
 from .ai_metadata import enhance_metadata_with_ai
 from .content_validation import validate_content_quality
 from .error_handler import handle_error
+from .formats import check_format_dependencies, convert_epub
 from .metadata import BuildOptions, EpubMetadata, build_output_filename, parse_date
 from .preview import run_live_preview
 from .publishing_checklists import format_checklist_report, get_checker, run_all_checklists
@@ -427,6 +428,117 @@ def _arg_parser() -> argparse.ArgumentParser:
                         help="Automatically fix issues where possible")
     quality.add_argument("--verbose", action="store_true",
                         help="Show detailed issue descriptions and recommendations")
+
+    # Convert command for format conversion
+    convert = sub.add_parser("convert", help="Convert EPUB to other formats (PDF, MOBI, AZW3, Web, Text)")
+    convert.add_argument("input", help="Path to EPUB file to convert")
+    convert.add_argument("--format", "-f",
+                        choices=["pdf", "mobi", "azw3", "web", "txt", "text"],
+                        required=True,
+                        help="Output format")
+    convert.add_argument("--output", "-o",
+                        help="Output file/directory path (auto-generated if not specified)")
+    convert.add_argument("--quality",
+                        choices=["standard", "high", "web"],
+                        default="standard",
+                        help="Output quality level")
+    convert.add_argument("--compression", action="store_true", default=True,
+                        help="Enable compression (where applicable)")
+    convert.add_argument("--no-compression", action="store_false", dest="compression",
+                        help="Disable compression")
+    convert.add_argument("--page-size",
+                        default="A4",
+                        help="Page size for PDF (A4, Letter, Legal, etc.)")
+    convert.add_argument("--margin",
+                        default="1in",
+                        help="Page margins for PDF (e.g., 1in, 2cm)")
+    convert.add_argument("--font-size",
+                        default="12pt",
+                        help="Base font size")
+    convert.add_argument("--font-family",
+                        choices=["serif", "sans-serif", "monospace"],
+                        default="serif",
+                        help="Font family")
+    convert.add_argument("--no-toc", action="store_false", dest="include_toc",
+                        help="Exclude table of contents")
+    convert.add_argument("--no-cover", action="store_false", dest="include_cover",
+                        help="Exclude cover image")
+    convert.add_argument("--css",
+                        help="Path to custom CSS file for styling")
+    convert.add_argument("--check-deps", action="store_true",
+                        help="Check format dependencies and exit")
+
+    # --- Enterprise subcommand ---
+    enterprise = sub.add_parser("enterprise", help="Enterprise features for batch processing and automation")
+    enterprise_sub = enterprise.add_subparsers(dest="enterprise_cmd", required=True)
+
+    # Enterprise batch processing
+    ent_batch = enterprise_sub.add_parser("batch", help="Advanced batch processing for enterprises")
+    ent_batch.add_argument("name", help="Job name")
+    ent_batch.add_argument("--input", required=True, help="Input directory or pattern")
+    ent_batch.add_argument("--output", required=True, help="Output directory")
+    ent_batch.add_argument("--mode", choices=["files", "books"], default="books",
+                          help="Processing mode: 'files' (individual) or 'books' (folders as books)")
+    ent_batch.add_argument("--config", help="Path to job configuration file (YAML/JSON)")
+    ent_batch.add_argument("--webhook", help="Webhook URL for job notifications")
+    ent_batch.add_argument("--priority", type=int, default=5, help="Job priority (1-10)")
+    ent_batch.add_argument("--theme", default="serif", help="EPUB theme")
+    ent_batch.add_argument("--split-at", default="h1", help="Chapter split level")
+    ent_batch.add_argument("--max-concurrent", type=int, help="Maximum concurrent jobs")
+
+    # Enterprise job management
+    ent_jobs = enterprise_sub.add_parser("jobs", help="Manage batch jobs")
+    ent_jobs.add_argument("--list", action="store_true", help="List all jobs")
+    ent_jobs.add_argument("--status", choices=["pending", "running", "completed", "failed", "cancelled"],
+                         help="Filter jobs by status")
+    ent_jobs.add_argument("--cancel", help="Cancel job by ID")
+    ent_jobs.add_argument("--details", help="Show detailed job information by ID")
+    ent_jobs.add_argument("--cleanup", action="store_true", help="Clean up old completed jobs")
+
+    # Enterprise configuration
+    ent_config = enterprise_sub.add_parser("config", help="Enterprise configuration management")
+    ent_config.add_argument("--init", action="store_true", help="Initialize enterprise configuration")
+    ent_config.add_argument("--show", action="store_true", help="Show current configuration")
+    ent_config.add_argument("--set", nargs=2, metavar=("KEY", "VALUE"), help="Set configuration value")
+    ent_config.add_argument("--reset", action="store_true", help="Reset to default configuration")
+    ent_config.add_argument("--export", help="Export configuration to file")
+    ent_config.add_argument("--import", dest="import_config", help="Import configuration from file")
+
+    # Enterprise user management
+    ent_users = enterprise_sub.add_parser("users", help="User management and permissions")
+    ent_users.add_argument("--create", help="Create new user (username)")
+    ent_users.add_argument("--email", help="User email (for create)")
+    ent_users.add_argument("--role", choices=["admin", "user", "viewer"], default="user",
+                          help="User role (for create)")
+    ent_users.add_argument("--list", action="store_true", help="List all users")
+    ent_users.add_argument("--permissions", help="Set user permissions (comma-separated)")
+    ent_users.add_argument("--deactivate", help="Deactivate user by ID")
+    ent_users.add_argument("--generate-key", help="Generate API key for user")
+
+    # Enterprise API server
+    ent_api = enterprise_sub.add_parser("api", help="Enterprise API server management")
+    ent_api.add_argument("--start", action="store_true", help="Start API server")
+    ent_api.add_argument("--host", default="localhost", help="API server host")
+    ent_api.add_argument("--port", type=int, default=8080, help="API server port")
+    ent_api.add_argument("--debug", action="store_true", help="Enable debug mode")
+    ent_api.add_argument("--status", action="store_true", help="Show API server status")
+
+    # Enterprise webhooks
+    ent_webhooks = enterprise_sub.add_parser("webhooks", help="Webhook management")
+    ent_webhooks.add_argument("--add", help="Add webhook URL")
+    ent_webhooks.add_argument("--events", nargs="*", help="Webhook events to subscribe to")
+    ent_webhooks.add_argument("--secret", help="Webhook secret for signatures")
+    ent_webhooks.add_argument("--list", action="store_true", help="List configured webhooks")
+    ent_webhooks.add_argument("--remove", help="Remove webhook by ID")
+    ent_webhooks.add_argument("--test", help="Test webhook by URL")
+
+    # Enterprise reporting
+    ent_reports = enterprise_sub.add_parser("reports", help="Enterprise reporting and analytics")
+    ent_reports.add_argument("--stats", action="store_true", help="Show processing statistics")
+    ent_reports.add_argument("--usage", action="store_true", help="Show usage analytics")
+    ent_reports.add_argument("--export", help="Export report to file (CSV/JSON)")
+    ent_reports.add_argument("--period", choices=["day", "week", "month"], default="week",
+                            help="Reporting period")
 
     return p
 
@@ -2303,6 +2415,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_checklist(args)
     if args.command == "quality":
         return run_quality_assessment(args)
+    if args.command == "convert":
+        return run_convert(args)
+    if args.command == "enterprise":
+        return run_enterprise(args)
 
     parser.print_help()
     return 1
@@ -2671,6 +2787,676 @@ def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[
     except Exception as e:
         if not opts.quiet:
             print(f"Error running preview: {e}", file=sys.stderr)
+        return 1
+
+
+def run_convert(args) -> int:
+    """Handle EPUB format conversion."""
+    from pathlib import Path
+
+    # Validate input file
+    input_path = Path(args.input)
+    if not input_path.exists():
+        print(f"Error: Input file not found: {input_path}")
+        return 1
+
+    if not input_path.suffix.lower() == '.epub':
+        print(f"Error: Input file must be an EPUB file, got: {input_path.suffix}")
+        return 1
+
+    # Check format dependencies if requested
+    if args.check_deps:
+        print(f"Checking dependencies for {args.format} format...")
+        deps = check_format_dependencies(args.format)
+
+        if not deps:
+            print(f"No external dependencies required for {args.format}")
+            return 0
+
+        print("Dependencies:")
+        for dep, available in deps.items():
+            status = "✓ Available" if available else "✗ Not found"
+            print(f"  {dep}: {status}")
+
+        # Check if any required dependencies are missing
+        if args.format == 'pdf' and not any(deps.values()):
+            print("\nError: PDF conversion requires either weasyprint or prince")
+            print("Install with: pip install weasyprint")
+            return 1
+        elif args.format in ['mobi', 'azw3'] and not deps.get('calibre'):
+            print(f"\nError: {args.format.upper()} conversion requires Calibre")
+            print("Install from: https://calibre-ebook.com/download")
+            return 1
+
+        return 0
+
+    # Generate output path if not specified
+    if args.output:
+        output_path = Path(args.output)
+    else:
+        # Auto-generate based on format
+        if args.format == 'web':
+            output_path = input_path.parent / f"{input_path.stem}_web"
+        else:
+            ext_map = {
+                'pdf': '.pdf',
+                'mobi': '.mobi',
+                'azw3': '.azw3',
+                'txt': '.txt',
+                'text': '.txt'
+            }
+            ext = ext_map.get(args.format, f'.{args.format}')
+            output_path = input_path.parent / f"{input_path.stem}{ext}"
+
+    # Read custom CSS if provided
+    custom_css = None
+    if args.css:
+        css_path = Path(args.css)
+        if css_path.exists():
+            custom_css = css_path.read_text(encoding='utf-8')
+        else:
+            print(f"Warning: CSS file not found: {css_path}")
+
+    # Extract metadata from args for conversion
+    metadata = {
+        'title': getattr(args, 'title', None),
+        'author': getattr(args, 'author', None),
+    }
+
+    print(f"Converting {input_path} to {args.format.upper()}...")
+    print(f"Output: {output_path}")
+
+    # Perform conversion
+    success = convert_epub(
+        epub_path=input_path,
+        format_type=args.format,
+        output_path=output_path,
+        quality=args.quality,
+        compression=args.compression,
+        metadata=metadata,
+        custom_css=custom_css,
+        page_size=args.page_size,
+        margin=args.margin,
+        font_size=getattr(args, 'font_size', '12pt'),
+        font_family=args.font_family,
+        include_toc=args.include_toc,
+        include_cover=args.include_cover
+    )
+
+    if success:
+        print("✓ Conversion completed successfully!")
+        if args.format == 'web':
+            print(f"Open {output_path / 'index.html'} in your browser to view")
+        return 0
+    else:
+        print("✗ Conversion failed")
+        return 1
+
+
+def run_enterprise(args) -> int:
+    """Handle enterprise subcommands."""
+    try:
+        if args.enterprise_cmd == "batch":
+            return run_enterprise_batch(args)
+        elif args.enterprise_cmd == "jobs":
+            return run_enterprise_jobs(args)
+        elif args.enterprise_cmd == "config":
+            return run_enterprise_config(args)
+        elif args.enterprise_cmd == "users":
+            return run_enterprise_users(args)
+        elif args.enterprise_cmd == "api":
+            return run_enterprise_api(args)
+        elif args.enterprise_cmd == "webhooks":
+            return run_enterprise_webhooks(args)
+        elif args.enterprise_cmd == "reports":
+            return run_enterprise_reports(args)
+        else:
+            print(f"Unknown enterprise command: {args.enterprise_cmd}")
+            return 1
+    except Exception as e:
+        print(f"Error running enterprise command: {e}")
+        return 1
+
+
+def run_enterprise_batch(args) -> int:
+    """Handle enterprise batch processing."""
+    try:
+        import json
+        import uuid
+
+        import yaml
+
+        from .enterprise import BatchJob, get_batch_processor
+
+        # Load configuration if provided
+        config = {}
+        if args.config:
+            config_path = Path(args.config)
+            if config_path.exists():
+                try:
+                    if config_path.suffix.lower() == '.yaml' or config_path.suffix.lower() == '.yml':
+                        with open(config_path, 'r', encoding='utf-8') as f:
+                            config = yaml.safe_load(f) or {}
+                    else:
+                        with open(config_path, 'r', encoding='utf-8') as f:
+                            config = json.load(f)
+                except Exception as e:
+                    print(f"Warning: Could not load config file: {e}")
+
+        # Apply command line overrides
+        config.update({
+            "theme": args.theme,
+            "split_at": args.split_at,
+            "title": config.get("title", ""),
+            "author": config.get("author", ""),
+            "language": config.get("language", "en"),
+            "toc_depth": config.get("toc_depth", 2),
+            "hyphenate": config.get("hyphenate", True),
+            "justify": config.get("justify", True)
+        })
+
+        # Create batch job
+        job = BatchJob(
+            id=str(uuid.uuid4()),
+            name=args.name,
+            input_pattern=args.input,
+            output_directory=args.output,
+            config=config,
+            processing_mode=args.mode,
+            webhook_url=args.webhook
+        )
+
+        # Submit to batch processor
+        processor = get_batch_processor()
+
+        # Update max concurrent jobs if specified
+        if args.max_concurrent:
+            processor.config.max_concurrent_jobs = args.max_concurrent
+
+        job_id = processor.submit_batch_job(job)
+
+        print(f"✓ Batch job '{args.name}' created successfully")
+        print(f"  Job ID: {job_id}")
+        print(f"  Mode: {args.mode}")
+        print(f"  Input: {args.input}")
+        print(f"  Output: {args.output}")
+
+        if args.webhook:
+            print(f"  Webhook: {args.webhook}")
+
+        print(f"\nUse 'docx2shelf enterprise jobs --details {job_id}' to check status")
+        return 0
+
+    except ImportError:
+        print("Error: Enterprise features require additional dependencies")
+        print("Install with: pip install docx2shelf[enterprise]")
+        return 1
+    except Exception as e:
+        print(f"Error creating batch job: {e}")
+        return 1
+
+
+def run_enterprise_jobs(args) -> int:
+    """Handle enterprise job management."""
+    try:
+        from .enterprise import get_batch_processor
+
+        processor = get_batch_processor()
+
+        if args.list:
+            jobs = processor.list_jobs(status_filter=args.status)
+
+            if not jobs:
+                print("No batch jobs found")
+                return 0
+
+            print(f"{'Job ID':<36} {'Name':<20} {'Mode':<8} {'Status':<12} {'Progress':<10} {'Created'}")
+            print("-" * 100)
+
+            for job in jobs:
+                created = job.created_at[:19] if isinstance(job.created_at, str) else str(job.created_at)[:19]
+                print(f"{job.id:<36} {job.name[:19]:<20} {job.processing_mode:<8} {job.status:<12} {job.progress:>3}% {created}")
+
+            return 0
+
+        elif args.details:
+            job = processor.get_job_status(args.details)
+            if not job:
+                print(f"Job not found: {args.details}")
+                return 1
+
+            print(f"Job Details: {job.name}")
+            print("=" * 50)
+            print(f"ID: {job.id}")
+            print(f"Name: {job.name}")
+            print(f"Mode: {job.processing_mode}")
+            print(f"Status: {job.status}")
+            print(f"Progress: {job.progress}%")
+            print(f"Input: {job.input_pattern}")
+            print(f"Output: {job.output_directory}")
+            print(f"Created: {job.created_at}")
+
+            if job.started_at:
+                print(f"Started: {job.started_at}")
+            if job.completed_at:
+                print(f"Completed: {job.completed_at}")
+
+            print("\nProgress Details:")
+            print(f"  Total Items: {job.total_items}")
+            print(f"  Processed: {job.processed_items}")
+            print(f"  Failed: {job.failed_items}")
+            print(f"  Total Files: {job.total_files}")
+            print(f"  Files Processed: {job.processed_files}")
+            print(f"  Files Failed: {job.failed_files}")
+
+            if job.processing_mode == "books" and job.book_results:
+                print("\nBook Results:")
+                for book_name, result in job.book_results.items():
+                    print(f"  {book_name}: {result['status']}")
+
+            if job.error_log:
+                print("\nRecent Errors:")
+                for error in job.error_log[-5:]:
+                    print(f"  - {error}")
+
+            return 0
+
+        elif args.cancel:
+            success = processor.cancel_job(args.cancel)
+            if success:
+                print(f"✓ Job {args.cancel} cancelled successfully")
+                return 0
+            else:
+                print(f"✗ Could not cancel job {args.cancel} (may have already completed)")
+                return 1
+
+        elif args.cleanup:
+            cleaned = processor.cleanup_old_jobs()
+            print(f"✓ Cleaned up {cleaned} old jobs")
+            return 0
+
+        else:
+            print("Please specify an action: --list, --details <id>, --cancel <id>, or --cleanup")
+            return 1
+
+    except ImportError:
+        print("Error: Enterprise features require additional dependencies")
+        return 1
+    except Exception as e:
+        print(f"Error managing jobs: {e}")
+        return 1
+
+
+def run_enterprise_config(args) -> int:
+    """Handle enterprise configuration."""
+    try:
+        from .enterprise import get_config_manager
+
+        config_manager = get_config_manager()
+
+        if args.init:
+            # Initialize default configuration
+            config_manager.reset_to_defaults()
+            print("✓ Enterprise configuration initialized with defaults")
+            print(f"Configuration saved to: {config_manager.config_path}")
+            return 0
+
+        elif args.show:
+            config = config_manager.config
+            print("Enterprise Configuration:")
+            print("=" * 30)
+            print(f"Max Concurrent Jobs: {config.max_concurrent_jobs}")
+            print(f"Max Files Per Job: {config.max_files_per_job}")
+            print(f"Job Timeout (hours): {config.job_timeout_hours}")
+            print(f"Auto Cleanup (days): {config.auto_cleanup_days}")
+            print(f"Enable Webhooks: {config.enable_webhooks}")
+            print(f"Enable API: {config.enable_api}")
+            print(f"API Host: {config.api_host}")
+            print(f"API Port: {config.api_port}")
+            print(f"Log Level: {config.log_level}")
+            return 0
+
+        elif args.set:
+            key, value = args.set
+
+            # Convert value to appropriate type
+            if key in ["max_concurrent_jobs", "max_files_per_job", "job_timeout_hours", "auto_cleanup_days", "api_port"]:
+                value = int(value)
+            elif key in ["enable_webhooks", "enable_api"]:
+                value = value.lower() in ["true", "1", "yes", "on"]
+
+            config_manager.update_config(**{key: value})
+            print(f"✓ Configuration updated: {key} = {value}")
+            return 0
+
+        elif args.reset:
+            config_manager.reset_to_defaults()
+            print("✓ Configuration reset to defaults")
+            return 0
+
+        elif args.export:
+            import shutil
+            shutil.copy2(config_manager.config_path, args.export)
+            print(f"✓ Configuration exported to: {args.export}")
+            return 0
+
+        elif args.import_config:
+            import shutil
+            shutil.copy2(args.import_config, config_manager.config_path)
+            config_manager.config = config_manager._load_config()
+            print(f"✓ Configuration imported from: {args.import_config}")
+            return 0
+
+        else:
+            print("Please specify an action: --init, --show, --set KEY VALUE, --reset, --export FILE, or --import FILE")
+            return 1
+
+    except ImportError:
+        print("Error: Enterprise features require additional dependencies")
+        return 1
+    except Exception as e:
+        print(f"Error managing configuration: {e}")
+        return 1
+
+
+def run_enterprise_users(args) -> int:
+    """Handle enterprise user management."""
+    try:
+        from .enterprise import get_user_manager
+
+        user_manager = get_user_manager()
+
+        if args.create:
+            if not args.email:
+                print("Error: --email is required when creating a user")
+                return 1
+
+            permissions = []
+            if args.permissions:
+                permissions = [p.strip() for p in args.permissions.split(",")]
+
+            user = user_manager.create_user(
+                username=args.create,
+                email=args.email,
+                role=args.role,
+                permissions=permissions
+            )
+
+            print("✓ User created successfully")
+            print(f"  ID: {user.id}")
+            print(f"  Username: {user.username}")
+            print(f"  Email: {user.email}")
+            print(f"  Role: {user.role}")
+            print(f"  API Key: {user.api_key}")
+            print(f"  Permissions: {', '.join(user.permissions)}")
+            return 0
+
+        elif args.list:
+            users = user_manager.list_users()
+
+            if not users:
+                print("No users found")
+                return 0
+
+            print(f"{'Username':<20} {'Email':<30} {'Role':<10} {'Created'}")
+            print("-" * 70)
+
+            for user in users:
+                created = user.created_at[:19] if isinstance(user.created_at, str) else str(user.created_at)[:19]
+                print(f"{user.username:<20} {user.email:<30} {user.role:<10} {created}")
+
+            return 0
+
+        elif args.generate_key:
+            user = user_manager.get_user(args.generate_key)
+            if not user:
+                print(f"User not found: {args.generate_key}")
+                return 1
+
+            # Generate new API key
+            from .enterprise import get_api_manager
+            api_manager = get_api_manager()
+            new_key = api_manager.generate_api_key(
+                name=f"Generated for {user.username}",
+                user_id=user.id,
+                permissions=user.permissions
+            )
+
+            print(f"✓ New API key generated for {user.username}")
+            print(f"  API Key: {new_key}")
+            return 0
+
+        elif args.deactivate:
+            success = user_manager.delete_user(args.deactivate)
+            if success:
+                print(f"✓ User {args.deactivate} deactivated successfully")
+                return 0
+            else:
+                print(f"✗ Could not deactivate user {args.deactivate}")
+                return 1
+
+        else:
+            print("Please specify an action: --create USERNAME --email EMAIL, --list, --generate-key USER_ID, or --deactivate USER_ID")
+            return 1
+
+    except ImportError:
+        print("Error: Enterprise features require additional dependencies")
+        return 1
+    except Exception as e:
+        print(f"Error managing users: {e}")
+        return 1
+
+
+def run_enterprise_api(args) -> int:
+    """Handle enterprise API server."""
+    try:
+        if args.start:
+            from .enterprise_api import start_api_server
+
+            if not start_api_server:
+                print("Error: FastAPI not available. Install with: pip install fastapi uvicorn")
+                return 1
+
+            print("🚀 Starting Enterprise API server...")
+            print(f"   Host: {args.host}")
+            print(f"   Port: {args.port}")
+            print(f"   Debug: {args.debug}")
+            print(f"   API Documentation: http://{args.host}:{args.port}/docs")
+
+            # This will block until the server is stopped
+            start_api_server(host=args.host, port=args.port, debug=args.debug)
+            return 0
+
+        elif args.status:
+            print("API server status checking not implemented yet")
+            return 0
+
+        else:
+            print("Please specify an action: --start or --status")
+            return 1
+
+    except ImportError:
+        print("Error: Enterprise API requires additional dependencies")
+        print("Install with: pip install fastapi uvicorn")
+        return 1
+    except Exception as e:
+        print(f"Error managing API server: {e}")
+        return 1
+
+
+def run_enterprise_webhooks(args) -> int:
+    """Handle enterprise webhook management."""
+    try:
+        from .enterprise_api import get_api_manager
+
+        api_manager = get_api_manager()
+        webhook_manager = api_manager.webhook_manager
+
+        if args.add:
+            from .enterprise_api import WebhookEndpoint
+
+            endpoint = WebhookEndpoint(
+                url=args.add,
+                secret=args.secret,
+                events=args.events or [],
+                headers={},
+                enabled=True
+            )
+
+            webhook_manager.add_endpoint(endpoint)
+            print(f"✓ Webhook added: {args.add}")
+            if args.events:
+                print(f"  Events: {', '.join(args.events)}")
+            return 0
+
+        elif args.list:
+            if not webhook_manager.endpoints:
+                print("No webhooks configured")
+                return 0
+
+            print("Configured Webhooks:")
+            print("-" * 50)
+            for i, endpoint in enumerate(webhook_manager.endpoints, 1):
+                print(f"{i}. {endpoint.url}")
+                print(f"   Events: {', '.join(endpoint.events) if endpoint.events else 'All'}")
+                print(f"   Enabled: {endpoint.enabled}")
+                print()
+
+            return 0
+
+        elif args.test:
+            # Send a test webhook
+            test_data = {
+                "test": True,
+                "message": "This is a test webhook from docx2shelf enterprise"
+            }
+
+            webhook_manager.send_webhook("test", test_data)
+            print("✓ Test webhook sent to all configured endpoints")
+            return 0
+
+        else:
+            print("Please specify an action: --add URL, --list, or --test")
+            return 1
+
+    except ImportError:
+        print("Error: Enterprise features require additional dependencies")
+        return 1
+    except Exception as e:
+        print(f"Error managing webhooks: {e}")
+        return 1
+
+
+def run_enterprise_reports(args) -> int:
+    """Handle enterprise reporting."""
+    try:
+        import csv
+        import json
+        from datetime import datetime, timedelta
+
+        from .enterprise import get_batch_processor
+        from .enterprise_api import get_api_manager
+
+        processor = get_batch_processor()
+        api_manager = get_api_manager()
+
+        if args.stats:
+            # Get job statistics
+            jobs = processor.list_jobs()
+
+            total_jobs = len(jobs)
+            completed_jobs = len([j for j in jobs if j.status == "completed"])
+            failed_jobs = len([j for j in jobs if j.status == "failed"])
+            running_jobs = len([j for j in jobs if j.status == "running"])
+            pending_jobs = len([j for j in jobs if j.status == "pending"])
+
+            success_rate = (completed_jobs / total_jobs * 100) if total_jobs > 0 else 0
+
+            print("Enterprise Processing Statistics:")
+            print("=" * 40)
+            print(f"Total Jobs: {total_jobs}")
+            print(f"Completed: {completed_jobs}")
+            print(f"Failed: {failed_jobs}")
+            print(f"Running: {running_jobs}")
+            print(f"Pending: {pending_jobs}")
+            print(f"Success Rate: {success_rate:.1f}%")
+
+            # Calculate processing time stats
+            processing_times = []
+            for job in jobs:
+                if job.started_at and job.completed_at and job.status == "completed":
+                    try:
+                        started = datetime.fromisoformat(job.started_at.replace('Z', '+00:00'))
+                        completed = datetime.fromisoformat(job.completed_at.replace('Z', '+00:00'))
+                        duration = (completed - started).total_seconds()
+                        processing_times.append(duration)
+                    except:
+                        pass
+
+            if processing_times:
+                avg_time = sum(processing_times) / len(processing_times)
+                print(f"Average Processing Time: {avg_time:.1f} seconds")
+
+            return 0
+
+        elif args.usage:
+            print("Usage analytics not implemented yet")
+            return 0
+
+        elif args.export:
+            jobs = processor.list_jobs()
+
+            if args.export.endswith('.json'):
+                # Export as JSON
+                export_data = []
+                for job in jobs:
+                    export_data.append({
+                        "id": job.id,
+                        "name": job.name,
+                        "status": job.status,
+                        "processing_mode": job.processing_mode,
+                        "total_items": job.total_items,
+                        "processed_items": job.processed_items,
+                        "failed_items": job.failed_items,
+                        "created_at": job.created_at,
+                        "started_at": job.started_at,
+                        "completed_at": job.completed_at
+                    })
+
+                with open(args.export, 'w', encoding='utf-8') as f:
+                    json.dump(export_data, f, indent=2)
+
+            elif args.export.endswith('.csv'):
+                # Export as CSV
+                with open(args.export, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([
+                        'ID', 'Name', 'Status', 'Mode', 'Total Items',
+                        'Processed', 'Failed', 'Created', 'Started', 'Completed'
+                    ])
+
+                    for job in jobs:
+                        writer.writerow([
+                            job.id, job.name, job.status, job.processing_mode,
+                            job.total_items, job.processed_items, job.failed_items,
+                            job.created_at, job.started_at or '', job.completed_at or ''
+                        ])
+            else:
+                print("Error: Export format must be .json or .csv")
+                return 1
+
+            print(f"✓ Report exported to: {args.export}")
+            return 0
+
+        else:
+            print("Please specify an action: --stats, --usage, or --export FILE")
+            return 1
+
+    except ImportError:
+        print("Error: Enterprise features require additional dependencies")
+        return 1
+    except Exception as e:
+        print(f"Error generating reports: {e}")
         return 1
 
 

@@ -43,6 +43,16 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 -   **Template Gallery**: Pre-made themes and configuration templates
 -   **Streamlined Focus**: Simplified architecture focusing on core conversion and marketplace features
 
+### Enterprise Features (New in v1.2.9)
+-   **Advanced Batch Processing**: Process multiple books with dual modes - individual files or folder-based book projects
+-   **REST API Server**: Full FastAPI-powered API with OpenAPI documentation, authentication, and rate limiting
+-   **Multi-User Support**: Role-based permissions (admin, user, viewer) with API key authentication
+-   **Job Management**: Comprehensive batch job tracking with progress monitoring, cancellation, and cleanup
+-   **Webhook Integration**: Real-time job notifications with retry logic and HMAC security signatures
+-   **Enterprise Configuration**: Centralized YAML/JSON configuration with user management and audit logging
+-   **Statistics & Reporting**: Usage analytics, performance metrics, and data export capabilities
+-   **Command Line Tools**: Complete CLI suite for enterprise administration and monitoring
+
 ## Installation
 
 Docx2Shelf requires **Python 3.11 or newer**.
@@ -413,46 +423,65 @@ Check your EPUB against store requirements:
 docx2shelf checklist --epub my-book.epub --store kdp
 ```
 
-## Enterprise & Production Deployment (v1.2.6+)
+## Enterprise & Production Deployment (v1.2.9+)
 
 ### Enterprise API & Integration
 
-Docx2Shelf v1.2.6 introduces enterprise-grade features for production environments and large-scale workflows:
+Docx2Shelf v1.2.9 introduces comprehensive enterprise-grade features for production environments and large-scale workflows:
 
-#### REST API Server
-Start the enterprise API server for programmatic access:
+#### Advanced Batch Processing
+Process multiple books with enterprise-grade job management:
 
 ```bash
 # Install with enterprise features
 pip install docx2shelf[enterprise]
 
-# Start API server
-docx2shelf api start --port 8080 --workers 4
+# Create batch job for folder-based book projects
+docx2shelf enterprise batch "Publisher Quarterly" \
+  --input /books/q4-2024 \
+  --output /output/epubs \
+  --mode books \
+  --webhook https://your-app.com/webhooks
 
-# Generate API key for authentication
-docx2shelf api create-key --name "Production" --permissions read,write
+# Monitor job progress
+docx2shelf enterprise jobs --list --status running
+docx2shelf enterprise jobs --details <job-id>
+```
+
+#### REST API Server
+Start the enterprise API server for programmatic access:
+
+```bash
+# Initialize enterprise configuration
+docx2shelf enterprise config --init
+
+# Create admin user and get API key
+docx2shelf enterprise users --create admin --email admin@company.com --role admin
+
+# Start API server
+docx2shelf enterprise api --start --host 0.0.0.0 --port 8080
 ```
 
 **API Features:**
-- **OpenAPI 3.0 specification** at `/api/docs`
-- **Authentication** via API keys with permissions
-- **Rate limiting** with configurable thresholds
-- **Job queue management** for conversion operations
-- **Webhook notifications** for real-time status updates
-- **Audit logging** for enterprise compliance
+- **OpenAPI 3.0 specification** at `/docs` and `/redoc`
+- **Multi-user authentication** via API keys with role-based permissions
+- **Advanced rate limiting** with per-user and global thresholds
+- **Batch job management** with dual processing modes
+- **Real-time progress tracking** with WebSocket support
+- **Comprehensive audit logging** for enterprise compliance
+- **Statistics & analytics** with export capabilities
 
 #### Webhook Integration
 Configure webhooks for real-time notifications:
 
 ```bash
 # Add webhook endpoint
-docx2shelf api webhooks add \
-  --url https://your-app.com/webhooks/docx2shelf \
+docx2shelf enterprise webhooks --add https://your-app.com/webhooks \
   --secret your-webhook-secret \
   --events job.created,job.completed,job.failed
 
 # Test webhook delivery
-docx2shelf api webhooks test --endpoint-id 123
+docx2shelf enterprise webhooks --test
 ```
 
 **Webhook Events:**

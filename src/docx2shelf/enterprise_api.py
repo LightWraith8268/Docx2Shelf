@@ -7,20 +7,19 @@ and database integration for enterprise workflows.
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import hmac
 import json
 import sqlite3
 import time
 import uuid
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone, timedelta
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Callable, Union
-from urllib.parse import urlparse
-import requests
 from threading import Lock
+from typing import Any, Dict, List, Optional
+
+import requests
 
 
 @dataclass
@@ -592,3 +591,550 @@ class EnterpriseAPIManager:
             'running_jobs': running_jobs,
             'queue_size': pending_jobs + running_jobs
         }
+
+
+# FastAPI application for REST endpoints
+try:
+    import uvicorn
+    from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+    from pydantic import BaseModel, Field
+
+    app = FastAPI(
+        title="Docx2Shelf Enterprise API",
+        description="Enterprise-grade document conversion API with batch processing",
+        version="1.2.8",
+        docs_url="/docs",
+        redoc_url="/redoc"
+    )
+
+    # CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Security
+    security = HTTPBearer()
+
+    # Global manager instance
+    api_manager: Optional[EnterpriseAPIManager] = None
+
+    # Request/Response models
+    class ConversionRequest(BaseModel):
+        input_file_path: str = Field(..., description="Path to input file")
+        output_directory: Optional[str] = Field(None, description="Output directory")
+        title: Optional[str] = Field(None, description="Book title")
+        author: Optional[str] = Field(None, description="Book author")
+        theme: str = Field("serif", description="EPUB theme")
+        processing_mode: str = Field("files", description="Processing mode: 'files' or 'books'")
+        split_at: str = Field("h1", description="Chapter split level")
+        toc_depth: int = Field(2, description="Table of contents depth")
+        hyphenate: bool = Field(True, description="Enable hyphenation")
+        justify: bool = Field(True, description="Enable text justification")
+        webhook_url: Optional[str] = Field(None, description="Webhook URL for notifications")
+
+    class BatchJobRequest(BaseModel):
+        name: str = Field(..., description="Job name")
+        input_pattern: str = Field(..., description="Input pattern or directory")
+        output_directory: str = Field(..., description="Output directory")
+        processing_mode: str = Field("books", description="Processing mode: 'files' or 'books'")
+        config: Dict[str, Any] = Field(default_factory=dict, description="Job configuration")
+        webhook_url: Optional[str] = Field(None, description="Webhook URL for notifications")
+
+    class JobResponse(BaseModel):
+        job_id: str
+        status: str
+        progress: Optional[int] = None
+        message: Optional[str] = None
+
+    class APIKeyRequest(BaseModel):
+        name: str = Field(..., description="API key name")
+        permissions: List[str] = Field(default_factory=list, description="API key permissions")
+
+    class APIKeyResponse(BaseModel):
+        api_key: str
+        key_id: str
+        message: str
+
+    def get_api_manager() -> EnterpriseAPIManager:
+        """Get the global API manager."""
+        global api_manager
+        if api_manager is None:
+            import os
+            from pathlib import Path
+
+            # Default database path
+            if os.name == "nt":  # Windows
+                base_dir = Path(os.environ.get("APPDATA", "~")).expanduser()
+            else:  # Unix-like
+                base_dir = Path.home()
+
+            db_path = base_dir / ".docx2shelf" / "enterprise" / "api.db"
+            api_manager = EnterpriseAPIManager(db_path)
+
+        return api_manager
+
+    async def verify_api_key(
+        credentials: HTTPAuthorizationCredentials = Depends(security)
+    ) -> APIKey:
+        """Verify API key and return user info."""
+        manager = get_api_manager()
+
+        api_key_obj = manager.authenticate_api_key(credentials.credentials)
+        if not api_key_obj:
+            raise HTTPException(status_code=401, detail="Invalid API key")
+
+        # Check rate limiting
+        if not manager.rate_limiter.is_allowed(
+            api_key_obj.key_id,
+            api_key_obj.rate_limit_per_minute
+        ):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        return api_key_obj
+
+    @app.get("/", response_model=Dict[str, str])
+    async def root():
+        """API root endpoint."""
+        return {
+            "name": "Docx2Shelf Enterprise API",
+            "version": "1.2.8",
+            "description": "Enterprise document conversion API",
+            "docs": "/docs"
+        }
+
+    @app.get("/health", response_model=Dict[str, str])
+    async def health():
+        """Health check endpoint."""
+        return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+    @app.post("/api/v1/jobs/batch", response_model=JobResponse)
+    async def create_batch_job(
+        request: BatchJobRequest,
+        background_tasks: BackgroundTasks,
+        api_key: APIKey = Depends(verify_api_key)
+    ):
+        """Create a new batch processing job."""
+        try:
+            import uuid
+
+            from .enterprise import BatchJob, get_batch_processor
+
+            # Create batch job
+            job = BatchJob(
+                id=str(uuid.uuid4()),
+                name=request.name,
+                input_pattern=request.input_pattern,
+                output_directory=request.output_directory,
+                config=request.config,
+                processing_mode=request.processing_mode,
+                user_id=api_key.user_id,
+                webhook_url=request.webhook_url
+            )
+
+            # Submit to batch processor
+            processor = get_batch_processor()
+            job_id = processor.submit_batch_job(job)
+
+            # Log audit event
+            manager = get_api_manager()
+            manager.db_manager.log_audit_event(
+                user_id=api_key.user_id,
+                action="batch_job.created",
+                resource_type="batch_job",
+                resource_id=job_id,
+                details={"name": request.name, "mode": request.processing_mode}
+            )
+
+            return JobResponse(
+                job_id=job_id,
+                status="pending",
+                message="Batch job created and queued for processing"
+            )
+
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    @app.get("/api/v1/jobs/batch/{job_id}", response_model=Dict[str, Any])
+    async def get_batch_job(job_id: str, api_key: APIKey = Depends(verify_api_key)):
+        """Get batch job status and details."""
+        try:
+            from .enterprise import get_batch_processor
+
+            processor = get_batch_processor()
+            job = processor.get_job_status(job_id)
+
+            if not job:
+                raise HTTPException(status_code=404, detail="Job not found")
+
+            # Check permissions (users can only see their own jobs unless admin)
+            if job.user_id != api_key.user_id and "*" not in api_key.permissions:
+                raise HTTPException(status_code=403, detail="Access denied")
+
+            return {
+                "job_id": job.id,
+                "name": job.name,
+                "status": job.status,
+                "processing_mode": job.processing_mode,
+                "progress": job.progress,
+                "total_items": job.total_items,
+                "processed_items": job.processed_items,
+                "failed_items": job.failed_items,
+                "total_files": job.total_files,
+                "processed_files": job.processed_files,
+                "failed_files": job.failed_files,
+                "created_at": job.created_at,
+                "started_at": job.started_at,
+                "completed_at": job.completed_at,
+                "book_results": job.book_results,
+                "success_log": job.success_log[-10:],  # Last 10 successes
+                "error_log": job.error_log[-10:]  # Last 10 errors
+            }
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    @app.get("/api/v1/jobs/batch", response_model=List[Dict[str, Any]])
+    async def list_batch_jobs(
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+        api_key: APIKey = Depends(verify_api_key)
+    ):
+        """List batch jobs."""
+        try:
+            from .enterprise import get_batch_processor
+
+            processor = get_batch_processor()
+            jobs = processor.list_jobs(status_filter=status)
+
+            # Filter by user permissions
+            if "*" not in api_key.permissions:
+                jobs = [job for job in jobs if job.user_id == api_key.user_id]
+
+            # Apply pagination
+            jobs = jobs[offset:offset + limit]
+
+            return [
+                {
+                    "job_id": job.id,
+                    "name": job.name,
+                    "status": job.status,
+                    "processing_mode": job.processing_mode,
+                    "progress": job.progress,
+                    "total_items": job.total_items,
+                    "processed_items": job.processed_items,
+                    "failed_items": job.failed_items,
+                    "created_at": job.created_at,
+                    "completed_at": job.completed_at
+                }
+                for job in jobs
+            ]
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    @app.delete("/api/v1/jobs/batch/{job_id}", response_model=Dict[str, str])
+    async def cancel_batch_job(job_id: str, api_key: APIKey = Depends(verify_api_key)):
+        """Cancel a batch job."""
+        try:
+            from .enterprise import get_batch_processor
+
+            processor = get_batch_processor()
+            job = processor.get_job_status(job_id)
+
+            if not job:
+                raise HTTPException(status_code=404, detail="Job not found")
+
+            # Check permissions
+            if job.user_id != api_key.user_id and "*" not in api_key.permissions:
+                raise HTTPException(status_code=403, detail="Access denied")
+
+            success = processor.cancel_job(job_id)
+
+            if success:
+                # Log audit event
+                manager = get_api_manager()
+                manager.db_manager.log_audit_event(
+                    user_id=api_key.user_id,
+                    action="batch_job.cancelled",
+                    resource_type="batch_job",
+                    resource_id=job_id
+                )
+
+                return {"message": "Job cancelled successfully"}
+            else:
+                return {"message": "Job could not be cancelled (may have already completed)"}
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    @app.post("/api/v1/convert", response_model=JobResponse)
+    async def convert_document(
+        request: ConversionRequest,
+        background_tasks: BackgroundTasks,
+        api_key: APIKey = Depends(verify_api_key)
+    ):
+        """Convert a single document."""
+        try:
+            manager = get_api_manager()
+
+            # Create conversion job
+            job = manager.create_conversion_job(
+                input_file_path=request.input_file_path,
+                user_id=api_key.user_id,
+                metadata={
+                    "title": request.title,
+                    "author": request.author,
+                    "theme": request.theme,
+                    "split_at": request.split_at,
+                    "toc_depth": request.toc_depth,
+                    "hyphenate": request.hyphenate,
+                    "justify": request.justify,
+                    "output_directory": request.output_directory,
+                    "webhook_url": request.webhook_url
+                }
+            )
+
+            # Start processing in background
+            background_tasks.add_task(process_conversion_job, job.job_id)
+
+            return JobResponse(
+                job_id=job.job_id,
+                status="pending",
+                message="Conversion job created and queued for processing"
+            )
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    @app.get("/api/v1/convert/{job_id}", response_model=Dict[str, Any])
+    async def get_conversion_job(job_id: str, api_key: APIKey = Depends(verify_api_key)):
+        """Get conversion job status."""
+        try:
+            manager = get_api_manager()
+            job = manager.db_manager.get_conversion_job(job_id)
+
+            if not job:
+                raise HTTPException(status_code=404, detail="Job not found")
+
+            # Check permissions
+            if job.user_id != api_key.user_id and "*" not in api_key.permissions:
+                raise HTTPException(status_code=403, detail="Access denied")
+
+            return {
+                "job_id": job.job_id,
+                "input_file_path": job.input_file_path,
+                "output_file_path": job.output_file_path,
+                "status": job.status,
+                "progress_percent": job.progress_percent,
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "started_at": job.started_at.isoformat() if job.started_at else None,
+                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "error_message": job.error_message,
+                "metadata": job.metadata,
+                "file_size_bytes": job.file_size_bytes,
+                "estimated_duration_seconds": job.estimated_duration_seconds
+            }
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    @app.post("/api/v1/auth/keys", response_model=APIKeyResponse)
+    async def create_api_key(
+        request: APIKeyRequest,
+        api_key: APIKey = Depends(verify_api_key)
+    ):
+        """Create a new API key (admin only)."""
+        if "*" not in api_key.permissions and "admin" not in api_key.permissions:
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+        try:
+            manager = get_api_manager()
+            new_key = manager.generate_api_key(
+                name=request.name,
+                user_id=api_key.user_id,
+                permissions=request.permissions
+            )
+
+            return APIKeyResponse(
+                api_key=new_key,
+                key_id=new_key[:8],
+                message="API key created successfully"
+            )
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    @app.get("/api/v1/stats", response_model=Dict[str, Any])
+    async def get_statistics(api_key: APIKey = Depends(verify_api_key)):
+        """Get API usage statistics."""
+        try:
+            manager = get_api_manager()
+
+            # Get job queue status
+            queue_status = manager.get_job_queue_status()
+
+            # Get batch processor stats
+            from .enterprise import get_batch_processor
+            processor = get_batch_processor()
+
+            # Get job statistics (user-filtered)
+            if "*" in api_key.permissions:
+                # Admin can see all stats
+                all_jobs = manager.db_manager.list_conversion_jobs(limit=1000)
+                batch_jobs = processor.list_jobs()
+            else:
+                # Users see only their own stats
+                all_jobs = manager.db_manager.list_conversion_jobs(
+                    user_id=api_key.user_id, limit=1000
+                )
+                batch_jobs = [
+                    job for job in processor.list_jobs()
+                    if job.user_id == api_key.user_id
+                ]
+
+            job_stats = {
+                "total_jobs": len(all_jobs),
+                "completed_jobs": len([j for j in all_jobs if j.status == "completed"]),
+                "failed_jobs": len([j for j in all_jobs if j.status == "failed"]),
+                "running_jobs": len([j for j in all_jobs if j.status == "running"]),
+                "pending_jobs": len([j for j in all_jobs if j.status == "pending"])
+            }
+
+            batch_stats = {
+                "total_batch_jobs": len(batch_jobs),
+                "completed_batch_jobs": len([j for j in batch_jobs if j.status == "completed"]),
+                "failed_batch_jobs": len([j for j in batch_jobs if j.status == "failed"]),
+                "running_batch_jobs": len([j for j in batch_jobs if j.status == "running"]),
+                "pending_batch_jobs": len([j for j in batch_jobs if j.status == "pending"])
+            }
+
+            return {
+                "conversion_jobs": job_stats,
+                "batch_jobs": batch_stats,
+                "queue_status": queue_status,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    async def process_conversion_job(job_id: str):
+        """Background task to process a conversion job."""
+        try:
+            manager = get_api_manager()
+            job = manager.db_manager.get_conversion_job(job_id)
+
+            if not job:
+                return
+
+            # Update status to running
+            manager.update_job_status(job_id, "running", 0)
+
+            # Process the file
+            import tempfile
+            from pathlib import Path
+
+            from .assemble import assemble_epub
+            from .convert import convert_document
+            from .metadata import BuildOptions, EpubMetadata
+
+            input_path = Path(job.input_file_path)
+            if not input_path.exists():
+                manager.update_job_status(job_id, "failed", error_message="Input file not found")
+                return
+
+            # Create metadata from job metadata
+            metadata = EpubMetadata(
+                title=job.metadata.get("title", input_path.stem),
+                author=job.metadata.get("author", "Unknown"),
+                language=job.metadata.get("language", "en"),
+                description=job.metadata.get("description", ""),
+                publisher=job.metadata.get("publisher", ""),
+                subjects=job.metadata.get("subjects", []),
+                keywords=job.metadata.get("keywords", [])
+            )
+
+            # Create build options
+            options = BuildOptions(
+                theme=job.metadata.get("theme", "serif"),
+                split_at=job.metadata.get("split_at", "h1"),
+                toc_depth=job.metadata.get("toc_depth", 2),
+                hyphenate=job.metadata.get("hyphenate", True),
+                justify=job.metadata.get("justify", True),
+                image_quality=job.metadata.get("image_quality", 85),
+                image_max_width=job.metadata.get("image_max_width", 1200),
+                image_max_height=job.metadata.get("image_max_height", 1600)
+            )
+
+            # Determine output path
+            output_dir = Path(job.metadata.get("output_directory", input_path.parent))
+            output_file = output_dir / f"{input_path.stem}.epub"
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # Update job with output path
+            job.output_file_path = str(output_file)
+            manager.db_manager.update_conversion_job(job)
+
+            # Convert document
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
+
+                # Update progress
+                manager.update_job_status(job_id, "running", 25)
+
+                # Convert to HTML/XHTML
+                convert_document(
+                    input_path,
+                    temp_path,
+                    options.split_at
+                )
+
+                # Update progress
+                manager.update_job_status(job_id, "running", 75)
+
+                # Assemble EPUB
+                assemble_epub(
+                    content_dir=temp_path,
+                    output_path=output_file,
+                    metadata=metadata,
+                    options=options
+                )
+
+                # Update progress
+                manager.update_job_status(job_id, "running", 100)
+
+            # Mark as completed
+            if output_file.exists():
+                manager.update_job_status(job_id, "completed", 100)
+            else:
+                manager.update_job_status(
+                    job_id, "failed", error_message="Output file was not created"
+                )
+
+        except Exception as e:
+            manager = get_api_manager()
+            manager.update_job_status(job_id, "failed", error_message=str(e))
+
+    def start_api_server(host: str = "localhost", port: int = 8080, debug: bool = False):
+        """Start the FastAPI server."""
+        uvicorn.run(app, host=host, port=port, debug=debug, reload=debug)
+
+except ImportError:
+    # FastAPI not available
+    app = None
+    start_api_server = None
