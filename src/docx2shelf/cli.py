@@ -26,6 +26,9 @@ from .utils import (
     prompt_select,
     sanitize_filename,
 )
+from .quality_scoring import analyze_epub_quality, QualityLevel
+from .content_validation import validate_content_quality
+from .accessibility_audit import audit_epub_accessibility, A11yLevel
 
 
 def _arg_parser() -> argparse.ArgumentParser:
@@ -345,6 +348,25 @@ def _arg_parser() -> argparse.ArgumentParser:
     check.add_argument("--store", choices=["kdp", "apple", "kobo", "all"], default="all",
                       help="Which store to check (default: all)")
     check.add_argument("--json", action="store_true", help="Output results as JSON")
+
+    # --- Quality assessment subcommand ---
+    quality = sub.add_parser("quality", help="Comprehensive quality analysis of EPUB files")
+    quality.add_argument("epub_path", help="Path to EPUB file to analyze")
+    quality.add_argument("--content-files", nargs="*", help="Additional content files to validate (XHTML/HTML)")
+    quality.add_argument("--target-level", choices=["A", "AA", "AAA"], default="AA",
+                        help="WCAG accessibility target level (default: AA)")
+    quality.add_argument("--skip-accessibility", action="store_true",
+                        help="Skip accessibility compliance checking")
+    quality.add_argument("--skip-content-validation", action="store_true",
+                        help="Skip content validation (grammar, style, formatting)")
+    quality.add_argument("--skip-quality-scoring", action="store_true",
+                        help="Skip overall quality scoring")
+    quality.add_argument("--json", action="store_true", help="Output results as JSON")
+    quality.add_argument("--output", help="Save detailed report to file")
+    quality.add_argument("--auto-fix", action="store_true",
+                        help="Automatically fix issues where possible")
+    quality.add_argument("--verbose", action="store_true",
+                        help="Show detailed issue descriptions and recommendations")
 
     return p
 
@@ -896,6 +918,11 @@ def run_batch_mode(args: argparse.Namespace) -> int:
 def run_build(args: argparse.Namespace) -> int:
     from .assemble import assemble_epub, plan_build
     from .convert import convert_file_to_html, split_html_by_heading, split_html_by_pagebreak, split_html_by_heading_level, split_html_mixed
+    from .performance import PerformanceMonitor
+
+    # Initialize performance monitoring for the entire build process
+    build_monitor = PerformanceMonitor()
+    build_monitor.start_monitoring()
 
     # Initialize JSON logger if requested
     json_logger = None
@@ -953,24 +980,27 @@ def run_build(args: argparse.Namespace) -> int:
             print(f"Error: No supported files found in directory: {input_path}", file=sys.stderr)
             return 2
 
-        for file in files_to_process:
-            print(f" - Processing {file.name}...")
-            try:
-                chunks, res, styles_css = convert_file_to_html(file)
-                html_chunks.extend(chunks)
-                resources.extend(res)
-                # Collect styles CSS from all files
-                if styles_css and styles_css not in all_styles_css:
-                    all_styles_css.append(styles_css)
-            except (RuntimeError, ValueError) as e:
-                print(f"Error converting {file.name}: {e}", file=sys.stderr)
-                return 2
+        with build_monitor.phase_timer("batch_conversion"):
+            for file in files_to_process:
+                print(f" - Processing {file.name}...")
+                try:
+                    with build_monitor.phase_timer(f"convert_{file.name}"):
+                        chunks, res, styles_css = convert_file_to_html(file)
+                    html_chunks.extend(chunks)
+                    resources.extend(res)
+                    # Collect styles CSS from all files
+                    if styles_css and styles_css not in all_styles_css:
+                        all_styles_css.append(styles_css)
+                except (RuntimeError, ValueError) as e:
+                    print(f"Error converting {file.name}: {e}", file=sys.stderr)
+                    return 2
     elif input_path.is_file():
         if input_path.suffix.lower() not in supported_extensions:
             print(f"Error: Unsupported file type: {input_path.suffix}", file=sys.stderr)
             return 2
         try:
-            html_chunks, resources, styles_css = convert_file_to_html(input_path)
+            with build_monitor.phase_timer("file_conversion"):
+                html_chunks, resources, styles_css = convert_file_to_html(input_path)
             all_styles_css = [styles_css] if styles_css else []
         except (RuntimeError, ValueError) as e:
             print(f"Error converting {input_path.name}: {e}", file=sys.stderr)
@@ -1214,7 +1244,16 @@ def run_build(args: argparse.Namespace) -> int:
     output = out_path.resolve()
     # Combine all styles CSS
     combined_styles_css = "\n".join(all_styles_css)
-    assemble_epub(meta, opts, html_chunks, resources, output, combined_styles_css)
+
+    # Final assembly phase with performance monitoring
+    with build_monitor.phase_timer("epub_assembly"):
+        assemble_epub(meta, opts, html_chunks, resources, output, combined_styles_css, build_monitor)
+
+    # Stop monitoring and display performance summary
+    build_monitor.stop_monitoring()
+    if not getattr(args, 'quiet', False):
+        print(f"\n📊 Performance Summary:\n{build_monitor.get_summary()}")
+
     print(f"Wrote: {output}")
     if opts.inspect:
         print("Inspect folder emitted for debugging.")
@@ -1543,6 +1582,256 @@ def run_checklist(args: argparse.Namespace) -> int:
         return 1
 
 
+def run_quality_assessment(args: argparse.Namespace) -> int:
+    """Run comprehensive quality assessment on EPUB file."""
+    import json
+    from zipfile import ZipFile
+
+    epub_path = Path(args.epub_path)
+    if not epub_path.exists():
+        print(f"Error: EPUB file not found: {epub_path}", file=sys.stderr)
+        return 1
+
+    if not epub_path.suffix.lower() == '.epub':
+        print(f"Error: File must be an EPUB (.epub extension): {epub_path}", file=sys.stderr)
+        return 1
+
+    print(f"🔍 Analyzing EPUB quality: {epub_path}")
+    print("=" * 60)
+
+    results = {}
+    total_issues = 0
+    total_critical = 0
+
+    # 1. Quality Scoring Analysis
+    if not args.skip_quality_scoring:
+        print("📊 Running quality scoring analysis...")
+        try:
+            quality_report = analyze_epub_quality(epub_path)
+            results['quality_scoring'] = {
+                'overall_score': quality_report.overall_score,
+                'quality_level': quality_report.quality_level.value,
+                'total_issues': quality_report.total_issues,
+                'critical_issues': quality_report.critical_issues,
+                'auto_fixable_issues': quality_report.auto_fixable_issues,
+                'category_scores': {
+                    cat.value: {'score': score.score, 'issues': len(score.issues)}
+                    for cat, score in quality_report.category_scores.items()
+                },
+                'recommendations': quality_report.recommendations
+            }
+            total_issues += quality_report.total_issues
+            total_critical += quality_report.critical_issues
+
+            if not args.json:
+                print(f"   Overall Score: {quality_report.overall_score:.1f}/100 ({quality_report.quality_level.value.title()})")
+                print(f"   Issues Found: {quality_report.total_issues} ({quality_report.critical_issues} critical)")
+                if quality_report.auto_fixable_issues > 0:
+                    print(f"   Auto-fixable: {quality_report.auto_fixable_issues} issues")
+                print()
+
+        except Exception as e:
+            print(f"Error in quality scoring: {e}", file=sys.stderr)
+            results['quality_scoring'] = {'error': str(e)}
+
+    # 2. Accessibility Compliance Analysis
+    if not args.skip_accessibility:
+        print("♿ Running accessibility compliance analysis...")
+        try:
+            from .accessibility_audit import A11yConfig, A11yLevel
+
+            # Configure accessibility audit
+            target_level = A11yLevel[args.target_level]
+            config = A11yConfig(target_level=target_level)
+
+            a11y_result = audit_epub_accessibility(epub_path, config)
+            results['accessibility'] = {
+                'overall_score': a11y_result.overall_score,
+                'conformance_level': a11y_result.conformance_level.value if a11y_result.conformance_level else None,
+                'total_issues': a11y_result.total_issues,
+                'critical_issues': a11y_result.critical_issues,
+                'major_issues': a11y_result.major_issues,
+                'minor_issues': a11y_result.minor_issues,
+                'auto_fixes_applied': a11y_result.auto_fixes_applied,
+                'issues_by_type': {k.value: v for k, v in a11y_result.issues_by_type.items()},
+                'recommendations': a11y_result.recommendations
+            }
+            total_issues += a11y_result.total_issues
+            total_critical += a11y_result.critical_issues
+
+            if not args.json:
+                conformance = a11y_result.conformance_level.value if a11y_result.conformance_level else "None"
+                print(f"   Accessibility Score: {a11y_result.overall_score:.1f}/100 (WCAG {conformance})")
+                print(f"   Issues Found: {a11y_result.total_issues} ({a11y_result.critical_issues} critical)")
+                print()
+
+        except Exception as e:
+            print(f"Error in accessibility analysis: {e}", file=sys.stderr)
+            results['accessibility'] = {'error': str(e)}
+
+    # 3. Content Validation
+    if not args.skip_content_validation:
+        print("📝 Running content validation...")
+        try:
+            content_reports = []
+
+            # Extract and validate content from EPUB
+            with ZipFile(epub_path, 'r') as epub_zip:
+                content_files = [f for f in epub_zip.namelist() if f.endswith('.xhtml') or f.endswith('.html')]
+
+                for file_path in content_files[:10]:  # Limit to first 10 files for performance
+                    try:
+                        content = epub_zip.read(file_path).decode('utf-8')
+                        report = validate_content_quality(content, file_path)
+                        content_reports.append(report)
+                    except Exception as e:
+                        print(f"Warning: Could not validate {file_path}: {e}")
+
+            # Validate additional content files if provided
+            if args.content_files:
+                for file_path in args.content_files:
+                    content_path = Path(file_path)
+                    if content_path.exists():
+                        try:
+                            content = content_path.read_text(encoding='utf-8')
+                            report = validate_content_quality(content, str(content_path))
+                            content_reports.append(report)
+                        except Exception as e:
+                            print(f"Warning: Could not validate {content_path}: {e}")
+
+            # Aggregate content validation results
+            total_content_issues = sum(len(r.issues) for r in content_reports)
+            total_errors = sum(r.error_count for r in content_reports)
+            total_warnings = sum(r.warning_count for r in content_reports)
+            total_auto_fixable = sum(r.auto_fixable_count for r in content_reports)
+
+            results['content_validation'] = {
+                'files_checked': len(content_reports),
+                'total_issues': total_content_issues,
+                'error_count': total_errors,
+                'warning_count': total_warnings,
+                'suggestion_count': sum(r.suggestion_count for r in content_reports),
+                'auto_fixable_count': total_auto_fixable,
+                'reports': [
+                    {
+                        'file_path': r.file_path,
+                        'issues': len(r.issues),
+                        'stats': {
+                            'word_count': r.stats.word_count,
+                            'flesch_reading_ease': r.stats.flesch_reading_ease,
+                            'avg_words_per_sentence': r.stats.avg_words_per_sentence
+                        }
+                    } for r in content_reports
+                ]
+            }
+
+            total_issues += total_content_issues
+            total_critical += total_errors
+
+            if not args.json:
+                print(f"   Files Analyzed: {len(content_reports)}")
+                print(f"   Issues Found: {total_content_issues} ({total_errors} errors, {total_warnings} warnings)")
+                if total_auto_fixable > 0:
+                    print(f"   Auto-fixable: {total_auto_fixable} issues")
+                print()
+
+        except Exception as e:
+            print(f"Error in content validation: {e}", file=sys.stderr)
+            results['content_validation'] = {'error': str(e)}
+
+    # Output results
+    if args.json:
+        # JSON output
+        output_data = {
+            'epub_path': str(epub_path),
+            'analysis_timestamp': __import__('datetime').datetime.now().isoformat(),
+            'summary': {
+                'total_issues': total_issues,
+                'critical_issues': total_critical,
+                'analysis_types': len([k for k in results.keys() if 'error' not in results[k]])
+            },
+            'results': results
+        }
+
+        if args.output:
+            output_path = Path(args.output)
+            output_path.write_text(json.dumps(output_data, indent=2), encoding='utf-8')
+            print(f"📄 Detailed report saved to: {output_path}")
+        else:
+            print(json.dumps(output_data, indent=2))
+
+    else:
+        # Human-readable output
+        print("=" * 60)
+        print("📋 QUALITY ASSESSMENT SUMMARY")
+        print("=" * 60)
+
+        if 'quality_scoring' in results and 'error' not in results['quality_scoring']:
+            quality_data = results['quality_scoring']
+            print(f"🎯 Overall Quality Score: {quality_data['overall_score']:.1f}/100 ({quality_data['quality_level'].title()})")
+
+        print(f"📊 Total Issues Found: {total_issues}")
+        if total_critical > 0:
+            print(f"🚨 Critical Issues: {total_critical}")
+
+        # Show top recommendations
+        all_recommendations = []
+        for analysis_type, data in results.items():
+            if 'recommendations' in data:
+                all_recommendations.extend(data['recommendations'])
+
+        if all_recommendations:
+            print("\n💡 Top Recommendations:")
+            for i, rec in enumerate(all_recommendations[:5], 1):
+                print(f"   {i}. {rec}")
+
+        if args.output:
+            # Save detailed report
+            report_lines = [
+                f"Quality Assessment Report for {epub_path}",
+                "=" * 60,
+                ""
+            ]
+
+            # Add detailed results for each analysis type
+            for analysis_type, data in results.items():
+                if 'error' not in data:
+                    report_lines.append(f"{analysis_type.replace('_', ' ').title()}:")
+                    report_lines.append("-" * 30)
+
+                    if analysis_type == 'quality_scoring':
+                        report_lines.append(f"Overall Score: {data['overall_score']:.1f}/100")
+                        report_lines.append(f"Quality Level: {data['quality_level'].title()}")
+                        report_lines.append(f"Total Issues: {data['total_issues']}")
+                        report_lines.append("Category Scores:")
+                        for cat, score_data in data['category_scores'].items():
+                            report_lines.append(f"  - {cat.title()}: {score_data['score']:.1f}/100 ({score_data['issues']} issues)")
+
+                    elif analysis_type == 'accessibility':
+                        report_lines.append(f"Accessibility Score: {data['overall_score']:.1f}/100")
+                        conformance = data['conformance_level'] or 'None'
+                        report_lines.append(f"WCAG Conformance: {conformance}")
+                        report_lines.append(f"Issues: {data['total_issues']} total, {data['critical_issues']} critical")
+
+                    elif analysis_type == 'content_validation':
+                        report_lines.append(f"Files Analyzed: {data['files_checked']}")
+                        report_lines.append(f"Issues: {data['total_issues']} total, {data['error_count']} errors")
+
+                    if 'recommendations' in data:
+                        report_lines.append("Recommendations:")
+                        for rec in data['recommendations']:
+                            report_lines.append(f"  • {rec}")
+
+                    report_lines.append("")
+
+            output_path = Path(args.output)
+            output_path.write_text('\n'.join(report_lines), encoding='utf-8')
+            print(f"\n📄 Detailed report saved to: {output_path}")
+
+    # Return appropriate exit code
+    return 1 if total_critical > 0 else 0
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
@@ -1581,6 +1870,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_update(args)
     if args.command == "checklist":
         return run_checklist(args)
+    if args.command == "quality":
+        return run_quality_assessment(args)
 
     parser.print_help()
     return 1
@@ -1881,7 +2172,8 @@ def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[
                 html_chunks=html_chunks,
                 resources=resources,
                 output_path=epub_temp,
-                styles_css=""  # Will be populated by conversion process
+                styles_css="",  # Will be populated by conversion process
+                performance_monitor=None  # Preview mode doesn't need monitoring
             )
 
             # Check if inspect folder was created (contains the EPUB content structure)

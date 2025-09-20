@@ -300,6 +300,68 @@ class BuildCache:
             conn.execute("DELETE FROM build_cache WHERE last_accessed < ?", (cutoff_time,))
             conn.execute("DELETE FROM image_cache WHERE last_accessed < ?", (cutoff_time,))
 
+    def generate_cache_key(self, input_path: Path) -> str:
+        """Generate cache key for input file with dependency tracking."""
+        # Include file modification time and size for dependency tracking
+        stat = input_path.stat()
+        content_hash = hashlib.md5(f"{input_path}:{stat.st_mtime}:{stat.st_size}".encode()).hexdigest()
+        return content_hash
+
+    def get_cached_conversion(self, cache_key: str) -> Optional[Tuple[List[str], List[Path], str]]:
+        """Get cached conversion result if available."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "SELECT metadata FROM build_cache WHERE input_hash = ?",
+                (cache_key,)
+            )
+            result = cursor.fetchone()
+
+            if result:
+                # Update last accessed time
+                conn.execute(
+                    "UPDATE build_cache SET last_accessed = ? WHERE input_hash = ?",
+                    (time.time(), cache_key)
+                )
+
+                # Parse cached result
+                try:
+                    metadata = json.loads(result[0])
+                    return (
+                        metadata.get('chunks', []),
+                        [Path(p) for p in metadata.get('resources', [])],
+                        metadata.get('styles', '')
+                    )
+                except (json.JSONDecodeError, KeyError):
+                    pass
+
+        return None
+
+    def cache_conversion(self, cache_key: str, result: Tuple[List[str], List[Path], str]):
+        """Cache conversion result for future use."""
+        chunks, resources, styles = result
+
+        metadata = {
+            'chunks': chunks,
+            'resources': [str(p) for p in resources],
+            'styles': styles,
+            'cache_version': '1.0'
+        }
+
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO build_cache
+                (input_hash, input_path, output_path, options_hash, build_time, last_accessed, metadata)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                cache_key,
+                "",  # Will be populated when needed
+                "",  # Output path not relevant for conversion cache
+                "",  # Options hash for finer granularity
+                time.time(),
+                time.time(),
+                json.dumps(metadata)
+            ))
+
 
 class ParallelImageProcessor:
     """Parallel image processing pipeline for faster conversion."""
@@ -434,6 +496,47 @@ class ParallelImageProcessor:
         except Exception as e:
             print(f"Failed to process image {filename}: {e}")
             return None
+
+    def process_images(self, docx_path: Path) -> List[Path]:
+        """Extract and process images from DOCX file."""
+        try:
+            with ZipFile(docx_path, 'r') as zip_file:
+                image_files = [name for name in zip_file.namelist()
+                             if name.startswith('word/media/') and
+                             any(name.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp'])]
+
+                processed_images = []
+                for image_file in image_files:
+                    try:
+                        image_data = zip_file.read(image_file)
+                        processed_path = self._process_single_image(image_data, Path(image_file).name)
+                        if processed_path:
+                            processed_images.append(processed_path)
+                    except Exception as e:
+                        print(f"Failed to process image {image_file}: {e}")
+
+                return processed_images
+        except Exception as e:
+            print(f"Failed to extract images from {docx_path}: {e}")
+            return []
+
+    def process_image_data(self, image_data_list: List[Tuple[str, bytes]]) -> List[Path]:
+        """Process a list of image data tuples (filename, data)."""
+        processed_images = []
+
+        for filename, data in image_data_list:
+            try:
+                processed_path = self._process_single_image(data, filename)
+                if processed_path:
+                    processed_images.append(processed_path)
+            except Exception as e:
+                print(f"Failed to process image {filename}: {e}")
+
+        return processed_images
+
+    def set_cache(self, cache: BuildCache):
+        """Set the build cache for image processing optimization."""
+        self.cache = cache
 
 
 class PerformanceProfiler:
@@ -905,6 +1008,38 @@ class PerformanceMonitor:
                     summary += f"  {phase}: {times['duration']:.2f}s ({percentage:.1f}%)\n"
 
         return summary
+
+    def stop_monitoring(self):
+        """Stop performance monitoring."""
+        return self.finish_monitoring()
+
+    def phase_timer(self, phase_name: str):
+        """Context manager for timing phases."""
+        from contextlib import contextmanager
+
+        @contextmanager
+        def timer():
+            self.record_phase_start(phase_name)
+            try:
+                yield
+            finally:
+                self.record_phase_end(phase_name)
+
+        return timer()
+
+    def add_phase_time(self, phase_name: str, duration: float):
+        """Add a phase time directly."""
+        self.phase_times[phase_name] = {'duration': duration}
+
+    def add_warning(self, message: str):
+        """Add a warning message."""
+        if 'warnings' not in self.metrics:
+            self.metrics['warnings'] = []
+        self.metrics['warnings'].append(message)
+
+    def get_summary(self) -> str:
+        """Get performance summary (alias for get_performance_summary)."""
+        return self.get_performance_summary()
 
 
 def create_conversion_profiler(enable_memory: bool = True) -> PerformanceProfiler:

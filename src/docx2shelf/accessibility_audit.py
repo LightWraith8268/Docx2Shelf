@@ -101,545 +101,669 @@ class AccessibilityAuditor:
 
     def __init__(self, config: Optional[A11yConfig] = None):
         self.config = config or A11yConfig()
-        self.issues: List[A11yIssue] = []
-        self.image_alt_texts: Set[str] = set()
-        self.heading_structure: List[Tuple[int, str]] = []
+        self.wcag_criteria = self._load_wcag_criteria()
 
     def audit_epub(self, epub_path: Path) -> A11yAuditResult:
-        """
-        Perform comprehensive accessibility audit on EPUB.
-
-        Args:
-            epub_path: Path to EPUB file
-
-        Returns:
-            A11yAuditResult with detailed findings
-        """
+        """Perform comprehensive accessibility audit on EPUB."""
         logger.info(f"Starting accessibility audit of {epub_path}")
 
-        self.issues.clear()
-        self.image_alt_texts.clear()
-        self.heading_structure.clear()
+        issues = []
 
-        # Extract and audit EPUB content
         try:
-            content_files = self._extract_epub_content(epub_path)
+            from zipfile import ZipFile
+            with ZipFile(epub_path, 'r') as epub_zip:
+                # Get all content files
+                content_files = [f for f in epub_zip.namelist() if f.endswith('.xhtml')]
 
-            for file_path, content in content_files.items():
-                self._audit_html_content(content, str(file_path))
+                for file_path in content_files:
+                    content = epub_zip.read(file_path).decode('utf-8')
+                    file_issues = self._audit_content_file(content, file_path)
+                    issues.extend(file_issues)
 
-            # Perform cross-file checks
-            self._audit_heading_structure()
-            self._audit_language_consistency()
+                # Check EPUB-specific accessibility features
+                epub_issues = self._audit_epub_structure(epub_zip)
+                issues.extend(epub_issues)
 
         except Exception as e:
-            logger.error(f"Audit failed: {e}")
-            self.issues.append(A11yIssue(
+            logger.error(f"Accessibility audit failed: {e}")
+            issues.append(A11yIssue(
                 id="audit_error",
                 issue_type=IssueType.SEMANTIC_MARKUP,
                 severity=IssueSeverity.CRITICAL,
                 wcag_level=A11yLevel.A,
                 title="Audit Error",
-                description=f"Failed to audit EPUB: {e}",
-                recommendation="Check EPUB file integrity"
+                description=f"Failed to perform accessibility audit: {str(e)}",
+                recommendation="Fix file structure and try again"
             ))
 
-        # Generate audit result
-        return self._generate_audit_result()
+        return self._compile_audit_result(issues)
 
-    def _extract_epub_content(self, epub_path: Path) -> Dict[Path, str]:
-        """Extract HTML content files from EPUB."""
-        content_files = {}
+    def _audit_content_file(self, content: str, file_path: str) -> List[A11yIssue]:
+        """Audit individual content file for accessibility issues."""
+        issues = []
 
+        # Parse HTML content
         try:
-            import zipfile
+            root = ET.fromstring(content)
+        except ET.ParseError:
+            # Try to parse as HTML fragment
+            content_wrapped = f"<div>{content}</div>"
+            try:
+                root = ET.fromstring(content_wrapped)
+            except ET.ParseError:
+                issues.append(A11yIssue(
+                    id="invalid_html",
+                    issue_type=IssueType.SEMANTIC_MARKUP,
+                    severity=IssueSeverity.CRITICAL,
+                    wcag_level=A11yLevel.A,
+                    title="Invalid HTML Structure",
+                    description="Content file contains invalid HTML/XHTML",
+                    location=file_path,
+                    recommendation="Fix HTML syntax errors",
+                    wcag_criteria=["4.1.1"]
+                ))
+                return issues
 
-            with zipfile.ZipFile(epub_path, 'r') as epub_zip:
-                # Find content files (XHTML/HTML)
-                file_list = epub_zip.namelist()
-                html_files = [f for f in file_list if f.endswith(('.html', '.xhtml', '.htm'))]
+        # Run specific checks
+        if self.config.check_alt_text:
+            issues.extend(self._check_alt_text(root, file_path))
 
-                for html_file in html_files:
-                    try:
-                        content = epub_zip.read(html_file).decode('utf-8')
-                        content_files[Path(html_file)] = content
-                    except Exception as e:
-                        logger.warning(f"Could not read {html_file}: {e}")
+        if self.config.check_heading_structure:
+            issues.extend(self._check_heading_structure(root, file_path))
 
-        except Exception as e:
-            logger.error(f"Could not extract EPUB content: {e}")
+        if self.config.check_semantic_markup:
+            issues.extend(self._check_semantic_markup(root, file_path))
 
-        return content_files
+        if self.config.check_language_attributes:
+            issues.extend(self._check_language_attributes(root, file_path))
 
-    def _audit_html_content(self, content: str, file_path: str) -> None:
-        """Audit HTML content for accessibility issues."""
-        try:
-            from bs4 import BeautifulSoup
-            soup = BeautifulSoup(content, 'html.parser')
-        except ImportError:
-            logger.warning("BeautifulSoup not available, using basic parsing")
-            self._basic_audit_html(content, file_path)
-            return
+        if self.config.check_keyboard_navigation:
+            issues.extend(self._check_keyboard_navigation(root, file_path))
 
-        # Check various accessibility aspects
-        self._check_alt_text(soup, file_path)
-        self._check_heading_structure_file(soup, file_path)
-        self._check_semantic_markup(soup, file_path)
-        self._check_language_attributes(soup, file_path)
-        self._check_link_accessibility(soup, file_path)
-        self._check_table_accessibility(soup, file_path)
-        self._check_form_accessibility(soup, file_path)
-        self._check_keyboard_navigation(soup, file_path)
-        self._check_reading_order(soup, file_path)
+        issues.extend(self._check_links(root, file_path))
+        issues.extend(self._check_tables(root, file_path))
+        issues.extend(self._check_forms(root, file_path))
+        issues.extend(self._check_media(root, file_path))
+        issues.extend(self._check_reading_order(root, file_path))
 
-    def _basic_audit_html(self, content: str, file_path: str) -> None:
-        """Basic HTML audit without BeautifulSoup."""
-        # Check for images without alt text
-        img_pattern = r'<img(?![^>]*alt\s*=)[^>]*>'
-        missing_alt = re.findall(img_pattern, content, re.IGNORECASE)
+        return issues
 
-        for match in missing_alt:
-            self.issues.append(A11yIssue(
-                id=f"missing_alt_{len(self.issues)}",
-                issue_type=IssueType.MISSING_ALT_TEXT,
-                severity=IssueSeverity.CRITICAL,
-                wcag_level=A11yLevel.A,
-                title="Missing Alt Text",
-                description="Image found without alt attribute",
-                location=file_path,
-                element=match[:100],
-                recommendation="Add descriptive alt text for all images",
-                wcag_criteria=["1.1.1"]
-            ))
+    def _check_alt_text(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
+        """Check for missing or inadequate alt text on images."""
+        issues = []
 
-    def _check_alt_text(self, soup, file_path: str) -> None:
-        """Check image alt text accessibility."""
-        if not self.config.check_alt_text:
-            return
-
-        images = soup.find_all('img')
+        # Find all image elements
+        images = root.findall('.//img') + root.findall('.//{http://www.w3.org/1999/xhtml}img')
 
         for img in images:
-            alt_text = img.get('alt', '').strip()
+            alt_text = img.get('alt', '')
             src = img.get('src', '')
 
-            if not alt_text:
-                # Check if image is decorative (should have empty alt)
-                is_decorative = self._is_decorative_image(img)
-
-                severity = IssueSeverity.MINOR if is_decorative else IssueSeverity.CRITICAL
-
-                self.issues.append(A11yIssue(
-                    id=f"missing_alt_{len(self.issues)}",
+            if alt_text is None:
+                issues.append(A11yIssue(
+                    id=f"missing_alt_{hash(src)}",
                     issue_type=IssueType.MISSING_ALT_TEXT,
-                    severity=severity,
+                    severity=IssueSeverity.CRITICAL,
                     wcag_level=A11yLevel.A,
                     title="Missing Alt Text",
                     description=f"Image '{src}' missing alt attribute",
                     location=file_path,
-                    element=str(img)[:100],
-                    recommendation="Add descriptive alt text or empty alt='' for decorative images",
-                    auto_fixable=is_decorative,
+                    element=ET.tostring(img, encoding='unicode'),
+                    recommendation="Add descriptive alt text for all images",
+                    auto_fixable=False,
                     wcag_criteria=["1.1.1"]
                 ))
-            else:
-                # Check alt text quality
-                self._check_alt_text_quality(alt_text, src, file_path)
-                self.image_alt_texts.add(alt_text)
+            elif alt_text.strip() == '':
+                # Empty alt text is acceptable for decorative images
+                # Check if this might be meaningful content
+                if any(keyword in src.lower() for keyword in ['chart', 'graph', 'diagram', 'figure']):
+                    issues.append(A11yIssue(
+                        id=f"empty_alt_{hash(src)}",
+                        issue_type=IssueType.MISSING_ALT_TEXT,
+                        severity=IssueSeverity.MAJOR,
+                        wcag_level=A11yLevel.A,
+                        title="Empty Alt Text on Informative Image",
+                        description=f"Image '{src}' appears informative but has empty alt text",
+                        location=file_path,
+                        element=ET.tostring(img, encoding='unicode'),
+                        recommendation="Add descriptive alt text or confirm image is decorative",
+                        wcag_criteria=["1.1.1"]
+                    ))
+            elif len(alt_text) < 5:
+                issues.append(A11yIssue(
+                    id=f"short_alt_{hash(src)}",
+                    issue_type=IssueType.MISSING_ALT_TEXT,
+                    severity=IssueSeverity.MINOR,
+                    wcag_level=A11yLevel.A,
+                    title="Very Short Alt Text",
+                    description=f"Alt text '{alt_text}' may be too brief",
+                    location=file_path,
+                    element=ET.tostring(img, encoding='unicode'),
+                    recommendation="Consider more descriptive alt text",
+                    wcag_criteria=["1.1.1"]
+                ))
 
-    def _is_decorative_image(self, img_element) -> bool:
-        """Determine if an image is likely decorative."""
-        # Check for common decorative image indicators
-        src = img_element.get('src', '').lower()
-        decorative_patterns = [
-            'decoration', 'ornament', 'divider', 'spacer',
-            'bullet', 'arrow', 'icon', 'border'
-        ]
+        return issues
 
-        return any(pattern in src for pattern in decorative_patterns)
-
-    def _check_alt_text_quality(self, alt_text: str, src: str, file_path: str) -> None:
-        """Check quality of alt text."""
-        # Check for common alt text issues
+    def _check_heading_structure(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
+        """Check heading structure and hierarchy."""
         issues = []
 
-        if len(alt_text) > 125:
-            issues.append("Alt text too long (>125 characters)")
+        # Find all heading elements in document order
+        headings = []
+        # Find all elements and filter for headings to preserve document order
+        for elem in root.iter():
+            tag = elem.tag.lower()
+            if tag.startswith('h') and len(tag) == 2 and tag[1:].isdigit():
+                headings.append(elem)
+            elif tag.endswith('}h1') or tag.endswith('}h2') or tag.endswith('}h3') or \
+                 tag.endswith('}h4') or tag.endswith('}h5') or tag.endswith('}h6'):
+                headings.append(elem)
 
-        if alt_text.lower().startswith(('image of', 'picture of', 'photo of')):
-            issues.append("Redundant alt text prefix")
-
-        if alt_text.lower() in ['image', 'picture', 'photo', 'graphic']:
-            issues.append("Generic alt text")
-
-        if src.lower().replace('-', ' ').replace('_', ' ') in alt_text.lower():
-            issues.append("Alt text appears to be filename")
-
-        for issue in issues:
-            self.issues.append(A11yIssue(
-                id=f"alt_quality_{len(self.issues)}",
-                issue_type=IssueType.MISSING_ALT_TEXT,
-                severity=IssueSeverity.MINOR,
-                wcag_level=A11yLevel.A,
-                title="Alt Text Quality Issue",
-                description=f"{issue}: '{alt_text}'",
+        if not headings:
+            issues.append(A11yIssue(
+                id="no_headings",
+                issue_type=IssueType.HEADING_STRUCTURE,
+                severity=IssueSeverity.MAJOR,
+                wcag_level=A11yLevel.AA,
+                title="No Headings Found",
+                description="Document lacks heading structure",
                 location=file_path,
-                recommendation="Improve alt text to be concise and descriptive",
-                wcag_criteria=["1.1.1"]
+                recommendation="Add headings to create logical document structure",
+                wcag_criteria=["2.4.6", "1.3.1"]
             ))
+            return issues
 
-    def _check_heading_structure_file(self, soup, file_path: str) -> None:
-        """Check heading structure in a single file."""
-        if not self.config.check_heading_structure:
-            return
-
-        headings = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-
-        prev_level = 0
+        # Extract heading levels
+        heading_levels = []
         for heading in headings:
-            level = int(heading.name[1])
-            text = heading.get_text().strip()
+            tag = heading.tag.lower()
+            if tag.startswith('h') and tag[1:].isdigit():
+                level = int(tag[1:])
+            elif '}h' in tag:
+                level = int(tag.split('}h')[1])
+            else:
+                continue
+            heading_levels.append((level, heading))
 
-            # Store for global structure check
-            self.heading_structure.append((level, text))
-
-            # Check for skipped heading levels
-            if level > prev_level + 1:
-                self.issues.append(A11yIssue(
-                    id=f"heading_skip_{len(self.issues)}",
+        # Check for proper hierarchy
+        prev_level = 0
+        for level, heading in heading_levels:
+            if level - prev_level > 1:
+                issues.append(A11yIssue(
+                    id=f"skipped_heading_{hash(ET.tostring(heading))}",
                     issue_type=IssueType.HEADING_STRUCTURE,
                     severity=IssueSeverity.MAJOR,
-                    wcag_level=A11yLevel.A,
+                    wcag_level=A11yLevel.AA,
                     title="Skipped Heading Level",
                     description=f"Heading jumps from h{prev_level} to h{level}",
                     location=file_path,
-                    element=str(heading)[:100],
-                    recommendation="Use sequential heading levels (h1, h2, h3, etc.)",
+                    element=ET.tostring(heading, encoding='unicode'),
+                    recommendation="Use sequential heading levels",
                     wcag_criteria=["1.3.1", "2.4.6"]
                 ))
 
             # Check for empty headings
-            if not text:
-                self.issues.append(A11yIssue(
-                    id=f"empty_heading_{len(self.issues)}",
+            text_content = heading.text or ''
+            if len(text_content.strip()) == 0:
+                issues.append(A11yIssue(
+                    id=f"empty_heading_{hash(ET.tostring(heading))}",
                     issue_type=IssueType.HEADING_STRUCTURE,
-                    severity=IssueSeverity.CRITICAL,
+                    severity=IssueSeverity.MAJOR,
                     wcag_level=A11yLevel.A,
                     title="Empty Heading",
-                    description=f"Heading {heading.name} has no text content",
+                    description=f"Heading h{level} is empty",
                     location=file_path,
-                    element=str(heading),
-                    recommendation="Add descriptive text to all headings",
-                    wcag_criteria=["1.3.1", "2.4.6"]
+                    element=ET.tostring(heading, encoding='unicode'),
+                    recommendation="Add descriptive text to heading or remove if unnecessary",
+                    wcag_criteria=["2.4.6"]
                 ))
 
             prev_level = level
 
-    def _audit_heading_structure(self) -> None:
-        """Audit global heading structure across all files."""
-        if not self.heading_structure:
-            return
+        return issues
 
-        # Check for missing h1
-        has_h1 = any(level == 1 for level, _ in self.heading_structure)
-        if not has_h1:
-            self.issues.append(A11yIssue(
-                id="missing_h1",
-                issue_type=IssueType.HEADING_STRUCTURE,
-                severity=IssueSeverity.CRITICAL,
-                wcag_level=A11yLevel.A,
-                title="Missing H1",
-                description="Document structure missing main heading (h1)",
-                recommendation="Add h1 element as main document title",
-                wcag_criteria=["1.3.1", "2.4.6"]
-            ))
-
-        # Check for multiple h1s (may be valid in EPUB but worth noting)
-        h1_count = sum(1 for level, _ in self.heading_structure if level == 1)
-        if h1_count > 1:
-            self.issues.append(A11yIssue(
-                id="multiple_h1",
-                issue_type=IssueType.HEADING_STRUCTURE,
-                severity=IssueSeverity.MINOR,
-                wcag_level=A11yLevel.AA,
-                title="Multiple H1 Elements",
-                description=f"Found {h1_count} h1 elements across documents",
-                recommendation="Consider using one h1 per chapter/section",
-                wcag_criteria=["2.4.6"]
-            ))
-
-    def _check_semantic_markup(self, soup, file_path: str) -> None:
+    def _check_semantic_markup(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
         """Check for proper semantic markup usage."""
-        if not self.config.check_semantic_markup:
-            return
+        issues = []
 
-        # Check for semantic HTML5 elements
-        semantic_elements = ['article', 'section', 'nav', 'aside', 'header', 'footer', 'main']
-        has_semantic = any(soup.find(elem) for elem in semantic_elements)
+        # Check for proper use of semantic elements
+        semantic_elements = ['main', 'nav', 'article', 'section', 'aside', 'header', 'footer']
+        found_semantic = False
 
-        if not has_semantic:
-            self.issues.append(A11yIssue(
-                id=f"no_semantic_{len(self.issues)}",
-                issue_type=IssueType.SEMANTIC_MARKUP,
-                severity=IssueSeverity.MINOR,
-                wcag_level=A11yLevel.AA,
-                title="Limited Semantic Markup",
-                description="Document lacks semantic HTML5 elements",
-                location=file_path,
-                recommendation="Use semantic elements like <article>, <section>, <nav>",
-                wcag_criteria=["1.3.1"]
-            ))
+        for element in semantic_elements:
+            ns = '{http://www.w3.org/1999/xhtml}'
+            if root.findall(f'.//{element}') or root.findall(f'.//{ns}{element}'):
+                found_semantic = True
+                break
 
-        # Check for proper list markup
-        self._check_list_markup(soup, file_path)
-
-        # Check for ARIA usage
-        self._check_aria_usage(soup, file_path)
-
-    def _check_list_markup(self, soup, file_path: str) -> None:
-        """Check for proper list markup."""
-        # Find potential lists marked up incorrectly
-        paragraphs = soup.find_all('p')
-
-        for p in paragraphs:
-            text = p.get_text().strip()
-            # Check for bullet-like characters that should be lists
-            if re.match(r'^[•·▪▫‣⁃*-]\s+', text):
-                self.issues.append(A11yIssue(
-                    id=f"fake_list_{len(self.issues)}",
+        if not found_semantic:
+            # Check if content is substantial enough to warrant semantic markup
+            text_content = self._extract_text_content(root)
+            if len(text_content.split()) > 100:  # Substantial content
+                issues.append(A11yIssue(
+                    id="no_semantic_markup",
                     issue_type=IssueType.SEMANTIC_MARKUP,
-                    severity=IssueSeverity.MAJOR,
-                    wcag_level=A11yLevel.A,
-                    title="Improper List Markup",
-                    description="List items marked as paragraphs instead of <ul>/<li>",
+                    severity=IssueSeverity.MINOR,
+                    wcag_level=A11yLevel.AA,
+                    title="No Semantic Markup",
+                    description="Document lacks semantic HTML5 elements",
                     location=file_path,
-                    element=str(p)[:100],
-                    recommendation="Use proper <ul>/<ol> and <li> elements for lists",
-                    auto_fixable=True,
+                    recommendation="Use semantic elements like <main>, <nav>, <article> for better structure",
                     wcag_criteria=["1.3.1"]
                 ))
 
-    def _check_aria_usage(self, soup, file_path: str) -> None:
-        """Check for ARIA attribute usage and validity."""
-        aria_elements = soup.find_all(attrs=lambda x: x and any(k.startswith('aria-') for k in x.keys()))
+        # Check for improper use of formatting tags for semantic meaning
+        bold_tags = root.findall('.//b') + root.findall('.//{http://www.w3.org/1999/xhtml}b')
+        italic_tags = root.findall('.//i') + root.findall('.//{http://www.w3.org/1999/xhtml}i')
 
-        for element in aria_elements:
-            aria_attrs = {k: v for k, v in element.attrs.items() if k.startswith('aria-')}
-
-            # Check for redundant ARIA
-            if 'aria-label' in aria_attrs and element.get_text().strip():
-                self.issues.append(A11yIssue(
-                    id=f"redundant_aria_{len(self.issues)}",
+        for tag in bold_tags + italic_tags:
+            text = tag.text or ''
+            if len(text.split()) > 5:  # Likely semantic, not just formatting
+                tag_name = tag.tag.split('}')[-1] if '}' in tag.tag else tag.tag
+                issues.append(A11yIssue(
+                    id=f"semantic_formatting_{hash(ET.tostring(tag))}",
                     issue_type=IssueType.SEMANTIC_MARKUP,
                     severity=IssueSeverity.MINOR,
-                    wcag_level=A11yLevel.A,
-                    title="Redundant ARIA Label",
-                    description="Element has both aria-label and visible text",
+                    wcag_level=A11yLevel.AA,
+                    title="Formatting Tag Used for Semantic Meaning",
+                    description=f"<{tag_name}> tag used for what appears to be semantic emphasis",
                     location=file_path,
-                    element=str(element)[:100],
-                    recommendation="Remove aria-label if visible text is sufficient",
-                    wcag_criteria=["4.1.2"]
+                    element=ET.tostring(tag, encoding='unicode'),
+                    recommendation=f"Consider using <strong> or <em> instead of <{tag_name}> for semantic emphasis",
+                    wcag_criteria=["1.3.1"]
                 ))
 
-    def _check_language_attributes(self, soup, file_path: str) -> None:
-        """Check for proper language attributes."""
-        if not self.config.check_language_attributes:
-            return
+        return issues
 
-        # Check for lang attribute on html element
-        html_elem = soup.find('html')
-        if html_elem and not html_elem.get('lang'):
-            self.issues.append(A11yIssue(
-                id=f"missing_lang_{len(self.issues)}",
+    def _check_language_attributes(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
+        """Check for proper language attributes."""
+        issues = []
+
+        # Check for lang attribute on root element
+        lang_attr = root.get('lang') or root.get('{http://www.w3.org/XML/1998/namespace}lang')
+
+        if not lang_attr:
+            issues.append(A11yIssue(
+                id="missing_lang",
                 issue_type=IssueType.LANGUAGE_ATTRIBUTES,
-                severity=IssueSeverity.CRITICAL,
+                severity=IssueSeverity.MAJOR,
                 wcag_level=A11yLevel.A,
-                title="Missing Language Declaration",
-                description="HTML element missing lang attribute",
+                title="Missing Language Attribute",
+                description="Document lacks lang attribute",
                 location=file_path,
-                recommendation="Add lang attribute to <html> element (e.g., lang='en')",
+                recommendation="Add lang attribute to identify document language",
                 auto_fixable=True,
                 wcag_criteria=["3.1.1"]
             ))
+        elif len(lang_attr) < 2:
+            issues.append(A11yIssue(
+                id="invalid_lang",
+                issue_type=IssueType.LANGUAGE_ATTRIBUTES,
+                severity=IssueSeverity.MAJOR,
+                wcag_level=A11yLevel.A,
+                title="Invalid Language Code",
+                description=f"Language attribute '{lang_attr}' is invalid",
+                location=file_path,
+                recommendation="Use valid ISO 639-1 language code",
+                wcag_criteria=["3.1.1"]
+            ))
 
-    def _check_link_accessibility(self, soup, file_path: str) -> None:
+        return issues
+
+    def _check_keyboard_navigation(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
+        """Check for keyboard navigation accessibility."""
+        issues = []
+
+        # Check for interactive elements with tabindex
+        interactive_elements = root.findall('.//a') + root.findall('.//button') + \
+                             root.findall('.//input') + root.findall('.//select') + \
+                             root.findall('.//{http://www.w3.org/1999/xhtml}a') + \
+                             root.findall('.//{http://www.w3.org/1999/xhtml}button')
+
+        for element in interactive_elements:
+            tabindex = element.get('tabindex')
+            if tabindex and int(tabindex) > 0:
+                issues.append(A11yIssue(
+                    id=f"positive_tabindex_{hash(ET.tostring(element))}",
+                    issue_type=IssueType.KEYBOARD_NAVIGATION,
+                    severity=IssueSeverity.MAJOR,
+                    wcag_level=A11yLevel.A,
+                    title="Positive Tabindex",
+                    description=f"Element has positive tabindex ({tabindex})",
+                    location=file_path,
+                    element=ET.tostring(element, encoding='unicode'),
+                    recommendation="Avoid positive tabindex values; use 0 or -1",
+                    wcag_criteria=["2.4.3"]
+                ))
+
+        return issues
+
+    def _check_links(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
         """Check link accessibility."""
-        links = soup.find_all('a')
+        issues = []
+
+        links = root.findall('.//a') + root.findall('.//{http://www.w3.org/1999/xhtml}a')
 
         for link in links:
-            href = link.get('href')
-            text = link.get_text().strip()
+            href = link.get('href', '')
+            text_content = self._extract_text_content(link).strip()
 
-            # Check for empty links
-            if not text and not link.get('aria-label'):
-                self.issues.append(A11yIssue(
-                    id=f"empty_link_{len(self.issues)}",
+            if not text_content:
+                issues.append(A11yIssue(
+                    id=f"empty_link_{hash(ET.tostring(link))}",
                     issue_type=IssueType.LINK_ACCESSIBILITY,
                     severity=IssueSeverity.CRITICAL,
                     wcag_level=A11yLevel.A,
                     title="Empty Link",
                     description="Link has no accessible text",
                     location=file_path,
-                    element=str(link)[:100],
-                    recommendation="Add descriptive text or aria-label to links",
-                    wcag_criteria=["2.4.4"]
+                    element=ET.tostring(link, encoding='unicode'),
+                    recommendation="Add descriptive link text or aria-label",
+                    wcag_criteria=["2.4.4", "4.1.2"]
                 ))
-
-            # Check for generic link text
-            if text.lower() in ['click here', 'read more', 'more', 'here', 'link']:
-                self.issues.append(A11yIssue(
-                    id=f"generic_link_{len(self.issues)}",
+            elif len(text_content) < 3:
+                issues.append(A11yIssue(
+                    id=f"short_link_{hash(ET.tostring(link))}",
                     issue_type=IssueType.LINK_ACCESSIBILITY,
                     severity=IssueSeverity.MINOR,
-                    wcag_level=A11yLevel.A,
-                    title="Generic Link Text",
-                    description=f"Link text '{text}' is not descriptive",
+                    wcag_level=A11yLevel.AA,
+                    title="Very Short Link Text",
+                    description=f"Link text '{text_content}' may be too brief",
                     location=file_path,
-                    element=str(link)[:100],
+                    element=ET.tostring(link, encoding='unicode'),
+                    recommendation="Use more descriptive link text",
+                    wcag_criteria=["2.4.4"]
+                ))
+            elif text_content.lower() in ['click here', 'read more', 'more', 'here', 'link']:
+                issues.append(A11yIssue(
+                    id=f"generic_link_{hash(ET.tostring(link))}",
+                    issue_type=IssueType.LINK_ACCESSIBILITY,
+                    severity=IssueSeverity.MAJOR,
+                    wcag_level=A11yLevel.AA,
+                    title="Generic Link Text",
+                    description=f"Link text '{text_content}' is not descriptive",
+                    location=file_path,
+                    element=ET.tostring(link, encoding='unicode'),
                     recommendation="Use descriptive link text that explains the destination",
                     wcag_criteria=["2.4.4"]
                 ))
 
-    def _check_table_accessibility(self, soup, file_path: str) -> None:
+        return issues
+
+    def _check_tables(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
         """Check table accessibility."""
-        tables = soup.find_all('table')
+        issues = []
+
+        tables = root.findall('.//table') + root.findall('.//{http://www.w3.org/1999/xhtml}table')
 
         for table in tables:
             # Check for table headers
-            headers = table.find_all('th')
+            headers = table.findall('.//th') + table.findall('.//{http://www.w3.org/1999/xhtml}th')
             if not headers:
-                self.issues.append(A11yIssue(
-                    id=f"table_no_headers_{len(self.issues)}",
+                issues.append(A11yIssue(
+                    id=f"table_no_headers_{hash(ET.tostring(table))}",
                     issue_type=IssueType.TABLE_ACCESSIBILITY,
                     severity=IssueSeverity.MAJOR,
                     wcag_level=A11yLevel.A,
                     title="Table Missing Headers",
-                    description="Data table without proper header cells",
+                    description="Data table lacks header cells",
                     location=file_path,
-                    element=str(table)[:100],
-                    recommendation="Use <th> elements for table headers",
+                    element=ET.tostring(table, encoding='unicode')[:200],
+                    recommendation="Add <th> elements for table headers",
                     wcag_criteria=["1.3.1"]
                 ))
 
             # Check for table caption
-            caption = table.find('caption')
+            caption = table.find('.//caption') or table.find('.//{http://www.w3.org/1999/xhtml}caption')
             if not caption:
-                self.issues.append(A11yIssue(
-                    id=f"table_no_caption_{len(self.issues)}",
-                    issue_type=IssueType.TABLE_ACCESSIBILITY,
-                    severity=IssueSeverity.MINOR,
-                    wcag_level=A11yLevel.A,
-                    title="Table Missing Caption",
-                    description="Table without descriptive caption",
-                    location=file_path,
-                    recommendation="Add <caption> element to describe table content",
-                    wcag_criteria=["1.3.1"]
-                ))
+                # Check if table is complex (more than simple 2x2)
+                rows = table.findall('.//tr') + table.findall('.//{http://www.w3.org/1999/xhtml}tr')
+                if len(rows) > 2:
+                    issues.append(A11yIssue(
+                        id=f"table_no_caption_{hash(ET.tostring(table))}",
+                        issue_type=IssueType.TABLE_ACCESSIBILITY,
+                        severity=IssueSeverity.MINOR,
+                        wcag_level=A11yLevel.AA,
+                        title="Table Missing Caption",
+                        description="Complex table lacks descriptive caption",
+                        location=file_path,
+                        element=ET.tostring(table, encoding='unicode')[:200],
+                        recommendation="Add <caption> to describe table purpose",
+                        wcag_criteria=["1.3.1"]
+                    ))
 
-    def _check_form_accessibility(self, soup, file_path: str) -> None:
+        return issues
+
+    def _check_forms(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
         """Check form accessibility."""
-        inputs = soup.find_all(['input', 'textarea', 'select'])
+        issues = []
+
+        # Find form inputs
+        inputs = root.findall('.//input') + root.findall('.//select') + \
+                root.findall('.//textarea') + \
+                root.findall('.//{http://www.w3.org/1999/xhtml}input') + \
+                root.findall('.//{http://www.w3.org/1999/xhtml}select') + \
+                root.findall('.//{http://www.w3.org/1999/xhtml}textarea')
 
         for input_elem in inputs:
-            input_id = input_elem.get('id')
+            input_id = input_elem.get('id', '')
             input_type = input_elem.get('type', 'text')
 
-            # Check for associated labels
-            label = soup.find('label', {'for': input_id}) if input_id else None
-            aria_label = input_elem.get('aria-label')
+            # Skip submit buttons and hidden inputs
+            if input_type in ['submit', 'button', 'hidden']:
+                continue
 
-            if not label and not aria_label:
-                self.issues.append(A11yIssue(
-                    id=f"input_no_label_{len(self.issues)}",
+            # Check for associated label
+            has_label = False
+
+            # Look for label by for attribute
+            if input_id:
+                ns = '{http://www.w3.org/1999/xhtml}'
+                labels = root.findall(f'.//label[@for="{input_id}"]') + \
+                        root.findall(f'.//{ns}label[@for="{input_id}"]')
+                if labels:
+                    has_label = True
+
+            # Check for aria-label or aria-labelledby
+            if not has_label:
+                if input_elem.get('aria-label') or input_elem.get('aria-labelledby'):
+                    has_label = True
+
+            if not has_label:
+                issues.append(A11yIssue(
+                    id=f"input_no_label_{hash(ET.tostring(input_elem))}",
                     issue_type=IssueType.FORM_ACCESSIBILITY,
                     severity=IssueSeverity.CRITICAL,
                     wcag_level=A11yLevel.A,
                     title="Form Input Missing Label",
-                    description=f"Input field ({input_type}) lacks accessible label",
+                    description=f"Input of type '{input_type}' lacks accessible label",
                     location=file_path,
-                    element=str(input_elem)[:100],
-                    recommendation="Add <label> element or aria-label attribute",
-                    wcag_criteria=["1.3.1", "3.3.2"]
+                    element=ET.tostring(input_elem, encoding='unicode'),
+                    recommendation="Add <label>, aria-label, or aria-labelledby",
+                    wcag_criteria=["1.3.1", "4.1.2"]
                 ))
 
-    def _check_keyboard_navigation(self, soup, file_path: str) -> None:
-        """Check keyboard navigation accessibility."""
-        if not self.config.check_keyboard_navigation:
-            return
+        return issues
 
-        # Check for tabindex usage
-        tabindex_elements = soup.find_all(attrs={'tabindex': True})
+    def _check_media(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
+        """Check multimedia accessibility."""
+        issues = []
 
-        for elem in tabindex_elements:
-            tabindex = elem.get('tabindex')
-            try:
-                tabindex_val = int(tabindex)
-                if tabindex_val > 0:
-                    self.issues.append(A11yIssue(
-                        id=f"positive_tabindex_{len(self.issues)}",
-                        issue_type=IssueType.KEYBOARD_NAVIGATION,
-                        severity=IssueSeverity.MAJOR,
+        # Check for audio/video elements
+        media_elements = root.findall('.//audio') + root.findall('.//video') + \
+                       root.findall('.//{http://www.w3.org/1999/xhtml}audio') + \
+                       root.findall('.//{http://www.w3.org/1999/xhtml}video')
+
+        for media in media_elements:
+            media_type = media.tag.split('}')[-1] if '}' in media.tag else media.tag
+
+            # Check for controls
+            if not media.get('controls'):
+                issues.append(A11yIssue(
+                    id=f"media_no_controls_{hash(ET.tostring(media))}",
+                    issue_type=IssueType.MEDIA_ACCESSIBILITY,
+                    severity=IssueSeverity.MAJOR,
+                    wcag_level=A11yLevel.A,
+                    title="Media Missing Controls",
+                    description=f"{media_type} element lacks user controls",
+                    location=file_path,
+                    element=ET.tostring(media, encoding='unicode'),
+                    recommendation="Add controls attribute to media elements",
+                    wcag_criteria=["2.1.1"]
+                ))
+
+            # Check for captions/transcripts (video)
+            if media_type == 'video':
+                tracks = media.findall('.//track') + media.findall('.//{http://www.w3.org/1999/xhtml}track')
+                has_captions = any(track.get('kind') == 'captions' for track in tracks)
+
+                if not has_captions:
+                    issues.append(A11yIssue(
+                        id=f"video_no_captions_{hash(ET.tostring(media))}",
+                        issue_type=IssueType.MEDIA_ACCESSIBILITY,
+                        severity=IssueSeverity.CRITICAL,
                         wcag_level=A11yLevel.A,
-                        title="Positive Tabindex",
-                        description=f"Element uses positive tabindex ({tabindex})",
+                        title="Video Missing Captions",
+                        description="Video content lacks captions",
                         location=file_path,
-                        element=str(elem)[:100],
-                        recommendation="Avoid positive tabindex values; use 0 or -1",
-                        wcag_criteria=["2.4.3"]
+                        element=ET.tostring(media, encoding='unicode'),
+                        recommendation="Add caption track or provide transcript",
+                        wcag_criteria=["1.2.2"]
                     ))
-            except ValueError:
+
+        return issues
+
+    def _check_reading_order(self, root: ET.Element, file_path: str) -> List[A11yIssue]:
+        """Check logical reading order."""
+        issues = []
+
+        # Check for CSS that might affect reading order
+        # This is a simplified check - full CSS analysis would require parsing CSS files
+        elements_with_float = []
+        elements_with_position = []
+
+        for elem in root.iter():
+            style = elem.get('style', '')
+            if 'float:' in style or 'position:' in style:
+                if 'float:' in style:
+                    elements_with_float.append(elem)
+                if 'position:' in style:
+                    elements_with_position.append(elem)
+
+        if elements_with_float:
+            issues.append(A11yIssue(
+                id="float_elements",
+                issue_type=IssueType.READING_ORDER,
+                severity=IssueSeverity.MINOR,
+                wcag_level=A11yLevel.AA,
+                title="Floated Elements May Affect Reading Order",
+                description=f"Found {len(elements_with_float)} elements with float positioning",
+                location=file_path,
+                recommendation="Ensure floated elements don't disrupt logical reading order",
+                wcag_criteria=["1.3.2"]
+            ))
+
+        if elements_with_position:
+            issues.append(A11yIssue(
+                id="positioned_elements",
+                issue_type=IssueType.READING_ORDER,
+                severity=IssueSeverity.MINOR,
+                wcag_level=A11yLevel.AA,
+                title="Positioned Elements May Affect Reading Order",
+                description=f"Found {len(elements_with_position)} elements with absolute/relative positioning",
+                location=file_path,
+                recommendation="Ensure positioned elements maintain logical reading order",
+                wcag_criteria=["1.3.2"]
+            ))
+
+        return issues
+
+    def _audit_epub_structure(self, epub_zip) -> List[A11yIssue]:
+        """Audit EPUB-specific accessibility features."""
+        issues = []
+
+        # Check for accessibility metadata in OPF
+        opf_files = [f for f in epub_zip.namelist() if f.endswith('.opf')]
+        if opf_files:
+            try:
+                opf_content = epub_zip.read(opf_files[0]).decode('utf-8')
+                root = ET.fromstring(opf_content)
+
+                # Check for accessibility metadata
+                metadata = root.find('.//{http://www.idpf.org/2007/opf}metadata')
+                if metadata is not None:
+                    # Look for a11y metadata
+                    a11y_meta = metadata.findall('.//{http://www.idpf.org/2007/opf}meta[@property="schema:accessibilityFeature"]')
+                    if not a11y_meta:
+                        issues.append(A11yIssue(
+                            id="missing_a11y_metadata",
+                            issue_type=IssueType.SEMANTIC_MARKUP,
+                            severity=IssueSeverity.MINOR,
+                            wcag_level=A11yLevel.AA,
+                            title="Missing Accessibility Metadata",
+                            description="EPUB lacks accessibility metadata",
+                            location=opf_files[0],
+                            recommendation="Add accessibility metadata to OPF file",
+                            wcag_criteria=["4.1.2"]
+                        ))
+            except Exception:
                 pass
 
-    def _check_reading_order(self, soup, file_path: str) -> None:
-        """Check logical reading order."""
-        # Check for CSS that might affect reading order
-        style_elements = soup.find_all('style')
+        return issues
 
-        for style in style_elements:
-            css_content = style.get_text()
-            if 'position:' in css_content and ('absolute' in css_content or 'fixed' in css_content):
-                self.issues.append(A11yIssue(
-                    id=f"position_absolute_{len(self.issues)}",
-                    issue_type=IssueType.READING_ORDER,
-                    severity=IssueSeverity.MINOR,
-                    wcag_level=A11yLevel.A,
-                    title="Absolute Positioning May Affect Reading Order",
-                    description="CSS absolute/fixed positioning detected",
-                    location=file_path,
-                    recommendation="Ensure positioned elements don't disrupt logical reading order",
-                    wcag_criteria=["1.3.2"]
-                ))
+    def _extract_text_content(self, element: ET.Element) -> str:
+        """Extract text content from XML element."""
+        text = element.text or ''
+        for child in element:
+            text += self._extract_text_content(child)
+            if child.tail:
+                text += child.tail
+        return text
 
-    def _audit_language_consistency(self) -> None:
-        """Check for consistent language usage across files."""
-        # This would check for language consistency
-        # Implementation depends on specific requirements
-        pass
-
-    def _generate_audit_result(self) -> A11yAuditResult:
-        """Generate comprehensive audit result."""
+    def _compile_audit_result(self, issues: List[A11yIssue]) -> A11yAuditResult:
+        """Compile audit results into final report."""
         # Count issues by severity
-        critical_count = len([i for i in self.issues if i.severity == IssueSeverity.CRITICAL])
-        major_count = len([i for i in self.issues if i.severity == IssueSeverity.MAJOR])
-        minor_count = len([i for i in self.issues if i.severity == IssueSeverity.MINOR])
-        info_count = len([i for i in self.issues if i.severity == IssueSeverity.INFO])
+        critical_count = len([i for i in issues if i.severity == IssueSeverity.CRITICAL])
+        major_count = len([i for i in issues if i.severity == IssueSeverity.MAJOR])
+        minor_count = len([i for i in issues if i.severity == IssueSeverity.MINOR])
+        info_count = len([i for i in issues if i.severity == IssueSeverity.INFO])
 
         # Count issues by type
         issues_by_type = {}
         for issue_type in IssueType:
-            issues_by_type[issue_type] = len([i for i in self.issues if i.issue_type == issue_type])
+            issues_by_type[issue_type] = len([i for i in issues if i.issue_type == issue_type])
 
         # Determine conformance level
-        conformance_level = self._determine_conformance_level()
+        conformance_level = None
+        if critical_count == 0:
+            if major_count == 0:
+                if minor_count == 0:
+                    conformance_level = A11yLevel.AAA
+                else:
+                    conformance_level = A11yLevel.AA
+            else:
+                # Check if major issues are AA level
+                aa_major_issues = [i for i in issues
+                                 if i.severity == IssueSeverity.MAJOR and i.wcag_level == A11yLevel.AA]
+                if len(aa_major_issues) == 0:
+                    conformance_level = A11yLevel.A
 
-        # Calculate overall score
-        overall_score = self._calculate_score(critical_count, major_count, minor_count)
+        # Calculate overall score (0-100)
+        total_issues = len(issues)
+        if total_issues == 0:
+            overall_score = 100.0
+        else:
+            # Weight by severity: Critical=20, Major=10, Minor=5, Info=1
+            weighted_score = (critical_count * 20) + (major_count * 10) + (minor_count * 5) + (info_count * 1)
+            max_possible_score = total_issues * 20  # If all were critical
+            overall_score = max(0, 100 - (weighted_score / max_possible_score * 100))
 
         # Generate recommendations
-        recommendations = self._generate_recommendations()
+        recommendations = self._generate_recommendations(issues, conformance_level)
 
         return A11yAuditResult(
-            total_issues=len(self.issues),
+            total_issues=total_issues,
             critical_issues=critical_count,
             major_issues=major_count,
             minor_issues=minor_count,
@@ -647,217 +771,64 @@ class AccessibilityAuditor:
             issues_by_type=issues_by_type,
             conformance_level=conformance_level,
             overall_score=overall_score,
-            issues=self.issues,
+            issues=issues,
             recommendations=recommendations
         )
 
-    def _determine_conformance_level(self) -> Optional[A11yLevel]:
-        """Determine WCAG conformance level based on issues."""
-        critical_issues = [i for i in self.issues if i.severity == IssueSeverity.CRITICAL]
-
-        if critical_issues:
-            return None  # No conformance if critical issues exist
-
-        # Check for Level A compliance
-        level_a_issues = [i for i in self.issues if i.wcag_level == A11yLevel.A and i.severity in [IssueSeverity.MAJOR, IssueSeverity.CRITICAL]]
-        if level_a_issues:
-            return None
-
-        # Check for Level AA compliance
-        level_aa_issues = [i for i in self.issues if i.wcag_level == A11yLevel.AA and i.severity in [IssueSeverity.MAJOR, IssueSeverity.CRITICAL]]
-        if level_aa_issues:
-            return A11yLevel.A
-
-        return A11yLevel.AA  # Assuming AAA is rare and not automatically determined
-
-    def _calculate_score(self, critical: int, major: int, minor: int) -> float:
-        """Calculate overall accessibility score (0-100)."""
-        if critical > 0:
-            return max(0, 50 - (critical * 10))
-
-        score = 100
-        score -= major * 5    # -5 points per major issue
-        score -= minor * 1    # -1 point per minor issue
-
-        return max(0, score)
-
-    def _generate_recommendations(self) -> List[str]:
+    def _generate_recommendations(self, issues: List[A11yIssue], conformance_level: Optional[A11yLevel]) -> List[str]:
         """Generate prioritized recommendations."""
         recommendations = []
 
-        # Critical issues first
-        critical_types = set(i.issue_type for i in self.issues if i.severity == IssueSeverity.CRITICAL)
+        if conformance_level is None:
+            recommendations.append("🚨 Critical accessibility issues found. Address immediately for basic compliance.")
+        elif conformance_level == A11yLevel.A:
+            recommendations.append("✅ Meets WCAG Level A. Work on major issues for AA compliance.")
+        elif conformance_level == A11yLevel.AA:
+            recommendations.append("✅ Meets WCAG Level AA. Consider minor improvements for excellence.")
+        elif conformance_level == A11yLevel.AAA:
+            recommendations.append("🌟 Excellent accessibility! Meets WCAG Level AAA.")
 
-        if IssueType.MISSING_ALT_TEXT in critical_types:
-            recommendations.append("Add alt text to all images - this is essential for screen reader users")
+        # Issue-specific recommendations
+        issue_types = set(issue.issue_type for issue in issues)
 
-        if IssueType.HEADING_STRUCTURE in critical_types:
-            recommendations.append("Fix heading structure - use sequential heading levels (h1, h2, h3)")
+        if IssueType.MISSING_ALT_TEXT in issue_types:
+            recommendations.append("🖼️ Add descriptive alt text to all images")
 
-        if IssueType.LANGUAGE_ATTRIBUTES in critical_types:
-            recommendations.append("Add language attributes to HTML elements")
+        if IssueType.HEADING_STRUCTURE in issue_types:
+            recommendations.append("📝 Fix heading hierarchy and structure")
 
-        # Major issues
-        major_types = set(i.issue_type for i in self.issues if i.severity == IssueSeverity.MAJOR)
+        if IssueType.LINK_ACCESSIBILITY in issue_types:
+            recommendations.append("🔗 Improve link accessibility with descriptive text")
 
-        if IssueType.TABLE_ACCESSIBILITY in major_types:
-            recommendations.append("Improve table accessibility with proper headers and captions")
+        if IssueType.TABLE_ACCESSIBILITY in issue_types:
+            recommendations.append("📊 Add proper headers and captions to tables")
 
-        if IssueType.SEMANTIC_MARKUP in major_types:
-            recommendations.append("Use semantic HTML5 elements for better structure")
-
-        # General recommendations
-        if len(self.issues) > 10:
-            recommendations.append("Consider accessibility review in development process")
+        auto_fixable = len([i for i in issues if i.auto_fixable])
+        if auto_fixable > 0:
+            recommendations.append(f"🔧 {auto_fixable} issues can be automatically fixed")
 
         return recommendations
 
-    def generate_html_report(self, result: A11yAuditResult, output_path: Path) -> None:
-        """Generate comprehensive HTML accessibility report."""
-
-        # Determine status and color scheme
-        if result.conformance_level is None:
-            status = "❌ Non-Conformant"
-            status_class = "fail"
-        elif result.conformance_level == A11yLevel.A:
-            status = "⚠️ WCAG A Conformant"
-            status_class = "warning"
-        else:
-            status = "✅ WCAG AA Conformant"
-            status_class = "pass"
-
-        html_content = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accessibility Audit Report</title>
-    <style>
-        body {{ font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.6; }}
-        .header {{ border-bottom: 2px solid #ddd; padding-bottom: 1rem; margin-bottom: 2rem; }}
-        .status {{ font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; }}
-        .status.pass {{ color: #28a745; }}
-        .status.warning {{ color: #ffc107; }}
-        .status.fail {{ color: #dc3545; }}
-        .score {{ font-size: 3rem; font-weight: bold; text-align: center; margin: 2rem 0; }}
-        .summary {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }}
-        .metric {{ background: #f8f9fa; padding: 1rem; border-radius: 6px; text-align: center; }}
-        .metric-value {{ font-size: 2rem; font-weight: bold; }}
-        .metric.critical {{ border-left: 4px solid #dc3545; }}
-        .metric.major {{ border-left: 4px solid #ffc107; }}
-        .metric.minor {{ border-left: 4px solid #17a2b8; }}
-        .recommendations {{ background: #e8f4fd; padding: 1.5rem; border-radius: 6px; margin: 2rem 0; }}
-        .issues {{ margin-top: 2rem; }}
-        .issue {{ border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 1rem; }}
-        .issue-header {{ padding: 0.75rem 1rem; font-weight: bold; }}
-        .issue-body {{ padding: 0 1rem 1rem; }}
-        .issue.critical .issue-header {{ background-color: #f8d7da; color: #721c24; }}
-        .issue.major .issue-header {{ background-color: #fff3cd; color: #856404; }}
-        .issue.minor .issue-header {{ background-color: #d1ecf1; color: #0c5460; }}
-        .issue.info .issue-header {{ background-color: #d4edda; color: #155724; }}
-        .issue-meta {{ font-size: 0.9em; color: #6c757d; margin-top: 0.5rem; }}
-        .wcag-criteria {{ background: #f8f9fa; padding: 0.3rem 0.6rem; border-radius: 3px; font-size: 0.8em; }}
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>EPUB Accessibility Audit Report</h1>
-        <div class="status {status_class}">{status}</div>
-        <div class="score {status_class}">{result.overall_score:.0f}/100</div>
-    </div>
-
-    <div class="summary">
-        <div class="metric critical">
-            <div class="metric-value">{result.critical_issues}</div>
-            <div>Critical Issues</div>
-        </div>
-        <div class="metric major">
-            <div class="metric-value">{result.major_issues}</div>
-            <div>Major Issues</div>
-        </div>
-        <div class="metric minor">
-            <div class="metric-value">{result.minor_issues}</div>
-            <div>Minor Issues</div>
-        </div>
-        <div class="metric">
-            <div class="metric-value">{result.info_issues}</div>
-            <div>Info Items</div>
-        </div>
-    </div>
-"""
-
-        if result.recommendations:
-            html_content += f"""
-    <div class="recommendations">
-        <h2>🎯 Priority Recommendations</h2>
-        <ol>
-"""
-            for rec in result.recommendations:
-                html_content += f"            <li>{rec}</li>\n"
-
-            html_content += """        </ol>
-    </div>
-"""
-
-        html_content += f"""
-    <div class="issues">
-        <h2>Issues Found ({len(result.issues)})</h2>
-"""
-
-        # Group issues by severity
-        for severity in [IssueSeverity.CRITICAL, IssueSeverity.MAJOR, IssueSeverity.MINOR, IssueSeverity.INFO]:
-            severity_issues = [i for i in result.issues if i.severity == severity]
-
-            if severity_issues:
-                html_content += f"""
-        <h3>{severity.value.title()} Issues ({len(severity_issues)})</h3>
-"""
-
-                for issue in severity_issues:
-                    wcag_badges = " ".join([f'<span class="wcag-criteria">WCAG {criteria}</span>' for criteria in issue.wcag_criteria])
-
-                    html_content += f"""
-        <div class="issue {issue.severity.value}">
-            <div class="issue-header">
-                {issue.title}
-            </div>
-            <div class="issue-body">
-                <div>{issue.description}</div>
-                {f'<div><strong>Location:</strong> {issue.location}</div>' if issue.location else ''}
-                {f'<div><strong>Element:</strong> <code>{issue.element}</code></div>' if issue.element else ''}
-                <div><strong>Recommendation:</strong> {issue.recommendation}</div>
-                <div class="issue-meta">
-                    {wcag_badges}
-                    {' • <strong>Auto-fixable</strong>' if issue.auto_fixable else ''}
-                </div>
-            </div>
-        </div>
-"""
-
-        html_content += """
-    </div>
-</body>
-</html>"""
-
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(html_content, encoding='utf-8')
-
-        logger.info(f"Accessibility report generated: {output_path}")
+    def _load_wcag_criteria(self) -> Dict[str, Dict[str, Any]]:
+        """Load WCAG 2.1 criteria definitions."""
+        # This would typically load from a comprehensive WCAG database
+        # For now, return a simplified mapping
+        return {
+            "1.1.1": {"title": "Non-text Content", "level": "A"},
+            "1.3.1": {"title": "Info and Relationships", "level": "A"},
+            "1.3.2": {"title": "Meaningful Sequence", "level": "A"},
+            "2.1.1": {"title": "Keyboard", "level": "A"},
+            "2.4.3": {"title": "Focus Order", "level": "A"},
+            "2.4.4": {"title": "Link Purpose (In Context)", "level": "A"},
+            "2.4.6": {"title": "Headings and Labels", "level": "AA"},
+            "3.1.1": {"title": "Language of Page", "level": "A"},
+            "4.1.1": {"title": "Parsing", "level": "A"},
+            "4.1.2": {"title": "Name, Role, Value", "level": "A"},
+            "1.2.2": {"title": "Captions (Prerecorded)", "level": "A"},
+        }
 
 
-def audit_epub_accessibility(
-    epub_path: Path,
-    config: Optional[A11yConfig] = None
-) -> A11yAuditResult:
-    """
-    Perform comprehensive accessibility audit on EPUB file.
-
-    Args:
-        epub_path: Path to EPUB file
-        config: Audit configuration
-
-    Returns:
-        A11yAuditResult with detailed findings
-    """
+def audit_epub_accessibility(epub_path: Path, config: Optional[A11yConfig] = None) -> A11yAuditResult:
+    """Convenience function to audit EPUB accessibility."""
     auditor = AccessibilityAuditor(config)
     return auditor.audit_epub(epub_path)

@@ -441,52 +441,64 @@ def assemble_epub(
     resources: list[Path],
     output_path: Path,
     styles_css: str = "",
+    performance_monitor=None,
 ) -> None:
     """Assemble the EPUB with ebooklib and write to output_path."""
+    from .performance import PerformanceMonitor
+
+    # Initialize performance monitoring if not provided
+    if performance_monitor is None:
+        performance_monitor = PerformanceMonitor()
+        performance_monitor.start_monitoring()
+
     try:
         from ebooklib import epub  # type: ignore
     except Exception as e:
         raise RuntimeError("ebooklib is required to assemble EPUB. Install 'ebooklib'.") from e
 
-    book = epub.EpubBook()
+    # Metadata setup phase
+    with performance_monitor.phase_timer("metadata_setup"):
+        book = epub.EpubBook()
 
-    identifier = meta.isbn or meta.uuid or str(_uuid.uuid4())
-    book.set_identifier(identifier)
-    book.set_title(meta.title)
-    book.set_language(meta.language or "en")
-    book.add_author(meta.author)
-    if meta.publisher:
-        book.add_metadata("DC", "publisher", meta.publisher)
-    if meta.pubdate:
-        book.add_metadata("DC", "date", meta.pubdate.isoformat())
-    if meta.description:
-        book.add_metadata("DC", "description", meta.description)
-    if meta.title_sort:
-        book.add_metadata(None, "meta", meta.title_sort, {"name": "calibre:title_sort"})
-    if meta.author_sort:
-        book.add_metadata(None, "meta", meta.author_sort, {"name": "calibre:author_sort"})
-    for subj in meta.subjects:
-        book.add_metadata("DC", "subject", subj)
-    for kw in meta.keywords:
-        book.add_metadata("DC", "subject", kw)
-    # Calibre series metadata
-    if meta.series:
-        book.add_metadata(None, "meta", meta.series, {"name": "calibre:series"})
-        if meta.series_index:
-            book.add_metadata(
-                None,
-                "meta",
-                str(meta.series_index),
-                {"name": "calibre:series_index"},
-            )
+        identifier = meta.isbn or meta.uuid or str(_uuid.uuid4())
+        book.set_identifier(identifier)
+        book.set_title(meta.title)
+        book.set_language(meta.language or "en")
+        book.add_author(meta.author)
+        if meta.publisher:
+            book.add_metadata("DC", "publisher", meta.publisher)
+        if meta.pubdate:
+            book.add_metadata("DC", "date", meta.pubdate.isoformat())
+        if meta.description:
+            book.add_metadata("DC", "description", meta.description)
+        if meta.title_sort:
+            book.add_metadata(None, "meta", meta.title_sort, {"name": "calibre:title_sort"})
+        if meta.author_sort:
+            book.add_metadata(None, "meta", meta.author_sort, {"name": "calibre:author_sort"})
+        for subj in meta.subjects:
+            book.add_metadata("DC", "subject", subj)
+        for kw in meta.keywords:
+            book.add_metadata("DC", "subject", kw)
+        # Calibre series metadata
+        if meta.series:
+            book.add_metadata(None, "meta", meta.series, {"name": "calibre:series"})
+            if meta.series_index:
+                book.add_metadata(
+                    None,
+                    "meta",
+                    str(meta.series_index),
+                    {"name": "calibre:series_index"},
+                )
 
-    # Cover
-    cover_bytes = meta.cover_path.read_bytes()
-    # Let ebooklib create the cover page automatically
-    book.set_cover(meta.cover_path.name, cover_bytes)
+    # Cover processing phase
+    with performance_monitor.phase_timer("cover_processing"):
+        cover_bytes = meta.cover_path.read_bytes()
+        # Let ebooklib create the cover page automatically
+        book.set_cover(meta.cover_path.name, cover_bytes)
 
-    # CSS
-    css_bytes = _load_css(opts.theme, opts.extra_css, opts, styles_css, meta.language or "en")
+    # CSS processing phase
+    with performance_monitor.phase_timer("css_processing"):
+        css_bytes = _load_css(opts.theme, opts.extra_css, opts, styles_css, meta.language or "en")
     style_item = epub.EpubItem(
         uid="style_base",
         file_name="style/base.css",
