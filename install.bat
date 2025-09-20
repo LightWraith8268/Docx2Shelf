@@ -114,7 +114,9 @@ echo Python found: %PYTHON_CMD%
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
-for /f "delims=" %%v in ('%PYTHON_CMD% -c "import sys; print(str(sys.version_info.major) + '.' + str(sys.version_info.minor))" 2^>nul') do set "PYTHON_VERSION=%%v"
+%PYTHON_CMD% -c "import sys; print(sys.version_info.major, sys.version_info.minor, sep='.')" > "%TEMP%\python_version.txt" 2>nul
+set /p PYTHON_VERSION=<"%TEMP%\python_version.txt"
+del "%TEMP%\python_version.txt" 2>nul
 
 if defined PYTHON_VERSION (
     echo Python version: %PYTHON_VERSION%
