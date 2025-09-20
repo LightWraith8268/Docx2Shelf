@@ -114,14 +114,15 @@ echo Python found: %PYTHON_CMD%
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
-for /f "delims=" %%v in ('%PYTHON_CMD% -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2^>nul') do set "PYTHON_VERSION=%%v"
+for /f "delims=" %%v in ('%PYTHON_CMD% -c "import sys; print(str(sys.version_info.major) + '.' + str(sys.version_info.minor))" 2^>nul') do set "PYTHON_VERSION=%%v"
 
 if defined PYTHON_VERSION (
     echo Python version: %PYTHON_VERSION%
 
     :: Check if version is 3.11 or higher
     %PYTHON_CMD% -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
-    if %errorlevel% neq 0 (
+    set "VERSION_COMPATIBLE=%errorlevel%"
+    if !VERSION_COMPATIBLE! neq 0 (
         echo.
         echo WARNING: Python %PYTHON_VERSION% is installed but Docx2Shelf requires Python 3.11+
         echo.
@@ -174,7 +175,7 @@ if %errorlevel% neq 0 (
     )
 
     :: Also try Windows-specific path
-    for /f "delims=" %%i in ('%PYTHON_CMD% -c "import sys; print(f'{sys.exec_prefix}\\Scripts')"') do set "PYTHON_SCRIPTS=%%i"
+    for /f "delims=" %%i in ('%PYTHON_CMD% -c "import sys; print(sys.exec_prefix + '\\Scripts')"') do set "PYTHON_SCRIPTS=%%i"
     if exist "!PYTHON_SCRIPTS!" (
         set "PATH=!PATH!;!PYTHON_SCRIPTS!"
         echo Added !PYTHON_SCRIPTS! to current session PATH
@@ -215,10 +216,14 @@ if "%GIT_AVAILABLE%"=="1" (
             goto :verify_install
         )
     ) else (
+        echo Installing docx2shelf with pip...
         %PYTHON_CMD% -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
-        if %errorlevel% equ 0 (
+        set "INSTALL_RESULT=%errorlevel%"
+        if !INSTALL_RESULT! equ 0 (
             echo ✓ Installation successful from GitHub
             goto :verify_install
+        ) else (
+            echo ❌ Installation failed (exit code: !INSTALL_RESULT!)
         )
     )
 
@@ -360,7 +365,7 @@ if defined CUSTOM_INSTALL_SUCCESS (
     )
 
     :: Check Python Scripts path
-    for /f "delims=" %%i in ('%PYTHON_CMD% -c "import sys; print(f'{sys.exec_prefix}\\Scripts')" 2^>nul') do (
+    for /f "delims=" %%i in ('%PYTHON_CMD% -c "import sys; print(sys.exec_prefix + '\\Scripts')" 2^>nul') do (
         if exist "%%i\docx2shelf.exe" (
             set "FOUND_PATH=%%i"
             goto :found
