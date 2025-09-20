@@ -38,15 +38,37 @@ if %errorlevel% neq 0 (
     echo WARNING: Your Python version is older than required.
     echo Docx2Shelf requires Python 3.11 or higher.
     echo.
-    set /p "CONTINUE=Continue anyway? Installation may fail. (y/N): "
-    if /i not "!CONTINUE!"=="y" (
-        echo Installation cancelled.
-        echo Please upgrade Python and run this installer again.
+    set /p "UPGRADE_PYTHON=Would you like to upgrade Python automatically? (Y/n): "
+    if /i "!UPGRADE_PYTHON!"=="n" (
         echo.
-        pause
-        exit /b 1
+        set /p "CONTINUE=Continue with current Python version anyway? Installation may fail. (y/N): "
+        if /i not "!CONTINUE!"=="y" (
+            echo Installation cancelled.
+            echo Please upgrade Python manually and run this installer again.
+            echo.
+            pause
+            exit /b 1
+        )
+        echo Continuing with potentially incompatible Python version...
+    ) else (
+        echo.
+        echo Installing Python 3.11...
+        call :install_python
+        if !errorlevel! neq 0 (
+            echo Python upgrade failed. Continuing with current version...
+            echo Note: Installation may fail due to version incompatibility.
+        ) else (
+            echo Python upgrade completed. Re-checking...
+            :: Re-detect Python command after upgrade
+            python --version >nul 2>&1
+            if !errorlevel! equ 0 (
+                set "PYTHON_CMD=python"
+            ) else (
+                set "PYTHON_CMD=py"
+            )
+            echo Using updated Python: !PYTHON_CMD!
+        )
     )
-    echo Continuing with potentially incompatible Python version...
 ) else (
     echo Python version is compatible.
 )
@@ -124,4 +146,54 @@ if %errorlevel% equ 0 (
     pause
 )
 
+goto :eof
+
+:install_python
+:: Simple Python installation subroutine
+echo.
+echo ========================================
+echo    Installing Python 3.11
+echo ========================================
+echo.
+
+:: Determine architecture
+if "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
+    set "ARCH=amd64"
+) else if "%PROCESSOR_ARCHITEW6432%"=="AMD64" (
+    set "ARCH=amd64"
+) else (
+    set "ARCH=win32"
+)
+
+:: Set Python download URL
+set "PYTHON_VERSION=3.11.9"
+set "PYTHON_URL=https://www.python.org/ftp/python/!PYTHON_VERSION!/python-!PYTHON_VERSION!-!ARCH!.exe"
+set "PYTHON_INSTALLER=%TEMP%\python-installer.exe"
+
+echo Downloading Python !PYTHON_VERSION! for !ARCH!...
+powershell -Command "try { (New-Object Net.WebClient).DownloadFile('!PYTHON_URL!', '!PYTHON_INSTALLER!') } catch { exit 1 }"
+if !errorlevel! neq 0 (
+    echo Failed to download Python installer.
+    echo Please install Python manually from https://python.org
+    pause
+    exit /b 1
+)
+
+echo Installing Python !PYTHON_VERSION!...
+echo This may take a few minutes...
+"!PYTHON_INSTALLER!" /quiet InstallAllUsers=0 PrependPath=1 Include_pip=1
+
+if !errorlevel! neq 0 (
+    echo Python installation failed.
+    echo Please install Python manually from https://python.org
+    del /f /q "!PYTHON_INSTALLER!" 2>nul
+    pause
+    exit /b 1
+)
+
+:: Clean up
+del /f /q "!PYTHON_INSTALLER!" 2>nul
+
+echo Python installation completed successfully.
+timeout /t 3 /nobreak >nul
 exit /b 0
