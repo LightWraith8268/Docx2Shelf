@@ -110,28 +110,32 @@ Docx2Shelf requires **Python 3.11 or newer**.
 
 Choose the method that works best for your system:
 
-#### PyPI (Recommended for Python users)
+#### Python Package Managers (Recommended)
 ```bash
-pipx install docx2shelf
-# or with pip:
-pip install docx2shelf
+# pipx (recommended - isolated environment)
+pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git
+
+# or with pip
+pip install git+https://github.com/LightWraith8268/Docx2Shelf.git
 ```
 
-#### Package Managers
+#### Package Managers (Coming Soon)
 
-**Homebrew (macOS/Linux):**
+*Note: Package manager distributions are planned for future releases*
+
+**Homebrew (macOS/Linux):** *(Coming soon)*
 ```bash
-brew install docx2shelf
+# Will be available as: brew install docx2shelf
 ```
 
-**Windows Package Manager:**
+**Windows Package Manager:** *(Coming soon)*
 ```bash
-winget install LightWraith8268.Docx2Shelf
+# Will be available as: winget install LightWraith8268.Docx2Shelf
 ```
 
-**Scoop (Windows):**
+**Scoop (Windows):** *(Coming soon)*
 ```bash
-scoop install docx2shelf
+# Will be available as: scoop install docx2shelf
 ```
 
 #### Docker (Advanced Users)
