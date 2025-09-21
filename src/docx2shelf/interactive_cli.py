@@ -1343,6 +1343,96 @@ class InteractiveCLI:
         print("All checklists are available through CLI command:")
         print(f"  docx2shelf checklist --input '{epub_path}' --all-stores")
 
+    def show_main_menu(self):
+        """Display the main menu."""
+        options = [
+            ("build", "Build EPUB from document"),
+            ("validate", "Validate existing EPUB file"),
+            ("quality", "Quality analysis and scoring"),
+            ("convert", "Convert EPUB to other formats"),
+            ("doctor", "Run environment diagnostics"),
+            ("tools", "Manage tools (Pandoc, EPUBCheck)"),
+            ("wizard", "Interactive conversion wizard"),
+            ("themes", "Theme management"),
+            ("ai", "AI-powered features"),
+            ("batch", "Batch processing"),
+            ("plugins", "Plugin management"),
+            ("connectors", "Document connectors"),
+            ("checklist", "Publishing compatibility checklists"),
+            ("enterprise", "Enterprise features"),
+            ("update", "Update docx2shelf"),
+            ("settings", "Application settings"),
+            ("about", "About and version information"),
+        ]
+
+        self.print_menu("Main Menu", options)
+        choice = self.get_user_choice(len(options))
+
+        if choice == 'q':
+            self.running = False
+        elif choice == 'b' and self.history:
+            self.current_menu = self.history.pop()
+        elif choice.isdigit():
+            option_key = options[int(choice) - 1][0]
+            if option_key == "build":
+                self.show_build_menu()
+            elif option_key == "validate":
+                self.show_validate_menu()
+            elif option_key == "quality":
+                self.show_quality_menu()
+            elif option_key == "convert":
+                self.show_convert_menu()
+            elif option_key == "doctor":
+                self.run_doctor()
+            elif option_key == "tools":
+                self.show_tools_menu()
+            elif option_key == "wizard":
+                self.run_wizard()
+            elif option_key == "themes":
+                self.show_themes_menu()
+            elif option_key == "ai":
+                self.show_ai_menu()
+            elif option_key == "batch":
+                self.show_batch_menu()
+            elif option_key == "plugins":
+                self.show_plugins_menu()
+            elif option_key == "connectors":
+                self.show_connectors_menu()
+            elif option_key == "checklist":
+                self.show_checklist_menu()
+            elif option_key == "enterprise":
+                self.show_enterprise_menu()
+            elif option_key == "update":
+                self.run_update()
+            elif option_key == "settings":
+                self.show_settings_menu()
+            elif option_key == "about":
+                self.show_about()
+
+    def run(self):
+        """Main run loop for the interactive CLI."""
+        try:
+            self.clear_screen()
+            self.print_header()
+            print("Welcome to the interactive docx2shelf interface!")
+            print("Navigate using menu numbers, 'b' to go back, 'q' to quit.")
+            print()
+
+            while self.running:
+                if self.current_menu == "main":
+                    self.show_main_menu()
+                else:
+                    # Handle other menus
+                    self.show_main_menu()
+
+                print()  # Add spacing between menu iterations
+
+        except KeyboardInterrupt:
+            print("\n\nGoodbye!")
+        except Exception as e:
+            print(f"\nError: {e}")
+            print("Exiting interactive mode.")
+
 
 def run_interactive_cli():
     """Run the interactive CLI."""
