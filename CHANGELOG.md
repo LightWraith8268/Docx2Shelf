@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.4.1] - 2025-01-21
+### Critical Interactive CLI Fixes
+
+#### Fixed
+- **Interactive CLI Core Functionality**: Fixed missing `run()` method and main menu in `InteractiveCLI` class
+  - Added complete main menu navigation with all 17 feature options
+  - Fixed `docx2shelf` and `docx2shelf interactive` commands to properly launch interactive interface
+  - Added graceful error handling and keyboard interrupt support
+- **Update Command**: Fixed broken `docx2shelf update` command that was showing "invalid choice"
+  - Added missing `run_update()` function to CLI handler
+  - Implemented `perform_update()` function with multiple installation method support
+  - Now properly upgrades installations via pip, pipx, and other package managers
+- **Installation Experience**: Enhanced install scripts to automatically provide uninstall capability
+  - Install scripts now download uninstall scripts automatically during installation
+  - Users get local `uninstall.bat` or `uninstall.sh` for easy removal
+  - Updated documentation to emphasize local uninstall scripts
+
+#### Enhanced
+- **CLI Command Registration**: All subcommands now properly registered and functional
+  - Interactive GUI with complete 17-option menu system
+  - Quality analysis, format conversion, publishing checklists, AI features
+  - Batch processing, plugin management, environment diagnostics
+  - All advertised features now accessible through interactive interface
+
 ## [1.4.0] - 2025-01-21
 ### Content Security and Safety Enhancements
 

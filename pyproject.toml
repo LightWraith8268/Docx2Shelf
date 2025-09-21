@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docx2shelf"
-version = "1.4.0"
+version = "1.4.1"
 description = "Offline CLI to convert DOCX manuscripts into valid EPUB 3"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -49,6 +49,7 @@ dev = [
   "ruff>=0.5.0",
   "black>=24.0",
   "mypy>=1.8",
+  "pre-commit>=3.0.0",
   "build>=1.0",
   "pyinstaller>=6.0",
   "requests>=2.31.0",
@@ -96,3 +97,32 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "scripts"]
+skips = ["B101", "B601"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+show_error_codes = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = false  # Too strict for now
+
+[tool.pydocstyle]
+convention = "google"
+add_ignore = ["D100", "D104", "D105", "D107"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*", "scripts/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
