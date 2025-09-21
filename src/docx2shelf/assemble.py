@@ -6,6 +6,7 @@ from importlib import resources
 from pathlib import Path
 
 from .accessibility import process_accessibility_features
+from .content_security import ContentSanitizer, validate_resource_path
 from .figures import FigureConfig, FigureProcessor
 from .fonts import process_embedded_fonts, warn_about_font_licensing
 from .path_utils import normalize_path, safe_filename, ensure_unicode_path, write_text_safe
@@ -562,6 +563,28 @@ def assemble_epub(
     if resources:
         import tempfile
 
+        # Validate resource paths for security
+        safe_resources = []
+        unsafe_resources = []
+        base_dir = Path.cwd()  # Use current directory as base for validation
+
+        for res in resources:
+            if validate_resource_path(res, base_dir):
+                safe_resources.append(res)
+            else:
+                unsafe_resources.append(res)
+
+        # Report unsafe resources
+        if unsafe_resources and not opts.quiet:
+            print(f"⚠️  Skipped {len(unsafe_resources)} unsafe resource paths:")
+            for unsafe_res in unsafe_resources[:3]:
+                print(f"   {unsafe_res}")
+            if len(unsafe_resources) > 3:
+                print(f"   ... and {len(unsafe_resources) - 3} more")
+
+        # Use only safe resources
+        resources = safe_resources
+
         # Process images with optimization
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -630,6 +653,39 @@ def assemble_epub(
     # Add accessibility metadata to EPUB
     for key, value in accessibility_meta.items():
         book.add_metadata(None, "meta", value, {"property": key})
+
+    # Content security: sanitize HTML to remove dangerous scripts and elements
+    if not opts.quiet:
+        print("🔒 Applying content security sanitization...")
+
+    sanitizer = ContentSanitizer(strict_mode=True)
+    sanitized_chunks = []
+    security_warnings = []
+
+    for i, chunk in enumerate(html_chunks):
+        try:
+            sanitized_chunk = sanitizer.sanitize_html(chunk)
+            sanitized_chunks.append(sanitized_chunk)
+
+            # Check if anything was sanitized
+            report = sanitizer.get_sanitization_report()
+            if report['removed_elements'] or report['modified_attributes']:
+                security_warnings.append(f"Chapter {i+1}: Removed {len(report['removed_elements'])} dangerous elements, "
+                                       f"modified {len(report['modified_attributes'])} attributes")
+        except Exception as e:
+            if not opts.quiet:
+                print(f"Warning: Error sanitizing chunk {i+1}: {e}")
+            sanitized_chunks.append(chunk)  # Use original if sanitization fails
+
+    html_chunks = sanitized_chunks
+
+    # Report security sanitization results
+    if security_warnings and not opts.quiet:
+        print(f"🛡️  Content security applied: {len(security_warnings)} chunks had dangerous content removed")
+        for warning in security_warnings[:3]:  # Show first 3 warnings
+            print(f"   {warning}")
+        if len(security_warnings) > 3:
+            print(f"   ... and {len(security_warnings) - 3} more")
 
     # Add language-specific attributes to HTML
     language_code = meta.language or "en"

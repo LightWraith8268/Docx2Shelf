@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.4.0] - 2025-01-21
+### Content Security and Safety Enhancements
+
+#### Added
+- **Content Security Module**: Comprehensive HTML and SVG sanitization system
+  - Removes dangerous JavaScript, event handlers, and script content from user input
+  - Sanitizes SVG files to prevent embedded scripts and unsafe elements
+  - Validates URLs to block dangerous schemes (javascript:, vbscript:, data: with JS)
+  - Removes potentially dangerous HTML tags (script, object, embed, iframe, etc.)
+- **Resource Path Validation**: Security measures for file and resource handling
+  - Path traversal protection to prevent directory escape attacks
+  - Validation of resource file extensions to block executable files
+  - Hidden file detection and blocking for security
+  - Safe resource path validation relative to base directories
+- **Content Threat Scanning**: Analysis capabilities for identifying security risks
+  - Pattern-based detection of script injections and suspicious content
+  - URL scheme validation and dangerous link detection
+  - Comprehensive reporting of security issues found in content
+
+#### Enhanced
+- **EPUB Assembly Security**: Integrated content sanitization into EPUB generation process
+  - Automatic HTML content sanitization during EPUB assembly
+  - Resource validation before including files in EPUB packages
+  - Security warnings and reporting during conversion process
+  - Graceful handling of sanitization errors with fallback to original content
+
+#### Security Improvements
+- **Script Injection Prevention**: Comprehensive protection against XSS and script attacks
+- **Path Security**: Protection against directory traversal and unsafe file access
+- **Content Validation**: Verification of all user-provided content before processing
+
 ## [1.3.9] - 2025-01-21
 ### Cross-Platform Path Handling and Directory Management
 
