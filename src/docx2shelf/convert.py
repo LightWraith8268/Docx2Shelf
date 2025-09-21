@@ -559,16 +559,16 @@ def docx_to_html_optimized(docx_path: Path, cache, image_processor, monitor) -> 
                     html = pypandoc.convert_file(str(docx_path), to="html", extra_args=["--wrap=none"])
                     chunks = split_html_by_heading(html, level="h1")
 
-                # Extract and process images in parallel
-                with monitor.phase_timer("image_processing"):
-                    resources = image_processor.process_images(docx_path)
+                    # Extract and process images in parallel
+                    with monitor.phase_timer("image_processing"):
+                        resources = image_processor.process_images(docx_path)
 
-                # Load styles
-                with monitor.phase_timer("style_loading"):
-                    styles_data = _load_style_mapping(docx_path)
-                    styles_css = extract_styles_css(styles_data)
+                    # Load styles
+                    with monitor.phase_timer("style_loading"):
+                        styles_data = _load_style_mapping(docx_path)
+                        styles_css = extract_styles_css(styles_data)
 
-                return chunks, resources, styles_css
+                    return chunks, resources, styles_css
                 except Exception as e:
                     monitor.add_warning(f"Pandoc conversion failed: {e}")
             else:
@@ -728,10 +728,6 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
         if not status["pypandoc_library"]["available"]:
             print(f"  - {status['pypandoc_library']['message']}")
         print("  - Run 'docx2shelf doctor' for detailed diagnostics")
-
-    # Fallback conversion
-    try:
-        pass
 
     # 2) python-docx fallback
     try:

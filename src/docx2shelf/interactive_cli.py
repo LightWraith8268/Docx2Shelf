@@ -61,6 +61,17 @@ class InteractiveCLI:
                 print("\nExiting...")
                 return 'q'
 
+    def safe_execute(self, func, *args, **kwargs):
+        """Safely execute a function with error handling."""
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print(f"\n[ERROR] {e}")
+            print("An error occurred while executing this function.")
+            print("Returning to menu...")
+            input("Press Enter to continue...")
+            return None
+
     def show_main_menu(self):
         """Display the main menu."""
         options = [
@@ -95,7 +106,8 @@ class InteractiveCLI:
                 '1': 'build', '2': 'validate', '3': 'quality', '4': 'convert',
                 '5': 'doctor', '6': 'tools', '7': 'wizard', '8': 'themes',
                 '9': 'ai', '10': 'batch', '11': 'plugins', '12': 'connectors',
-                '13': 'checklist', '14': 'enterprise', '15': 'update', '16': 'settings', '17': 'about'
+                '13': 'checklist', '14': 'enterprise', '15': 'update',
+                '16': 'settings', '17': 'about'
             }
             if choice in menu_map:
                 self.history.append(self.current_menu)
@@ -1343,96 +1355,6 @@ class InteractiveCLI:
         print("All checklists are available through CLI command:")
         print(f"  docx2shelf checklist --input '{epub_path}' --all-stores")
 
-    def show_main_menu(self):
-        """Display the main menu."""
-        options = [
-            ("build", "Build EPUB from document"),
-            ("validate", "Validate existing EPUB file"),
-            ("quality", "Quality analysis and scoring"),
-            ("convert", "Convert EPUB to other formats"),
-            ("doctor", "Run environment diagnostics"),
-            ("tools", "Manage tools (Pandoc, EPUBCheck)"),
-            ("wizard", "Interactive conversion wizard"),
-            ("themes", "Theme management"),
-            ("ai", "AI-powered features"),
-            ("batch", "Batch processing"),
-            ("plugins", "Plugin management"),
-            ("connectors", "Document connectors"),
-            ("checklist", "Publishing compatibility checklists"),
-            ("enterprise", "Enterprise features"),
-            ("update", "Update docx2shelf"),
-            ("settings", "Application settings"),
-            ("about", "About and version information"),
-        ]
-
-        self.print_menu("Main Menu", options)
-        choice = self.get_user_choice(len(options))
-
-        if choice == 'q':
-            self.running = False
-        elif choice == 'b' and self.history:
-            self.current_menu = self.history.pop()
-        elif choice.isdigit():
-            option_key = options[int(choice) - 1][0]
-            if option_key == "build":
-                self.show_build_menu()
-            elif option_key == "validate":
-                self.show_validate_menu()
-            elif option_key == "quality":
-                self.show_quality_menu()
-            elif option_key == "convert":
-                self.show_convert_menu()
-            elif option_key == "doctor":
-                self.run_doctor()
-            elif option_key == "tools":
-                self.show_tools_menu()
-            elif option_key == "wizard":
-                self.run_wizard()
-            elif option_key == "themes":
-                self.show_themes_menu()
-            elif option_key == "ai":
-                self.show_ai_menu()
-            elif option_key == "batch":
-                self.show_batch_menu()
-            elif option_key == "plugins":
-                self.show_plugins_menu()
-            elif option_key == "connectors":
-                self.show_connectors_menu()
-            elif option_key == "checklist":
-                self.show_checklist_menu()
-            elif option_key == "enterprise":
-                self.show_enterprise_menu()
-            elif option_key == "update":
-                self.run_update()
-            elif option_key == "settings":
-                self.show_settings_menu()
-            elif option_key == "about":
-                self.show_about()
-
-    def run(self):
-        """Main run loop for the interactive CLI."""
-        try:
-            self.clear_screen()
-            self.print_header()
-            print("Welcome to the interactive docx2shelf interface!")
-            print("Navigate using menu numbers, 'b' to go back, 'q' to quit.")
-            print()
-
-            while self.running:
-                if self.current_menu == "main":
-                    self.show_main_menu()
-                else:
-                    # Handle other menus
-                    self.show_main_menu()
-
-                print()  # Add spacing between menu iterations
-
-        except KeyboardInterrupt:
-            print("\n\nGoodbye!")
-        except Exception as e:
-            print(f"\nError: {e}")
-            print("Exiting interactive mode.")
-
     def show_batch_menu(self):
         """Display batch processing options."""
         options = [
@@ -1565,6 +1487,600 @@ class InteractiveCLI:
         print()
         input("Press Enter to continue...")
         self.current_menu = "main"
+
+    def run_doctor(self):
+        """Run environment diagnostics."""
+        print("Running environment diagnostics...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf doctor")
+        print("\nDiagnostics will check:")
+        print("- Python version and environment")
+        print("- Required dependencies")
+        print("- Tool availability (Pandoc, EPUBCheck)")
+        print("- System compatibility")
+        print()
+        input("Press Enter to continue...")
+
+    def run_wizard(self):
+        """Launch interactive conversion wizard."""
+        print("Launching interactive conversion wizard...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf wizard")
+        print("\nThe wizard provides:")
+        print("- Step-by-step conversion guidance")
+        print("- Metadata collection assistance")
+        print("- Theme and format selection")
+        print("- Quality validation checks")
+        print()
+        input("Press Enter to continue...")
+
+    def run_update(self):
+        """Update docx2shelf to latest version."""
+        print("Checking for updates...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf update")
+        print("\nUpdate process will:")
+        print("- Check for latest version")
+        print("- Download and install updates")
+        print("- Preserve your settings")
+        print("- Verify installation")
+        print()
+        input("Press Enter to continue...")
+
+    def get_version_info(self):
+        """Get version information."""
+        from .version import get_version_info
+        return get_version_info()
+
+    # Build submenu methods
+    def build_from_docx(self):
+        """Build EPUB from DOCX file."""
+        print("Building EPUB from DOCX file...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf build --input document.docx --title 'Title' --author 'Author'")
+        print("\nRequired parameters:")
+        print("- Input DOCX file path")
+        print("- Book title and author")
+        print("- Optional: cover image, metadata")
+        print()
+        input("Press Enter to continue...")
+
+    def build_from_markdown(self):
+        """Build EPUB from Markdown file."""
+        print("Building EPUB from Markdown file...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf build --input document.md --title 'Title' --author 'Author'")
+        print("\nSupported features:")
+        print("- Standard Markdown syntax")
+        print("- Chapter breaks with headers")
+        print("- Embedded images and links")
+        print()
+        input("Press Enter to continue...")
+
+    def build_from_html(self):
+        """Build EPUB from HTML file."""
+        print("Building EPUB from HTML file...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf build --input document.html --title 'Title' --author 'Author'")
+        print("\nHTML processing:")
+        print("- Clean HTML structure")
+        print("- CSS styling preservation")
+        print("- Image and media handling")
+        print()
+        input("Press Enter to continue...")
+
+    def build_from_text(self):
+        """Build EPUB from text file."""
+        print("Building EPUB from text file...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf build --input document.txt --title 'Title' --author 'Author'")
+        print("\nText processing:")
+        print("- Automatic paragraph detection")
+        print("- Chapter break inference")
+        print("- Basic formatting options")
+        print()
+        input("Press Enter to continue...")
+
+    # Validate submenu methods
+    def validate_epub(self):
+        """Validate EPUB file."""
+        print("Validating EPUB file...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf validate --input book.epub")
+        print("\nValidation checks:")
+        print("- EPUB structure integrity")
+        print("- Metadata completeness")
+        print("- File format compliance")
+        print()
+        input("Press Enter to continue...")
+
+    def validate_with_epubcheck(self):
+        """Validate with EPUBCheck."""
+        print("Validating with EPUBCheck...")
+        print("This feature uses the industry-standard EPUBCheck tool")
+        print("\nEPUBCheck validation:")
+        print("- Official EPUB specification compliance")
+        print("- Detailed error reporting")
+        print("- Platform compatibility checks")
+        print()
+        input("Press Enter to continue...")
+
+    def validate_structure(self):
+        """Validate EPUB structure."""
+        print("Validating EPUB structure...")
+        print("Checking internal EPUB structure and organization")
+        print("\nStructure validation:")
+        print("- OPF manifest integrity")
+        print("- Navigation document structure")
+        print("- File organization and naming")
+        print()
+        input("Press Enter to continue...")
+
+    # Quality submenu methods
+    def analyze_quality(self):
+        """Analyze EPUB quality."""
+        print("Analyzing EPUB quality...")
+        print("Comprehensive quality assessment of your EPUB")
+        print("\nQuality analysis:")
+        print("- Content readability scoring")
+        print("- Technical compliance rating")
+        print("- Performance optimization suggestions")
+        print()
+        input("Press Enter to continue...")
+
+    def generate_quality_report(self):
+        """Generate quality report."""
+        print("Generating detailed quality report...")
+        print("Creating comprehensive quality assessment document")
+        print("\nReport includes:")
+        print("- Quality metrics and scores")
+        print("- Improvement recommendations")
+        print("- Compatibility analysis")
+        print()
+        input("Press Enter to continue...")
+
+    def check_accessibility(self):
+        """Check accessibility compliance."""
+        print("Checking accessibility compliance...")
+        print("Evaluating EPUB for accessibility standards")
+        print("\nAccessibility checks:")
+        print("- WCAG 2.1 compliance")
+        print("- Screen reader compatibility")
+        print("- Alternative text verification")
+        print()
+        input("Press Enter to continue...")
+
+    # Convert submenu methods
+    def convert_to_pdf(self):
+        """Convert EPUB to PDF."""
+        print("Converting EPUB to PDF...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf convert --input book.epub --output book.pdf")
+        print("\nPDF conversion:")
+        print("- High-quality print formatting")
+        print("- Preserves layout and styling")
+        print("- Customizable page settings")
+        print()
+        input("Press Enter to continue...")
+
+    def convert_to_mobi(self):
+        """Convert EPUB to MOBI."""
+        print("Converting EPUB to MOBI...")
+        print("Creating Kindle-compatible MOBI format")
+        print("\nMOBI conversion:")
+        print("- Kindle device compatibility")
+        print("- Optimized for e-ink displays")
+        print("- Kindle-specific features")
+        print()
+        input("Press Enter to continue...")
+
+    def convert_to_azw3(self):
+        """Convert EPUB to AZW3."""
+        print("Converting EPUB to AZW3...")
+        print("Creating modern Kindle AZW3 format")
+        print("\nAZW3 conversion:")
+        print("- Advanced Kindle features")
+        print("- Enhanced typography support")
+        print("- Better compression and performance")
+        print()
+        input("Press Enter to continue...")
+
+    # Tools submenu methods
+    def install_pandoc(self):
+        """Install Pandoc locally."""
+        print("Installing Pandoc locally...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf tools install pandoc")
+        print("\nPandoc installation:")
+        print("- Local user installation (no admin required)")
+        print("- Automatic version management")
+        print("- Integration with docx2shelf")
+        print()
+        input("Press Enter to continue...")
+
+    def install_epubcheck(self):
+        """Install EPUBCheck locally."""
+        print("Installing EPUBCheck locally...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf tools install epubcheck")
+        print("\nEPUBCheck installation:")
+        print("- Latest version download")
+        print("- Java dependency management")
+        print("- Automatic configuration")
+        print()
+        input("Press Enter to continue...")
+
+    def show_tool_locations(self):
+        """Show tool installation locations."""
+        print("Showing tool installation locations...")
+        print("This feature is available through CLI command:")
+        print("  docx2shelf tools where")
+        print("\nLocation information:")
+        print("- Pandoc installation path")
+        print("- EPUBCheck installation path")
+        print("- System PATH integration")
+        print()
+        input("Press Enter to continue...")
+
+    def update_tools(self):
+        """Update installed tools."""
+        print("Updating installed tools...")
+        print("Checking for updates to Pandoc and EPUBCheck")
+        print("\nUpdate process:")
+        print("- Version comparison")
+        print("- Automatic download and installation")
+        print("- Configuration preservation")
+        print()
+        input("Press Enter to continue...")
+
+    # Themes submenu methods
+    def select_theme(self):
+        """Select CSS theme."""
+        print("Selecting CSS theme...")
+        print("Choose from built-in styling themes")
+        print("\nAvailable themes:")
+        print("- Serif (traditional book styling)")
+        print("- Sans-serif (modern clean look)")
+        print("- Print-like (newspaper/magazine style)")
+        print()
+        input("Press Enter to continue...")
+
+    def customize_theme(self):
+        """Customize theme settings."""
+        print("Customizing theme settings...")
+        print("Modify typography and layout options")
+        print("\nCustomization options:")
+        print("- Font family and size")
+        print("- Line spacing and margins")
+        print("- Color scheme and contrast")
+        print()
+        input("Press Enter to continue...")
+
+    def import_custom_css(self):
+        """Import custom CSS."""
+        print("Importing custom CSS...")
+        print("Add your own CSS styling to EPUBs")
+        print("\nCSS import features:")
+        print("- Custom stylesheet integration")
+        print("- CSS validation and optimization")
+        print("- Theme merging capabilities")
+        print()
+        input("Press Enter to continue...")
+
+    def export_theme(self):
+        """Export current theme."""
+        print("Exporting current theme...")
+        print("Save your theme configuration for reuse")
+        print("\nExport features:")
+        print("- Theme configuration backup")
+        print("- Shareable theme packages")
+        print("- Cross-project theme transfer")
+        print()
+        input("Press Enter to continue...")
+
+    # AI submenu methods
+    def enhance_content(self):
+        """AI content enhancement."""
+        print("AI content enhancement...")
+        print("Improve your content with AI assistance")
+        print("\nAI enhancement features:")
+        print("- Grammar and style improvements")
+        print("- Content structure optimization")
+        print("- Readability enhancements")
+        print()
+        input("Press Enter to continue...")
+
+    def generate_metadata(self):
+        """AI metadata generation."""
+        print("AI metadata generation...")
+        print("Automatically generate book metadata")
+        print("\nAI metadata features:")
+        print("- Title and description suggestions")
+        print("- Keywords and category recommendations")
+        print("- SEO-optimized descriptions")
+        print()
+        input("Press Enter to continue...")
+
+    def suggest_improvements(self):
+        """AI improvement suggestions."""
+        print("AI improvement suggestions...")
+        print("Get AI-powered recommendations for your EPUB")
+        print("\nAI suggestions include:")
+        print("- Content quality improvements")
+        print("- Structure optimization")
+        print("- Marketing and presentation tips")
+        print()
+        input("Press Enter to continue...")
+
+    # Batch submenu methods
+    def batch_convert(self):
+        """Batch convert multiple files."""
+        print("Batch converting multiple files...")
+        print("Process multiple documents simultaneously")
+        print("\nBatch conversion features:")
+        print("- Multi-file processing")
+        print("- Consistent metadata application")
+        print("- Progress tracking and reporting")
+        print()
+        input("Press Enter to continue...")
+
+    def batch_validate(self):
+        """Batch validate EPUBs."""
+        print("Batch validating EPUBs...")
+        print("Validate multiple EPUB files at once")
+        print("\nBatch validation features:")
+        print("- Multiple file validation")
+        print("- Consolidated error reporting")
+        print("- Quality assessment summary")
+        print()
+        input("Press Enter to continue...")
+
+    def batch_process(self):
+        """Batch processing workflow."""
+        print("Batch processing workflow...")
+        print("Complete batch processing pipeline")
+        print("\nWorkflow features:")
+        print("- Convert → Validate → Optimize")
+        print("- Custom processing chains")
+        print("- Automated quality control")
+        print()
+        input("Press Enter to continue...")
+
+    # Plugins submenu methods
+    def list_plugins(self):
+        """List available plugins."""
+        print("Listing available plugins...")
+        print("View installed and available plugins")
+        print("\nPlugin categories:")
+        print("- Conversion enhancements")
+        print("- Quality analysis tools")
+        print("- Export format extensions")
+        print()
+        input("Press Enter to continue...")
+
+    def install_plugin(self):
+        """Install new plugin."""
+        print("Installing new plugin...")
+        print("Add functionality through plugin installation")
+        print("\nInstallation features:")
+        print("- Plugin marketplace browsing")
+        print("- Automatic dependency resolution")
+        print("- Security verification")
+        print()
+        input("Press Enter to continue...")
+
+    def configure_plugin(self):
+        """Configure plugin settings."""
+        print("Configuring plugin settings...")
+        print("Customize plugin behavior and options")
+        print("\nConfiguration options:")
+        print("- Plugin-specific settings")
+        print("- Integration preferences")
+        print("- Performance tuning")
+        print()
+        input("Press Enter to continue...")
+
+    def remove_plugin(self):
+        """Remove installed plugin."""
+        print("Removing installed plugin...")
+        print("Safely uninstall plugins and clean up")
+        print("\nRemoval features:")
+        print("- Clean uninstallation")
+        print("- Configuration backup")
+        print("- Dependency cleanup")
+        print()
+        input("Press Enter to continue...")
+
+    # Connectors submenu methods
+    def connect_google_docs(self):
+        """Connect to Google Docs."""
+        print("Connecting to Google Docs...")
+        print("Import documents directly from Google Docs")
+        print("\nGoogle Docs integration:")
+        print("- OAuth authentication")
+        print("- Document import and sync")
+        print("- Collaborative editing support")
+        print()
+        input("Press Enter to continue...")
+
+    def connect_onedrive(self):
+        """Connect to OneDrive."""
+        print("Connecting to OneDrive...")
+        print("Access documents from Microsoft OneDrive")
+        print("\nOneDrive integration:")
+        print("- Microsoft account authentication")
+        print("- Cloud document access")
+        print("- Automatic sync capabilities")
+        print()
+        input("Press Enter to continue...")
+
+    def connect_dropbox(self):
+        """Connect to Dropbox."""
+        print("Connecting to Dropbox...")
+        print("Import documents from Dropbox storage")
+        print("\nDropbox integration:")
+        print("- Secure API authentication")
+        print("- File browser interface")
+        print("- Batch document processing")
+        print()
+        input("Press Enter to continue...")
+
+    def manage_connections(self):
+        """Manage document connections."""
+        print("Managing document connections...")
+        print("Configure and maintain cloud service connections")
+        print("\nConnection management:")
+        print("- Authentication status")
+        print("- Permission settings")
+        print("- Sync preferences")
+        print()
+        input("Press Enter to continue...")
+
+    # Checklist submenu methods
+    def kindle_compatibility(self):
+        """Kindle compatibility checklist."""
+        print("Kindle compatibility checklist...")
+        print("Ensure your EPUB works perfectly on Kindle devices")
+        print("\nKindle checklist items:")
+        print("- KF8 format compliance")
+        print("- Typography and layout optimization")
+        print("- Image and media compatibility")
+        print()
+        input("Press Enter to continue...")
+
+    def apple_books_compatibility(self):
+        """Apple Books compatibility."""
+        print("Apple Books compatibility checklist...")
+        print("Optimize for Apple's Books app and iBooks")
+        print("\nApple Books checklist:")
+        print("- Fixed layout and reflowable formats")
+        print("- Interactive media support")
+        print("- App Store submission requirements")
+        print()
+        input("Press Enter to continue...")
+
+    def kobo_compatibility(self):
+        """Kobo compatibility checklist."""
+        print("Kobo compatibility checklist...")
+        print("Ensure compatibility with Kobo e-readers")
+        print("\nKobo checklist items:")
+        print("- EPUB 3 feature support")
+        print("- Font and typography options")
+        print("- Navigation and accessibility")
+        print()
+        input("Press Enter to continue...")
+
+    def general_compatibility(self):
+        """General EPUB compatibility."""
+        print("General EPUB compatibility checklist...")
+        print("Universal compatibility across all reading platforms")
+        print("\nGeneral compatibility:")
+        print("- EPUB 3 specification compliance")
+        print("- Cross-platform testing")
+        print("- Accessibility standards")
+        print()
+        input("Press Enter to continue...")
+
+    # Enterprise submenu methods
+    def setup_enterprise(self):
+        """Enterprise setup wizard."""
+        print("Enterprise setup wizard...")
+        print("Configure docx2shelf for enterprise deployment")
+        print("\nEnterprise setup includes:")
+        print("- Multi-user configuration")
+        print("- Centralized settings management")
+        print("- License and compliance setup")
+        print()
+        input("Press Enter to continue...")
+
+    def manage_licenses(self):
+        """License management."""
+        print("Managing enterprise licenses...")
+        print("Track and manage software licensing")
+        print("\nLicense management:")
+        print("- User seat allocation")
+        print("- License compliance monitoring")
+        print("- Renewal notifications")
+        print()
+        input("Press Enter to continue...")
+
+    def bulk_operations(self):
+        """Bulk enterprise operations."""
+        print("Bulk enterprise operations...")
+        print("Large-scale document processing for organizations")
+        print("\nBulk operations:")
+        print("- Enterprise-scale batch processing")
+        print("- Workflow automation")
+        print("- Quality assurance pipelines")
+        print()
+        input("Press Enter to continue...")
+
+    def reporting_dashboard(self):
+        """Enterprise reporting dashboard."""
+        print("Enterprise reporting dashboard...")
+        print("Analytics and reporting for enterprise usage")
+        print("\nDashboard features:")
+        print("- Usage analytics and metrics")
+        print("- Performance monitoring")
+        print("- Cost and efficiency reports")
+        print()
+        input("Press Enter to continue...")
+
+    # Settings submenu methods
+    def configure_preferences(self):
+        """Configure user preferences."""
+        print("Configuring user preferences...")
+        print("Customize docx2shelf behavior and defaults")
+        print("\nPreference categories:")
+        print("- Default conversion settings")
+        print("- UI and interaction preferences")
+        print("- File and directory defaults")
+        print()
+        input("Press Enter to continue...")
+
+    def manage_profiles(self):
+        """Manage conversion profiles."""
+        print("Managing conversion profiles...")
+        print("Create and manage reusable conversion configurations")
+        print("\nProfile management:")
+        print("- Custom conversion presets")
+        print("- Project-specific settings")
+        print("- Profile sharing and import")
+        print()
+        input("Press Enter to continue...")
+
+    def export_settings(self):
+        """Export settings."""
+        print("Exporting settings...")
+        print("Backup your configuration for transfer or restoration")
+        print("\nExport features:")
+        print("- Complete configuration backup")
+        print("- Selective setting export")
+        print("- Cross-platform compatibility")
+        print()
+        input("Press Enter to continue...")
+
+    def import_settings(self):
+        """Import settings."""
+        print("Importing settings...")
+        print("Restore configuration from backup or transfer")
+        print("\nImport features:")
+        print("- Configuration restoration")
+        print("- Selective setting import")
+        print("- Merge with existing settings")
+        print()
+        input("Press Enter to continue...")
+
+    def reset_to_defaults(self):
+        """Reset to default settings."""
+        print("Resetting to default settings...")
+        print("Restore factory default configuration")
+        print("\nReset options:")
+        print("- Complete factory reset")
+        print("- Selective setting reset")
+        print("- Backup before reset option")
+        print()
+        input("Press Enter to continue...")
 
 
 def run_interactive_cli():

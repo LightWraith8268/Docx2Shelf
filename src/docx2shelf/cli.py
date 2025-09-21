@@ -2077,7 +2077,7 @@ def run_tools(args: argparse.Namespace) -> int:
         version = args.version
         if not version and hasattr(args, 'preset'):
             from .tools import get_pinned_version
-            version = get_pinned_version(args.name, args.preset)
+            version = get_pinned_version(args.name)
 
         if args.name == "pandoc":
             p = install_pandoc(version) if version else install_pandoc()
