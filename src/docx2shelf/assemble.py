@@ -279,8 +279,8 @@ def _inject_heading_ids(html: str, chap_idx: int, toc_depth: int = 2) -> tuple[s
 
                 # Generate hierarchical ID
                 id_parts = [h1_id]
-                for l in range(2, heading_level + 1):
-                    id_parts.append(f"s{heading_counters.get(l, 0):02d}")
+                for level_num in range(2, heading_level + 1):
+                    id_parts.append(f"s{heading_counters.get(level_num, 0):02d}")
                 hid = "-".join(id_parts)
 
                 return f'<h{heading_level}{tag_open} id="{hid}">{inside}</h{heading_level}>'
@@ -722,13 +722,8 @@ def assemble_epub(
                 sub_links.append(epub.Link(chap_fn + f"#{hid}", title, f"chap{i:03d}-{idx+1:02d}"))
             chapter_sub_links.append(sub_links)
 
-    # TOC and spine
-    # TOC by depth (now supports up to 6 levels)
-    toc_items = [title_page, copyright_page] + matter_items
-
-    # Add List of Figures/Tables to TOC if they exist
-    if list_items:
-        toc_items.extend(list_items)
+    # Initialize list_items for later use
+    list_items = []
     depth = max(1, min(6, opts.toc_depth))
 
     def build_nested_toc(chap_link, sub_links, current_depth=2):
@@ -757,14 +752,7 @@ def assemble_epub(
         else:
             return chap_link
 
-    for i, chap_link in enumerate(chapter_links):
-        if depth == 1 or not chapter_sub_links[i]:
-            toc_items.append(chap_link)
-        else:
-            toc_items.append(build_nested_toc(chap_link, chapter_sub_links[i]))
-    book.toc = tuple(toc_items)
-    book.add_item(epub.EpubNcx())
-    book.add_item(epub.EpubNav())
+    # Chapter links will be added to toc_items after it's defined
     # Determine reader start chapter
     start_reading_link = "text/chap_001.xhtml#ch001"  # Default start
     if opts.reader_start_chapter:
@@ -804,7 +792,38 @@ def assemble_epub(
             book.add_item(lot_item)
             list_items.append(lot_item)
 
-    book.spine = ["nav", title_page, copyright_page] + matter_items + list_items + chapters
+    # TOC and spine - ensuring consistent ordering
+    # The spine order must match the TOC order for proper navigation
+
+    # Build spine order first to ensure consistency
+    spine_items = [title_page, copyright_page] + matter_items
+    if list_items:
+        spine_items.extend(list_items)
+    spine_items.extend(chapters)
+
+    # Build TOC items in same order as spine (excluding nav itself)
+    toc_items = [title_page, copyright_page] + matter_items
+
+    # Add List of Figures/Tables to TOC if they exist (matching spine order)
+    if list_items:
+        toc_items.extend(list_items)
+
+    # Set spine using consistent ordering (nav comes first in spine)
+    book.spine = ["nav"] + spine_items
+
+    # Build TOC with chapters (must happen after toc_items is defined)
+    for i, chap_link in enumerate(chapter_links):
+        if depth == 1 or not chapter_sub_links[i]:
+            toc_items.append(chap_link)
+        else:
+            toc_items.append(build_nested_toc(chap_link, chapter_sub_links[i]))
+
+    book.toc = tuple(toc_items)
+    book.add_item(epub.EpubNcx())
+    book.add_item(epub.EpubNav())
+
+    # Validate TOC and spine consistency
+    _validate_toc_spine_consistency(book, spine_items, toc_items, opts.quiet)
 
     # Optional page-list nav (informational; support varies)
     if opts.page_list:
@@ -827,17 +846,56 @@ def assemble_epub(
         )
         book.add_item(page_list_item)
 
-    # Landmarks nav for better reader navigation
+    # Landmarks nav for better reader navigation - consistent with spine order
     try:
+        # Build landmarks based on actual spine content
+        landmark_entries = []
+
+        # Cover is special - always first if present
+        if meta.cover_path and meta.cover_path.exists():
+            landmark_entries.append("<li><a epub:type='cover' href='cover.xhtml'>Cover</a></li>")
+
+        # Title page
+        landmark_entries.append("<li><a epub:type='titlepage' href='text/title.xhtml'>Title Page</a></li>")
+
+        # Table of contents
+        landmark_entries.append("<li><a epub:type='toc' href='nav.xhtml'>Table of Contents</a></li>")
+
+        # Copyright page
+        landmark_entries.append("<li><a epub:type='copyright-page' href='text/copyright.xhtml'>Copyright</a></li>")
+
+        # Add other front matter items if they exist
+        for item in matter_items:
+            if hasattr(item, 'file_name') and hasattr(item, 'title'):
+                # Determine appropriate epub:type based on content
+                if 'dedication' in item.file_name.lower():
+                    epub_type = 'dedication'
+                elif 'acknowledgment' in item.file_name.lower() or 'ack' in item.file_name.lower():
+                    epub_type = 'acknowledgments'
+                elif 'preface' in item.file_name.lower():
+                    epub_type = 'preface'
+                elif 'foreword' in item.file_name.lower():
+                    epub_type = 'foreword'
+                else:
+                    epub_type = 'frontmatter'
+                landmark_entries.append(f"<li><a epub:type='{epub_type}' href='{item.file_name}'>{item.title}</a></li>")
+
+        # Add list items if present
+        for item in list_items:
+            if hasattr(item, 'file_name') and hasattr(item, 'title'):
+                epub_type = 'loi' if 'figure' in item.title.lower() else 'lot' if 'table' in item.title.lower() else 'frontmatter'
+                landmark_entries.append(f"<li><a epub:type='{epub_type}' href='{item.file_name}'>{item.title}</a></li>")
+
+        # Start of main content
+        if chapters:
+            landmark_entries.append(f"<li><a epub:type='bodymatter' href='{start_reading_link}'>Start Reading</a></li>")
+
         landmarks_html = (
             "<?xml version='1.0' encoding='utf-8'?>"
             "<html xmlns='http://www.w3.org/1999/xhtml' xmlns:epub='http://www.idpf.org/2007/ops'>"
             "<head><title>Landmarks</title></head><body>"
             "<nav epub:type='landmarks'><h2>Guide</h2><ol>"
-            "<li><a epub:type='titlepage' href='text/title.xhtml'>Title Page</a></li>"
-            "<li><a epub:type='toc' href='nav.xhtml'>Table of Contents</a></li>"
-            "<li><a epub:type='cover' href='cover.xhtml'>Cover</a></li>"
-            f"<li><a epub:type='bodymatter' href='{start_reading_link}'>Start Reading</a></li>"
+            + "".join(landmark_entries) +
             "</ol></nav>"
             "</body></html>"
         )
@@ -845,7 +903,9 @@ def assemble_epub(
             "Landmarks", "text/landmarks.xhtml", landmarks_html, meta.language
         )
         book.add_item(landmarks_item)
-    except Exception:
+    except Exception as e:
+        if not opts.quiet:
+            print(f"Warning: Could not generate landmarks: {e}")
         pass
 
     # Embed fonts (optional)
@@ -914,3 +974,80 @@ def assemble_epub(
     # EPUBCheck validation (default enabled)
     if opts.epubcheck:
         _run_epubcheck_validation(output_path, opts.quiet)
+
+
+def _validate_toc_spine_consistency(book, spine_items, toc_items, quiet: bool = False) -> None:
+    """Validate that TOC entries match spine order and provide warnings for inconsistencies."""
+    warnings = []
+
+    # Get spine order (excluding 'nav' which is first)
+    spine_order = [item for item in book.spine if item != 'nav']
+
+    # Create mapping of spine items to their filenames
+    spine_filenames = []
+    for spine_ref in spine_order:
+        # Find the actual item in the book
+        for item in book.items:
+            if hasattr(item, 'id') and item.id == spine_ref:
+                if hasattr(item, 'file_name'):
+                    spine_filenames.append(item.file_name)
+                break
+
+    # Extract TOC filenames in order
+    toc_filenames = []
+    for toc_item in toc_items:
+        if hasattr(toc_item, 'href') and toc_item.href:
+            # Remove fragment identifier if present
+            href = toc_item.href.split('#')[0]
+            toc_filenames.append(href)
+
+    # Check for missing spine items in TOC
+    missing_in_toc = []
+    for filename in spine_filenames:
+        if filename not in toc_filenames:
+            missing_in_toc.append(filename)
+
+    # Check for TOC items not in spine
+    missing_in_spine = []
+    for filename in toc_filenames:
+        if filename not in spine_filenames:
+            missing_in_spine.append(filename)
+
+    # Check order consistency for common items
+    order_mismatches = []
+
+    for i, spine_file in enumerate(spine_filenames):
+        if spine_file in toc_filenames:
+            toc_index = toc_filenames.index(spine_file)
+            # Check if relative order is preserved
+            for j in range(i + 1, len(spine_filenames)):
+                if spine_filenames[j] in toc_filenames:
+                    next_toc_index = toc_filenames.index(spine_filenames[j])
+                    if next_toc_index < toc_index:
+                        order_mismatches.append((spine_file, spine_filenames[j]))
+                    break
+
+    # Report warnings
+    if missing_in_toc and not quiet:
+        warnings.append(f"Files in spine but missing from TOC: {', '.join(missing_in_toc)}")
+
+    if missing_in_spine and not quiet:
+        warnings.append(f"Files in TOC but missing from spine: {', '.join(missing_in_spine)}")
+
+    if order_mismatches and not quiet:
+        for file1, file2 in order_mismatches:
+            warnings.append(
+                f"Order mismatch: {file1} appears before {file2} in spine but after in TOC"
+            )
+
+    # Print warnings
+    if warnings and not quiet:
+        print("\nTOC/Spine Consistency Warnings:")
+        for warning in warnings:
+            print(f"  Warning: {warning}")
+
+        # Provide guidance
+        if missing_in_toc or missing_in_spine or order_mismatches:
+            print("  Tip: Consider using consistent heading structure for automatic TOC generation")
+
+    return len(warnings) == 0

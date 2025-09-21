@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.3.8] - 2025-01-21
+### TOC and EPUB Structural Integrity Improvements
+
+#### Fixed
+- **TOC/Spine Consistency**: Fixed critical EPUB structural issues where Table of Contents and spine order could become misaligned
+  - Implemented consistent spine ordering to ensure nav.xhtml and content files match exactly
+  - Added comprehensive validation function `_validate_toc_spine_consistency()` to detect ordering issues
+  - Enhanced landmarks generation to reflect actual spine content with proper epub:type attributes
+  - Fixed variable scoping issues in TOC building code that could cause undefined variable errors
+
+#### Enhanced
+- **EPUB Quality Assurance**: Improved EPUB validation to catch structural integrity issues early
+  - Better spine order consistency validation with detailed warnings
+  - Enhanced navigation structure validation for accessibility compliance
+  - Improved error reporting for TOC/spine mismatches with actionable guidance
+
 ## [1.3.7] - 2025-01-20
 ### Interactive CLI Menu System
 
