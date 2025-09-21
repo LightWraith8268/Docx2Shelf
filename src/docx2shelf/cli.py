@@ -35,6 +35,13 @@ from .utils import (
     prompt_select,
     sanitize_filename,
 )
+from .version import get_version_info
+
+
+def get_version_string() -> str:
+    """Get formatted version string for CLI."""
+    info = get_version_info()
+    return f"docx2shelf {info['version']} - {info['description']}"
 
 
 def _arg_parser() -> argparse.ArgumentParser:
@@ -42,6 +49,14 @@ def _arg_parser() -> argparse.ArgumentParser:
         prog="docx2shelf",
         description="Convert a DOCX manuscript into a valid EPUB 3 (offline)",
     )
+
+    # Add version argument
+    p.add_argument(
+        "--version", action="version",
+        version=get_version_string(),
+        help="Show version information and exit"
+    )
+
     sub = p.add_subparsers(dest="command", required=False)
 
     b = sub.add_parser("build", help="Build an EPUB from inputs")
@@ -99,6 +114,7 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--image-max-width", type=int, default=1200, help="Maximum image width in pixels")
     b.add_argument("--image-max-height", type=int, default=1600, help="Maximum image height in pixels")
     b.add_argument("--image-format", choices=["original", "webp", "avif"], default="webp", help="Convert images to modern format")
+    b.add_argument("--enhanced-images", action="store_true", help="Enable enhanced image processing for edge cases (CMYK, transparency, large images)")
     b.add_argument("--vertical-writing", action="store_true", help="Enable vertical writing mode for CJK languages")
     b.add_argument("--hyphenate", choices=["on", "off"], default="on")
     b.add_argument("--justify", choices=["on", "off"], default="on")
@@ -276,8 +292,8 @@ def _arg_parser() -> argparse.ArgumentParser:
                    default="stable", help="Version preset for bundled tools")
 
     # Plugin management commands
-    p = sub.add_parser("plugins", help="Manage plugins and hooks")
-    p_sub = p.add_subparsers(dest="plugin_cmd", required=True)
+    plugins_parser = sub.add_parser("plugins", help="Manage plugins and hooks")
+    p_sub = plugins_parser.add_subparsers(dest="plugin_cmd", required=True)
 
     # List plugins
     plist = p_sub.add_parser("list", help="List available plugins")
@@ -431,6 +447,14 @@ def _arg_parser() -> argparse.ArgumentParser:
                         help="Automatically fix issues where possible")
     quality.add_argument("--verbose", action="store_true",
                         help="Show detailed issue descriptions and recommendations")
+
+    # --- EPUB validation subcommand ---
+    validate = sub.add_parser("validate", help="Validate EPUB files using EPUBCheck and custom rules")
+    validate.add_argument("epub_path", help="Path to EPUB file to validate")
+    validate.add_argument("--verbose", action="store_true", help="Show detailed validation report")
+    validate.add_argument("--skip-epubcheck", action="store_true", help="Skip EPUBCheck validation")
+    validate.add_argument("--skip-custom", action="store_true", help="Skip custom validation checks")
+    validate.add_argument("--timeout", type=int, default=120, help="Timeout for EPUBCheck in seconds")
 
     # Convert command for format conversion
     convert = sub.add_parser("convert", help="Convert EPUB to other formats (PDF, MOBI, AZW3, Web, Text)")
@@ -1340,6 +1364,7 @@ def run_build(args: argparse.Namespace) -> int:
         image_max_width=args.image_max_width,
         image_max_height=args.image_max_height,
         image_format=args.image_format,
+        enhanced_images=getattr(args, "enhanced_images", False),
         vertical_writing=args.vertical_writing,
         epub2_compat=args.epub2_compat,
         hyphenate=args.hyphenate == "on",
@@ -1501,6 +1526,25 @@ def run_build(args: argparse.Namespace) -> int:
     # Final assembly phase with performance monitoring
     with build_monitor.phase_timer("epub_assembly"):
         assemble_epub(meta, opts, html_chunks, resources, output, combined_styles_css, build_monitor)
+
+    # EPUB validation phase
+    if getattr(args, 'epubcheck', 'on') == 'on' and output.exists():
+        from .validation import print_validation_report, validate_epub
+
+        if not getattr(args, 'quiet', False):
+            print("\n[VALIDATION] Validating EPUB quality...")
+
+        with build_monitor.phase_timer("epub_validation"):
+            validation_result = validate_epub(output, custom_checks=True, timeout=120)
+
+        if not getattr(args, 'quiet', False):
+            print_validation_report(validation_result, verbose=getattr(args, 'verbose', False))
+
+        # Exit with error code if validation failed with errors
+        if validation_result.has_errors:
+            print(f"\n[ERROR] EPUB validation failed with {len(validation_result.errors)} critical error(s).")
+            print("Please fix the errors above before distributing your EPUB.")
+            return 3  # Different exit code for validation failures
 
     # Stop monitoring and display performance summary
     build_monitor.stop_monitoring()
@@ -1974,7 +2018,47 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
             print(f"Error in accessibility analysis: {e}", file=sys.stderr)
             results['accessibility'] = {'error': str(e)}
 
-    # 3. Content Validation
+    # 3. EPUB Structure & Format Validation
+    print("📋 Running EPUB structure validation...")
+    try:
+        from .validation import validate_epub
+
+        validation_result = validate_epub(epub_path, custom_checks=True, timeout=120)
+
+        results['epub_validation'] = {
+            'is_valid': validation_result.is_valid,
+            'total_issues': validation_result.total_issues,
+            'errors': len(validation_result.errors),
+            'warnings': len(validation_result.warnings),
+            'info': len(validation_result.info),
+            'epubcheck_available': validation_result.epubcheck_available,
+            'custom_checks_run': validation_result.custom_checks_run,
+            'issues': [
+                {
+                    'severity': issue.severity,
+                    'message': issue.message,
+                    'location': issue.location,
+                    'rule': issue.rule
+                }
+                for issue in (validation_result.errors + validation_result.warnings + validation_result.info)
+            ]
+        }
+
+        total_issues += validation_result.total_issues
+        total_critical += len(validation_result.errors)
+
+        if not args.json:
+            print(f"   EPUB Valid: {'Yes' if validation_result.is_valid else 'No'}")
+            print(f"   Issues Found: {validation_result.total_issues} ({len(validation_result.errors)} errors, {len(validation_result.warnings)} warnings)")
+            if not validation_result.epubcheck_available:
+                print("   [INFO] Install EPUBCheck for industry-standard validation: docx2shelf tools install epubcheck")
+            print()
+
+    except Exception as e:
+        print(f"Error in EPUB validation: {e}", file=sys.stderr)
+        results['epub_validation'] = {'error': str(e)}
+
+    # 4. Content Validation
     if not args.skip_content_validation:
         print("📝 Running content validation...")
         try:
@@ -2118,6 +2202,18 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
                         report_lines.append(f"WCAG Conformance: {conformance}")
                         report_lines.append(f"Issues: {data['total_issues']} total, {data['critical_issues']} critical")
 
+                    elif analysis_type == 'epub_validation':
+                        report_lines.append(f"EPUB Valid: {'Yes' if data['is_valid'] else 'No'}")
+                        report_lines.append(f"Issues: {data['total_issues']} total ({data['errors']} errors, {data['warnings']} warnings)")
+                        report_lines.append(f"EPUBCheck Available: {'Yes' if data['epubcheck_available'] else 'No'}")
+                        if data['issues']:
+                            report_lines.append("Issues Found:")
+                            for issue in data['issues'][:10]:  # Limit to first 10 issues for brevity
+                                location = f" ({issue['location']})" if issue.get('location') else ""
+                                report_lines.append(f"  • [{issue['severity'].upper()}]{location}: {issue['message']}")
+                            if len(data['issues']) > 10:
+                                report_lines.append(f"  ... and {len(data['issues']) - 10} more issues")
+
                     elif analysis_type == 'content_validation':
                         report_lines.append(f"Files Analyzed: {data['files_checked']}")
                         report_lines.append(f"Issues: {data['total_issues']} total, {data['error_count']} errors")
@@ -2135,6 +2231,49 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
 
     # Return appropriate exit code
     return 1 if total_critical > 0 else 0
+
+
+def run_validate(args: argparse.Namespace) -> int:
+    """Run EPUB validation using EPUBCheck and custom rules."""
+    from .validation import print_validation_report, validate_epub
+
+    epub_path = Path(args.epub_path)
+    if not epub_path.exists():
+        print(f"Error: EPUB file not found: {epub_path}", file=sys.stderr)
+        return 1
+
+    if not epub_path.suffix.lower() == '.epub':
+        print(f"Error: File must be an EPUB (.epub extension): {epub_path}", file=sys.stderr)
+        return 1
+
+    print(f"[VALIDATION] Validating EPUB: {epub_path}")
+    print("=" * 50)
+
+    try:
+        # Run validation
+        custom_checks = not args.skip_custom
+        validation_result = validate_epub(
+            epub_path,
+            custom_checks=custom_checks,
+            timeout=args.timeout
+        )
+
+        # Override EPUBCheck if skipped
+        if args.skip_epubcheck:
+            validation_result.epubcheck_available = False
+
+        # Print detailed report
+        print_validation_report(validation_result, verbose=args.verbose)
+
+        # Return appropriate exit code
+        if validation_result.has_errors:
+            return 1  # Validation failed with errors
+        else:
+            return 0  # Validation passed
+
+    except Exception as e:
+        print(f"Error during validation: {e}", file=sys.stderr)
+        return 1
 
 
 def run_ai_command(args) -> int:
@@ -2384,8 +2523,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         update_thread.start()
 
     if not argv:
-        # Default to interactive build when no args are provided
-        argv = ["build"]
+        # Show help when no args are provided
+        argv = ["--help"]
     parser = _arg_parser()
     args = parser.parse_args(argv)
 
@@ -2420,6 +2559,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_checklist(args)
     if args.command == "quality":
         return run_quality_assessment(args)
+    if args.command == "validate":
+        return run_validate(args)
     if args.command == "convert":
         return run_convert(args)
     if args.command == "enterprise":
@@ -2431,9 +2572,8 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 def run_doctor(args: argparse.Namespace) -> int:
     """Run comprehensive environment diagnostics."""
-    import sys
-    import shutil
     import platform
+    import sys
     from pathlib import Path
 
     print("[DOCTOR] Docx2Shelf Environment Diagnostics")
@@ -2450,13 +2590,13 @@ def run_doctor(args: argparse.Namespace) -> int:
 
     # Python version check
     if sys.version_info >= (3, 11):
-        print(f"  [OK] Python version is compatible")
+        print("  [OK] Python version is compatible")
     else:
         print(f"  [ERROR] Python {sys.version_info.major}.{sys.version_info.minor} is too old (requires 3.11+)")
         issues_found += 1
 
     # Package installation check
-    print(f"\n[PACKAGE] Docx2Shelf Installation:")
+    print("\n[PACKAGE] Docx2Shelf Installation:")
     try:
         from importlib import metadata
         version = metadata.version("docx2shelf")
@@ -2466,7 +2606,7 @@ def run_doctor(args: argparse.Namespace) -> int:
         issues_found += 1
 
     # Dependencies check
-    print(f"\n[DEPS] Core Dependencies:")
+    print("\n[DEPS] Core Dependencies:")
     core_deps = ["ebooklib", "lxml"]
     for dep in core_deps:
         try:
@@ -2485,7 +2625,7 @@ def run_doctor(args: argparse.Namespace) -> int:
         "sqlalchemy": "Enterprise database features"
     }
 
-    print(f"\n[OPTIONAL] Optional Dependencies:")
+    print("\n[OPTIONAL] Optional Dependencies:")
     for dep, description in optional_deps.items():
         try:
             __import__(dep.replace("-", "_"))
@@ -2494,21 +2634,21 @@ def run_doctor(args: argparse.Namespace) -> int:
             print(f"  [INFO] {dep} not installed - {description}")
 
     # Tools check (reuse existing tools_doctor)
-    print(f"\n[TOOLS] External Tools:")
+    print("\n[TOOLS] External Tools:")
     from .tools import tools_doctor
     tools_result = tools_doctor()
     if tools_result != 0:
         issues_found += tools_result
 
     # File system checks
-    print(f"\n[FILESYSTEM] File System Access:")
+    print("\n[FILESYSTEM] File System Access:")
 
     # Check write access to current directory
     try:
         test_file = Path("docx2shelf_test_write.tmp")
         test_file.write_text("test")
         test_file.unlink()
-        print(f"  [OK] Current directory is writable")
+        print("  [OK] Current directory is writable")
     except Exception as e:
         print(f"  [WARNING] Current directory write test failed: {e}")
         warnings_found += 1
@@ -2519,25 +2659,25 @@ def run_doctor(args: argparse.Namespace) -> int:
         temp_dir = Path(tempfile.gettempdir())
         print(f"  [OK] Temp directory: {temp_dir}")
         if temp_dir.exists() and temp_dir.is_dir():
-            print(f"  [OK] Temp directory accessible")
+            print("  [OK] Temp directory accessible")
         else:
-            print(f"  [ERROR] Temp directory not accessible")
+            print("  [ERROR] Temp directory not accessible")
             issues_found += 1
     except Exception as e:
         print(f"  [ERROR] Temp directory check failed: {e}")
         issues_found += 1
 
     # Memory check
-    print(f"\n[MEMORY] Memory Information:")
+    print("\n[MEMORY] Memory Information:")
     try:
         import psutil
         memory = psutil.virtual_memory()
         print(f"  [OK] Available RAM: {memory.available // (1024**3)} GB")
         if memory.available < 1024**3:  # Less than 1GB
-            print(f"  [WARNING] Low available memory may affect large document processing")
+            print("  [WARNING] Low available memory may affect large document processing")
             warnings_found += 1
     except ImportError:
-        print(f"  [INFO] psutil not available - cannot check memory")
+        print("  [INFO] psutil not available - cannot check memory")
 
     # Summary
     print("\n" + "=" * 50)

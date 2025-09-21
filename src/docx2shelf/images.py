@@ -133,7 +133,8 @@ def process_image(
     max_height: int = 1600,
     quality: int = 85,
     modern_format: Optional[str] = None,
-    quiet: bool = False
+    quiet: bool = False,
+    enhanced_processing: bool = False
 ) -> Optional[Path]:
     """Process a single image with resizing and format conversion.
 
@@ -142,6 +143,161 @@ def process_image(
     if not image_path.exists():
         return None
 
+    # Enhanced processing for edge cases
+    if enhanced_processing:
+        return process_image_enhanced(image_path, output_dir, max_width, max_height, quality, modern_format, quiet)
+
+    # Use standard processing for regular images
+    return process_image_standard(image_path, output_dir, max_width, max_height, quality, modern_format, quiet)
+
+
+def process_images(
+    images: List[Path],
+    output_dir: Path,
+    max_width: int = 1200,
+    max_height: int = 1600,
+    quality: int = 85,
+    modern_format: Optional[str] = None,
+    quiet: bool = False,
+    enhanced_processing: bool = False
+) -> List[Path]:
+    """Process multiple images with optimization.
+
+    Returns list of processed image paths.
+    """
+    if not images:
+        return []
+
+    # Check for Pillow availability
+    if not check_pillow_availability():
+        if not quiet:
+            print("Pillow not available. Copying images without processing.", file=sys.stderr)
+            print("Install Pillow for image optimization: pip install Pillow", file=sys.stderr)
+
+        # Copy images without processing
+        processed_images = []
+        for img_path in images:
+            if img_path.is_file():
+                output_path = output_dir / img_path.name
+                output_path.write_bytes(img_path.read_bytes())
+                processed_images.append(output_path)
+                if not quiet:
+                    print(f"Copied image: {img_path.name}")
+
+        return processed_images
+
+    # Process images with optimization
+    processed_images = []
+
+    if not quiet and modern_format:
+        print(f"Processing images with {modern_format.upper()} conversion and resizing...")
+    elif not quiet:
+        print("Processing images with resizing...")
+
+    for img_path in images:
+        if img_path.is_file():
+            processed_path = process_image(
+                img_path,
+                output_dir,
+                max_width,
+                max_height,
+                quality,
+                modern_format,
+                quiet,
+                enhanced_processing
+            )
+            if processed_path:
+                processed_images.append(processed_path)
+
+    return processed_images
+
+
+def process_image_enhanced(
+    image_path: Path,
+    output_dir: Path,
+    max_width: int = 1200,
+    max_height: int = 1600,
+    quality: int = 85,
+    modern_format: Optional[str] = None,
+    quiet: bool = False
+) -> Optional[Path]:
+    """Process image with enhanced edge case handling."""
+    try:
+        from .enhanced_images import (
+            EnhancedImageProcessor,
+            TransparencyHandling,
+            create_epub_optimized_config,
+        )
+
+        # Create enhanced config based on parameters
+        config = create_epub_optimized_config()
+        config.max_dimension = max(max_width, max_height)
+        config.jpeg_quality = quality
+
+        # Adjust transparency handling for different formats
+        if modern_format and modern_format.lower() in ['webp', 'png']:
+            config.transparency_strategy = TransparencyHandling.PRESERVE
+        else:
+            config.transparency_strategy = TransparencyHandling.AUTO
+
+        processor = EnhancedImageProcessor(config)
+
+        # Determine output path and format
+        if modern_format:
+            output_name = f"{image_path.stem}.{modern_format.lower()}"
+        else:
+            output_name = image_path.name
+
+        output_path = output_dir / output_name
+
+        # Process with enhanced handling
+        success, warnings, metadata = processor.process_image_with_edge_case_handling(
+            image_path, output_path, modern_format
+        )
+
+        if success:
+            if not quiet:
+                # Report processing results
+                original_size = metadata.get('file_size', 0) / (1024 * 1024)  # MB
+                processed_size = metadata.get('processed_size', 0) / (1024 * 1024)  # MB
+
+                if processed_size > 0 and original_size > 0:
+                    savings = ((original_size - processed_size) / original_size) * 100
+                    print(f"Enhanced processing: {image_path.name} "
+                          f"({original_size:.2f} -> {processed_size:.2f} MB, {savings:.1f}% reduction)")
+
+                # Report any warnings
+                for warning in warnings:
+                    print(f"  Warning: {warning}", file=sys.stderr)
+
+            return output_path
+        else:
+            # Fall back to regular processing
+            if not quiet:
+                print(f"Enhanced processing failed for {image_path.name}, falling back to standard processing")
+            return process_image_standard(image_path, output_dir, max_width, max_height, quality, modern_format, quiet)
+
+    except ImportError:
+        # Enhanced processing not available, fall back to standard
+        if not quiet:
+            print(f"Enhanced image processing not available for {image_path.name}, using standard processing")
+        return process_image_standard(image_path, output_dir, max_width, max_height, quality, modern_format, quiet)
+    except Exception as e:
+        if not quiet:
+            print(f"Enhanced processing error for {image_path.name}: {e}, falling back to standard", file=sys.stderr)
+        return process_image_standard(image_path, output_dir, max_width, max_height, quality, modern_format, quiet)
+
+
+def process_image_standard(
+    image_path: Path,
+    output_dir: Path,
+    max_width: int = 1200,
+    max_height: int = 1600,
+    quality: int = 85,
+    modern_format: Optional[str] = None,
+    quiet: bool = False
+) -> Optional[Path]:
+    """Standard image processing (original implementation)."""
     # Get image info
     img_info = get_image_info(image_path)
     if not img_info:
@@ -203,65 +359,6 @@ def process_image(
         if not quiet:
             print(f"Image processing failed, copied original: {image_path.name}")
         return fallback_path
-
-
-def process_images(
-    images: List[Path],
-    output_dir: Path,
-    max_width: int = 1200,
-    max_height: int = 1600,
-    quality: int = 85,
-    modern_format: Optional[str] = None,
-    quiet: bool = False
-) -> List[Path]:
-    """Process multiple images with optimization.
-
-    Returns list of processed image paths.
-    """
-    if not images:
-        return []
-
-    # Check for Pillow availability
-    if not check_pillow_availability():
-        if not quiet:
-            print("Pillow not available. Copying images without processing.", file=sys.stderr)
-            print("Install Pillow for image optimization: pip install Pillow", file=sys.stderr)
-
-        # Copy images without processing
-        processed_images = []
-        for img_path in images:
-            if img_path.is_file():
-                output_path = output_dir / img_path.name
-                output_path.write_bytes(img_path.read_bytes())
-                processed_images.append(output_path)
-                if not quiet:
-                    print(f"Copied image: {img_path.name}")
-
-        return processed_images
-
-    # Process images with optimization
-    processed_images = []
-
-    if not quiet and modern_format:
-        print(f"Processing images with {modern_format.upper()} conversion and resizing...")
-    elif not quiet:
-        print("Processing images with resizing...")
-
-    for img_path in images:
-        if img_path.is_file():
-            processed_path = process_image(
-                img_path,
-                output_dir,
-                max_width,
-                max_height,
-                quality,
-                modern_format,
-                quiet
-            )
-            if processed_path:
-                processed_images.append(processed_path)
-
-    return processed_images
 
 
 def get_media_type_for_image(image_path: Path) -> str:

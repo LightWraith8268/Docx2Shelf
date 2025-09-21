@@ -5,12 +5,15 @@ import uuid as _uuid
 from importlib import resources
 from pathlib import Path
 
-from .metadata import BuildOptions, EpubMetadata
+from .accessibility import process_accessibility_features
+from .figures import FigureConfig, FigureProcessor
 from .fonts import process_embedded_fonts, warn_about_font_licensing
-from .images import process_images, get_media_type_for_image
-from .accessibility import process_accessibility_features, create_accessibility_summary
-from .language import generate_language_css, add_language_attributes_to_html, apply_language_defaults
-from .figures import process_figures_and_tables, FigureProcessor, FigureConfig
+from .images import get_media_type_for_image, process_images
+from .language import (
+    add_language_attributes_to_html,
+    generate_language_css,
+)
+from .metadata import BuildOptions, EpubMetadata
 from .tools import epubcheck_cmd
 
 
@@ -26,11 +29,11 @@ def _run_epubcheck_validation(epub_path: Path, quiet: bool = False) -> None:
         cmd = epubcheck_cmd()
         if not cmd:
             if not quiet:
-                print("📋 EPUBCheck: Not available (install via 'docx2shelf tools install epubcheck')")
+                print("[EPUBCHECK] EPUBCheck: Not available (install via 'docx2shelf tools install epubcheck')")
             return
 
         if not quiet:
-            print("📋 Running EPUBCheck validation...")
+            print("[EPUBCHECK] Running EPUBCheck validation...")
 
         # Run EPUBCheck with JSON output if supported
         proc = subprocess.run(
@@ -62,7 +65,7 @@ def _run_epubcheck_validation(epub_path: Path, quiet: bool = False) -> None:
         # Generate summary
         if not quiet:
             if errors or warnings:
-                print(f"📋 EPUBCheck: {len(errors)} error(s), {len(warnings)} warning(s)")
+                print(f"[EPUBCHECK] EPUBCheck: {len(errors)} error(s), {len(warnings)} warning(s)")
 
                 # Show first few critical issues
                 critical_issues = errors[:3] + warnings[:3]
@@ -84,14 +87,14 @@ def _run_epubcheck_validation(epub_path: Path, quiet: bool = False) -> None:
                     print("   💡 Address warnings for optimal EPUB quality")
 
             else:
-                print("📋 EPUBCheck: ✅ No issues found")
+                print("[EPUBCHECK] EPUBCheck: [SUCCESS] No issues found")
 
     except subprocess.TimeoutExpired:
         if not quiet:
-            print("📋 EPUBCheck: Timeout (file may be too large)")
+            print("[EPUBCHECK] EPUBCheck: Timeout (file may be too large)")
     except Exception as e:
         if not quiet:
-            print(f"📋 EPUBCheck: Error during validation ({e})")
+            print(f"[EPUBCHECK] EPUBCheck: Error during validation ({e})")
 
 
 def _generate_epub2_compat_css() -> str:
@@ -578,7 +581,8 @@ def assemble_epub(
                     max_height=opts.image_max_height,
                     quality=opts.image_quality,
                     modern_format=modern_format,
-                    quiet=opts.quiet
+                    quiet=opts.quiet,
+                    enhanced_processing=opts.enhanced_images
                 )
 
                 # Add processed images to EPUB

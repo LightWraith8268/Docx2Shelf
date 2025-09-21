@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.6] - 2025-01-20
+### Advanced Validation & Enhanced Image Processing
+
+#### New Features
+- **EPUBCheck Validation**: Added comprehensive EPUB validation with EPUBCheck integration and custom validation rules
+  - Standalone `docx2shelf validate` command for validating existing EPUB files
+  - Automatic validation during build process with detailed error reporting
+  - Custom validation checks for file structure, metadata, and common issues
+- **Enhanced Image Processing**: Advanced image handling for edge cases and professional publishing
+  - CMYK color space conversion with ICC profile support
+  - Large image compression and resizing optimization
+  - Transparency handling for complex graphics
+  - `--enhanced-images` flag for advanced processing workflows
+- **CLI Accessibility**: All commands and features now accessible via subcommands within CLI
+  - Fixed parser issue where only plugin commands were visible
+  - Added `--version` flag showing comprehensive version information
+  - Improved help display and command organization
+
+#### Technical Improvements
+- **Graceful Fallback**: Enhanced Pandoc detection with clear warnings and fallback mechanisms
+- **Code Quality**: Comprehensive validation framework with extensible rule system
+- **Error Handling**: Improved error messages and timeout handling for external tools
+- **Module Architecture**: Clean separation between standard and enhanced image processing
+
 ## [1.3.5] - 2025-01-20
 ### Environment Diagnostics & Quality Improvements
 

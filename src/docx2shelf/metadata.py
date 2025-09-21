@@ -71,6 +71,7 @@ class BuildOptions:
     image_max_width: int = 1200
     image_max_height: int = 1600
     image_format: str = "webp"
+    enhanced_images: bool = False
     vertical_writing: bool = False
     epub2_compat: bool = False
     chapter_start_mode: str = "auto"  # auto|manual|mixed
