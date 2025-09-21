@@ -169,6 +169,23 @@ def convert_file_to_html(input_path: Path, context: dict = None) -> tuple[list[s
     suffix = actual_input_path.suffix.lower()
 
     if suffix in (".md", ".txt", ".html", ".htm"):
+        # Check Pandoc availability with detailed error messages
+        from .tools import get_pandoc_status
+
+        status = get_pandoc_status()
+        if not status["overall_available"]:
+            error_msg = f"Pandoc is required to convert {suffix} files.\n"
+
+            if not status["pandoc_binary"]["available"]:
+                error_msg += f"Issue: {status['pandoc_binary']['message']}\n"
+                error_msg += "Solution: Run 'docx2shelf tools install pandoc'\n"
+
+            if not status["pypandoc_library"]["available"]:
+                error_msg += f"Issue: {status['pypandoc_library']['message']}\n"
+                error_msg += "Solution: Run 'pip install pypandoc'\n"
+
+            raise RuntimeError(error_msg.strip())
+
         try:
             import pypandoc  # type: ignore
 
@@ -184,10 +201,14 @@ def convert_file_to_html(input_path: Path, context: dict = None) -> tuple[list[s
             processed_html = plugin_manager.execute_post_convert_hooks(html, context)
             # For now, we don't split these files, return as a single chunk
             return [f"<section>{processed_html}</section>"], [], ""
-        except ImportError:
-            raise RuntimeError(f"Pandoc is required to convert {suffix} files. Please install it.")
         except Exception as e:
-            raise RuntimeError(f"An error occurred during {suffix} conversion with Pandoc: {e}")
+            error_msg = f"Pandoc conversion failed for {suffix} file: {e}\n"
+            error_msg += "This might be due to:\n"
+            error_msg += "- Unsupported content in the input file\n"
+            error_msg += "- Pandoc version compatibility issues\n"
+            error_msg += "- File encoding problems\n"
+            error_msg += f"Run 'docx2shelf doctor' to check your Pandoc installation"
+            raise RuntimeError(error_msg)
 
     elif suffix == ".docx":
         # Check cache first
@@ -526,10 +547,15 @@ def docx_to_html_optimized(docx_path: Path, cache, image_processor, monitor) -> 
     try:
         # Try Pandoc first (fastest for most documents)
         with monitor.phase_timer("pandoc_conversion"):
-            try:
-                import pypandoc  # type: ignore
-                html = pypandoc.convert_file(str(docx_path), to="html", extra_args=["--wrap=none"])
-                chunks = split_html_by_heading(html, level="h1")
+            # Check Pandoc availability
+            from .tools import get_pandoc_status
+            status = get_pandoc_status()
+
+            if status["overall_available"]:
+                try:
+                    import pypandoc  # type: ignore
+                    html = pypandoc.convert_file(str(docx_path), to="html", extra_args=["--wrap=none"])
+                    chunks = split_html_by_heading(html, level="h1")
 
                 # Extract and process images in parallel
                 with monitor.phase_timer("image_processing"):
@@ -541,8 +567,15 @@ def docx_to_html_optimized(docx_path: Path, cache, image_processor, monitor) -> 
                     styles_css = extract_styles_css(styles_data)
 
                 return chunks, resources, styles_css
-            except Exception as e:
-                monitor.add_warning(f"Pandoc conversion failed: {e}")
+                except Exception as e:
+                    monitor.add_warning(f"Pandoc conversion failed: {e}")
+            else:
+                # Pandoc not available, log the reason
+                if not status["pandoc_binary"]["available"]:
+                    monitor.add_warning(f"Pandoc binary unavailable: {status['pandoc_binary']['message']}")
+                if not status["pypandoc_library"]["available"]:
+                    monitor.add_warning(f"pypandoc library unavailable: {status['pypandoc_library']['message']}")
+                monitor.add_warning("Using fallback DOCX conversion - install Pandoc for better results")
 
         # Fallback to streaming python-docx reader for large files
         with monitor.phase_timer("streaming_conversion"):
@@ -668,17 +701,34 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
     run_styles_map = styles_data.get("run_styles", {})
     character_styles_map = styles_data.get("character_styles", {})
     css_classes = styles_data.get("css_classes", {})
-    try:
-        import pypandoc  # type: ignore
+    # Check Pandoc availability first
+    from .tools import get_pandoc_status
+    status = get_pandoc_status()
 
-        html = pypandoc.convert_file(str(docx_path), to="html", extra_args=["--wrap=none"])
-        # Split at h1 by default; caller can later decide via CLI how to split
-        chunks = split_html_by_heading(html, level="h1")
-        # Load styles for potential CSS injection even with Pandoc
-        styles_data = _load_style_mapping(docx_path)
-        styles_css = extract_styles_css(styles_data)
-        return chunks, [], styles_css
-    except Exception:
+    if status["overall_available"]:
+        try:
+            import pypandoc  # type: ignore
+
+            html = pypandoc.convert_file(str(docx_path), to="html", extra_args=["--wrap=none"])
+            # Split at h1 by default; caller can later decide via CLI how to split
+            chunks = split_html_by_heading(html, level="h1")
+            # Load styles for potential CSS injection even with Pandoc
+            styles_data = _load_style_mapping(docx_path)
+            styles_css = extract_styles_css(styles_data)
+            return chunks, [], styles_css
+        except Exception as e:
+            print(f"Warning: Pandoc conversion failed ({e}), using fallback")
+    else:
+        # Log why Pandoc is not available
+        print("Warning: Pandoc not available, using fallback DOCX conversion")
+        if not status["pandoc_binary"]["available"]:
+            print(f"  - {status['pandoc_binary']['message']}")
+        if not status["pypandoc_library"]["available"]:
+            print(f"  - {status['pypandoc_library']['message']}")
+        print("  - Run 'docx2shelf doctor' for detailed diagnostics")
+
+    # Fallback conversion
+    try:
         pass
 
     # 2) python-docx fallback

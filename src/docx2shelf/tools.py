@@ -148,6 +148,100 @@ def pandoc_path() -> Optional[Path]:
     return Path(found) if found else None
 
 
+def check_pandoc_availability() -> tuple[bool, str, Optional[str]]:
+    """
+    Check Pandoc availability and return status, message, and version.
+
+    Returns:
+        (is_available, status_message, version_or_none)
+    """
+    import subprocess
+
+    # Check if pandoc binary exists
+    pandoc_binary = pandoc_path()
+    if not pandoc_binary:
+        return False, "Pandoc binary not found. Install with 'docx2shelf tools install pandoc'", None
+
+    # Check if binary is executable
+    try:
+        result = subprocess.run(
+            [str(pandoc_binary), "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        if result.returncode != 0:
+            return False, f"Pandoc binary exists but failed to run: {result.stderr}", None
+
+        # Extract version from output
+        version_line = result.stdout.split('\n')[0] if result.stdout else "Unknown"
+        version = version_line.replace("pandoc ", "").split()[0] if "pandoc " in version_line else "Unknown"
+
+        # Check minimum version (Pandoc 2.0+)
+        if version != "Unknown":
+            try:
+                major_version = int(version.split('.')[0])
+                if major_version < 2:
+                    return False, f"Pandoc {version} is too old (requires 2.0+). Update with 'docx2shelf tools install pandoc'", version
+            except (ValueError, IndexError):
+                pass  # Continue with unknown version
+
+        return True, f"Pandoc {version} available", version
+
+    except subprocess.TimeoutExpired:
+        return False, "Pandoc binary exists but timed out during version check", None
+    except Exception as e:
+        return False, f"Error checking Pandoc: {e}", None
+
+
+def check_pypandoc_availability() -> tuple[bool, str]:
+    """
+    Check pypandoc Python library availability.
+
+    Returns:
+        (is_available, status_message)
+    """
+    try:
+        import pypandoc
+
+        # Check if pypandoc can find pandoc
+        try:
+            pandoc_path_from_pypandoc = pypandoc.get_pandoc_path()
+            return True, f"pypandoc available (using pandoc at {pandoc_path_from_pypandoc})"
+        except OSError:
+            return False, "pypandoc installed but cannot find pandoc binary"
+
+    except ImportError:
+        return False, "pypandoc not installed. Install with 'pip install pypandoc'"
+
+
+def get_pandoc_status() -> dict[str, any]:
+    """
+    Get comprehensive Pandoc status information.
+
+    Returns:
+        Dictionary with detailed status information
+    """
+    pandoc_available, pandoc_msg, pandoc_version = check_pandoc_availability()
+    pypandoc_available, pypandoc_msg = check_pypandoc_availability()
+
+    return {
+        "pandoc_binary": {
+            "available": pandoc_available,
+            "message": pandoc_msg,
+            "version": pandoc_version,
+            "path": str(pandoc_path()) if pandoc_path() else None
+        },
+        "pypandoc_library": {
+            "available": pypandoc_available,
+            "message": pypandoc_msg
+        },
+        "overall_available": pandoc_available and pypandoc_available,
+        "fallback_needed": not (pandoc_available and pypandoc_available)
+    }
+
+
 def epubcheck_cmd() -> Optional[list[str]]:
     # Prefer epubcheck wrapper in tools dir, else locate jar, else PATH
     td = tools_dir()
@@ -411,39 +505,42 @@ def tools_doctor() -> int:
     print(f"  Exists: {'Yes' if td.exists() else 'No'}")
     print(f"  Writable: {'Yes' if os.access(td, os.W_OK) else 'No'}")
 
-    # Check Pandoc
+    # Check Pandoc with enhanced detection
     print("\n[PANDOC] Pandoc Status:")
-    pandoc_path_obj = pandoc_path()
-    if pandoc_path_obj:
-        print(f"  [OK] Found at: {pandoc_path_obj}")
-        try:
-            result = subprocess.run([str(pandoc_path_obj), "--version"],
-                                  capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                version_line = result.stdout.split('\n')[0] if result.stdout else "Unknown"
-                print(f"  [OK] Version: {version_line}")
+    status = get_pandoc_status()
 
-                # Check if version matches pinned version
-                pinned = get_pinned_version("pandoc")
-                if pinned and pinned not in version_line:
-                    print(f"  [WARNING]  Warning: Expected version {pinned}, got {version_line}")
-                    issues_found += 1
-            else:
-                print(f"  [ERROR] Error running pandoc: {result.stderr}")
-                issues_found += 1
-        except Exception as e:
-            print(f"  [ERROR] Error checking pandoc: {e}")
+    # Pandoc binary status
+    binary_info = status["pandoc_binary"]
+    if binary_info["available"]:
+        print(f"  [OK] Binary: {binary_info['message']}")
+        print(f"  [OK] Path: {binary_info['path']}")
+
+        # Check if version matches pinned version
+        pinned = get_pinned_version("pandoc")
+        if pinned and binary_info["version"] and pinned not in binary_info["version"]:
+            print(f"  [WARNING] Expected version {pinned}, got {binary_info['version']}")
             issues_found += 1
     else:
-        print("  [ERROR] Pandoc not found")
+        print(f"  [ERROR] Binary: {binary_info['message']}")
         issues_found += 1
 
-        # Check if it's available in PATH
-        system_pandoc = shutil.which("pandoc")
-        if system_pandoc:
-            print(f"  [INFO]  System pandoc available at: {system_pandoc}")
-        else:
-            print("  [INFO]  No system pandoc found in PATH")
+    # pypandoc library status
+    library_info = status["pypandoc_library"]
+    if library_info["available"]:
+        print(f"  [OK] Library: {library_info['message']}")
+    else:
+        print(f"  [WARNING] Library: {library_info['message']}")
+
+    # Overall status and recommendations
+    if status["overall_available"]:
+        print(f"  [OK] Pandoc fully functional for document conversion")
+    elif status["fallback_needed"]:
+        print(f"  [WARNING] Pandoc issues detected - will use fallback conversion")
+        print(f"  [INFO] Install missing components for best performance:")
+        if not binary_info["available"]:
+            print(f"    - Run 'docx2shelf tools install pandoc' to install Pandoc")
+        if not library_info["available"]:
+            print(f"    - Run 'pip install pypandoc' to install Python integration")
 
     # Check EPUBCheck
     print("\n📖 EPUBCheck Status:")
