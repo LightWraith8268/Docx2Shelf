@@ -5,6 +5,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from .path_utils import normalize_path, safe_filename, ensure_unicode_path, is_safe_path
+
 from .accessibility_audit import audit_epub_accessibility
 from .ai_accessibility import generate_image_alt_texts
 from .ai_genre_detection import detect_genre_with_ai
@@ -1153,7 +1155,13 @@ def run_build(args: argparse.Namespace) -> int:
 
     # Validate paths with enhanced error handling
     try:
-        input_path = Path(args.input).expanduser().resolve()
+        # Normalize and validate input path
+        input_path = normalize_path(Path(args.input).expanduser())
+        if not is_safe_path(input_path):
+            print(f"Error: Input path contains invalid characters or directory traversal: {input_path}")
+            return 1
+
+        input_path = input_path.resolve()
         if not input_path.exists():
             # Use enhanced error handling for missing input files
             handled = handle_error(
@@ -1168,7 +1176,13 @@ def run_build(args: argparse.Namespace) -> int:
 
         input_dir = input_path.parent if input_path.is_file() else input_path
 
-        cover_path_candidate = Path(args.cover).expanduser()
+        # Normalize cover path with safety checks
+        cover_path_candidate = normalize_path(Path(args.cover).expanduser())
+        if not is_safe_path(cover_path_candidate, input_dir):
+            # Try relative to input directory
+            safe_cover_name = safe_filename(args.cover)
+            cover_path_candidate = input_dir / safe_cover_name
+
         if not cover_path_candidate.is_absolute():
             cover_path_candidate = input_dir / cover_path_candidate
         cover_path = cover_path_candidate.resolve()
@@ -1511,10 +1525,17 @@ def run_build(args: argparse.Namespace) -> int:
                 series_index=args.seriesIndex or None,
             )
 
-    # Resolve output relative to input dir if relative
-    out_path = Path(args.output)
+    # Resolve output relative to input dir if relative with safety checks
+    out_path = normalize_path(Path(args.output))
+    if not is_safe_path(out_path):
+        # Sanitize the output filename
+        safe_output_name = safe_filename(args.output)
+        out_path = Path(safe_output_name)
+
     if not out_path.is_absolute():
         out_path = input_dir / out_path
+
+    out_path = ensure_unicode_path(out_path)
 
     # Sanitize name and ensure .epub extension
     name = out_path.name

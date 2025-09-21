@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.3.9] - 2025-01-21
+### Cross-Platform Path Handling and Directory Management
+
+#### Added
+- **Path Utilities Module**: Comprehensive path handling utilities for cross-platform compatibility
+  - Unicode filename normalization with proper character encoding support
+  - Windows path normalization with drive letter handling and separator conversion
+  - Safe filename generation that removes invalid characters and handles reserved Windows names
+  - Directory traversal protection with security validation
+  - Enhanced temp directory handling with Unicode support
+- **Platformdirs Integration**: Modern cross-platform directory management using platformdirs library
+  - Proper user data, cache, and config directories following platform conventions
+  - Graceful fallback to legacy directory structures when platformdirs unavailable
+  - Updated tools directory to use standardized locations
+  - AI cache directories now use platform-appropriate cache locations
+
+#### Enhanced
+- **File I/O Safety**: All file operations now use Unicode-safe path handling
+  - Safe text writing with proper encoding and directory creation
+  - Path validation to prevent security issues and encoding problems
+  - Consistent path normalization across all modules
+- **CLI Path Processing**: Enhanced command-line path argument handling
+  - Input, output, and cover path validation with safety checks
+  - Automatic path sanitization for security and compatibility
+  - Better error messages for invalid paths or encoding issues
+
+#### Dependencies
+- Added `platformdirs>=3.0.0` for cross-platform directory management
+
 ## [1.3.8] - 2025-01-21
 ### TOC and EPUB Structural Integrity Improvements
 

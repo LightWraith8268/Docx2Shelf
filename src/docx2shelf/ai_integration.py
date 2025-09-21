@@ -7,15 +7,13 @@ keyword generation, and accessibility improvements.
 
 from __future__ import annotations
 
-import json
-import re
 import hashlib
-import tempfile
-import warnings
+import json
+import logging
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
-import logging
+from typing import Any, Dict, List, Optional
 
 # Optional AI dependencies - graceful fallback if not available
 try:
@@ -25,8 +23,8 @@ except ImportError:
     OPENAI_AVAILABLE = False
 
 try:
-    from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
     import torch
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
@@ -37,7 +35,7 @@ try:
 except (ImportError, AttributeError):
     PILLOW_AVAILABLE = False
 
-from .utils import prompt_bool, prompt_select
+from .utils import prompt_bool
 
 
 @dataclass
@@ -74,7 +72,18 @@ class AIModelManager:
 
     def __init__(self, config: AIConfig):
         self.config = config
-        self.cache_dir = config.cache_dir or Path.home() / ".docx2shelf" / "ai_cache"
+
+        # Use platformdirs for cache directory if available
+        if config.cache_dir:
+            self.cache_dir = config.cache_dir
+        else:
+            try:
+                from .path_utils import get_user_cache_dir
+                self.cache_dir = get_user_cache_dir("docx2shelf") / "ai_cache"
+            except ImportError:
+                # Fallback
+                self.cache_dir = Path.home() / ".docx2shelf" / "ai_cache"
+
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.models = {}
         self.logger = logging.getLogger(__name__)

@@ -32,11 +32,18 @@ VERSION_PIN_SETS = {
 
 
 def tools_dir() -> Path:
-    if os.name == "nt":
-        base = Path(os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming")))
-        p = base / "Docx2Shelf" / "bin"
-    else:
-        p = Path.home() / ".docx2shelf" / "bin"
+    """Get the tools directory using platformdirs for cross-platform compatibility."""
+    try:
+        from .path_utils import get_user_data_dir
+        p = get_user_data_dir("docx2shelf") / "bin"
+    except ImportError:
+        # Fallback if path_utils not available
+        if os.name == "nt":
+            base = Path(os.environ.get("APPDATA", str(Path.home() / "AppData" / "Roaming")))
+            p = base / "Docx2Shelf" / "bin"
+        else:
+            p = Path.home() / ".docx2shelf" / "bin"
+
     p.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -533,14 +540,14 @@ def tools_doctor() -> int:
 
     # Overall status and recommendations
     if status["overall_available"]:
-        print(f"  [OK] Pandoc fully functional for document conversion")
+        print("  [OK] Pandoc fully functional for document conversion")
     elif status["fallback_needed"]:
-        print(f"  [WARNING] Pandoc issues detected - will use fallback conversion")
-        print(f"  [INFO] Install missing components for best performance:")
+        print("  [WARNING] Pandoc issues detected - will use fallback conversion")
+        print("  [INFO] Install missing components for best performance:")
         if not binary_info["available"]:
-            print(f"    - Run 'docx2shelf tools install pandoc' to install Pandoc")
+            print("    - Run 'docx2shelf tools install pandoc' to install Pandoc")
         if not library_info["available"]:
-            print(f"    - Run 'pip install pypandoc' to install Python integration")
+            print("    - Run 'pip install pypandoc' to install Python integration")
 
     # Check EPUBCheck
     print("\n📖 EPUBCheck Status:")

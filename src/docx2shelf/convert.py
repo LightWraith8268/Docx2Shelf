@@ -6,6 +6,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from .path_utils import normalize_path, ensure_unicode_path, get_safe_temp_path
+
 IMG_NS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
     "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
@@ -744,7 +746,9 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
     parts: list[str] = []
 
     # Temp dir for extracted images
-    tempdir = Path(tempfile.mkdtemp(prefix="docx2shelf_"))
+    # Use safe temp directory with Unicode support
+    tempdir = get_safe_temp_path("docx2shelf_pandoc")
+    tempdir.mkdir(parents=True, exist_ok=True)
     images: dict[str, Path] = {}
 
     # Process document elements including tables

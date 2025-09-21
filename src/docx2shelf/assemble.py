@@ -8,6 +8,7 @@ from pathlib import Path
 from .accessibility import process_accessibility_features
 from .figures import FigureConfig, FigureProcessor
 from .fonts import process_embedded_fonts, warn_about_font_licensing
+from .path_utils import normalize_path, safe_filename, ensure_unicode_path, write_text_safe
 from .images import get_media_type_for_image, process_images
 from .language import (
     add_language_attributes_to_html,
@@ -956,20 +957,18 @@ def assemble_epub(
         folder = output_path.with_suffix("")
         folder = folder.parent / (folder.name + ".src")
         folder.mkdir(parents=True, exist_ok=True)
-        # Save HTML chunks for debugging
+        # Save HTML chunks for debugging with safe path handling
         for i, chunk in enumerate(html_chunks, start=1):
-            (folder / f"chap_{i:03d}.xhtml").write_text(chunk, encoding="utf-8")
-        (folder / "meta.txt").write_text(
-            "\n".join(
-                [
-                    f"title={meta.title}",
-                    f"author={meta.author}",
-                    f"language={meta.language}",
-                    f"identifier={identifier}",
-                ]
-            ),
-            encoding="utf-8",
-        )
+            safe_chunk_path = folder / safe_filename(f"chap_{i:03d}.xhtml")
+            write_text_safe(safe_chunk_path, chunk)
+
+        meta_content = "\n".join([
+            f"title={meta.title}",
+            f"author={meta.author}",
+            f"language={meta.language}",
+            f"identifier={identifier}",
+        ])
+        write_text_safe(folder / "meta.txt", meta_content)
 
     # EPUBCheck validation (default enabled)
     if opts.epubcheck:
