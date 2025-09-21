@@ -185,6 +185,27 @@ install_python_linux() {
     return 0
 }
 
+# Function to get latest version from GitHub API
+get_latest_version() {
+    LATEST_VERSION=""
+    echo "Querying GitHub API for latest release..."
+
+    # Try using curl first, then wget as fallback
+    if command -v curl &> /dev/null; then
+        LATEST_VERSION=$(curl -s https://api.github.com/repos/LightWraith8268/Docx2Shelf/releases/latest | grep -o '"tag_name": *"[^"]*"' | sed 's/"tag_name": *"\([^"]*\)"/\1/' 2>/dev/null || echo "")
+    elif command -v wget &> /dev/null; then
+        LATEST_VERSION=$(wget -qO- https://api.github.com/repos/LightWraith8268/Docx2Shelf/releases/latest | grep -o '"tag_name": *"[^"]*"' | sed 's/"tag_name": *"\([^"]*\)"/\1/' 2>/dev/null || echo "")
+    else
+        echo "[Note] Neither curl nor wget available for version checking"
+    fi
+
+    if [[ -z "$LATEST_VERSION" ]]; then
+        echo "[Note] Could not retrieve version info from GitHub API"
+    else
+        echo "Found latest release: $LATEST_VERSION"
+    fi
+}
+
 # Check for Python
 echo "Checking for Python installation..."
 if command -v python3 &> /dev/null; then
@@ -337,8 +358,19 @@ else
     fi
 fi
 
+# Get latest version information from GitHub
+echo
+echo "Checking latest version from GitHub..."
+get_latest_version
+if [[ -n "$LATEST_VERSION" ]]; then
+    echo -e "${GREEN}Latest version available: $LATEST_VERSION${NC}"
+else
+    echo -e "${YELLOW}[Note] Could not determine latest version (continuing anyway)${NC}"
+fi
+
 # Install Docx2Shelf with enhanced error handling
-echo "Installing Docx2Shelf..."
+echo
+echo "Installing Docx2Shelf from GitHub (latest version)..."
 echo
 
 if [[ $GIT_AVAILABLE -eq 1 ]]; then
@@ -550,12 +582,23 @@ if [[ $VERIFICATION_RESULT -eq 0 ]]; then
         echo -e "${BLUE}📁 Custom installation location: $CUSTOM_INSTALL_PATH${NC}"
     fi
     echo -e "${BLUE}📦 Installation source: GitHub repository${NC}"
+
+    # Show installed version
+    echo
+    echo "Installed version:"
+    if command -v docx2shelf &> /dev/null; then
+        docx2shelf --version 2>/dev/null || echo "[Note] Version information not available yet"
+    else
+        echo "[Note] Version command not accessible yet"
+    fi
+
     echo
     echo "Quick start:"
+    echo "  docx2shelf                 - Launch interactive menu"
     echo "  docx2shelf --help          - Show help"
     echo "  docx2shelf build           - Build EPUB from DOCX"
     echo "  docx2shelf wizard          - Interactive wizard"
-    echo "  docx2shelf ai --help       - AI-powered features"
+    echo "  docx2shelf doctor          - Environment diagnostics"
     echo
     echo "If you're using a new terminal window and get \"command not found\","
     echo "restart your terminal to refresh the PATH."

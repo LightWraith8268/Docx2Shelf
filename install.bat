@@ -97,9 +97,19 @@ if %errorlevel% neq 0 (
 
 echo Git is available.
 
+:: Get latest version information from GitHub
+echo.
+echo Checking latest version from GitHub...
+call :get_latest_version
+if not "!LATEST_VERSION!"=="" (
+    echo Latest version available: !LATEST_VERSION!
+) else (
+    echo [Note] Could not determine latest version (continuing anyway)
+)
+
 :: Install Docx2Shelf
 echo.
-echo Installing Docx2Shelf...
+echo Installing Docx2Shelf from GitHub (latest version)...
 !PYTHON_CMD! -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
 
 if !errorlevel! equ 0 (
@@ -135,12 +145,19 @@ if %errorlevel% equ 0 (
     echo ========================================
     echo.
     echo Docx2Shelf is now installed and ready to use.
+
+    :: Show installed version
+    echo.
+    echo Installed version:
+    docx2shelf --version 2>nul || echo [Note] Version information not available yet
+
     echo.
     echo Quick start:
+    echo   docx2shelf                 - Launch interactive menu
     echo   docx2shelf --help          - Show help
     echo   docx2shelf build           - Build EPUB from DOCX
     echo   docx2shelf wizard          - Interactive wizard
-    echo   docx2shelf enterprise      - Enterprise features
+    echo   docx2shelf doctor          - Environment diagnostics
     echo.
     echo Installation completed successfully!
     pause
@@ -451,6 +468,28 @@ if exist "!SCRIPTS_DIR!\docx2shelf.exe" (
 ) else (
     echo Warning: Could not find docx2shelf.exe in expected Scripts directory
     echo Expected location: !SCRIPTS_DIR!
+)
+
+:get_latest_version
+:: Get the latest release version from GitHub API
+set "LATEST_VERSION="
+echo Querying GitHub API for latest release...
+
+:: Use PowerShell to make HTTP request (works on Windows 7+)
+powershell -NoProfile -Command "try { $response = Invoke-RestMethod -Uri 'https://api.github.com/repos/LightWraith8268/Docx2Shelf/releases/latest' -ErrorAction Stop; Write-Output $response.tag_name } catch { Write-Output '' }" > "%TEMP%\docx2shelf_version.tmp" 2>nul
+
+if exist "%TEMP%\docx2shelf_version.tmp" (
+    set /p LATEST_VERSION=<"%TEMP%\docx2shelf_version.tmp"
+    del "%TEMP%\docx2shelf_version.tmp" >nul 2>&1
+)
+
+:: Clean up any whitespace
+for /f "tokens=*" %%a in ("!LATEST_VERSION!") do set "LATEST_VERSION=%%a"
+
+if "!LATEST_VERSION!"=="" (
+    echo [Note] Could not retrieve version info from GitHub API
+) else (
+    echo Found latest release: !LATEST_VERSION!
 )
 
 exit /b 0
