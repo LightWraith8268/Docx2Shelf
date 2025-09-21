@@ -18,7 +18,7 @@ echo Version details:
 :: Check Python version compatibility
 echo Checking Python version compatibility...
 !PYTHON_CMD! -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo.
     echo WARNING: Your Python version is older than required.
     echo Docx2Shelf requires Python 3.11 or higher.
@@ -62,14 +62,14 @@ if !errorlevel! neq 0 (
                 echo This may require a system restart or manual PATH configuration.
                 echo Continuing with installation attempt...
             ) else (
-                echo ✓ Python upgrade successful and compatible.
+                echo [SUCCESS] Python upgrade successful and compatible.
 
                 :: Upgrade pip to latest version and clear cache
                 echo Upgrading pip to latest version...
                 !PYTHON_CMD! -m pip install --upgrade pip
                 echo Clearing pip cache...
                 !PYTHON_CMD! -m pip cache purge >nul 2>&1
-                echo ✓ Pip upgraded and cache cleared.
+                echo [SUCCESS] Pip upgraded and cache cleared.
             )
         )
     )
@@ -80,14 +80,14 @@ if !errorlevel! neq 0 (
     echo Checking pip version...
     !PYTHON_CMD! -m pip install --upgrade pip >nul 2>&1
     if !errorlevel! equ 0 (
-        echo ✓ Pip is up to date.
+        echo [SUCCESS] Pip is up to date.
     )
 )
 
 :: Check for Git
 echo Checking for Git installation...
 git --version >nul 2>&1
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo Git not found. This is required for installation.
     echo Please install Git from: https://git-scm.com/download/windows
     echo.
@@ -97,18 +97,28 @@ if !errorlevel! neq 0 (
 
 echo Git is available.
 
+:: Get latest version information from GitHub
+echo.
+echo Checking latest version from GitHub...
+call :get_latest_version
+if not "!LATEST_VERSION!"=="" (
+    echo Latest version available: !LATEST_VERSION!
+) else (
+    echo [Note] Could not determine latest version (continuing anyway)
+)
+
 :: Install Docx2Shelf
 echo.
-echo Installing Docx2Shelf...
+echo Installing Docx2Shelf from GitHub (latest version)...
 !PYTHON_CMD! -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
 
 if !errorlevel! equ 0 (
     echo.
-    echo ✓ Installation successful!
+    echo [SUCCESS] Installation successful!
     echo.
 ) else (
     echo.
-    echo ❌ Installation failed. This is likely due to:
+    echo [ERROR] Installation failed. This is likely due to:
     echo 1. Python version incompatibility (requires 3.11+)
     echo 2. Network connectivity issues
     echo 3. Missing dependencies
@@ -128,19 +138,26 @@ call :add_scripts_to_path
 echo.
 echo Verifying installation...
 docx2shelf --help >nul 2>&1
-if !errorlevel! equ 0 (
+if %errorlevel% equ 0 (
     echo.
     echo ========================================
     echo    Installation Successful!
     echo ========================================
     echo.
     echo Docx2Shelf is now installed and ready to use.
+
+    :: Show installed version
+    echo.
+    echo Installed version:
+    docx2shelf --version 2>nul || echo [Note] Version information not available yet
+
     echo.
     echo Quick start:
+    echo   docx2shelf                 - Launch interactive menu
     echo   docx2shelf --help          - Show help
     echo   docx2shelf build           - Build EPUB from DOCX
     echo   docx2shelf wizard          - Interactive wizard
-    echo   docx2shelf enterprise      - Enterprise features
+    echo   docx2shelf doctor          - Environment diagnostics
     echo.
     echo Installation completed successfully!
     pause
@@ -444,13 +461,35 @@ if exist "!SCRIPTS_DIR!\docx2shelf.exe" (
             )
         )
 
-        echo ✓ Scripts directory added to PATH
+        echo [SUCCESS] Scripts directory added to PATH
     ) else (
-        echo ✓ Scripts directory already in PATH
+        echo [SUCCESS] Scripts directory already in PATH
     )
 ) else (
     echo Warning: Could not find docx2shelf.exe in expected Scripts directory
     echo Expected location: !SCRIPTS_DIR!
+)
+
+:get_latest_version
+:: Get the latest release version from GitHub API
+set "LATEST_VERSION="
+echo Querying GitHub API for latest release...
+
+:: Use PowerShell to make HTTP request (works on Windows 7+)
+powershell -NoProfile -Command "try { $response = Invoke-RestMethod -Uri 'https://api.github.com/repos/LightWraith8268/Docx2Shelf/releases/latest' -ErrorAction Stop; Write-Output $response.tag_name } catch { Write-Output '' }" > "%TEMP%\docx2shelf_version.tmp" 2>nul
+
+if exist "%TEMP%\docx2shelf_version.tmp" (
+    set /p LATEST_VERSION=<"%TEMP%\docx2shelf_version.tmp"
+    del "%TEMP%\docx2shelf_version.tmp" >nul 2>&1
+)
+
+:: Clean up any whitespace
+for /f "tokens=*" %%a in ("!LATEST_VERSION!") do set "LATEST_VERSION=%%a"
+
+if "!LATEST_VERSION!"=="" (
+    echo [Note] Could not retrieve version info from GitHub API
+) else (
+    echo Found latest release: !LATEST_VERSION!
 )
 
 exit /b 0
