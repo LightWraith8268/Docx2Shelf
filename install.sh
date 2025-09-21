@@ -593,12 +593,24 @@ if [[ $VERIFICATION_RESULT -eq 0 ]]; then
     fi
 
     echo
-    echo "Quick start:"
-    echo "  docx2shelf                 - Launch interactive menu"
-    echo "  docx2shelf --help          - Show help"
+    echo "========================================"
+    echo "    Quick Start Guide"
+    echo "========================================"
+    echo
+    echo -e "${GREEN}** INTERACTIVE MODE (RECOMMENDED) **${NC}"
+    echo "  docx2shelf                 - Launch full interactive GUI"
+    echo "  docx2shelf interactive     - Launch interactive menu"
+    echo "  docx2shelf wizard          - Step-by-step conversion wizard"
+    echo
+    echo -e "${BLUE}** COMMAND LINE MODE **${NC}"
+    echo "  docx2shelf --help          - Show all available commands"
     echo "  docx2shelf build           - Build EPUB from DOCX"
-    echo "  docx2shelf wizard          - Interactive wizard"
     echo "  docx2shelf doctor          - Environment diagnostics"
+    echo "  docx2shelf validate        - Validate EPUB files"
+    echo "  docx2shelf quality         - Quality analysis"
+    echo "  docx2shelf convert         - Format conversion"
+    echo
+    echo -e "${YELLOW}** NEW USER? Start with: docx2shelf **${NC}"
     echo
     echo "If you're using a new terminal window and get \"command not found\","
     echo "restart your terminal to refresh the PATH."

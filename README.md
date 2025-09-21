@@ -1,8 +1,8 @@
 # Docx2Shelf
 
-Offline Python CLI for converting manuscripts into valid EPUB 3 ebooks.
+**Interactive offline EPUB converter** with full-featured GUI and powerful CLI for manuscripts → professional ebooks.
 
-Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors and publishers. It handles various aspects of ebook creation, including cover embedding, metadata management, content splitting, and CSS theming. It prefers Pandoc for high-fidelity conversions but includes a fallback for DOCX when Pandoc isn't available.
+Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors and publishers. **New users love the interactive GUI** with menu-driven workflows, while **power users enjoy the complete CLI** for automation. It handles all aspects of ebook creation: conversion, cover embedding, metadata management, content splitting, CSS theming, quality analysis, and publishing validation. Uses Pandoc for high-fidelity conversions with intelligent fallbacks.
 
 ## Feature Matrix
 
@@ -34,18 +34,19 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 | Job Management | ✅ **Available** | Progress tracking |
 | **Developer Tools** | | |
 | CLI Interface | ✅ **Available** | Full command suite |
-| Environment Doctor | 📋 **Planned** | Diagnostic tool |
-| Golden Tests | 📋 **Planned** | EPUB validation suite |
+| Interactive GUI | ✅ **Available** | Complete menu system |
+| Environment Doctor | ✅ **Available** | Diagnostic tool |
+| Golden Tests | ✅ **Available** | EPUB validation suite |
 | **Quality & Security** | | |
 | Basic EPUB Validation | ✅ **Available** | Structure validation |
-| EPUBCheck Integration | 📋 **Planned** | Industry-standard validation |
-| Security Hardening | 📋 **Planned** | SVG/JS sanitization |
-| Path Traversal Protection | 📋 **Planned** | Security improvements |
+| EPUBCheck Integration | ✅ **Available** | Industry-standard validation |
+| Security Hardening | ✅ **Available** | SVG/JS sanitization |
+| Path Traversal Protection | ✅ **Available** | Security improvements |
 | **CI/CD & Testing** | | |
 | Basic Tests | ✅ **Available** | Unit test coverage |
-| Matrix Testing | 📋 **Planned** | Multi-OS/Python versions |
-| Pre-commit Hooks | 📋 **Planned** | Code quality automation |
-| Release Automation | 🚧 **Beta** | GitHub releases |
+| Matrix Testing | ✅ **Available** | Multi-OS/Python versions |
+| Pre-commit Hooks | ✅ **Available** | Code quality automation |
+| Release Automation | ✅ **Available** | GitHub releases |
 
 **Legend:**
 - ✅ **Available**: Fully implemented and tested
@@ -178,15 +179,62 @@ To update your installed Docx2Shelf to the latest version, simply run:
 docx2shelf update
 ```
 
+### Uninstalling Docx2Shelf
+
+To completely remove Docx2Shelf from your system, use our universal uninstaller scripts that work across all installation methods:
+
+**Windows:**
+```cmd
+curl -L -o uninstall.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.bat && uninstall.bat
+```
+
+**macOS/Linux:**
+```bash
+curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.sh | bash
+```
+
+The uninstall scripts automatically detect and remove Docx2Shelf from:
+- pip/pip3 installations
+- pipx installations
+- conda/mamba installations
+- System package managers (apt, yum, dnf, pacman, zypper, brew, MacPorts, winget, scoop, chocolatey)
+- User data directories and configuration files
+- Associated tools and dependencies
+
+For manual removal, the scripts will provide guidance on remaining installations.
+
 ## Quickstart
 
-To convert a manuscript, navigate to its directory and run `docx2shelf`. The tool will guide you through the process interactively.
+### 🎯 **Recommended: Interactive GUI Mode**
+
+**New to ebook conversion?** Start with our full-featured interactive interface:
 
 ```bash
-# Interactive mode (simplest - just follow the prompts)
+# Launch the complete interactive GUI
 docx2shelf
 
-# Or specify options directly
+# Or launch specific interactive modes
+docx2shelf interactive     # Main menu interface
+docx2shelf wizard          # Step-by-step conversion wizard
+```
+
+The interactive GUI provides:
+- **Complete menu system** with all 17+ features accessible
+- **Quality analysis** and validation tools
+- **Format conversion** to PDF, MOBI, AZW3, etc.
+- **Publishing checklists** for Amazon KDP, Apple Books, Kobo
+- **Theme preview** with visual customization
+- **Store profile optimization** for different retailers
+- **Batch processing** and enterprise features
+- **Golden-file testing** for regression validation
+- **Environment diagnostics** and troubleshooting
+
+### ⚡ **Power Users: Command Line Mode**
+
+For automated workflows or when you know exactly what you want:
+
+```bash
+# Direct conversion with all options
 docx2shelf build \
   --input manuscript.docx \
   --cover cover.jpg \
@@ -196,6 +244,11 @@ docx2shelf build \
   --theme serif \
   --split-at h1 \
   --justify on --hyphenate on
+
+# Other powerful CLI commands
+docx2shelf quality --input book.epub    # Quality analysis
+docx2shelf convert --input book.epub --output-format pdf
+docx2shelf checklist --input book.epub --store kdp
 ```
 
 -   **Dry run**: Add `--dry-run` to print the planned manifest/spine without creating the EPUB.

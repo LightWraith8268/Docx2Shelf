@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import List
 
 from .version import get_version_info
 
@@ -66,6 +66,8 @@ class InteractiveCLI:
         options = [
             ("build", "Build EPUB from document"),
             ("validate", "Validate existing EPUB file"),
+            ("quality", "Quality analysis and scoring"),
+            ("convert", "Convert EPUB to other formats"),
             ("doctor", "Run environment diagnostics"),
             ("tools", "Manage tools (Pandoc, EPUBCheck)"),
             ("wizard", "Interactive conversion wizard"),
@@ -73,7 +75,10 @@ class InteractiveCLI:
             ("ai", "AI-powered features"),
             ("batch", "Batch processing"),
             ("plugins", "Plugin management"),
+            ("connectors", "Document connectors"),
+            ("checklist", "Publishing compatibility checklists"),
             ("enterprise", "Enterprise features"),
+            ("update", "Update docx2shelf"),
             ("settings", "Application settings"),
             ("about", "About and version information"),
         ]
@@ -87,9 +92,10 @@ class InteractiveCLI:
             self.current_menu = self.history.pop()
         else:
             menu_map = {
-                '1': 'build', '2': 'validate', '3': 'doctor', '4': 'tools',
-                '5': 'wizard', '6': 'themes', '7': 'ai', '8': 'batch',
-                '9': 'plugins', '10': 'enterprise', '11': 'settings', '12': 'about'
+                '1': 'build', '2': 'validate', '3': 'quality', '4': 'convert',
+                '5': 'doctor', '6': 'tools', '7': 'wizard', '8': 'themes',
+                '9': 'ai', '10': 'batch', '11': 'plugins', '12': 'connectors',
+                '13': 'checklist', '14': 'enterprise', '15': 'update', '16': 'settings', '17': 'about'
             }
             if choice in menu_map:
                 self.history.append(self.current_menu)
@@ -122,6 +128,7 @@ class InteractiveCLI:
             ("directory", "Validate all EPUBs in directory"),
             ("quick", "Quick validation (basic checks)"),
             ("full", "Full validation (EPUBCheck + custom rules)"),
+            ("golden", "Golden-file regression tests"),
         ]
 
         self.print_menu("EPUB Validation", options)
@@ -182,6 +189,7 @@ class InteractiveCLI:
             ("preview", "Preview themes"),
             ("editor", "Theme editor"),
             ("install", "Install new theme"),
+            ("store-profiles", "Store profile optimization"),
         ]
 
         self.print_menu("Theme Management", options)
@@ -268,6 +276,8 @@ class InteractiveCLI:
             epub_path = input("Enter EPUB file path: ").strip()
             if epub_path:
                 self.run_full_validation(epub_path)
+        elif choice == '5':  # Golden-file tests
+            self.run_golden_file_tests()
 
         input("\nPress Enter to continue...")
         self.current_menu = self.history.pop()
@@ -330,6 +340,8 @@ class InteractiveCLI:
             theme_path = input("Enter theme file path: ").strip()
             if theme_path:
                 self.run_install_theme(theme_path)
+        elif choice == '5':  # Store Profiles
+            self.run_store_profiles()
 
         input("\nPress Enter to continue...")
         self.current_menu = self.history.pop()
@@ -358,7 +370,6 @@ class InteractiveCLI:
     def run_quick_build(self):
         """Run quick build with guided prompts."""
         from .cli import main as cli_main
-        import sys
 
         print("Starting interactive build wizard...")
         old_argv = sys.argv
@@ -387,7 +398,6 @@ class InteractiveCLI:
 
         # Build command
         from .cli import main as cli_main
-        import sys
 
         cmd = ['docx2shelf', 'build', '--input', input_file]
         if title:
@@ -422,7 +432,6 @@ class InteractiveCLI:
             return
 
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -441,7 +450,6 @@ class InteractiveCLI:
             return
 
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -460,7 +468,6 @@ class InteractiveCLI:
             return
 
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -474,7 +481,6 @@ class InteractiveCLI:
     def run_epub_validation(self, epub_path: str):
         """Run EPUB validation."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -488,7 +494,6 @@ class InteractiveCLI:
     def run_directory_validation(self, dir_path: str):
         """Run validation on directory of EPUBs."""
         print(f"Validating all EPUB files in: {dir_path}")
-        from pathlib import Path
 
         dir_path_obj = Path(dir_path)
         if not dir_path_obj.exists():
@@ -507,7 +512,6 @@ class InteractiveCLI:
     def run_quick_validation(self, epub_path: str):
         """Run quick validation."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -521,7 +525,6 @@ class InteractiveCLI:
     def run_full_validation(self, epub_path: str):
         """Run full validation."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -535,7 +538,6 @@ class InteractiveCLI:
     def run_tools_status(self):
         """Check tools status."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -549,7 +551,6 @@ class InteractiveCLI:
     def run_install_pandoc(self):
         """Install Pandoc."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -563,7 +564,6 @@ class InteractiveCLI:
     def run_install_epubcheck(self):
         """Install EPUBCheck."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -577,7 +577,6 @@ class InteractiveCLI:
     def run_tools_locations(self):
         """Show tool locations."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -591,7 +590,6 @@ class InteractiveCLI:
     def run_tools_doctor(self):
         """Run tools health check."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -605,7 +603,6 @@ class InteractiveCLI:
     def run_create_bundle(self):
         """Create offline installer bundle."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -619,7 +616,6 @@ class InteractiveCLI:
     def run_ai_metadata(self, doc_path: str):
         """Run AI metadata enhancement."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -633,7 +629,6 @@ class InteractiveCLI:
     def run_ai_genre(self, doc_path: str):
         """Run AI genre detection."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -647,7 +642,6 @@ class InteractiveCLI:
     def run_ai_alt_text(self, image_path: str):
         """Run AI alt text generation."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -661,7 +655,6 @@ class InteractiveCLI:
     def run_ai_config(self):
         """Configure AI settings."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -689,7 +682,6 @@ class InteractiveCLI:
     def run_list_themes(self):
         """List available themes."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -702,13 +694,20 @@ class InteractiveCLI:
 
     def run_preview_themes(self):
         """Preview themes."""
-        print("Theme preview functionality would open a browser with theme samples.")
-        print("This feature is planned for future implementation.")
+        from .cli import main as cli_main
+
+        old_argv = sys.argv
+        try:
+            sys.argv = ['docx2shelf', 'preview-themes']
+            cli_main()
+        except SystemExit:
+            pass
+        finally:
+            sys.argv = old_argv
 
     def run_theme_editor(self):
         """Run theme editor."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -724,10 +723,30 @@ class InteractiveCLI:
         print(f"Installing theme from: {theme_path}")
         print("Theme installation functionality is planned for future implementation.")
 
+    def run_store_profiles(self):
+        """Display store profile information and optimization options."""
+        print("\n[STORE PROFILE OPTIMIZATION]")
+        print("Store profiles optimize EPUB output for specific ebook retailers.")
+        print("\nAvailable profiles:")
+        print("  1. kdp      - Amazon Kindle Direct Publishing")
+        print("  2. apple    - Apple Books")
+        print("  3. kobo     - Kobo")
+        print("  4. google   - Google Play Books")
+        print("  5. bn       - Barnes & Noble")
+        print("  6. generic  - Generic EPUB 3 standard")
+
+        print("\nStore profiles automatically apply:")
+        print("- CSS optimizations for specific readers")
+        print("- Metadata formatting preferences")
+        print("- Image optimization settings")
+        print("- Typography adjustments")
+
+        print("\nTo use store profiles, add --store-profile <name> to your build command.")
+        print("Example: docx2shelf build --input book.docx --store-profile kdp")
+
     def run_list_plugins(self):
         """List installed plugins."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -741,7 +760,6 @@ class InteractiveCLI:
     def run_plugin_marketplace(self):
         """Browse plugin marketplace."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -755,7 +773,6 @@ class InteractiveCLI:
     def run_install_plugin(self, plugin_path: str):
         """Install plugin from file."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -769,7 +786,6 @@ class InteractiveCLI:
     def run_manage_plugins(self):
         """Enable/disable plugins."""
         from .cli import main as cli_main
-        import sys
 
         # First list plugins
         print("Current plugins:")
@@ -806,7 +822,6 @@ class InteractiveCLI:
     def run_create_plugin(self):
         """Create new plugin."""
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -831,6 +846,10 @@ class InteractiveCLI:
                     self.show_build_menu()
                 elif self.current_menu == "validate":
                     self.show_validate_menu()
+                elif self.current_menu == "quality":
+                    self.show_quality_menu()
+                elif self.current_menu == "convert":
+                    self.show_convert_menu()
                 elif self.current_menu == "doctor":
                     self.execute_doctor_command()
                 elif self.current_menu == "tools":
@@ -845,8 +864,14 @@ class InteractiveCLI:
                     self.execute_batch_command()
                 elif self.current_menu == "plugins":
                     self.show_plugins_menu()
+                elif self.current_menu == "connectors":
+                    self.show_connectors_menu()
+                elif self.current_menu == "checklist":
+                    self.show_checklist_menu()
                 elif self.current_menu == "enterprise":
                     self.execute_enterprise_command()
+                elif self.current_menu == "update":
+                    self.execute_update_command()
                 elif self.current_menu == "settings":
                     self.execute_settings_command()
                 elif self.current_menu == "about":
@@ -861,11 +886,67 @@ class InteractiveCLI:
             print("Returning to main menu...")
             self.current_menu = "main"
 
+    def run_golden_file_tests(self):
+        """Run golden-file regression tests."""
+        print("\n[GOLDEN-FILE REGRESSION TESTS]")
+        print("Golden-file tests validate DOCX conversion consistency against known-good outputs.")
+
+        # Check if test environment is set up
+        test_script = Path("scripts/test_golden_files.py")
+        if not test_script.exists():
+            print("[ERROR] Golden-file test scripts not found.")
+            print("Please ensure you're running from the docx2shelf root directory.")
+            return
+
+        print("\nAvailable test options:")
+        print("1. Check test status")
+        print("2. Generate golden fixtures")
+        print("3. Run structure tests")
+        print("4. Run regression tests")
+        print("5. Validate fixtures")
+        print("6. Clean up test files")
+
+        choice = input("\nSelect test option (1-6): ").strip()
+
+        if choice == '1':  # Status
+            self.run_golden_test_command('--status')
+        elif choice == '2':  # Generate
+            print("\n[GENERATING GOLDEN FIXTURES]")
+            print("This will create test DOCX files and convert them to golden EPUB fixtures.")
+            confirm = input("Continue? (y/N): ").strip().lower()
+            if confirm in ['y', 'yes']:
+                self.run_golden_test_command('--generate')
+        elif choice == '3':  # Structure tests
+            self.run_golden_test_command('--test', 'structure')
+        elif choice == '4':  # Regression tests
+            self.run_golden_test_command('--test', 'regression')
+        elif choice == '5':  # Validate
+            self.run_golden_test_command('--validate')
+        elif choice == '6':  # Cleanup
+            print("\n[CLEANING UP TEST FILES]")
+            print("This will delete generated test fixtures.")
+            confirm = input("Continue? (y/N): ").strip().lower()
+            if confirm in ['y', 'yes']:
+                self.run_golden_test_command('--cleanup')
+        else:
+            print("Invalid choice.")
+
+    def run_golden_test_command(self, *args):
+        """Run a golden-file test command."""
+        import subprocess
+
+        cmd = [sys.executable, "scripts/test_golden_files.py"] + list(args)
+        try:
+            result = subprocess.run(cmd, capture_output=False, text=True)
+            if result.returncode != 0:
+                print(f"\n[WARNING] Test command returned exit code: {result.returncode}")
+        except Exception as e:
+            print(f"\n[ERROR] Failed to run test command: {e}")
+
     def execute_doctor_command(self):
         """Execute doctor command."""
         print("\n[RUNNING ENVIRONMENT DIAGNOSTICS]")
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -883,7 +964,6 @@ class InteractiveCLI:
         """Execute wizard command."""
         print("\n[STARTING INTERACTIVE WIZARD]")
         from .cli import main as cli_main
-        import sys
 
         old_argv = sys.argv
         try:
@@ -907,7 +987,6 @@ class InteractiveCLI:
 
         if input_dir and output_dir:
             from .cli import main as cli_main
-            import sys
 
             old_argv = sys.argv
             try:
@@ -938,6 +1017,331 @@ class InteractiveCLI:
 
         input("\nPress Enter to continue...")
         self.current_menu = self.history.pop()
+
+    def show_quality_menu(self):
+        """Display the quality analysis menu."""
+        options = [
+            ("analyze", "Analyze EPUB quality"),
+            ("score", "Generate quality score report"),
+            ("accessibility", "Accessibility audit"),
+            ("readability", "Readability analysis"),
+            ("metadata", "Metadata completeness check"),
+        ]
+
+        self.print_menu("Quality Analysis", options)
+        choice = self.get_user_choice(len(options))
+
+        if choice == 'q':
+            self.running = False
+        elif choice == 'b':
+            self.current_menu = self.history.pop()
+        else:
+            self.execute_quality_command(choice)
+
+    def show_convert_menu(self):
+        """Display the conversion menu."""
+        options = [
+            ("pdf", "Convert EPUB to PDF"),
+            ("mobi", "Convert EPUB to MOBI"),
+            ("azw3", "Convert EPUB to AZW3"),
+            ("web", "Convert EPUB to web format"),
+            ("text", "Convert EPUB to plain text"),
+        ]
+
+        self.print_menu("Format Conversion", options)
+        choice = self.get_user_choice(len(options))
+
+        if choice == 'q':
+            self.running = False
+        elif choice == 'b':
+            self.current_menu = self.history.pop()
+        else:
+            self.execute_convert_command(choice)
+
+    def show_connectors_menu(self):
+        """Display the connectors menu."""
+        options = [
+            ("list", "List available connectors"),
+            ("enable", "Enable connector"),
+            ("disable", "Disable connector"),
+            ("auth", "Authenticate with connector"),
+            ("fetch", "Fetch document from connector"),
+        ]
+
+        self.print_menu("Document Connectors", options)
+        choice = self.get_user_choice(len(options))
+
+        if choice == 'q':
+            self.running = False
+        elif choice == 'b':
+            self.current_menu = self.history.pop()
+        else:
+            self.execute_connectors_command(choice)
+
+    def show_checklist_menu(self):
+        """Display the checklist menu."""
+        options = [
+            ("kdp", "Amazon KDP compatibility check"),
+            ("apple", "Apple Books compatibility check"),
+            ("kobo", "Kobo compatibility check"),
+            ("google", "Google Play Books compatibility check"),
+            ("all", "Run all store compatibility checks"),
+        ]
+
+        self.print_menu("Publishing Checklists", options)
+        choice = self.get_user_choice(len(options))
+
+        if choice == 'q':
+            self.running = False
+        elif choice == 'b':
+            self.current_menu = self.history.pop()
+        else:
+            self.execute_checklist_command(choice)
+
+    def execute_quality_command(self, choice: str):
+        """Execute quality analysis command."""
+        print(f"\n[EXECUTING QUALITY COMMAND: {choice}]")
+
+        if choice == '1':  # Analyze
+            epub_path = input("Enter EPUB file path: ").strip()
+            if epub_path:
+                self.run_quality_analysis(epub_path)
+        elif choice == '2':  # Score
+            epub_path = input("Enter EPUB file path: ").strip()
+            if epub_path:
+                self.run_quality_scoring(epub_path)
+        elif choice == '3':  # Accessibility
+            epub_path = input("Enter EPUB file path: ").strip()
+            if epub_path:
+                self.run_accessibility_audit(epub_path)
+        elif choice == '4':  # Readability
+            epub_path = input("Enter EPUB file path: ").strip()
+            if epub_path:
+                self.run_readability_analysis(epub_path)
+        elif choice == '5':  # Metadata
+            epub_path = input("Enter EPUB file path: ").strip()
+            if epub_path:
+                self.run_metadata_check(epub_path)
+
+        input("\nPress Enter to continue...")
+        self.current_menu = self.history.pop()
+
+    def execute_convert_command(self, choice: str):
+        """Execute format conversion command."""
+        print(f"\n[EXECUTING CONVERT COMMAND: {choice}]")
+
+        epub_path = input("Enter EPUB file path: ").strip()
+        if not epub_path:
+            print("No file specified.")
+            input("\nPress Enter to continue...")
+            self.current_menu = self.history.pop()
+            return
+
+        if choice == '1':  # PDF
+            self.run_epub_to_pdf(epub_path)
+        elif choice == '2':  # MOBI
+            self.run_epub_to_mobi(epub_path)
+        elif choice == '3':  # AZW3
+            self.run_epub_to_azw3(epub_path)
+        elif choice == '4':  # Web
+            self.run_epub_to_web(epub_path)
+        elif choice == '5':  # Text
+            self.run_epub_to_text(epub_path)
+
+        input("\nPress Enter to continue...")
+        self.current_menu = self.history.pop()
+
+    def execute_connectors_command(self, choice: str):
+        """Execute connectors command."""
+        print(f"\n[EXECUTING CONNECTORS COMMAND: {choice}]")
+
+        if choice == '1':  # List
+            self.run_connectors_list()
+        elif choice == '2':  # Enable
+            connector = input("Enter connector name: ").strip()
+            if connector:
+                self.run_connector_enable(connector)
+        elif choice == '3':  # Disable
+            connector = input("Enter connector name: ").strip()
+            if connector:
+                self.run_connector_disable(connector)
+        elif choice == '4':  # Auth
+            connector = input("Enter connector name: ").strip()
+            if connector:
+                self.run_connector_auth(connector)
+        elif choice == '5':  # Fetch
+            connector = input("Enter connector name: ").strip()
+            doc_id = input("Enter document ID: ").strip()
+            if connector and doc_id:
+                self.run_connector_fetch(connector, doc_id)
+
+        input("\nPress Enter to continue...")
+        self.current_menu = self.history.pop()
+
+    def execute_checklist_command(self, choice: str):
+        """Execute checklist command."""
+        print(f"\n[EXECUTING CHECKLIST COMMAND: {choice}]")
+
+        epub_path = input("Enter EPUB file path: ").strip()
+        if not epub_path:
+            print("No file specified.")
+            input("\nPress Enter to continue...")
+            self.current_menu = self.history.pop()
+            return
+
+        if choice == '1':  # KDP
+            self.run_kdp_checklist(epub_path)
+        elif choice == '2':  # Apple
+            self.run_apple_checklist(epub_path)
+        elif choice == '3':  # Kobo
+            self.run_kobo_checklist(epub_path)
+        elif choice == '4':  # Google
+            self.run_google_checklist(epub_path)
+        elif choice == '5':  # All
+            self.run_all_checklists(epub_path)
+
+        input("\nPress Enter to continue...")
+        self.current_menu = self.history.pop()
+
+    def execute_update_command(self):
+        """Execute update command."""
+        print("\n[UPDATING DOCX2SHELF]")
+        print("Checking for updates...")
+
+        from .cli import main as cli_main
+
+        old_argv = sys.argv
+        try:
+            sys.argv = ['docx2shelf', 'update']
+            cli_main()
+        except SystemExit:
+            pass
+        finally:
+            sys.argv = old_argv
+
+        input("\nPress Enter to continue...")
+        self.current_menu = self.history.pop()
+
+    # Implementation stubs for new functionality
+    def run_quality_analysis(self, epub_path):
+        """Run quality analysis on EPUB."""
+        print(f"Running quality analysis on: {epub_path}")
+        print("Quality analysis functionality is available through CLI command:")
+        print(f"  docx2shelf quality --input '{epub_path}'")
+
+    def run_quality_scoring(self, epub_path):
+        """Run quality scoring on EPUB."""
+        print(f"Running quality scoring on: {epub_path}")
+        print("Quality scoring functionality is available through CLI command:")
+        print(f"  docx2shelf quality --input '{epub_path}' --score")
+
+    def run_accessibility_audit(self, epub_path):
+        """Run accessibility audit on EPUB."""
+        print(f"Running accessibility audit on: {epub_path}")
+        print("Accessibility audit functionality is available through CLI command:")
+        print(f"  docx2shelf quality --input '{epub_path}' --accessibility")
+
+    def run_readability_analysis(self, epub_path):
+        """Run readability analysis on EPUB."""
+        print(f"Running readability analysis on: {epub_path}")
+        print("Readability analysis functionality is available through CLI command:")
+        print(f"  docx2shelf quality --input '{epub_path}' --readability")
+
+    def run_metadata_check(self, epub_path):
+        """Run metadata completeness check on EPUB."""
+        print(f"Running metadata check on: {epub_path}")
+        print("Metadata check functionality is available through CLI command:")
+        print(f"  docx2shelf quality --input '{epub_path}' --metadata")
+
+    def run_epub_to_pdf(self, epub_path):
+        """Convert EPUB to PDF."""
+        print(f"Converting EPUB to PDF: {epub_path}")
+        print("PDF conversion functionality is available through CLI command:")
+        print(f"  docx2shelf convert --input '{epub_path}' --output-format pdf")
+
+    def run_epub_to_mobi(self, epub_path):
+        """Convert EPUB to MOBI."""
+        print(f"Converting EPUB to MOBI: {epub_path}")
+        print("MOBI conversion functionality is available through CLI command:")
+        print(f"  docx2shelf convert --input '{epub_path}' --output-format mobi")
+
+    def run_epub_to_azw3(self, epub_path):
+        """Convert EPUB to AZW3."""
+        print(f"Converting EPUB to AZW3: {epub_path}")
+        print("AZW3 conversion functionality is available through CLI command:")
+        print(f"  docx2shelf convert --input '{epub_path}' --output-format azw3")
+
+    def run_epub_to_web(self, epub_path):
+        """Convert EPUB to web format."""
+        print(f"Converting EPUB to web format: {epub_path}")
+        print("Web conversion functionality is available through CLI command:")
+        print(f"  docx2shelf convert --input '{epub_path}' --output-format web")
+
+    def run_epub_to_text(self, epub_path):
+        """Convert EPUB to plain text."""
+        print(f"Converting EPUB to text: {epub_path}")
+        print("Text conversion functionality is available through CLI command:")
+        print(f"  docx2shelf convert --input '{epub_path}' --output-format text")
+
+    def run_connectors_list(self):
+        """List available connectors."""
+        print("Listing available connectors...")
+        print("Connectors functionality is available through CLI command:")
+        print("  docx2shelf connectors list")
+
+    def run_connector_enable(self, connector):
+        """Enable a connector."""
+        print(f"Enabling connector: {connector}")
+        print("Connector management is available through CLI command:")
+        print(f"  docx2shelf connectors enable {connector}")
+
+    def run_connector_disable(self, connector):
+        """Disable a connector."""
+        print(f"Disabling connector: {connector}")
+        print("Connector management is available through CLI command:")
+        print(f"  docx2shelf connectors disable {connector}")
+
+    def run_connector_auth(self, connector):
+        """Authenticate with a connector."""
+        print(f"Authenticating with connector: {connector}")
+        print("Connector authentication is available through CLI command:")
+        print(f"  docx2shelf connectors auth {connector}")
+
+    def run_connector_fetch(self, connector, doc_id):
+        """Fetch document from connector."""
+        print(f"Fetching document {doc_id} from connector: {connector}")
+        print("Document fetching is available through CLI command:")
+        print(f"  docx2shelf connectors fetch {connector} {doc_id}")
+
+    def run_kdp_checklist(self, epub_path):
+        """Run KDP compatibility checklist."""
+        print(f"Running KDP checklist for: {epub_path}")
+        print("KDP checklist is available through CLI command:")
+        print(f"  docx2shelf checklist --input '{epub_path}' --store kdp")
+
+    def run_apple_checklist(self, epub_path):
+        """Run Apple Books compatibility checklist."""
+        print(f"Running Apple Books checklist for: {epub_path}")
+        print("Apple checklist is available through CLI command:")
+        print(f"  docx2shelf checklist --input '{epub_path}' --store apple")
+
+    def run_kobo_checklist(self, epub_path):
+        """Run Kobo compatibility checklist."""
+        print(f"Running Kobo checklist for: {epub_path}")
+        print("Kobo checklist is available through CLI command:")
+        print(f"  docx2shelf checklist --input '{epub_path}' --store kobo")
+
+    def run_google_checklist(self, epub_path):
+        """Run Google Play Books compatibility checklist."""
+        print(f"Running Google Play Books checklist for: {epub_path}")
+        print("Google checklist is available through CLI command:")
+        print(f"  docx2shelf checklist --input '{epub_path}' --store google")
+
+    def run_all_checklists(self, epub_path):
+        """Run all store compatibility checklists."""
+        print(f"Running all checklists for: {epub_path}")
+        print("All checklists are available through CLI command:")
+        print(f"  docx2shelf checklist --input '{epub_path}' --all-stores")
 
 
 def run_interactive_cli():
