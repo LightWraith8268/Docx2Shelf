@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.7] - 2025-01-20
+### Interactive CLI Menu System
+
+#### New Features
+- **Interactive CLI Interface**: Complete menu-driven interface accessible by running `docx2shelf` with no arguments
+  - Organized main menu with all major feature categories
+  - Hierarchical submenu navigation with breadcrumb support
+  - Numbered options with intuitive navigation (b=back, q=quit)
+  - Clear screen functionality for clean user experience
+- **Dual Access Methods**: Interactive mode available both automatically (no args) and explicitly (`docx2shelf interactive`)
+- **Comprehensive Menu Coverage**: Every CLI feature accessible through organized menu structure
+  - Build workflows (Quick, Advanced, Metadata-driven, Preview, Inspect)
+  - EPUB validation (Single file, Directory batch, Quick/Full validation)
+  - Tools management (Status, Installation, Health checks)
+  - AI features (Metadata, Genre detection, Alt text, Configuration)
+  - Theme management (List, Preview, Editor, Installation)
+  - Plugin system (List, Marketplace, Install, Enable/Disable, Create)
+
+#### User Experience Improvements
+- **Guided Workflows**: Step-by-step prompts for complex operations
+- **Input Validation**: Robust error handling and user guidance
+- **Context Preservation**: Menu history and navigation state management
+- **Integration**: All menu options leverage existing CLI commands internally
+
 ## [1.3.6] - 2025-01-20
 ### Advanced Validation & Enhanced Image Processing
 

@@ -421,6 +421,9 @@ def _arg_parser() -> argparse.ArgumentParser:
     # Environment diagnostic command
     sub.add_parser("doctor", help="Run comprehensive environment diagnostics")
 
+    # Interactive CLI command
+    sub.add_parser("interactive", help="Launch interactive menu-driven CLI interface")
+
     # --- Checklist subcommand ---
     check = sub.add_parser("checklist", help="Run publishing store compatibility checklists")
     check.add_argument("--metadata", help="Path to metadata.txt file (default: ./metadata.txt)")
@@ -2523,8 +2526,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         update_thread.start()
 
     if not argv:
-        # Show help when no args are provided
-        argv = ["--help"]
+        # Launch interactive CLI when no args are provided
+        from .interactive_cli import run_interactive_cli
+        run_interactive_cli()
+        return 0
     parser = _arg_parser()
     args = parser.parse_args(argv)
 
@@ -2555,6 +2560,10 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_update(args)
     if args.command == "doctor":
         return run_doctor(args)
+    if args.command == "interactive":
+        from .interactive_cli import run_interactive_cli
+        run_interactive_cli()
+        return 0
     if args.command == "checklist":
         return run_checklist(args)
     if args.command == "quality":
