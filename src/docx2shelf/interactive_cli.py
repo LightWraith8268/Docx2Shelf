@@ -1433,6 +1433,139 @@ class InteractiveCLI:
             print(f"\nError: {e}")
             print("Exiting interactive mode.")
 
+    def show_batch_menu(self):
+        """Display batch processing options."""
+        options = [
+            ("files", "Process multiple files"),
+            ("folder", "Process folder of documents"),
+            ("config", "Configure batch settings"),
+            ("queue", "View processing queue"),
+        ]
+
+        self.print_menu("Batch Processing", options)
+        choice = self.get_user_choice(len(options))
+
+        if choice == 'q':
+            self.running = False
+        elif choice == 'b':
+            self.current_menu = "main"
+        elif choice.isdigit():
+            option_key = options[int(choice) - 1][0]
+
+            if option_key == "files":
+                print("Batch file processing is available through CLI command:")
+                print("  docx2shelf batch --files file1.docx file2.docx file3.docx")
+            elif option_key == "folder":
+                print("Batch folder processing is available through CLI command:")
+                print("  docx2shelf batch --folder /path/to/documents/")
+            elif option_key == "config":
+                print("Batch configuration is available through CLI command:")
+                print("  docx2shelf batch --config")
+            elif option_key == "queue":
+                print("Processing queue status is available through CLI command:")
+                print("  docx2shelf batch --status")
+
+    def show_enterprise_menu(self):
+        """Display enterprise features."""
+        options = [
+            ("api", "Start REST API server"),
+            ("users", "Manage users and permissions"),
+            ("stats", "View usage statistics"),
+            ("config", "Enterprise configuration"),
+        ]
+
+        self.print_menu("Enterprise Features", options)
+        choice = self.get_user_choice(len(options))
+
+        if choice == 'q':
+            self.running = False
+        elif choice == 'b':
+            self.current_menu = "main"
+        elif choice.isdigit():
+            option_key = options[int(choice) - 1][0]
+
+            if option_key == "api":
+                print("Enterprise API server can be started with CLI command:")
+                print("  docx2shelf enterprise start-api")
+            elif option_key == "users":
+                print("User management is available through CLI command:")
+                print("  docx2shelf enterprise users")
+            elif option_key == "stats":
+                print("Usage statistics are available through CLI command:")
+                print("  docx2shelf enterprise stats")
+            elif option_key == "config":
+                print("Enterprise configuration is available through CLI command:")
+                print("  docx2shelf enterprise config")
+
+    def show_settings_menu(self):
+        """Display application settings."""
+        options = [
+            ("themes", "Theme preferences"),
+            ("ai", "AI configuration"),
+            ("paths", "Default file paths"),
+            ("cache", "Cache settings"),
+            ("export", "Export settings"),
+            ("import", "Import settings"),
+            ("reset", "Reset to defaults"),
+        ]
+
+        self.print_menu("Application Settings", options)
+        choice = self.get_user_choice(len(options))
+
+        if choice == 'q':
+            self.running = False
+        elif choice == 'b':
+            self.current_menu = "main"
+        elif choice.isdigit():
+            option_key = options[int(choice) - 1][0]
+
+            if option_key == "themes":
+                print("Theme settings are available through CLI command:")
+                print("  docx2shelf list-themes")
+                print("  docx2shelf theme-editor")
+            elif option_key == "ai":
+                print("AI configuration is available through CLI command:")
+                print("  docx2shelf ai --config")
+            elif option_key == "paths":
+                print("Default paths can be configured in your config file")
+            elif option_key == "cache":
+                print("Cache settings are managed automatically")
+            elif option_key == "export":
+                print("Settings export is available through CLI command:")
+                print("  docx2shelf config --export")
+            elif option_key == "import":
+                print("Settings import is available through CLI command:")
+                print("  docx2shelf config --import")
+            elif option_key == "reset":
+                print("Settings reset is available through CLI command:")
+                print("  docx2shelf config --reset")
+
+    def show_about(self):
+        """Display about information."""
+        from .version import get_version_info
+
+        version_info = get_version_info()
+
+        print(f"\n{version_info['package']} v{version_info['version']}")
+        print(f"{version_info['description']}")
+        print()
+        print("Interactive EPUB converter with full-featured GUI and powerful CLI")
+        print("for manuscripts → professional ebooks.")
+        print()
+        print("Features:")
+        print("- Quality analysis and scoring")
+        print("- Format conversion (PDF, MOBI, AZW3, etc.)")
+        print("- Publishing checklists (KDP, Apple Books, Kobo)")
+        print("- AI-powered features")
+        print("- Batch processing and enterprise tools")
+        print("- Plugin management and connectors")
+        print()
+        print("GitHub: https://github.com/LightWraith8268/Docx2Shelf")
+        print("Documentation: Available through 'docx2shelf --help'")
+        print()
+        input("Press Enter to continue...")
+        self.current_menu = "main"
+
 
 def run_interactive_cli():
     """Run the interactive CLI."""

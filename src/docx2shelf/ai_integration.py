@@ -48,11 +48,21 @@ class AIConfig:
     cache_dir: Optional[Path] = None
     max_retries: int = 3
     timeout: int = 30
+    model_type: str = "local"  # "local", "openai", "huggingface"
+    local_model: str = "gpt2"  # Default local model
+    enable_caching: bool = True  # Alias for cache_enabled
     model_preferences: Dict[str, str] = field(default_factory=lambda: {
         "text_classification": "distilbert-base-uncased-finetuned-sst-2-english",
         "text_generation": "gpt2",
         "image_to_text": "nlpconnect/vit-gpt2-image-captioning"
     })
+
+    def __post_init__(self):
+        """Ensure compatibility with different attribute names."""
+        # Sync cache_enabled and enable_caching
+        if hasattr(self, 'cache_enabled') and hasattr(self, 'enable_caching'):
+            if self.cache_enabled != self.enable_caching:
+                self.enable_caching = self.cache_enabled
 
 
 @dataclass
