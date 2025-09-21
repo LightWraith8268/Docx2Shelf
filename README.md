@@ -183,6 +183,20 @@ docx2shelf update
 
 To completely remove Docx2Shelf from your system, use our universal uninstaller scripts that work across all installation methods:
 
+**If you used the install scripts** (recommended), the uninstall script was automatically downloaded:
+
+**Windows:**
+```cmd
+uninstall.bat
+```
+
+**macOS/Linux:**
+```bash
+./uninstall.sh
+```
+
+**If you don't have the local uninstall scripts**, download them:
+
 **Windows:**
 ```cmd
 curl -L -o uninstall.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.bat && uninstall.bat

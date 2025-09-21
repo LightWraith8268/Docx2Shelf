@@ -146,6 +146,18 @@ if %errorlevel% equ 0 (
     echo.
     echo Docx2Shelf is now installed and ready to use.
 
+    :: Download uninstall script for future use
+    echo.
+    echo Downloading uninstall script for future use...
+    curl -L -o uninstall.bat "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.bat" >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo [SUCCESS] Uninstall script downloaded to: uninstall.bat
+        echo To uninstall later, simply run: uninstall.bat
+    ) else (
+        echo [WARNING] Could not download uninstall script.
+        echo You can download it later from: https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.bat
+    )
+
     :: Show installed version
     echo.
     echo Installed version:

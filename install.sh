@@ -583,6 +583,18 @@ if [[ $VERIFICATION_RESULT -eq 0 ]]; then
     fi
     echo -e "${BLUE}📦 Installation source: GitHub repository${NC}"
 
+    # Download uninstall script for future use
+    echo
+    echo "Downloading uninstall script for future use..."
+    if curl -sSL -o uninstall.sh "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.sh" 2>/dev/null; then
+        chmod +x uninstall.sh 2>/dev/null
+        echo -e "${GREEN}[SUCCESS] Uninstall script downloaded to: uninstall.sh${NC}"
+        echo "To uninstall later, simply run: ./uninstall.sh"
+    else
+        echo -e "${YELLOW}[WARNING] Could not download uninstall script.${NC}"
+        echo "You can download it later from: https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.sh"
+    fi
+
     # Show installed version
     echo
     echo "Installed version:"

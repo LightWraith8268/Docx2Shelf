@@ -5,8 +5,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from .path_utils import normalize_path, safe_filename, ensure_unicode_path, is_safe_path
-
 from .accessibility_audit import audit_epub_accessibility
 from .ai_accessibility import generate_image_alt_texts
 from .ai_genre_detection import detect_genre_with_ai
@@ -16,6 +14,7 @@ from .content_validation import validate_content_quality
 from .error_handler import handle_error
 from .formats import check_format_dependencies, convert_epub
 from .metadata import BuildOptions, EpubMetadata, build_output_filename, parse_date
+from .path_utils import ensure_unicode_path, is_safe_path, normalize_path, safe_filename
 from .preview import run_live_preview
 from .publishing_checklists import format_checklist_report, get_checker, run_all_checklists
 from .quality_scoring import analyze_epub_quality
@@ -110,6 +109,11 @@ def _arg_parser() -> argparse.ArgumentParser:
         choices=available_themes,
         default="serif",
         help="Base CSS theme (use --list-themes to see all options)",
+    )
+    b.add_argument(
+        "--store-profile",
+        choices=["kdp", "apple", "kobo", "google", "bn", "generic"],
+        help="Optimize EPUB for specific store (Amazon KDP, Apple Books, Kobo, Google Play, B&N, or generic)"
     )
     b.add_argument("--embed-fonts", type=str, help="Directory of TTF/OTF to embed")
     b.add_argument("--image-quality", type=int, default=85, help="JPEG/WebP quality for image compression (1-100)")
@@ -250,6 +254,21 @@ def _arg_parser() -> argparse.ArgumentParser:
         help="Filter themes by genre (fantasy, romance, mystery, scifi, academic, general)",
     )
 
+    # --- Preview themes subcommand ---
+    preview_themes = sub.add_parser("preview-themes", help="Preview themes in browser")
+    preview_themes.add_argument(
+        "--sample-text", type=str, help="Custom sample text file to use for preview"
+    )
+    preview_themes.add_argument(
+        "--themes", nargs="+", help="Specific themes to preview (defaults to all)"
+    )
+    preview_themes.add_argument(
+        "--output-dir", type=str, help="Directory to save preview HTML files"
+    )
+    preview_themes.add_argument(
+        "--no-browser", action="store_true", help="Don't open browser automatically"
+    )
+
     # --- List profiles subcommand ---
     list_profiles = sub.add_parser("list-profiles", help="List available publishing profiles")
     list_profiles.add_argument(
@@ -269,6 +288,11 @@ def _arg_parser() -> argparse.ArgumentParser:
     # Add common build options to batch command
     batch.add_argument("--profile", choices=available_profiles, help=profile_help)
     batch.add_argument("--theme", choices=available_themes, default="serif", help="Base CSS theme")
+    batch.add_argument(
+        "--store-profile",
+        choices=["kdp", "apple", "kobo", "google", "bn", "generic"],
+        help="Optimize EPUB for specific store"
+    )
     batch.add_argument("--epub-version", type=str, default="3")
     batch.add_argument("--image-format", choices=["original", "webp", "avif"], default="webp")
     batch.add_argument("--epubcheck", choices=["on", "off"], default="on")
@@ -515,6 +539,11 @@ def _arg_parser() -> argparse.ArgumentParser:
     ent_batch.add_argument("--webhook", help="Webhook URL for job notifications")
     ent_batch.add_argument("--priority", type=int, default=5, help="Job priority (1-10)")
     ent_batch.add_argument("--theme", default="serif", help="EPUB theme")
+    ent_batch.add_argument(
+        "--store-profile",
+        choices=["kdp", "apple", "kobo", "google", "bn", "generic"],
+        help="Optimize EPUB for specific store"
+    )
     ent_batch.add_argument("--split-at", default="h1", help="Chapter split level")
     ent_batch.add_argument("--max-concurrent", type=int, help="Maximum concurrent jobs")
 
@@ -1346,6 +1375,26 @@ def run_build(args: argparse.Namespace) -> int:
             if not getattr(args, 'quiet', False):
                 print("⚠️  AI features requested but not available")
 
+    # Apply store profile optimizations if specified
+    if getattr(args, 'store_profile', None):
+        try:
+            from .store_profiles import StoreProfile, StoreProfileManager
+            profile = StoreProfile(args.store_profile)
+            manager = StoreProfileManager()
+
+            # Apply store-specific CSS optimizations
+            store_css = manager.generate_store_css(profile)
+            if not getattr(args, 'quiet', False):
+                print(f"[STORE] Applied {profile.value} optimization profile")
+
+            # Store the store profile for later use in BuildOptions
+            args._store_profile_css = store_css
+            args._store_profile_enum = profile
+
+        except ImportError:
+            print("Warning: Store profile system not available", file=sys.stderr)
+        except Exception as e:
+            print(f"Error applying store profile: {e}", file=sys.stderr)
 
     # Resolve optional resource paths relative to input dir
     def _resolve_rel_to_input(path_str: str | None) -> Path | None:
@@ -1411,6 +1460,7 @@ def run_build(args: argparse.Namespace) -> int:
         line_height=(getattr(args, "line_height", None) or None),
         quiet=bool(getattr(args, "quiet", False)),
         verbose=bool(getattr(args, "verbose", False)),
+        store_profile_css=getattr(args, "_store_profile_css", None),
     )
 
     # Prefill from DOCX core properties if missing
@@ -1653,6 +1703,270 @@ def run_list_themes(args: argparse.Namespace) -> int:
     except ImportError:
         print("Theme discovery not available. Available themes: serif, sans, printlike")
         return 1
+
+
+def run_preview_themes(args: argparse.Namespace) -> int:
+    """Generate and display theme previews in browser."""
+    import webbrowser
+    from pathlib import Path
+
+    try:
+        from .path_utils import get_safe_temp_path, write_text_safe
+        from .themes import get_all_theme_names, get_theme_css_content
+    except ImportError:
+        print("Theme preview functionality not available")
+        return 1
+
+    # Get list of themes to preview
+    if args.themes:
+        themes_to_preview = args.themes
+    else:
+        themes_to_preview = get_all_theme_names()
+
+    if not themes_to_preview:
+        print("No themes found to preview")
+        return 1
+
+    # Determine output directory
+    if args.output_dir:
+        output_dir = Path(args.output_dir)
+    else:
+        output_dir = get_safe_temp_path("theme_preview")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load sample text
+    if args.sample_text:
+        try:
+            sample_text = Path(args.sample_text).read_text(encoding='utf-8')
+        except Exception as e:
+            print(f"Error reading sample text file: {e}")
+            sample_text = get_default_sample_text()
+    else:
+        sample_text = get_default_sample_text()
+
+    # Generate preview files
+    preview_files = []
+    print(f"Generating theme previews in: {output_dir}")
+
+    for theme_name in themes_to_preview:
+        try:
+            # Get theme CSS
+            theme_css = get_theme_css_content(theme_name)
+
+            # Generate preview HTML
+            preview_html = generate_theme_preview_html(theme_name, theme_css, sample_text)
+
+            # Write preview file
+            preview_file = output_dir / f"{theme_name}_preview.html"
+            write_text_safe(preview_file, preview_html)
+            preview_files.append(preview_file)
+
+            print(f"  [OK] Generated preview for {theme_name}")
+
+        except Exception as e:
+            print(f"  [ERROR] Error generating preview for {theme_name}: {e}")
+
+    if not preview_files:
+        print("No preview files were generated")
+        return 1
+
+    # Generate index file
+    index_html = generate_theme_index_html(preview_files, themes_to_preview)
+    index_file = output_dir / "index.html"
+    write_text_safe(index_file, index_html)
+
+    print("\n[THEMES] Theme previews generated!")
+    print(f"Location: {output_dir}")
+    print(f"Index file: {index_file}")
+
+    # Open in browser if requested
+    if not args.no_browser:
+        try:
+            webbrowser.open(f"file://{index_file.resolve()}")
+            print("🚀 Opening preview in browser...")
+        except Exception as e:
+            print(f"Could not open browser: {e}")
+            print(f"Manually open: file://{index_file.resolve()}")
+
+    return 0
+
+
+def get_default_sample_text() -> str:
+    """Get default sample text for theme preview."""
+    return """
+    <h1>Chapter 1: The Beginning</h1>
+    <p>This is a sample paragraph to demonstrate how text appears in this theme.
+    The quick brown fox jumps over the lazy dog, showcasing various letters and spacing.</p>
+
+    <h2>Section Title</h2>
+    <p><em>Italic text</em> and <strong>bold text</strong> are used for emphasis.
+    This helps you see how different text formatting appears with the theme.</p>
+
+    <h3>Subsection</h3>
+    <p>Quotations appear like this: "The only way to do great work is to love what you do."
+    This demonstrates how quoted text is styled in the theme.</p>
+
+    <blockquote>
+    <p>This is a blockquote element that shows how longer quoted passages are formatted.
+    It typically has different styling from regular paragraphs.</p>
+    </blockquote>
+
+    <p>Lists are formatted as follows:</p>
+    <ul>
+        <li>First item in an unordered list</li>
+        <li>Second item with <strong>bold text</strong></li>
+        <li>Third item with <em>italic text</em></li>
+    </ul>
+
+    <ol>
+        <li>First item in an ordered list</li>
+        <li>Second numbered item</li>
+        <li>Third numbered item</li>
+    </ol>
+    """
+
+
+def generate_theme_preview_html(theme_name: str, theme_css: str, sample_text: str) -> str:
+    """Generate HTML preview for a theme."""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Preview: {theme_name.title()}</title>
+    <style>
+        /* Theme CSS */
+        {theme_css}
+
+        /* Preview-specific styles */
+        body {{
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }}
+
+        .preview-container {{
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }}
+
+        .preview-header {{
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }}
+
+        .theme-name {{
+            font-size: 1.5em;
+            color: #666;
+            margin: 0;
+        }}
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <div class="preview-header">
+            <h1 class="theme-name">Theme: {theme_name.title()}</h1>
+        </div>
+        {sample_text}
+    </div>
+</body>
+</html>"""
+
+
+def generate_theme_index_html(preview_files: list, theme_names: list) -> str:
+    """Generate index HTML with links to all theme previews."""
+    theme_links = []
+    for i, theme_name in enumerate(theme_names):
+        if i < len(preview_files):
+            filename = preview_files[i].name
+            theme_links.append(f'<li><a href="{filename}">{theme_name.title()}</a></li>')
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docx2Shelf Theme Previews</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }}
+
+        .container {{
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }}
+
+        h1 {{
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }}
+
+        .theme-list {{
+            list-style: none;
+            padding: 0;
+        }}
+
+        .theme-list li {{
+            margin: 10px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }}
+
+        .theme-list li:hover {{
+            background: #e9ecef;
+        }}
+
+        .theme-list a {{
+            text-decoration: none;
+            color: #3498db;
+            font-weight: 500;
+            font-size: 1.1em;
+        }}
+
+        .theme-list a:hover {{
+            color: #2980b9;
+        }}
+
+        .footer {{
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9em;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Docx2Shelf Theme Previews</h1>
+        <p>Click on any theme name below to see how it will style your EPUB content:</p>
+
+        <ul class="theme-list">
+            {''.join(theme_links)}
+        </ul>
+
+        <div class="footer">
+            <p>Generated by Docx2Shelf Theme Previewer</p>
+        </div>
+    </div>
+</body>
+</html>"""
 
 
 def run_init_metadata(args: argparse.Namespace) -> int:
@@ -2565,6 +2879,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_theme_editor(args)
     if args.command == "list-themes":
         return run_list_themes(args)
+    if args.command == "preview-themes":
+        return run_preview_themes(args)
     if args.command == "list-profiles":
         return run_list_profiles(args)
     if args.command == "batch":
@@ -2598,6 +2914,29 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     parser.print_help()
     return 1
+
+
+def run_update(args: argparse.Namespace) -> int:
+    """Update docx2shelf to the latest version."""
+    try:
+        from .update import perform_update
+
+        result = perform_update()
+
+        if result:
+            return 0
+        else:
+            return 1
+
+    except ImportError:
+        print("Update functionality not available.")
+        print("Please reinstall using the installation script:")
+        print("  Windows: install.bat")
+        print("  macOS/Linux: install.sh")
+        return 1
+    except Exception as e:
+        print(f"Update failed: {e}")
+        return 1
 
 
 def run_doctor(args: argparse.Namespace) -> int:
@@ -2941,13 +3280,13 @@ def run_connectors(args) -> int:
         print("Available connectors:")
         for conn in connectors:
             status = "✓" if conn['enabled'] else "✗"
-            network = "🌐" if conn['requires_network'] else "📁"
+            network = "[NET]" if conn['requires_network'] else "[LOCAL]"
             auth = "🔑" if conn['authenticated'] else "🔓"
             print(f"  {status} {network} {auth} {conn['name']}")
 
         print("\nLegend:")
         print("  ✓/✗ = Enabled/Disabled")
-        print("  🌐/📁 = Network/Local")
+        print("  [NET]/[LOCAL] = Network/Local")
         print("  🔑/🔓 = Authenticated/Not authenticated")
         return 0
 
