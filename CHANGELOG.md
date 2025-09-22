@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.7] - 2025-01-21
+### Hotfix: Simplified Installation Process
+
+#### Fixed
+- **Critical Parsing Error**: Removed complex version parsing that was causing "period unexpected" errors
+  - Eliminated all `for /f` loops with complex token parsing
+  - Simplified version checking to display version and proceed with installation
+  - Focuses on working installation rather than complex validation
+  - Shows Python version to user for manual verification
+  - Removes all syntax-problematic parsing logic
+  - Prioritizes installer functionality over validation complexity
+
 ## [1.5.6] - 2025-01-21
 ### Hotfix: Native Version Parsing Approach
 

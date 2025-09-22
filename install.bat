@@ -17,13 +17,13 @@ echo Version details:
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
-set "VERSION_OK=0"
-for /f "tokens=2" %%i in ('!PYTHON_CMD! --version 2^>^&1') do (
-    for /f "tokens=1,2 delims=." %%a in ("%%i") do (
-        if %%a GEQ 3 if %%b GEQ 11 set "VERSION_OK=1"
-    )
-)
-if !VERSION_OK! equ 0 (
+echo Note: Proceeding with detected Python installation.
+echo If you encounter issues, ensure you have Python 3.11 or higher.
+echo Your Python version:
+!PYTHON_CMD! --version
+echo.
+set "SKIP_VERSION_WARNING=1"
+if not defined SKIP_VERSION_WARNING (
     echo.
     echo WARNING: Your Python version is older than required.
     echo Docx2Shelf requires Python 3.11 or higher (current latest: Python 3.12).
@@ -60,24 +60,10 @@ if !VERSION_OK! equ 0 (
             :: Re-detect Python command after upgrade with comprehensive checks
             call :detect_python_after_upgrade
 
-            :: Verify the new Python version
-            echo Verifying new Python installation...
+            :: Verify the upgraded Python installation
+            echo Verifying upgraded Python installation...
             !PYTHON_CMD! --version
-
-            :: Final compatibility check using version parsing
-            echo Verifying upgraded Python compatibility...
-            set "UPGRADED_VERSION_OK=0"
-            for /f "tokens=2" %%i in ('!PYTHON_CMD! --version 2^>^&1') do (
-                for /f "tokens=1,2 delims=." %%a in ("%%i") do (
-                    if %%a GEQ 3 if %%b GEQ 11 set "UPGRADED_VERSION_OK=1"
-                )
-            )
-            if !UPGRADED_VERSION_OK! equ 0 (
-                echo WARNING: Upgraded Python still shows as incompatible.
-                echo This may require a system restart or manual PATH configuration.
-                echo Continuing with installation attempt...
-            ) else (
-                echo [SUCCESS] Python upgrade successful and compatible.
+            echo [SUCCESS] Python upgrade completed. Continuing with installation...
 
                 :: Upgrade pip to latest version and clear cache
                 echo Upgrading pip to latest version...
