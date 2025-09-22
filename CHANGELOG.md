@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.6.0] - 2025-01-21
+### Major: Simplified Windows Installer
+
+#### Changed
+- **Completely Rebuilt Windows Installer**: Replaced complex installer with simple, reliable version
+  - Removed all problematic batch script syntax that was causing persistent errors
+  - Uses basic `python` and `git` commands without complex variable handling
+  - Eliminated delayed expansion issues and errorlevel timing problems
+  - Simple, linear execution flow that works across all Windows environments
+  - Focuses on core functionality: Python detection, Git check, Docx2Shelf installation
+  - Removed automatic Python upgrade and complex version checking
+  - Maintained original install_complex.bat as backup
+
+#### Fixed
+- **All Batch Script Syntax Errors**: No more "period was unexpected" or similar errors
+- **Installation Reliability**: Works consistently across Windows 7, 8, 10, 11
+- **User Experience**: Clear, straightforward installation process
+
 ## [1.5.9] - 2025-01-21
 ### Hotfix: Improved Python Command Execution
 
