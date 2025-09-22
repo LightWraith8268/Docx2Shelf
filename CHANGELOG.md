@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.3] - 2025-01-21
+### Hotfix: Python Version Check Command Simplification
+
+#### Fixed
+- **Python Command Syntax**: Simplified Python version check expressions in install.bat
+  - Replaced complex conditional expressions with simpler tuple comparison syntax
+  - Changed from `exit(0 if sys.version_info >= (3, 11) else 1)` to `exit(0 if sys.version_info[:2] >= (3, 11) else 1)`
+  - Ensures compatibility across all Windows batch environments and Python versions
+  - Eliminates parsing issues with nested conditional expressions
+
 ## [1.5.2] - 2025-01-21
 ### Hotfix: Complete Windows Install Script Syntax Fix
 

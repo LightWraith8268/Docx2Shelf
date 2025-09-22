@@ -17,7 +17,7 @@ echo Version details:
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
-!PYTHON_CMD! -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
+!PYTHON_CMD! -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" 2>nul
 if !errorlevel! neq 0 (
     echo.
     echo WARNING: Your Python version is older than required.
@@ -61,7 +61,7 @@ if !errorlevel! neq 0 (
             !PYTHON_CMD! -c "import sys; print('Python ' + str(sys.version_info.major) + '.' + str(sys.version_info.minor) + '.' + str(sys.version_info.micro))"
 
             :: Final compatibility check
-            !PYTHON_CMD! -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" 2>nul
+            !PYTHON_CMD! -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" 2>nul
             if !errorlevel! neq 0 (
                 echo WARNING: Upgraded Python still shows as incompatible.
                 echo This may require a system restart or manual PATH configuration.
@@ -364,7 +364,7 @@ set "PYTHON312_SYSTEM=%PROGRAMFILES%\Python312\python.exe"
 
 :: Check for Python 3.12 first (newest)
 if exist "!PYTHON312_USER!" (
-    "!PYTHON312_USER!" -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    "!PYTHON312_USER!" -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=!PYTHON312_USER!"
         echo Found Python 3.12 in user directory
@@ -373,7 +373,7 @@ if exist "!PYTHON312_USER!" (
 )
 
 if exist "!PYTHON312_SYSTEM!" (
-    "!PYTHON312_SYSTEM!" -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    "!PYTHON312_SYSTEM!" -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=!PYTHON312_SYSTEM!"
         echo Found Python 3.12 in system directory
@@ -383,7 +383,7 @@ if exist "!PYTHON312_SYSTEM!" (
 
 :: Check for Python 3.11
 if exist "!PYTHON311_USER!" (
-    "!PYTHON311_USER!" -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    "!PYTHON311_USER!" -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=!PYTHON311_USER!"
         echo Found Python 3.11 in user directory
@@ -392,7 +392,7 @@ if exist "!PYTHON311_USER!" (
 )
 
 if exist "!PYTHON311_SYSTEM!" (
-    "!PYTHON311_SYSTEM!" -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    "!PYTHON311_SYSTEM!" -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=!PYTHON311_SYSTEM!"
         echo Found Python 3.11 in system directory
@@ -403,7 +403,7 @@ if exist "!PYTHON311_SYSTEM!" (
 :: Method 2: Try py launcher with specific versions
 py -3.12 --version >nul 2>&1
 if !errorlevel! equ 0 (
-    py -3.12 -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    py -3.12 -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=py -3.12"
         echo Found Python 3.12 via py launcher
@@ -413,7 +413,7 @@ if !errorlevel! equ 0 (
 
 py -3.11 --version >nul 2>&1
 if !errorlevel! equ 0 (
-    py -3.11 -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    py -3.11 -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=py -3.11"
         echo Found Python 3.11 via py launcher
@@ -424,7 +424,7 @@ if !errorlevel! equ 0 (
 :: Method 3: Try generic py launcher (uses latest installed)
 py --version >nul 2>&1
 if !errorlevel! equ 0 (
-    py -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    py -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=py"
         echo Found compatible Python via py launcher
@@ -440,7 +440,7 @@ if !errorlevel! equ 0 (
 :: Method 4: Try direct python command
 python --version >nul 2>&1
 if !errorlevel! equ 0 (
-    python -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    python -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=python"
         echo Found compatible Python via python command
@@ -478,7 +478,7 @@ echo Detecting Python installation...
 :: Method 1: Try python command directly
 python --version >nul 2>&1
 if !errorlevel! equ 0 (
-    python -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    python -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=python"
         echo Found compatible python command
@@ -489,7 +489,7 @@ if !errorlevel! equ 0 (
 :: Method 2: Try py launcher
 py --version >nul 2>&1
 if !errorlevel! equ 0 (
-    py -c "import sys; exit(0 if sys.version_info >= (3, 11) else 1)" >nul 2>&1
+    py -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" >nul 2>&1
     if !errorlevel! equ 0 (
         set "PYTHON_CMD=py"
         echo Found compatible py launcher
