@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.9] - 2025-01-21
+### Hotfix: Improved Python Command Execution
+
+#### Fixed
+- **Python Command Execution Issues**: Enhanced reliability of Python command execution
+  - Added `call` command for all Python executions to ensure proper command processing
+  - Removed problematic pip upgrade check that was causing syntax errors
+  - Simplified installation flow to focus on core functionality
+  - Uses `call !PYTHON_CMD!` pattern for consistent command execution
+  - Eliminates issues with complex Python commands in batch environment
+
 ## [1.5.8] - 2025-01-21
 ### Hotfix: Fixed Remaining Errorlevel Syntax Issues
 

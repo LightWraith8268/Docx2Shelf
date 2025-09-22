@@ -13,14 +13,14 @@ call :detect_best_python
 
 echo Python found: !PYTHON_CMD!
 echo Version details:
-!PYTHON_CMD! --version
+call !PYTHON_CMD! --version
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
 echo Note: Proceeding with detected Python installation.
 echo If you encounter issues, ensure you have Python 3.11 or higher.
 echo Your Python version:
-!PYTHON_CMD! --version
+call !PYTHON_CMD! --version
 echo.
 set "SKIP_VERSION_WARNING=1"
 if not defined SKIP_VERSION_WARNING (
@@ -77,13 +77,8 @@ if not defined SKIP_VERSION_WARNING (
 ) else (
     echo Python version is compatible.
 
-    :: Check and upgrade pip even for compatible Python versions
-    echo Checking pip version...
-    !PYTHON_CMD! -m pip install --upgrade pip >nul 2>&1
-    set "PIP_UPGRADE_RESULT=!errorlevel!"
-    if !PIP_UPGRADE_RESULT! equ 0 (
-        echo [SUCCESS] Pip is up to date.
-    )
+    :: Skip pip upgrade check to avoid syntax issues
+    echo Proceeding with installation (pip will be upgraded during Docx2Shelf install if needed)...
 )
 
 :: Check for Git
@@ -161,7 +156,7 @@ if not "!CURRENT_VERSION!"=="" (
 :: Install Docx2Shelf
 echo.
 echo Installing Docx2Shelf from GitHub (latest version)...
-!PYTHON_CMD! -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
+call !PYTHON_CMD! -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
 set "INSTALL_RESULT=!errorlevel!"
 if !INSTALL_RESULT! equ 0 (
     echo.
