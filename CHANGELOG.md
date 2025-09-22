@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.5] - 2025-01-21
+### Hotfix: File-Based Python Version Detection
+
+#### Fixed
+- **Critical Syntax Error**: Replaced errorlevel-based Python version checking with file-based output detection
+  - Changed main version check to use temporary file output instead of exit codes
+  - Uses `print('OK' if version >= (3,11) else 'FAIL')` instead of `exit()` codes
+  - Eliminates "was unexpected at this time" errors during Python version compatibility checks
+  - Added helper function `:check_python_version` for consistent version checking
+  - File-based approach avoids batch script timing and errorlevel handling issues
+
 ## [1.5.4] - 2025-01-21
 ### Hotfix: Improved Batch Script Error Code Handling
 
