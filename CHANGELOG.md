@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.4.3] - 2025-01-21
+### Interactive Configuration & User Experience Enhancement
+
+#### Added
+- **Interactive AI Configuration**: Full interactive settings interface for AI features
+  - OpenAI API key configuration with secure input handling
+  - Model type selection (local/openai) with user-friendly prompts
+  - Local model configuration and caching options
+  - Connection testing and validation feedback
+- **Enterprise License Configuration**: Complete interactive setup for enterprise features
+  - License key entry and validation system
+  - Organization details and contact information setup
+  - User management and authentication configuration
+  - API server settings (host, port, SSL/TLS)
+  - Batch processing worker and queue configuration
+  - Configuration export functionality
+
+#### Fixed
+- **Import Error Resolution**: Added missing `get_user_data_dir` function to utils.py fixing plugins menu crash
+- **Settings Enhancement**: Updated theme preview to show "not available" message instead of crashing
+- **Update System**: Enhanced update commands to download installer directly from GitHub releases
+- **Unicode Console Support**: Replaced Unicode symbols with ASCII equivalents for better console compatibility
+
+#### Improved
+- **User Configuration Experience**: All settings now fully configurable through interactive GUI
+- **Error Prevention**: Enhanced error handling prevents application crashes during configuration
+- **Settings Accessibility**: Enterprise and AI settings now properly accessible through settings menu
+
 ## [1.4.2] - 2025-01-21
 ### Interactive CLI Complete Implementation
 

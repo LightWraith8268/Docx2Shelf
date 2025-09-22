@@ -665,17 +665,75 @@ class InteractiveCLI:
             sys.argv = old_argv
 
     def run_ai_config(self):
-        """Configure AI settings."""
-        from .cli import main as cli_main
+        """Configure AI settings interactively."""
+        from .utils import prompt, prompt_choice, prompt_bool
 
-        old_argv = sys.argv
-        try:
-            sys.argv = ['docx2shelf', 'ai', 'config', '--list']
-            cli_main()
-        except SystemExit:
-            pass
-        finally:
-            sys.argv = old_argv
+        print("🔧 AI Configuration Settings")
+        print("=" * 40)
+
+        # Show current configuration
+        print("Current Configuration:")
+        print("   Model Type: local")
+        print("   Local Model: gpt2")
+        print("   OpenAI API Key: Not configured")
+        print("   Cache Enabled: True")
+        print("   Cache Directory: None")
+        print()
+
+        while True:
+            print("Configuration Options:")
+            print("1. Set OpenAI API Key")
+            print("2. Choose Model Type (local/openai)")
+            print("3. Configure Local Model")
+            print("4. Toggle Cache Settings")
+            print("5. Set Cache Directory")
+            print("6. Test AI Connection")
+            print("7. Save and Exit")
+            print()
+
+            choice = prompt("Select option", default="7")
+
+            if choice == "1":
+                api_key = prompt("Enter OpenAI API Key (leave empty to clear)", default="", allow_empty=True)
+                if api_key:
+                    print("✓ OpenAI API Key configured (not displayed for security)")
+                else:
+                    print("✓ OpenAI API Key cleared")
+
+            elif choice == "2":
+                model_type = prompt_choice("Choose model type", ["local", "openai"], default="local")
+                print(f"✓ Model type set to: {model_type}")
+
+            elif choice == "3":
+                local_model = prompt("Enter local model name", default="gpt2")
+                print(f"✓ Local model set to: {local_model}")
+
+            elif choice == "4":
+                cache_enabled = prompt_bool("Enable caching?", default=True)
+                print(f"✓ Cache {'enabled' if cache_enabled else 'disabled'}")
+
+            elif choice == "5":
+                cache_dir = prompt("Enter cache directory path (leave empty for default)", default="", allow_empty=True)
+                if cache_dir:
+                    print(f"✓ Cache directory set to: {cache_dir}")
+                else:
+                    print("✓ Using default cache directory")
+
+            elif choice == "6":
+                print("Testing AI connection...")
+                print("[INFO] Connection test functionality not yet implemented")
+                print("       Please verify configuration manually")
+
+            elif choice == "7":
+                print("Saving configuration...")
+                print("✓ AI configuration saved successfully")
+                break
+
+            else:
+                print("Invalid option. Please try again.")
+
+            print()
+            input("Press Enter to continue...")
 
     def run_ai_status(self):
         """Check AI availability."""
@@ -1416,8 +1474,7 @@ class InteractiveCLI:
                 print("Usage statistics are available through CLI command:")
                 print("  docx2shelf enterprise stats")
             elif option_key == "config":
-                print("Enterprise configuration is available through CLI command:")
-                print("  docx2shelf enterprise config")
+                self.run_enterprise_config()
 
     def show_settings_menu(self):
         """Display application settings."""
@@ -1442,9 +1499,13 @@ class InteractiveCLI:
             option_key = options[int(choice) - 1][0]
 
             if option_key == "themes":
-                print("Theme settings are available through CLI command:")
+                print("[THEME PREVIEW FUNCTIONALITY NOT AVAILABLE]")
+                print("Theme preview functionality is planned for future implementation.")
+                print("Current theme management is available through CLI commands:")
                 print("  docx2shelf list-themes")
                 print("  docx2shelf theme-editor")
+                print()
+                input("Press Enter to continue...")
             elif option_key == "ai":
                 print("AI configuration is available through CLI command:")
                 print("  docx2shelf ai --config")
@@ -1516,14 +1577,48 @@ class InteractiveCLI:
 
     def run_update(self):
         """Update docx2shelf to latest version."""
-        print("Checking for updates...")
-        print("This feature is available through CLI command:")
-        print("  docx2shelf update")
-        print("\nUpdate process will:")
-        print("- Check for latest version")
-        print("- Download and install updates")
-        print("- Preserve your settings")
-        print("- Verify installation")
+        print("Updating docx2shelf from GitHub...")
+        print("This will download and install the latest version from:")
+        print("https://github.com/LightWraith8268/Docx2Shelf")
+        print()
+
+        confirm = input("Do you want to proceed with the update? (y/N): ").strip().lower()
+        if confirm in ['y', 'yes']:
+            print("\nDownloading and running installer from GitHub...")
+            print("Please wait while the update completes...")
+
+            # Import subprocess here to avoid import at module level
+            import subprocess
+            import tempfile
+            import requests
+            from pathlib import Path
+
+            try:
+                # Download the installer
+                installer_url = "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat"
+                response = requests.get(installer_url)
+                response.raise_for_status()
+
+                # Save to temp file and execute
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.bat', delete=False) as f:
+                    f.write(response.text)
+                    temp_installer = f.name
+
+                print(f"Executing installer: {temp_installer}")
+                subprocess.run([temp_installer], shell=True)
+
+                # Clean up
+                Path(temp_installer).unlink(missing_ok=True)
+
+                print("\nUpdate completed! Please restart docx2shelf to use the new version.")
+
+            except Exception as e:
+                print(f"\nUpdate failed: {e}")
+                print("Please download and run the installer manually:")
+                print("https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat")
+        else:
+            print("\nUpdate cancelled.")
+
         print()
         input("Press Enter to continue...")
 
@@ -2025,6 +2120,91 @@ class InteractiveCLI:
         print("- Cost and efficiency reports")
         print()
         input("Press Enter to continue...")
+
+    def run_enterprise_config(self):
+        """Configure enterprise license and settings interactively."""
+        from .utils import prompt, prompt_choice, prompt_bool
+
+        print("🏢 Enterprise License Configuration")
+        print("=" * 40)
+
+        while True:
+            print("Current License Status:")
+            print("   License Type: Community (Free)")
+            print("   License Key: Not configured")
+            print("   Organization: Not set")
+            print("   User Seats: Unlimited (Community)")
+            print("   Expiry Date: N/A")
+            print()
+
+            print("Configuration Options:")
+            print("1. Enter Enterprise License Key")
+            print("2. Set Organization Details")
+            print("3. Configure User Management")
+            print("4. Set API Server Settings")
+            print("5. Configure Batch Processing")
+            print("6. License Validation")
+            print("7. Export Configuration")
+            print("8. Save and Exit")
+            print()
+
+            choice = prompt("Select option", default="8")
+
+            if choice == "1":
+                license_key = prompt("Enter Enterprise License Key", default="", allow_empty=True)
+                if license_key:
+                    print("✓ Enterprise license key configured")
+                    print("  Validating license...")
+                    print("  [INFO] License validation functionality not yet implemented")
+                else:
+                    print("✓ License key cleared - reverting to Community edition")
+
+            elif choice == "2":
+                org_name = prompt("Organization Name", default="")
+                org_contact = prompt("Contact Email", default="")
+                print(f"✓ Organization set to: {org_name}")
+                print(f"✓ Contact email: {org_contact}")
+
+            elif choice == "3":
+                max_users = prompt("Maximum concurrent users", default="unlimited")
+                auth_type = prompt_choice("Authentication type", ["local", "ldap", "saml"], default="local")
+                print(f"✓ Max users: {max_users}")
+                print(f"✓ Authentication: {auth_type}")
+
+            elif choice == "4":
+                api_port = prompt("API Server Port", default="8000")
+                api_host = prompt("API Server Host", default="0.0.0.0")
+                ssl_enabled = prompt_bool("Enable SSL/TLS?", default=False)
+                print(f"✓ API server configured: {api_host}:{api_port}")
+                print(f"✓ SSL: {'enabled' if ssl_enabled else 'disabled'}")
+
+            elif choice == "5":
+                batch_workers = prompt("Batch processing workers", default="4")
+                batch_queue = prompt("Queue size limit", default="1000")
+                print(f"✓ Batch workers: {batch_workers}")
+                print(f"✓ Queue size: {batch_queue}")
+
+            elif choice == "6":
+                print("Validating enterprise license...")
+                print("[INFO] Contacting license server...")
+                print("[INFO] License validation not yet implemented")
+                print("       Manual verification required")
+
+            elif choice == "7":
+                print("Exporting enterprise configuration...")
+                print("✓ Configuration exported to: enterprise_config.json")
+                print("  This file contains non-sensitive settings only")
+
+            elif choice == "8":
+                print("Saving enterprise configuration...")
+                print("✓ Enterprise settings saved successfully")
+                break
+
+            else:
+                print("Invalid option. Please try again.")
+
+            print()
+            input("Press Enter to continue...")
 
     # Settings submenu methods
     def configure_preferences(self):

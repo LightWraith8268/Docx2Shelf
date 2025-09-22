@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Dict
+import platformdirs
 
 
 def prompt(question: str, default: str | None = None, allow_empty: bool = False) -> str:
@@ -79,3 +80,8 @@ def parse_kv_file(path: Path) -> Dict[str, str]:
         v = v.strip().strip('"').strip("'")
         data[k] = v
     return data
+
+
+def get_user_data_dir() -> Path:
+    """Get the user data directory for docx2shelf."""
+    return Path(platformdirs.user_data_dir("docx2shelf", "Docx2Shelf"))
