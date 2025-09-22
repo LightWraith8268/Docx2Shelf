@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.6.1] - 2025-01-21
+### Enhanced: Added Essential Checks to Simple Installer
+
+#### Added
+- **Proper Git Verification**: Now actually checks if Git is available and displays confirmation
+- **Existing Installation Detection**: Checks for current Docx2Shelf installation before proceeding
+- **Upgrade Prompt**: Asks user if they want to upgrade existing installation
+- **Version Display**: Shows installed version after successful installation
+- **Better Error Messages**: Improved guidance for PATH issues and troubleshooting
+
+#### Improved
+- **Installation Feedback**: Clear status messages for each step
+- **User Experience**: Interactive upgrade prompts and better verification
+- **Reliability**: Enhanced verification process with helpful error guidance
+
 ## [1.6.0] - 2025-01-21
 ### Major: Simplified Windows Installer
 
