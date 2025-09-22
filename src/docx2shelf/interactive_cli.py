@@ -2240,14 +2240,42 @@ class InteractiveCLI:
     # Settings submenu methods
     def configure_preferences(self):
         """Configure user preferences."""
-        print("Configuring user preferences...")
-        print("Customize docx2shelf behavior and defaults")
-        print("\nPreference categories:")
-        print("- Default conversion settings")
-        print("- UI and interaction preferences")
-        print("- File and directory defaults")
-        print()
-        input("Press Enter to continue...")
+        from .settings import get_settings_manager
+
+        settings_manager = get_settings_manager()
+        settings = settings_manager.settings
+
+        while True:
+            self.clear_screen()
+            print("=" * 60)
+            print("           Configure User Preferences")
+            print("=" * 60)
+            print()
+            print("1. Conversion Defaults")
+            print("2. UI Preferences")
+            print("3. File and Directory Settings")
+            print("4. Advanced Settings")
+            print("5. Save and Return")
+            print()
+
+            choice = input("Select category (1-5): ").strip()
+
+            if choice == "1":
+                self._configure_conversion_defaults(settings)
+            elif choice == "2":
+                self._configure_ui_preferences(settings)
+            elif choice == "3":
+                self._configure_file_settings(settings)
+            elif choice == "4":
+                self._configure_advanced_settings(settings)
+            elif choice == "5":
+                settings_manager.save_settings(settings)
+                print("Settings saved successfully!")
+                input("Press Enter to continue...")
+                break
+            else:
+                print("Invalid choice. Please try again.")
+                input("Press Enter to continue...")
 
     def manage_profiles(self):
         """Manage conversion profiles."""
@@ -2262,36 +2290,303 @@ class InteractiveCLI:
 
     def export_settings(self):
         """Export settings."""
-        print("Exporting settings...")
-        print("Backup your configuration for transfer or restoration")
-        print("\nExport features:")
-        print("- Complete configuration backup")
-        print("- Selective setting export")
-        print("- Cross-platform compatibility")
+        from .settings import get_settings_manager
+        import os
+
+        settings_manager = get_settings_manager()
+
+        print("=" * 60)
+        print("           Export Settings")
+        print("=" * 60)
+        print()
+
+        default_path = os.path.expanduser("~/docx2shelf_settings.json")
+        export_path = input(f"Export path [{default_path}]: ").strip() or default_path
+
+        try:
+            from pathlib import Path
+            settings_manager.export_settings(Path(export_path))
+            print(f"\n✓ Settings exported successfully to: {export_path}")
+        except Exception as e:
+            print(f"\n✗ Export failed: {e}")
+
         print()
         input("Press Enter to continue...")
 
     def import_settings(self):
         """Import settings."""
-        print("Importing settings...")
-        print("Restore configuration from backup or transfer")
-        print("\nImport features:")
-        print("- Configuration restoration")
-        print("- Selective setting import")
-        print("- Merge with existing settings")
+        from .settings import get_settings_manager
+        import os
+
+        settings_manager = get_settings_manager()
+
+        print("=" * 60)
+        print("           Import Settings")
+        print("=" * 60)
+        print()
+
+        import_path = input("Settings file path: ").strip()
+        if not import_path or not os.path.exists(import_path):
+            print("✗ File not found or invalid path.")
+            input("Press Enter to continue...")
+            return
+
+        merge = input("Merge with existing settings? (y/N): ").strip().lower() == 'y'
+
+        try:
+            from pathlib import Path
+            settings_manager.import_settings(Path(import_path), merge=merge)
+            action = "merged" if merge else "imported"
+            print(f"\n✓ Settings {action} successfully!")
+        except Exception as e:
+            print(f"\n✗ Import failed: {e}")
+
         print()
         input("Press Enter to continue...")
 
     def reset_to_defaults(self):
         """Reset to default settings."""
-        print("Resetting to default settings...")
-        print("Restore factory default configuration")
-        print("\nReset options:")
-        print("- Complete factory reset")
-        print("- Selective setting reset")
-        print("- Backup before reset option")
+        from .settings import get_settings_manager
+
+        print("=" * 60)
+        print("           Reset to Defaults")
+        print("=" * 60)
+        print()
+        print("⚠️  WARNING: This will reset ALL settings to factory defaults.")
+        print("This action cannot be undone.")
+        print()
+
+        confirm = input("Are you sure you want to continue? (yes/no): ").strip().lower()
+        if confirm == "yes":
+            try:
+                settings_manager = get_settings_manager()
+                settings_manager.reset_to_defaults()
+                print("\n✓ Settings reset to defaults successfully!")
+            except Exception as e:
+                print(f"\n✗ Reset failed: {e}")
+        else:
+            print("\nReset cancelled.")
+
         print()
         input("Press Enter to continue...")
+
+    def _configure_conversion_defaults(self, settings):
+        """Configure conversion default settings."""
+        while True:
+            self.clear_screen()
+            print("=" * 60)
+            print("           Conversion Defaults")
+            print("=" * 60)
+            print()
+            print(f"1. CSS Theme: {settings.conversion_defaults.css_theme}")
+            print(f"2. Language: {settings.conversion_defaults.language}")
+            print(f"3. Validate EPUB: {settings.conversion_defaults.validate_epub}")
+            print(f"4. Max Image Width: {settings.conversion_defaults.image_max_width}")
+            print(f"5. Accessibility Features: {settings.conversion_defaults.accessibility_features}")
+            print(f"6. Chapter Detection: {settings.conversion_defaults.chapter_detection}")
+            print("7. Return to main menu")
+            print()
+
+            choice = input("Select option (1-7): ").strip()
+
+            if choice == "1":
+                themes = ["serif", "sans", "printlike", "dyslexic"]
+                print(f"\nAvailable themes: {', '.join(themes)}")
+                new_theme = input(f"Enter theme [{settings.conversion_defaults.css_theme}]: ").strip()
+                if new_theme and new_theme in themes:
+                    settings.conversion_defaults.css_theme = new_theme
+            elif choice == "2":
+                languages = ["en", "es", "fr", "de", "it", "pt", "nl", "ru", "zh", "ja"]
+                print(f"\nAvailable languages: {', '.join(languages)}")
+                new_lang = input(f"Enter language [{settings.conversion_defaults.language}]: ").strip()
+                if new_lang and new_lang in languages:
+                    settings.conversion_defaults.language = new_lang
+            elif choice == "3":
+                current = settings.conversion_defaults.validate_epub
+                new_validate = input(f"Validate EPUB (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_validate in ['y', 'n']:
+                    settings.conversion_defaults.validate_epub = new_validate == 'y'
+            elif choice == "4":
+                try:
+                    new_width = input(f"Max image width [{settings.conversion_defaults.image_max_width}]: ").strip()
+                    if new_width:
+                        settings.conversion_defaults.image_max_width = int(new_width)
+                except ValueError:
+                    print("Invalid number. Please try again.")
+                    input("Press Enter to continue...")
+            elif choice == "5":
+                current = settings.conversion_defaults.accessibility_features
+                new_a11y = input(f"Enable accessibility (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_a11y in ['y', 'n']:
+                    settings.conversion_defaults.accessibility_features = new_a11y == 'y'
+            elif choice == "6":
+                detections = ["auto", "h1", "h2", "pagebreak"]
+                print(f"\nAvailable methods: {', '.join(detections)}")
+                new_detection = input(f"Chapter detection [{settings.conversion_defaults.chapter_detection}]: ").strip()
+                if new_detection and new_detection in detections:
+                    settings.conversion_defaults.chapter_detection = new_detection
+            elif choice == "7":
+                break
+            else:
+                print("Invalid choice. Please try again.")
+                input("Press Enter to continue...")
+
+    def _configure_ui_preferences(self, settings):
+        """Configure UI preferences."""
+        while True:
+            self.clear_screen()
+            print("=" * 60)
+            print("           UI Preferences")
+            print("=" * 60)
+            print()
+            print(f"1. Remember Last Directory: {settings.ui_preferences.remember_last_directory}")
+            print(f"2. Auto-fill Metadata: {settings.ui_preferences.auto_fill_metadata}")
+            print(f"3. Show Advanced Options: {settings.ui_preferences.show_advanced_options}")
+            print(f"4. Theme: {settings.ui_preferences.theme}")
+            print(f"5. Font Size: {settings.ui_preferences.font_size}")
+            print(f"6. Confirm Overwrite: {settings.ui_preferences.confirm_overwrite}")
+            print("7. Return to main menu")
+            print()
+
+            choice = input("Select option (1-7): ").strip()
+
+            if choice == "1":
+                current = settings.ui_preferences.remember_last_directory
+                new_val = input(f"Remember last directory (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.ui_preferences.remember_last_directory = new_val == 'y'
+            elif choice == "2":
+                current = settings.ui_preferences.auto_fill_metadata
+                new_val = input(f"Auto-fill metadata (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.ui_preferences.auto_fill_metadata = new_val == 'y'
+            elif choice == "3":
+                current = settings.ui_preferences.show_advanced_options
+                new_val = input(f"Show advanced options (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.ui_preferences.show_advanced_options = new_val == 'y'
+            elif choice == "4":
+                themes = ["light", "dark", "system"]
+                print(f"\nAvailable themes: {', '.join(themes)}")
+                new_theme = input(f"Enter theme [{settings.ui_preferences.theme}]: ").strip()
+                if new_theme and new_theme in themes:
+                    settings.ui_preferences.theme = new_theme
+            elif choice == "5":
+                sizes = ["small", "medium", "large"]
+                print(f"\nAvailable sizes: {', '.join(sizes)}")
+                new_size = input(f"Enter font size [{settings.ui_preferences.font_size}]: ").strip()
+                if new_size and new_size in sizes:
+                    settings.ui_preferences.font_size = new_size
+            elif choice == "6":
+                current = settings.ui_preferences.confirm_overwrite
+                new_val = input(f"Confirm before overwrite (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.ui_preferences.confirm_overwrite = new_val == 'y'
+            elif choice == "7":
+                break
+            else:
+                print("Invalid choice. Please try again.")
+                input("Press Enter to continue...")
+
+    def _configure_file_settings(self, settings):
+        """Configure file and directory settings."""
+        while True:
+            self.clear_screen()
+            print("=" * 60)
+            print("           File & Directory Settings")
+            print("=" * 60)
+            print()
+            print(f"1. Default Output Directory: {settings.file_defaults.default_output_directory or '(not set)'}")
+            print(f"2. Auto-generate Output Name: {settings.file_defaults.auto_generate_output_name}")
+            print(f"3. Backup Original Files: {settings.file_defaults.backup_original}")
+            print(f"4. Temporary Directory: {settings.file_defaults.temp_directory or '(system default)'}")
+            print("5. Return to main menu")
+            print()
+
+            choice = input("Select option (1-5): ").strip()
+
+            if choice == "1":
+                current = settings.file_defaults.default_output_directory or ""
+                new_dir = input(f"Default output directory [{current}]: ").strip()
+                settings.file_defaults.default_output_directory = new_dir or None
+            elif choice == "2":
+                current = settings.file_defaults.auto_generate_output_name
+                new_val = input(f"Auto-generate output name (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.file_defaults.auto_generate_output_name = new_val == 'y'
+            elif choice == "3":
+                current = settings.file_defaults.backup_original
+                new_val = input(f"Backup original files (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.file_defaults.backup_original = new_val == 'y'
+            elif choice == "4":
+                current = settings.file_defaults.temp_directory or ""
+                new_dir = input(f"Temporary directory [{current}]: ").strip()
+                settings.file_defaults.temp_directory = new_dir or None
+            elif choice == "5":
+                break
+            else:
+                print("Invalid choice. Please try again.")
+                input("Press Enter to continue...")
+
+    def _configure_advanced_settings(self, settings):
+        """Configure advanced settings."""
+        while True:
+            self.clear_screen()
+            print("=" * 60)
+            print("           Advanced Settings")
+            print("=" * 60)
+            print()
+            print(f"1. Enable Logging: {settings.advanced_settings.enable_logging}")
+            print(f"2. Log Level: {settings.advanced_settings.log_level}")
+            print(f"3. Concurrent Jobs: {settings.advanced_settings.concurrent_jobs}")
+            print(f"4. Check for Updates: {settings.advanced_settings.check_for_updates}")
+            print(f"5. Crash Reporting: {settings.advanced_settings.enable_crash_reporting}")
+            print(f"6. Telemetry: {settings.advanced_settings.enable_telemetry}")
+            print("7. Return to main menu")
+            print()
+
+            choice = input("Select option (1-7): ").strip()
+
+            if choice == "1":
+                current = settings.advanced_settings.enable_logging
+                new_val = input(f"Enable logging (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.advanced_settings.enable_logging = new_val == 'y'
+            elif choice == "2":
+                levels = ["DEBUG", "INFO", "WARNING", "ERROR"]
+                print(f"\nAvailable levels: {', '.join(levels)}")
+                new_level = input(f"Log level [{settings.advanced_settings.log_level}]: ").strip().upper()
+                if new_level and new_level in levels:
+                    settings.advanced_settings.log_level = new_level
+            elif choice == "3":
+                try:
+                    new_jobs = input(f"Concurrent jobs [{settings.advanced_settings.concurrent_jobs}]: ").strip()
+                    if new_jobs:
+                        settings.advanced_settings.concurrent_jobs = int(new_jobs)
+                except ValueError:
+                    print("Invalid number. Please try again.")
+                    input("Press Enter to continue...")
+            elif choice == "4":
+                current = settings.advanced_settings.check_for_updates
+                new_val = input(f"Check for updates (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.advanced_settings.check_for_updates = new_val == 'y'
+            elif choice == "5":
+                current = settings.advanced_settings.enable_crash_reporting
+                new_val = input(f"Enable crash reporting (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.advanced_settings.enable_crash_reporting = new_val == 'y'
+            elif choice == "6":
+                current = settings.advanced_settings.enable_telemetry
+                new_val = input(f"Enable telemetry (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                if new_val in ['y', 'n']:
+                    settings.advanced_settings.enable_telemetry = new_val == 'y'
+            elif choice == "7":
+                break
+            else:
+                print("Invalid choice. Please try again.")
+                input("Press Enter to continue...")
 
 
 def run_interactive_cli():
