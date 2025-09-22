@@ -17,8 +17,9 @@ echo Version details:
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
-!PYTHON_CMD! -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" 2>nul
-if !errorlevel! neq 0 (
+call !PYTHON_CMD! -c "import sys; exit(0 if sys.version_info[:2] >= (3, 11) else 1)" 2>nul
+set "VERSION_CHECK_RESULT=!errorlevel!"
+if !VERSION_CHECK_RESULT! neq 0 (
     echo.
     echo WARNING: Your Python version is older than required.
     echo Docx2Shelf requires Python 3.11 or higher (current latest: Python 3.12).
@@ -92,7 +93,8 @@ if !errorlevel! neq 0 (
 :: Check for Git
 echo Checking for Git installation...
 git --version >nul 2>&1
-if !errorlevel! neq 0 (
+set "GIT_CHECK_RESULT=!errorlevel!"
+if !GIT_CHECK_RESULT! neq 0 (
     echo Git not found. This is required for installation.
     echo Please install Git from: https://git-scm.com/download/windows
     echo.
@@ -221,7 +223,8 @@ call :add_scripts_to_path
 echo.
 echo Verifying installation...
 docx2shelf --help >nul 2>&1
-if !errorlevel! equ 0 (
+set "INSTALL_CHECK_RESULT=!errorlevel!"
+if !INSTALL_CHECK_RESULT! equ 0 (
     echo.
     echo ========================================
     echo    Installation Successful!

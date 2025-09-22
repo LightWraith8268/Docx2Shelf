@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.4] - 2025-01-21
+### Hotfix: Improved Batch Script Error Code Handling
+
+#### Fixed
+- **Critical Error Code Handling**: Fixed persistent "was unexpected at this time" error by improving errorlevel handling
+  - Added explicit variable capture for `!errorlevel!` using intermediate variables
+  - Fixed Python version check: `set "VERSION_CHECK_RESULT=!errorlevel!"` before condition check
+  - Fixed Git availability check: `set "GIT_CHECK_RESULT=!errorlevel!"` before condition check
+  - Fixed installation verification: `set "INSTALL_CHECK_RESULT=!errorlevel!"` before condition check
+  - Added `call` command for Python execution to ensure proper error code propagation
+  - Eliminates timing issues with delayed expansion and command execution
+
 ## [1.5.3] - 2025-01-21
 ### Hotfix: Python Version Check Command Simplification
 
