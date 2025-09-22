@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.8] - 2025-01-21
+### Hotfix: Fixed Remaining Errorlevel Syntax Issues
+
+#### Fixed
+- **Critical Main Flow Syntax Errors**: Fixed remaining `!errorlevel!` usage in main execution path
+  - Fixed pip upgrade check: `PIP_UPGRADE_RESULT=!errorlevel!`
+  - Fixed Docx2Shelf installation check: `INSTALL_RESULT=!errorlevel!`
+  - Fixed uninstall script download check: `UNINSTALL_DOWNLOAD_RESULT=!errorlevel!`
+  - Fixed optional tool installations: `PANDOC_INSTALL_RESULT` and `EPUBCHECK_INSTALL_RESULT`
+  - Applied consistent errorlevel variable capture pattern throughout main execution flow
+  - Eliminates "period was unexpected" errors during installation process
+
 ## [1.5.7] - 2025-01-21
 ### Hotfix: Simplified Installation Process
 

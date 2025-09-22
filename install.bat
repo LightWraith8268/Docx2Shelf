@@ -80,7 +80,8 @@ if not defined SKIP_VERSION_WARNING (
     :: Check and upgrade pip even for compatible Python versions
     echo Checking pip version...
     !PYTHON_CMD! -m pip install --upgrade pip >nul 2>&1
-    if !errorlevel! equ 0 (
+    set "PIP_UPGRADE_RESULT=!errorlevel!"
+    if !PIP_UPGRADE_RESULT! equ 0 (
         echo [SUCCESS] Pip is up to date.
     )
 )
@@ -161,8 +162,8 @@ if not "!CURRENT_VERSION!"=="" (
 echo.
 echo Installing Docx2Shelf from GitHub (latest version)...
 !PYTHON_CMD! -m pip install --user git+https://github.com/LightWraith8268/Docx2Shelf.git
-
-if !errorlevel! equ 0 (
+set "INSTALL_RESULT=!errorlevel!"
+if !INSTALL_RESULT! equ 0 (
     echo.
     echo [SUCCESS] Docx2Shelf installation successful!
     echo.
@@ -231,7 +232,8 @@ if !INSTALL_CHECK_RESULT! equ 0 (
     echo.
     echo Downloading uninstall script for future use...
     curl -L -o uninstall.bat "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.bat" >nul 2>&1
-    if !errorlevel! equ 0 (
+    set "UNINSTALL_DOWNLOAD_RESULT=!errorlevel!"
+    if !UNINSTALL_DOWNLOAD_RESULT! equ 0 (
         echo [SUCCESS] Uninstall script downloaded to: uninstall.bat
         echo To uninstall later, simply run: uninstall.bat
     ) else (
@@ -667,7 +669,8 @@ exit /b 0
 :: Install Pandoc and EPUBCheck using docx2shelf tools command
 echo Installing Pandoc...
 docx2shelf tools install pandoc
-if !errorlevel! equ 0 (
+set "PANDOC_INSTALL_RESULT=!errorlevel!"
+if !PANDOC_INSTALL_RESULT! equ 0 (
     echo [SUCCESS] Pandoc installed successfully
 ) else (
     echo [WARNING] Pandoc installation failed - you can try again later with: docx2shelf tools install pandoc
@@ -676,7 +679,8 @@ if !errorlevel! equ 0 (
 echo.
 echo Installing EPUBCheck...
 docx2shelf tools install epubcheck
-if !errorlevel! equ 0 (
+set "EPUBCHECK_INSTALL_RESULT=!errorlevel!"
+if !EPUBCHECK_INSTALL_RESULT! equ 0 (
     echo [SUCCESS] EPUBCheck installed successfully
 ) else (
     echo [WARNING] EPUBCheck installation failed - you can try again later with: docx2shelf tools install epubcheck
