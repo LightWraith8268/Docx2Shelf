@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.5.0] - 2025-01-21
+### Enhanced Install Scripts with Optional Tool Installation
+
+#### Added
+- **Optional Tool Installation**: Install scripts now offer to install Pandoc and EPUBCheck
+  - Interactive prompts during installation for essential tools
+  - Pandoc installation for high-quality DOCX conversion
+  - EPUBCheck installation for industry-standard validation
+  - Clear explanations of what each tool provides
+  - Graceful fallback if tool installation fails
+- **Enhanced Python Version Messaging**: Improved clarity for Python compatibility
+  - Shows current version vs required version (3.11+)
+  - Mentions latest available Python version (3.12)
+  - Better error messages for version incompatibility
+  - Clear upgrade recommendations
+
+#### Improved
+- **Install Script User Experience**: More informative and helpful installation process
+  - Better explanation of tool benefits and requirements
+  - Clear success/warning messages for each installation step
+  - Option to skip tool installation and install later via CLI
+  - Enhanced documentation with new features highlighted
+- **Release Templates**: Updated GitHub release templates to showcase new features
+  - Install script capabilities clearly documented
+  - Users understand what the enhanced scripts provide
+
+#### Technical
+- **Cross-Platform Tool Installation**: Both Windows and Unix scripts support optional tools
+  - Uses `docx2shelf tools install` command for consistent behavior
+  - Proper error handling and user feedback
+  - Function-based architecture for maintainability
+
 ## [1.4.6] - 2025-01-21
 ### Documentation Cleanup: Remove Non-Working Install Methods
 

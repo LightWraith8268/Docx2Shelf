@@ -93,6 +93,12 @@ jobs:
         curl -sSL https://github.com/${{ github.repository }}/releases/latest/download/install.sh | bash
         ```
 
+        **Install scripts now include:**
+        - Automatic Python 3.11+ detection and installation (Windows)
+        - Smart version checking (only installs if newer version available)
+        - Optional Pandoc and EPUBCheck installation for best results
+        - Automatic PATH configuration and self-cleanup
+
         ## 💡 Alternative Installation Methods
 
         **Manual Python Installation:**

@@ -336,7 +336,10 @@ if [[ -n "$PYTHON_VERSION" ]]; then
         echo -e "${GREEN}[SUCCESS] Python version is compatible${NC}"
     else
         echo
-        echo -e "${YELLOW}WARNING: Python $PYTHON_VERSION is installed but Docx2Shelf requires Python 3.11+${NC}"
+        echo -e "${YELLOW}WARNING: Python $PYTHON_VERSION is installed but Docx2Shelf requires Python 3.11+ (current latest: Python 3.12)${NC}"
+        echo
+        echo "Your version: Python $PYTHON_VERSION"
+        echo "Required: Python 3.11.0 or newer"
         echo
         echo -n "Would you like to continue anyway? (y/N): "
         read -r CONTINUE_ANYWAY
@@ -679,6 +682,37 @@ if [[ $VERIFICATION_RESULT -eq 0 ]]; then
     fi
     echo -e "${BLUE}📦 Installation source: GitHub repository${NC}"
 
+    # Ask about installing optional tools
+    echo
+    echo "========================================"
+    echo "    Optional Tools Installation"
+    echo "========================================"
+    echo
+    echo -e "${BLUE}Docx2Shelf works best with these additional tools:${NC}"
+    echo
+    echo -e "${GREEN}1. PANDOC${NC} - High-quality document conversion (RECOMMENDED)"
+    echo "   - Provides superior DOCX to EPUB conversion"
+    echo "   - Handles complex formatting and tables"
+    echo "   - Essential for professional results"
+    echo
+    echo -e "${GREEN}2. EPUBCHECK${NC} - Industry-standard EPUB validation"
+    echo "   - Validates EPUB files for compliance"
+    echo "   - Required for publishing to most stores"
+    echo "   - Catches formatting and structure issues"
+    echo
+
+    echo -n "Would you like to install these tools? (Y/n): "
+    read -r INSTALL_TOOLS
+    if [[ ! "$INSTALL_TOOLS" =~ ^[Nn]$ ]]; then
+        echo
+        echo "Installing optional tools..."
+        install_optional_tools
+    else
+        echo
+        echo "Skipping optional tools installation."
+        echo "You can install them later using: docx2shelf tools install"
+    fi
+
     # Download uninstall script for future use
     echo
     echo "Downloading uninstall script for future use..."
@@ -754,3 +788,24 @@ else
     echo "Press any key to continue..."
     read -n 1 -s
 fi
+
+# Function to install optional tools
+install_optional_tools() {
+    echo "Installing Pandoc..."
+    if docx2shelf tools install pandoc; then
+        echo -e "${GREEN}[SUCCESS] Pandoc installed successfully${NC}"
+    else
+        echo -e "${YELLOW}[WARNING] Pandoc installation failed - you can try again later with: docx2shelf tools install pandoc${NC}"
+    fi
+
+    echo
+    echo "Installing EPUBCheck..."
+    if docx2shelf tools install epubcheck; then
+        echo -e "${GREEN}[SUCCESS] EPUBCheck installed successfully${NC}"
+    else
+        echo -e "${YELLOW}[WARNING] EPUBCheck installation failed - you can try again later with: docx2shelf tools install epubcheck${NC}"
+    fi
+
+    echo
+    echo "Optional tools installation completed."
+}

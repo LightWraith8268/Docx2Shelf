@@ -125,11 +125,18 @@ curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download
 ```
 
 The install scripts provide:
-- Automatic Python dependency detection and installation
-- Smart version checking (only installs if newer version available)
-- Automatic PATH configuration
-- Self-cleanup after installation
-- Comprehensive error handling and troubleshooting
+- **Automatic Python dependency detection and installation**
+  - Detects compatible Python versions (3.11+)
+  - Offers to automatically install Python 3.11 if not found (Windows)
+  - Provides clear version compatibility messaging
+- **Smart version checking** (only installs if newer version available)
+- **Optional tool installation** - Pandoc and EPUBCheck
+  - Interactive prompts to install essential tools
+  - Pandoc for high-quality DOCX conversion
+  - EPUBCheck for industry-standard validation
+- **Automatic PATH configuration**
+- **Self-cleanup after installation**
+- **Comprehensive error handling and troubleshooting**
 
 #### Manual Python Installation
 

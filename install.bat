@@ -21,7 +21,11 @@ echo Checking Python version compatibility...
 if %errorlevel% neq 0 (
     echo.
     echo WARNING: Your Python version is older than required.
-    echo Docx2Shelf requires Python 3.11 or higher.
+    echo Docx2Shelf requires Python 3.11 or higher (current latest: Python 3.12).
+    echo.
+    echo Your version:
+    !PYTHON_CMD! --version 2>nul || echo "Unable to determine version"
+    echo Required: Python 3.11.0 or newer
     echo.
     set /p "UPGRADE_PYTHON=Would you like to upgrade Python automatically? (Y/n): "
     if /i "!UPGRADE_PYTHON!"=="n" (
@@ -162,7 +166,37 @@ echo Installing Docx2Shelf from GitHub (latest version)...
 
 if !errorlevel! equ 0 (
     echo.
-    echo [SUCCESS] Installation successful!
+    echo [SUCCESS] Docx2Shelf installation successful!
+    echo.
+
+    :: Ask about installing optional tools
+    echo ========================================
+    echo    Optional Tools Installation
+    echo ========================================
+    echo.
+    echo Docx2Shelf works best with these additional tools:
+    echo.
+    echo 1. PANDOC - High-quality document conversion (RECOMMENDED)
+    echo    - Provides superior DOCX to EPUB conversion
+    echo    - Handles complex formatting and tables
+    echo    - Essential for professional results
+    echo.
+    echo 2. EPUBCHECK - Industry-standard EPUB validation
+    echo    - Validates EPUB files for compliance
+    echo    - Required for publishing to most stores
+    echo    - Catches formatting and structure issues
+    echo.
+
+    set /p "INSTALL_TOOLS=Would you like to install these tools? (Y/n): "
+    if /i not "!INSTALL_TOOLS!"=="n" (
+        echo.
+        echo Installing optional tools...
+        call :install_optional_tools
+    ) else (
+        echo.
+        echo Skipping optional tools installation.
+        echo You can install them later using: docx2shelf tools install
+    )
     echo.
 ) else (
     echo.
@@ -628,4 +662,27 @@ if !V1_NUM! lss !V2_NUM! (
     set "VERSION_COMPARISON=0"
 )
 
+exit /b 0
+
+:install_optional_tools
+:: Install Pandoc and EPUBCheck using docx2shelf tools command
+echo Installing Pandoc...
+docx2shelf tools install pandoc
+if !errorlevel! equ 0 (
+    echo [SUCCESS] Pandoc installed successfully
+) else (
+    echo [WARNING] Pandoc installation failed - you can try again later with: docx2shelf tools install pandoc
+)
+
+echo.
+echo Installing EPUBCheck...
+docx2shelf tools install epubcheck
+if !errorlevel! equ 0 (
+    echo [SUCCESS] EPUBCheck installed successfully
+) else (
+    echo [WARNING] EPUBCheck installation failed - you can try again later with: docx2shelf tools install epubcheck
+)
+
+echo.
+echo Optional tools installation completed.
 exit /b 0
