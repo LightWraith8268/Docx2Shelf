@@ -576,14 +576,25 @@ exit /b 0
 :check_current_version
 :: Check if docx2shelf is installed and get its version
 set "CURRENT_VERSION="
+
+:: Try to get version with simple approach first
 docx2shelf --version >nul 2>&1
-if !errorlevel! equ 0 (
-    for /f "tokens=*" %%A in ('docx2shelf --version 2^>nul') do (
-        set "VERSION_OUTPUT=%%A"
-        :: Extract version number from output like "docx2shelf 1.4.3"
-        for /f "tokens=2" %%B in ("!VERSION_OUTPUT!") do set "CURRENT_VERSION=%%B"
-    )
+if !errorlevel! neq 0 (
+    :: Command not found or failed
+    exit /b 0
 )
+
+:: If we get here, docx2shelf exists, now try to get version safely
+:: Use PowerShell for more reliable parsing
+powershell -NoProfile -Command "try { $output = & 'docx2shelf' '--version' 2>$null; if ($output -match '(\d+\.\d+\.\d+)') { Write-Output $matches[1] } } catch { }" > "%TEMP%\docx2shelf_ver.txt" 2>nul
+
+if exist "%TEMP%\docx2shelf_ver.txt" (
+    for /f %%A in ("%TEMP%\docx2shelf_ver.txt") do (
+        set "CURRENT_VERSION=%%A"
+    )
+    del "%TEMP%\docx2shelf_ver.txt" >nul 2>&1
+)
+
 exit /b 0
 
 :compare_versions

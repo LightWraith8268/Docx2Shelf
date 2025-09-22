@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.5] - 2025-01-21
+### Hotfix: Install Script Version Check
+
+#### Fixed
+- **Batch Script Syntax Error**: Fixed "was unexpected at this time" error in Windows install.bat
+  - Replaced complex batch script parsing with PowerShell-based version extraction
+  - More robust error handling for version detection
+  - Safer temporary file handling with unique names
+  - Improved regex-based version number extraction
+
+#### Technical
+- **Version Check Reliability**: Enhanced version checking function using PowerShell for better parsing
+  - Handles complex command output more reliably
+  - Eliminates batch script string parsing issues
+  - Better error isolation and recovery
+
 ## [1.4.4] - 2025-01-21
 ### Smart Install Scripts & Version Management
 
