@@ -10,8 +10,6 @@ import time
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import pytest
-
 from docx2shelf.developer_tools import (
     CodeGenerator,
     DevelopmentWorkflow,
@@ -20,9 +18,9 @@ from docx2shelf.developer_tools import (
 )
 from docx2shelf.documentation import (
     DocumentationManager,
+    TroubleshootingWizard,
     Tutorial,
     TutorialStep,
-    TroubleshootingWizard,
 )
 from docx2shelf.performance import (
     ConversionAnalytics,

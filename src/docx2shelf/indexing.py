@@ -18,11 +18,9 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 
 class IndexEntryType(Enum):

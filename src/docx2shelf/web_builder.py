@@ -10,22 +10,15 @@ from __future__ import annotations
 import json
 import logging
 import mimetypes
-import os
 import tempfile
 import threading
 import uuid
 import webbrowser
 from datetime import datetime
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Dict, Any, Optional, List
-from urllib.parse import parse_qs, urlparse
-import socketserver
-
-from .convert import docx_to_html_chunks
-from .assemble import assemble_epub
-from .metadata import EpubMetadata, BuildOptions
-from .anthology import AnthologyBuilder, AnthologyConfig
+from typing import Any, Dict
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 

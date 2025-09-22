@@ -96,7 +96,9 @@ def _discover_themes() -> Dict[str, Dict]:
                 "name": metadata.get('theme_name', theme_name.replace('_', ' ').title()),
                 "description": metadata.get('description', f"CSS theme for {theme_name}"),
                 "genre": metadata.get('genre', 'general').lower(),
-                "features": [f.strip() for f in metadata.get('features', 'standard styling').split(',')]
+                "features": [
+                    f.strip() for f in metadata.get('features', 'standard styling').split(',')
+                ]
             }
 
             # Add file path for reference
@@ -162,7 +164,9 @@ def get_theme_info(theme_name: str) -> str:
     if not meta:
         return f"Unknown theme: {theme_name}"
 
-    features = ", ".join(meta["features"]) if isinstance(meta["features"], list) else meta["features"]
+    features = (
+        ", ".join(meta["features"]) if isinstance(meta["features"], list) else meta["features"]
+    )
     return f"{meta['name']}: {meta['description']} (Features: {features})"
 
 
@@ -217,7 +221,7 @@ def discover_custom_themes(search_path: Path) -> Dict[str, Path]:
     for css_file in search_path.glob("*.css"):
         theme_name = css_file.stem
         # Avoid conflicts with built-in themes
-        if theme_name not in THEME_METADATA:
+        if theme_name not in BASIC_THEME_METADATA:
             custom_themes[theme_name] = css_file
 
     return custom_themes
@@ -279,3 +283,36 @@ def refresh_themes() -> None:
     """Force refresh of theme discovery (useful for development)."""
     clear_theme_cache()
     _get_theme_metadata_dict()  # Rebuild cache
+
+
+def get_all_theme_names() -> List[str]:
+    """Get list of all available theme names."""
+    return get_available_themes()
+
+
+def get_theme_css_content(theme_name: str, custom_theme_dir: Optional[Path] = None) -> str:
+    """
+    Get the CSS content for a theme.
+
+    Args:
+        theme_name: Name of the theme
+        custom_theme_dir: Optional directory to search for custom themes
+
+    Returns:
+        CSS content as string
+
+    Raises:
+        FileNotFoundError: If theme file is not found
+        ValueError: If theme name is invalid
+    """
+    if not validate_theme(theme_name):
+        raise ValueError(f"Invalid theme name: {theme_name}")
+
+    theme_path = get_theme_css_path(theme_name, custom_theme_dir)
+    if not theme_path or not theme_path.exists():
+        raise FileNotFoundError(f"Theme file not found for: {theme_name}")
+
+    try:
+        return theme_path.read_text(encoding='utf-8')
+    except Exception as e:
+        raise ValueError(f"Error reading theme file {theme_path}: {e}")

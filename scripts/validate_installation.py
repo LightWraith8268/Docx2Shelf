@@ -6,16 +6,15 @@ This script validates that docx2shelf is properly installed and configured,
 providing detailed diagnostics and recommendations for fixing issues.
 """
 
-import sys
-import subprocess
-import os
 import importlib
 import json
-import hashlib
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+import os
 import platform
 import shutil
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class ValidationResult:
@@ -373,7 +372,6 @@ class InstallationValidator:
 
         # Test CLI module
         try:
-            from docx2shelf.cli import main
             self.results.append(ValidationResult(
                 "CLI Module",
                 True,
@@ -395,7 +393,6 @@ class InstallationValidator:
 
         # Test wizard availability
         try:
-            from docx2shelf.wizard import ConversionWizard
             self.results.append(ValidationResult(
                 "Conversion Wizard",
                 True,
@@ -412,7 +409,6 @@ class InstallationValidator:
 
         # Test theme editor availability
         try:
-            from docx2shelf.theme_editor import ThemeEditor
             self.results.append(ValidationResult(
                 "Theme Editor",
                 True,
@@ -429,7 +425,6 @@ class InstallationValidator:
 
         # Test error handling system
         try:
-            from docx2shelf.error_handler import EnhancedErrorHandler
             self.results.append(ValidationResult(
                 "Error Handling",
                 True,

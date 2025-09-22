@@ -6,16 +6,16 @@ This script tests all docx2shelf installers to ensure they work correctly
 across different environments and scenarios.
 """
 
-import sys
-import subprocess
-import os
-import tempfile
-import shutil
 import json
+import os
+import platform
+import shutil
+import subprocess
+import sys
+import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-import platform
+from typing import List, Optional
 
 
 class InstallerTestResult:

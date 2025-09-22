@@ -36,7 +36,20 @@
       "Bash(cat:*)",
       "Bash(curl -L -o install_new.bat https://raw.githubusercontent.com/LightWraith8268/Docx2Shelf/main/install.bat)",
       "Bash(copy install_fixed.bat install.bat)",
-      "Bash(copy install.bat install_backup.bat)"
+      "Bash(copy install.bat install_backup.bat)",
+      "Bash(del test_validation.py)",
+      "Bash(del test_cli_debug.py)",
+      "Bash(gh api:*)",
+      "Bash(dir:*)",
+      "Bash(docx2shelf:*)",
+      "Bash(pip --version)",
+      "Bash(del test_interactive_completeness.py test_error_handling.py)",
+      "Bash(del test_fixes.py)",
+      "Bash(test_install_version.bat)",
+      "Bash(./test_version.sh:*)",
+      "Bash(curl:*)",
+      "Bash(git checkout:*)",
+      "Bash(bash:*)"
     ],
     "deny": [],
     "ask": []

@@ -15,10 +15,21 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.docx2shelf.anthology import AnthologyBuilder, AnthologyConfig, SeriesBuilder, SeriesConfig, StoryInfo
+from src.docx2shelf.anthology import (
+    AnthologyBuilder,
+    AnthologyConfig,
+    SeriesBuilder,
+    SeriesConfig,
+    StoryInfo,
+)
 from src.docx2shelf.gui.app import TkinterMainWindow, create_context_menu_windows
 from src.docx2shelf.metadata import EpubMetadata
-from src.docx2shelf.performance import BuildCache, ParallelImageProcessor, PerformanceMonitor, StreamingDocxReader
+from src.docx2shelf.performance import (
+    BuildCache,
+    ParallelImageProcessor,
+    PerformanceMonitor,
+    StreamingDocxReader,
+)
 from src.docx2shelf.plugin_marketplace import MarketplaceConfig, PluginInfo, PluginMarketplace
 from src.docx2shelf.web_builder import WebBuilder, WebBuilderServer
 

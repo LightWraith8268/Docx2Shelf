@@ -7,17 +7,14 @@ using multiple analysis techniques and machine learning models.
 
 from __future__ import annotations
 
-import re
-import json
+import logging
 import math
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
-import logging
+from typing import Any, Dict, List, Optional, Tuple
 
-from .ai_integration import get_ai_manager, AIResult
-from .utils import prompt_select
+from .ai_integration import get_ai_manager
 
 
 @dataclass

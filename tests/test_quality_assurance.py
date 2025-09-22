@@ -8,7 +8,6 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -20,12 +19,11 @@ from docx2shelf.accessibility_audit import (
     A11yConfig,
     A11yLevel,
     AccessibilityAuditor,
-    IssueType,
     IssueSeverity,
+    IssueType,
     audit_epub_accessibility,
 )
 from docx2shelf.content_validation import (
-    ContentStats,
     ContentValidator,
     ValidationCategory,
     ValidationIssue,

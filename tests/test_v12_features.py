@@ -8,14 +8,15 @@ Tests the four major epics:
 4. Figures, tables & lists
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 from bs4 import BeautifulSoup
 
-from src.docx2shelf.crossrefs import CrossReferenceProcessor, CrossRefConfig
-from src.docx2shelf.indexing import IndexProcessor, IndexConfig
-from src.docx2shelf.notes import NotesProcessor, NotesConfig
-from src.docx2shelf.figures import FigureProcessor, FigureConfig
+from src.docx2shelf.crossrefs import CrossRefConfig, CrossReferenceProcessor
+from src.docx2shelf.figures import FigureConfig, FigureProcessor
+from src.docx2shelf.indexing import IndexConfig, IndexProcessor
+from src.docx2shelf.notes import NotesConfig, NotesProcessor
 
 
 class TestCrossReferences:

@@ -11,11 +11,10 @@ This module provides fine-grained control over typography, including:
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Dict, List, Optional, Union
 from enum import Enum
+from pathlib import Path
+from typing import List, Optional
 
 
 class FontWeight(Enum):
@@ -195,7 +194,7 @@ class AdvancedTypography:
 
 def generate_font_face_css(font_face: FontFace) -> str:
     """Generate CSS @font-face declaration."""
-    css_parts = [f"@font-face {{"]
+    css_parts = ["@font-face {"]
     css_parts.append(f"  font-family: '{font_face.family}';")
 
     if font_face.file_path:
@@ -282,7 +281,7 @@ def generate_typography_css(typography: AdvancedTypography) -> str:
     css_parts.append(f"  letter-spacing: {typography.base_letter_spacing};")
     css_parts.append(f"  text-rendering: {typography.text_rendering};")
     css_parts.append(f"  -webkit-font-smoothing: {typography.font_smoothing};")
-    css_parts.append(f"  -moz-osx-font-smoothing: grayscale;")
+    css_parts.append("  -moz-osx-font-smoothing: grayscale;")
 
     if typography.opentype_features:
         css_parts.append(f"  {generate_opentype_features_css(typography.opentype_features)}")

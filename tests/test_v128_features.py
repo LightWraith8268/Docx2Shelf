@@ -4,13 +4,9 @@ Comprehensive test suite for Docx2Shelf v1.2.8 features.
 Tests plugin marketplace and ecosystem integration features.
 """
 
-import json
 import tempfile
-import time
 from pathlib import Path
 from unittest.mock import Mock, patch
-
-import pytest
 
 from docx2shelf.ecosystem import (
     EcosystemIntegrationManager,
@@ -23,7 +19,6 @@ from docx2shelf.ecosystem import (
     ScrivenerIntegration,
     TemplateGallery,
     TemplateItem,
-    WritingToolIntegration,
     create_ecosystem_manager,
 )
 from docx2shelf.marketplace import (

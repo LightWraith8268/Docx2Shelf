@@ -6,10 +6,9 @@ Provides anthology and collection building functionality.
 
 from __future__ import annotations
 
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 from docx2shelf.plugins import BasePlugin, MetadataResolverHook
-from docx2shelf.anthology import AnthologyBuilder, AnthologyConfig
 
 
 class AnthologyBuilderPlugin(BasePlugin):

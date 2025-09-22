@@ -7,14 +7,12 @@ markup with figcaption elements and generates Lists of Figures/Tables pages.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from urllib.parse import quote
+from typing import List, Optional, Tuple
 
 from bs4 import BeautifulSoup, Tag
-import logging
 
 logger = logging.getLogger(__name__)
 

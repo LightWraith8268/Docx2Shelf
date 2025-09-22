@@ -9,10 +9,11 @@ Version: 1.0.0
 License: MIT
 """
 
-from docx2shelf.plugins import BasePlugin, MetadataResolverHook
-from typing import Dict, Any, List
-import re
 import datetime
+import re
+from typing import Any, Dict, List
+
+from docx2shelf.plugins import BasePlugin, MetadataResolverHook
 
 
 class MetadataEnhancerPlugin(BasePlugin):

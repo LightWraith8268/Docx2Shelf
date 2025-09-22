@@ -11,15 +11,12 @@ Handles equation extraction from DOCX and conversion to appropriate formats.
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import logging
 import re
-import tempfile
 from dataclasses import dataclass
 from enum import Enum
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple
 from xml.etree import ElementTree as ET
 
 logger = logging.getLogger(__name__)
@@ -341,10 +338,11 @@ class MathProcessor:
     def _latex_to_svg(self, latex: str) -> str:
         """Convert LaTeX to SVG using matplotlib."""
         try:
-            import matplotlib.pyplot as plt
-            import matplotlib.mathtext as mathtext
-            from io import StringIO
             import xml.etree.ElementTree as ET
+            from io import StringIO
+
+            import matplotlib.mathtext as mathtext
+            import matplotlib.pyplot as plt
 
             # Configure matplotlib for LaTeX rendering
             plt.rcParams['mathtext.fontset'] = 'cm'
@@ -386,7 +384,7 @@ class MathProcessor:
 
                 return ET.tostring(root, encoding='unicode')
 
-            except Exception as e:
+            except Exception:
                 plt.close(fig)
                 # Fallback to simple text rendering
                 return self._create_fallback_svg(latex)
@@ -413,9 +411,10 @@ class MathProcessor:
     def _latex_to_png(self, latex: str) -> str:
         """Convert LaTeX to PNG and return base64 data URL."""
         try:
-            import matplotlib.pyplot as plt
-            from io import BytesIO
             import base64
+            from io import BytesIO
+
+            import matplotlib.pyplot as plt
 
             # Configure matplotlib for LaTeX rendering
             plt.rcParams['mathtext.fontset'] = 'cm'
@@ -455,7 +454,7 @@ class MathProcessor:
                 base64_png = base64.b64encode(png_data).decode()
                 return f"data:image/png;base64,{base64_png}"
 
-            except Exception as e:
+            except Exception:
                 plt.close(fig)
                 # Return fallback
                 return self._create_fallback_png(latex)
@@ -467,9 +466,10 @@ class MathProcessor:
     def _create_fallback_png(self, text: str) -> str:
         """Create a fallback PNG data URL for math expressions."""
         try:
-            from PIL import Image, ImageDraw, ImageFont
             import base64
             from io import BytesIO
+
+            from PIL import Image, ImageDraw, ImageFont
 
             # Estimate image size
             width = max(200, len(text) * 12)
@@ -579,7 +579,7 @@ class MathProcessor:
 
             return mathml
 
-        except Exception as e:
+        except Exception:
             # Fallback: extract text and convert as simple expression
             try:
                 root = ET.fromstring(omml)

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import hashlib
 import re
 import sys
-import tempfile
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import List, Set
 
 
 def extract_text_from_html_chunks(html_chunks: List[str]) -> str:

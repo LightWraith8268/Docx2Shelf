@@ -9,12 +9,9 @@ from __future__ import annotations
 
 import logging
 import re
-import statistics
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
-from xml.etree import ElementTree as ET
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

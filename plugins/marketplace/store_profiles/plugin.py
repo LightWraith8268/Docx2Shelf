@@ -6,7 +6,7 @@ Validates EPUBs against major retailer requirements.
 
 from __future__ import annotations
 
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 from docx2shelf.plugins import BasePlugin, PostConvertHook
 from docx2shelf.store_profiles import StoreProfileManager

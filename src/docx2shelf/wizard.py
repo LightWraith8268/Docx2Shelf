@@ -14,12 +14,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .error_handler import handle_error, wrap_with_error_handling
-from .metadata import BuildOptions, EpubMetadata
+from .ai_genre_detection import detect_genre_with_ai
 from .ai_integration import get_ai_manager
 from .ai_metadata import enhance_metadata_with_ai
-from .ai_genre_detection import detect_genre_with_ai
-from .ai_accessibility import generate_image_alt_texts
+from .error_handler import handle_error, wrap_with_error_handling
+from .metadata import BuildOptions, EpubMetadata
 
 
 @dataclass

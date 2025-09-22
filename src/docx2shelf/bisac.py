@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional, Set, Tuple
-
+from typing import List, Optional, Tuple
 
 # Common BISAC subject headings for validation
 BISAC_CATEGORIES = {

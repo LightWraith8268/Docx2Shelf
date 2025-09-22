@@ -6,16 +6,15 @@ This script creates a self-contained offline installer that bundles all dependen
 and can install docx2shelf without requiring internet access.
 """
 
+import hashlib
+import json
 import os
-import sys
-import subprocess
-import tempfile
 import shutil
+import subprocess
+import sys
+import tempfile
 import zipfile
 from pathlib import Path
-import json
-import hashlib
-from typing import List, Dict, Optional
 
 
 class OfflineInstallerBuilder:
@@ -135,7 +134,6 @@ class OfflineInstallerBuilder:
         print("📦 Copying packages...")
 
         wheels_dest = installer_dir / "wheels"
-        wheels_src = self.temp_dir / "wheels"
 
         for wheel_file in self.dependencies:
             dest_file = wheels_dest / wheel_file.name
@@ -424,7 +422,8 @@ def install_offline():
 
     # Verify installation
     print("🔍 Verifying installation...")
-    result = subprocess.run([sys.executable, "-c", "import docx2shelf; print('docx2shelf imported successfully')"],
+    import_cmd = "import docx2shelf; print('docx2shelf imported successfully')"
+    result = subprocess.run([sys.executable, "-c", import_cmd],
                           capture_output=True, text=True)
 
     if result.returncode == 0:
@@ -544,7 +543,7 @@ def main():
 
     try:
         installer_path = builder.create_installer(include_dev_deps=args.dev)
-        print(f"\n🎉 Offline installer created successfully!")
+        print("\n🎉 Offline installer created successfully!")
         print(f"📦 Package: {installer_path}")
         print(f"📁 Size: {installer_path.stat().st_size // 1024 // 1024} MB")
         print("\nTo use the offline installer:")

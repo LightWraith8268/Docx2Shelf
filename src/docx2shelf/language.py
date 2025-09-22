@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional, Set, Tuple
-
+from typing import Dict, List
 
 # Language-specific configuration data
 LANGUAGE_CONFIGS = {
@@ -251,7 +250,7 @@ def add_language_attributes_to_html(html_chunks: List[str], language_code: str) 
                     attrs = match.group(1)
                     attrs += f' lang="{language_code}"'
                     if config['direction'] == 'rtl':
-                        attrs += f' dir="rtl"'
+                        attrs += ' dir="rtl"'
                     return f'<html{attrs}>'
 
                 updated_chunk = re.sub(html_pattern, add_lang_attr, updated_chunk, flags=re.IGNORECASE)

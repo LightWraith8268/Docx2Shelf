@@ -11,13 +11,11 @@ import json
 import shutil
 import subprocess
 import sys
-import tempfile
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
-from urllib.parse import urlparse
-from urllib.request import urlopen, urlretrieve
+from urllib.request import urlretrieve
 
 import requests
 
@@ -611,7 +609,7 @@ def create_plugin():
         metadata = {{
             "name": name,
             "version": "1.0.0",
-            "description": f"A template plugin for Docx2Shelf",
+            "description": "A template plugin for Docx2Shelf",
             "author": "Your Name",
             "license": "MIT",
             "homepage": "",

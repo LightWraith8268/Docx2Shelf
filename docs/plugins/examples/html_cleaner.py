@@ -9,9 +9,10 @@ Version: 1.0.0
 License: MIT
 """
 
-from docx2shelf.plugins import BasePlugin, PostConvertHook
-from typing import Dict, Any, List
 import re
+from typing import Any, Dict, List
+
+from docx2shelf.plugins import BasePlugin, PostConvertHook
 
 
 class HTMLCleanerPlugin(BasePlugin):

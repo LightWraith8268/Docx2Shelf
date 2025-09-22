@@ -9,13 +9,13 @@ from .accessibility import process_accessibility_features
 from .content_security import ContentSanitizer, validate_resource_path
 from .figures import FigureConfig, FigureProcessor
 from .fonts import process_embedded_fonts, warn_about_font_licensing
-from .path_utils import normalize_path, safe_filename, ensure_unicode_path, write_text_safe
 from .images import get_media_type_for_image, process_images
 from .language import (
     add_language_attributes_to_html,
     generate_language_css,
 )
 from .metadata import BuildOptions, EpubMetadata
+from .path_utils import safe_filename, write_text_safe
 from .tools import epubcheck_cmd
 
 
@@ -222,6 +222,10 @@ def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions, styles_css
     if opts.epub2_compat:
         epub2_css = _generate_epub2_compat_css()
         css += "\n/* EPUB 2 compatibility styles */\n" + epub2_css
+
+    # Add store profile CSS if specified
+    if opts.store_profile_css:
+        css += "\n/* store profile optimizations */\n" + opts.store_profile_css
 
     if extra_css and extra_css.exists():
         css += "\n/* user css */\n" + extra_css.read_text(encoding="utf-8")

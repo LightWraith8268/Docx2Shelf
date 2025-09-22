@@ -12,15 +12,13 @@ This module provides support for converting EPUB to various formats:
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 import tempfile
 import zipfile
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass
-import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 try:
     import weasyprint

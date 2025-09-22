@@ -4,8 +4,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Tuple
 
 
 class AccessibilityFeature(Enum):
@@ -118,7 +117,7 @@ def prompt_for_alt_text(missing_alt: List[Tuple[str, str]], quiet: bool = False)
         # Prompt for alt text
         while True:
             try:
-                alt_text = input(f"   Enter alt text (or 'skip' to leave empty): ").strip()
+                alt_text = input("   Enter alt text (or 'skip' to leave empty): ").strip()
                 if alt_text.lower() == 'skip':
                     alt_text = ""
                     break

@@ -7,13 +7,11 @@ and automated accessibility improvements using AI analysis.
 
 from __future__ import annotations
 
+import logging
 import re
-import json
-import mimetypes
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Set
-import logging
+from typing import Dict, List, Tuple
 
 # Optional dependencies for image processing
 try:
@@ -29,8 +27,8 @@ try:
 except ImportError:
     OPENCV_AVAILABLE = False
 
-from .ai_integration import get_ai_manager, AIResult
-from .utils import prompt, prompt_bool, prompt_select
+from .ai_integration import get_ai_manager
+from .utils import prompt, prompt_select
 
 
 @dataclass
@@ -909,8 +907,8 @@ class AccessibilityAuditor:
         # Look for image references in content
         image_patterns = [
             rf'{re.escape(image_name)}',
-            rf'figure\s*\d*',
-            rf'image\s*\d*'
+            r'figure\s*\d*',
+            r'image\s*\d*'
         ]
 
         for pattern in image_patterns:

@@ -7,14 +7,12 @@ improvement recommendations for EPUB files.
 
 from __future__ import annotations
 
-import json
 import logging
 import re
-import statistics
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 

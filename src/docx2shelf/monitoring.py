@@ -8,14 +8,12 @@ for production deployments with Prometheus integration.
 from __future__ import annotations
 
 import gc
-import os
-import psutil
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Callable
 from threading import Lock
+from typing import Any, Callable, Dict, List, Optional
+
+import psutil
 
 
 @dataclass

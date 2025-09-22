@@ -12,8 +12,8 @@ from typing import List
 import pytest
 
 try:
-    from hypothesis import given, strategies as st, assume, example
-    from hypothesis import settings, Verbosity
+    from hypothesis import Verbosity, assume, example, given, settings
+    from hypothesis import strategies as st
     HYPOTHESIS_AVAILABLE = True
 except ImportError:
     HYPOTHESIS_AVAILABLE = False
@@ -34,8 +34,8 @@ except ImportError:
         def lists(*args, **kwargs):
             return None
 
-from docx2shelf.convert import split_html_by_heading, split_html_by_pagebreak
 from docx2shelf.assemble import generate_output_filename
+from docx2shelf.convert import split_html_by_heading, split_html_by_pagebreak
 
 
 # HTML content generation strategies

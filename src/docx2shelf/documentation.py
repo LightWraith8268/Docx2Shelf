@@ -7,14 +7,11 @@ for developers and users.
 
 from __future__ import annotations
 
-import json
 import subprocess
 import webbrowser
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Callable, Generator
-import tempfile
+from typing import Callable, List, Optional
 
 
 @dataclass
@@ -92,11 +89,11 @@ class InteractiveTutorial:
         print(f"   {step.description}")
 
         if step.code_example:
-            print(f"\n💻 Code Example:")
+            print("\n💻 Code Example:")
             print(f"```bash\n{step.code_example}\n```")
 
         if step.expected_output:
-            print(f"\n✅ Expected Output:")
+            print("\n✅ Expected Output:")
             print(f"```\n{step.expected_output}\n```")
 
         # Wait for user to complete step
@@ -134,7 +131,7 @@ class InteractiveTutorial:
         total_steps = len(self.tutorial.steps)
         completion_rate = (completed_count / total_steps) * 100
 
-        print(f"\n🎉 Tutorial Complete!")
+        print("\n🎉 Tutorial Complete!")
         print(f"📊 Completion: {completed_count}/{total_steps} steps ({completion_rate:.1f}%)")
 
         if completion_rate >= 80:

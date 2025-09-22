@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, date
+from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import List, Optional
 from xml.dom import minidom
 from xml.etree import ElementTree as ET
 

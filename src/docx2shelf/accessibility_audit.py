@@ -8,11 +8,10 @@ with actionable recommendations for improving EPUB accessibility compliance.
 from __future__ import annotations
 
 import logging
-import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Set, Tuple
+from typing import Any, Dict, List, Optional
 from xml.etree import ElementTree as ET
 
 logger = logging.getLogger(__name__)

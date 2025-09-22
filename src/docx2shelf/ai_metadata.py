@@ -7,16 +7,14 @@ using AI analysis of document content.
 
 from __future__ import annotations
 
-import re
-import json
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Set
 import logging
+import re
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Set
 
-from .ai_integration import get_ai_manager, AIResult
+from .ai_integration import get_ai_manager
 from .metadata import EpubMetadata
-from .utils import prompt, prompt_bool, prompt_select
+from .utils import prompt_select
 
 
 @dataclass

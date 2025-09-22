@@ -4,7 +4,6 @@ Comprehensive test suite for v1.2.5 features.
 Tests security, supply chain, reliability, and advanced testing features.
 """
 
-import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -12,13 +11,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.docx2shelf.security import SecurityManager, SecurityConfig, Artifact
+from src.docx2shelf.security import Artifact, SecurityConfig, SecurityManager
 from src.docx2shelf.testing import (
     DOCXFuzzer,
-    PropertyBasedTester,
     GoldenEPUBTester,
     PerformanceTester,
-    ReliabilityTestSuite
+    PropertyBasedTester,
+    ReliabilityTestSuite,
 )
 
 

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-
+from typing import Dict, List, Optional
 
 # Built-in publishing profiles
 BUILTIN_PROFILES = {

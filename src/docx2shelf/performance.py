@@ -13,17 +13,15 @@ import hashlib
 import io
 import json
 import multiprocessing
-import pickle
 import pstats
 import sqlite3
-import threading
 import time
 import tracemalloc
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple
 from zipfile import ZipFile
 
 import psutil

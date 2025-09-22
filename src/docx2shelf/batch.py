@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import concurrent.futures
-import sys
-from pathlib import Path
-from typing import List, Optional, Dict, Any
 import argparse
+import concurrent.futures
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 def find_docx_files(directory: Path, pattern: str = "*.docx") -> List[Path]:
@@ -174,7 +173,7 @@ def run_batch_mode(
     }
 
     if not quiet:
-        print(f"\n📊 Batch processing complete:")
+        print("\n📊 Batch processing complete:")
         print(f"   Total files: {summary['total_files']}")
         print(f"   Successful: {summary['successful']}")
         print(f"   Failed: {summary['failed']}")

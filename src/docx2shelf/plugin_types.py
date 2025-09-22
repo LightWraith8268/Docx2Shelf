@@ -7,7 +7,7 @@ Defines core built-in plugins vs marketplace-downloadable plugins.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, List, Set
+from typing import Dict, List
 
 
 class PluginCategory(Enum):

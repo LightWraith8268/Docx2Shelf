@@ -17,11 +17,9 @@ import os
 import sys
 import tempfile
 import zipfile
-import hashlib
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict
-from urllib.parse import urlparse
+from typing import Any, Dict, List, Optional
 
 try:
     import requests

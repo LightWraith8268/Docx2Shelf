@@ -9,15 +9,15 @@ from __future__ import annotations
 
 import logging
 import shutil
+import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-import tempfile
+from typing import Dict, List, Optional, Tuple
 
-from .metadata import EpubMetadata, BuildOptions
-from .convert import docx_to_html_chunks
 from .assemble import assemble_epub
+from .convert import docx_to_html_chunks
+from .metadata import BuildOptions, EpubMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -362,7 +362,7 @@ class AnthologyBuilder:
                 html += f"<h2>{story.author}</h2>\n<div class='author-stories'>\n"
                 current_author = story.author
 
-            html += f"<div class='story-entry'>\n"
+            html += "<div class='story-entry'>\n"
             html += f"  <span class='story-title'>{story.title}</span>"
 
             if not self.config.group_by_author and self.config.show_author_in_toc:

@@ -7,21 +7,19 @@ support, live preview, and one-click conversion capabilities.
 
 from __future__ import annotations
 
-import json
 import logging
 import sys
-import threading
-import webbrowser
-from pathlib import Path
-from typing import Optional, Dict, Any, List
 import tempfile
+import threading
+from pathlib import Path
+from typing import List
 
 # Try different GUI frameworks in order of preference
 GUI_FRAMEWORK = None
 
 try:
     import tkinter as tk
-    from tkinter import ttk, filedialog, messagebox
+    from tkinter import filedialog, messagebox, ttk
     from tkinter.scrolledtext import ScrolledText
     GUI_FRAMEWORK = "tkinter"
 except ImportError:
@@ -29,19 +27,19 @@ except ImportError:
 
 if not GUI_FRAMEWORK:
     try:
-        from PyQt5 import QtWidgets, QtCore, QtGui
+        from PyQt5 import QtCore, QtGui, QtWidgets
         GUI_FRAMEWORK = "pyqt5"
     except ImportError:
         try:
-            from PyQt6 import QtWidgets, QtCore, QtGui
+            from PyQt6 import QtCore, QtGui, QtWidgets
             GUI_FRAMEWORK = "pyqt6"
         except ImportError:
             pass
 
-from ..convert import docx_to_html_chunks
 from ..assemble import assemble_epub
-from ..metadata import EpubMetadata, BuildOptions
-from ..tools import pandoc_cmd, epubcheck_cmd
+from ..convert import docx_to_html_chunks
+from ..metadata import BuildOptions, EpubMetadata
+from ..tools import epubcheck_cmd
 
 logger = logging.getLogger(__name__)
 

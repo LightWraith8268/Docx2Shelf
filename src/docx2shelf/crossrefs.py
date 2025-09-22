@@ -16,13 +16,11 @@ Features:
 
 from __future__ import annotations
 
-import re
 import hashlib
+import re
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union
-from xml.etree import ElementTree as ET
+from typing import Dict, List, Optional, Set, Tuple
 
 
 class CrossRefType(Enum):

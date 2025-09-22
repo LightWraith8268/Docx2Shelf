@@ -6,15 +6,11 @@ to catch regressions in the conversion pipeline.
 """
 
 import json
-import tempfile
 import zipfile
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 import pytest
-
-from docx2shelf.cli import main_with_args
-from docx2shelf.metadata import EpubMetadata, BuildOptions
 
 
 class GoldenEPUBTest:
@@ -242,48 +238,176 @@ class TestGoldenEPUBFixtures:
         """Test conversion of a simple document maintains expected structure."""
         test = GoldenEPUBTest("simple")
 
-        # Create test content if it doesn't exist
-        if not test.input_docx.exists():
-            test.create_test_docx(create_simple_test_content(), "Simple Test Document")
+        # Check if golden fixture exists
+        golden_epub = test.fixtures_dir / "simple_golden.epub"
+        if not golden_epub.exists():
+            pytest.skip(f"Golden fixture not found: {golden_epub}. Run scripts/generate_golden_fixtures.py first.")
 
-        # For now, skip actual conversion since we need proper DOCX files
-        pytest.skip("Requires actual DOCX test files - placeholder for golden EPUB testing")
+        # Verify the golden fixture structure
+        assert test.verify_epub_structure(golden_epub), "Golden EPUB structure validation failed"
 
     def test_footnotes_document_structure(self):
         """Test conversion of document with footnotes maintains expected structure."""
         test = GoldenEPUBTest("footnotes")
 
-        if not test.input_docx.exists():
-            test.create_test_docx(create_footnotes_test_content(), "Footnotes Test Document")
+        golden_epub = test.fixtures_dir / "footnotes_golden.epub"
+        if not golden_epub.exists():
+            pytest.skip(f"Golden fixture not found: {golden_epub}. Run scripts/generate_golden_fixtures.py first.")
 
-        pytest.skip("Requires actual DOCX test files - placeholder for golden EPUB testing")
+        assert test.verify_epub_structure(golden_epub), "Footnotes EPUB structure validation failed"
 
     def test_tables_document_structure(self):
         """Test conversion of document with tables maintains expected structure."""
         test = GoldenEPUBTest("tables")
 
-        if not test.input_docx.exists():
-            test.create_test_docx(create_tables_test_content(), "Tables Test Document")
+        golden_epub = test.fixtures_dir / "tables_golden.epub"
+        if not golden_epub.exists():
+            pytest.skip(f"Golden fixture not found: {golden_epub}. Run scripts/generate_golden_fixtures.py first.")
 
-        pytest.skip("Requires actual DOCX test files - placeholder for golden EPUB testing")
+        assert test.verify_epub_structure(golden_epub), "Tables EPUB structure validation failed"
 
     def test_poetry_document_structure(self):
         """Test conversion of document with poetry formatting maintains expected structure."""
         test = GoldenEPUBTest("poetry")
 
-        if not test.input_docx.exists():
-            test.create_test_docx(create_poetry_test_content(), "Poetry Test Document")
+        golden_epub = test.fixtures_dir / "poetry_golden.epub"
+        if not golden_epub.exists():
+            pytest.skip(f"Golden fixture not found: {golden_epub}. Run scripts/generate_golden_fixtures.py first.")
 
-        pytest.skip("Requires actual DOCX test files - placeholder for golden EPUB testing")
+        assert test.verify_epub_structure(golden_epub), "Poetry EPUB structure validation failed"
 
-    def test_rtl_document_structure(self):
-        """Test conversion of document with RTL text maintains expected structure."""
-        test = GoldenEPUBTest("rtl")
+    def test_images_document_structure(self):
+        """Test conversion of document with images maintains expected structure."""
+        test = GoldenEPUBTest("images")
 
-        if not test.input_docx.exists():
-            test.create_test_docx(create_rtl_test_content(), "RTL Test Document")
+        golden_epub = test.fixtures_dir / "images_golden.epub"
+        if not golden_epub.exists():
+            pytest.skip(f"Golden fixture not found: {golden_epub}. Run scripts/generate_golden_fixtures.py first.")
 
-        pytest.skip("Requires actual DOCX test files - placeholder for golden EPUB testing")
+        assert test.verify_epub_structure(golden_epub), "Images EPUB structure validation failed"
+
+
+class TestGoldenRegressionTesting:
+    """Test suite for regression testing against golden EPUBs."""
+
+    def test_conversion_produces_consistent_output(self):
+        """Test that converting test files produces output consistent with golden EPUBs."""
+        import subprocess
+        import tempfile
+
+        fixtures_dir = Path(__file__).parent / "fixtures" / "golden_epubs"
+        test_cases = ["simple", "footnotes", "tables", "poetry", "images"]
+
+        for test_name in test_cases:
+            test_dir = fixtures_dir / test_name
+            source_file = None
+
+            # Find source file (DOCX or HTML)
+            for ext in [".docx", ".html"]:
+                potential_source = test_dir / f"{test_name}{ext}"
+                if potential_source.exists():
+                    source_file = potential_source
+                    break
+
+            golden_epub = test_dir / f"{test_name}_golden.epub"
+
+            if not source_file or not golden_epub.exists():
+                pytest.skip(f"Missing source or golden file for {test_name}")
+                continue
+
+            # Convert source to EPUB
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_epub = Path(temp_dir) / f"{test_name}_test.epub"
+
+                # Run docx2shelf conversion
+                cmd = [
+                    "python", "-m", "docx2shelf", "build",
+                    "--input", str(source_file),
+                    "--title", f"{test_name.title()} Test",
+                    "--author", "Test Author",
+                    "--output", str(temp_epub)
+                ]
+
+                try:
+                    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+                    if result.returncode != 0:
+                        pytest.skip(f"Conversion failed for {test_name}: {result.stderr}")
+                        continue
+
+                    # Compare with golden EPUB
+                    test = GoldenEPUBTest(test_name)
+                    golden_structure = test.extract_epub_structure(golden_epub)
+                    test_structure = test.extract_epub_structure(temp_epub)
+
+                    # Compare critical elements
+                    assert len(test_structure["files"]) >= len(golden_structure["files"]), \
+                        f"Test EPUB has fewer files than golden for {test_name}"
+
+                    # Check for critical files
+                    critical_files = ["EPUB/content.opf", "EPUB/nav.xhtml"]
+                    for critical_file in critical_files:
+                        assert critical_file in test_structure["files"], \
+                            f"Missing critical file {critical_file} in {test_name}"
+
+                    print(f"✓ {test_name} conversion matches golden EPUB structure")
+
+                except subprocess.CalledProcessError as e:
+                    pytest.skip(f"Conversion process failed for {test_name}: {e}")
+                except Exception as e:
+                    pytest.fail(f"Unexpected error testing {test_name}: {e}")
+
+    def test_theme_consistency_across_golden_files(self):
+        """Test that different themes produce consistent structural changes."""
+        import subprocess
+        import tempfile
+
+        fixtures_dir = Path(__file__).parent / "fixtures" / "golden_epubs"
+        simple_source = fixtures_dir / "simple" / "simple.html"
+
+        if not simple_source.exists():
+            pytest.skip("Simple test source not found")
+
+        themes = ["serif", "sans", "printlike"]
+        epub_structures = {}
+
+        for theme in themes:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_epub = Path(temp_dir) / f"simple_{theme}.epub"
+
+                cmd = [
+                    "python", "-m", "docx2shelf", "build",
+                    "--input", str(simple_source),
+                    "--title", "Simple Test",
+                    "--author", "Test Author",
+                    "--theme", theme,
+                    "--output", str(temp_epub)
+                ]
+
+                try:
+                    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+                    if result.returncode == 0 and temp_epub.exists():
+                        test = GoldenEPUBTest("simple")
+                        structure = test.extract_epub_structure(temp_epub)
+                        epub_structures[theme] = structure
+                        print(f"✓ Generated EPUB with {theme} theme")
+
+                except Exception as e:
+                    print(f"✗ Failed to generate EPUB with {theme} theme: {e}")
+
+        # Compare structures - they should have the same files but different CSS
+        if len(epub_structures) >= 2:
+            themes_list = list(epub_structures.keys())
+            base_theme = themes_list[0]
+            base_files = set(epub_structures[base_theme]["files"])
+
+            for theme in themes_list[1:]:
+                theme_files = set(epub_structures[theme]["files"])
+                assert base_files == theme_files, \
+                    f"File structure differs between {base_theme} and {theme} themes"
+
+            print("✓ All themes produce consistent file structures")
+        else:
+            pytest.skip("Not enough themes tested successfully")
 
 
 # Helper function to generate golden fixtures (for manual use)

@@ -98,6 +98,8 @@ class BuildOptions:
     typography_preset: Optional[str] = None  # professional|modern|academic|custom
     custom_typography_config: Optional[str] = None  # Path to custom typography config
     advanced_typography: bool = False  # Enable advanced typography features
+    # Store profile optimization
+    store_profile_css: Optional[str] = None  # Store-specific CSS optimizations
 
 
 def build_output_filename(title: str, series: Optional[str], series_index: Optional[str]) -> str:

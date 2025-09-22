@@ -9,14 +9,10 @@ Version: 1.0.0
 License: MIT
 """
 
-from docx2shelf.plugins import (
-    BasePlugin,
-    PreConvertHook,
-    PostConvertHook,
-    MetadataResolverHook
-)
-from typing import Dict, Any, List
 from pathlib import Path
+from typing import Any, Dict, List
+
+from docx2shelf.plugins import BasePlugin, MetadataResolverHook, PostConvertHook, PreConvertHook
 
 
 class BasicTemplatePlugin(BasePlugin):

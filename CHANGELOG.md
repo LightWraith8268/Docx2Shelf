@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.2] - 2025-01-21
+### Hotfix: Complete Windows Install Script Syntax Fix
+
+#### Fixed
+- **Critical Batch Script Error**: Fixed persistent "was unexpected at this time" error in Windows install.bat
+  - Root cause: Inconsistent use of `%errorlevel%` vs `!errorlevel!` in delayed expansion context
+  - Fixed all instances of `%errorlevel%` to use `!errorlevel!` (lines 21, 95, 224)
+  - Ensures proper variable expansion in all Windows command prompt environments
+  - Comprehensive syntax validation for batch script compatibility
+
 ## [1.5.1] - 2025-01-21
 ### Hotfix: Windows Install Script Syntax
 

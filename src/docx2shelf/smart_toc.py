@@ -15,8 +15,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
-from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 
 class TocLevel(Enum):

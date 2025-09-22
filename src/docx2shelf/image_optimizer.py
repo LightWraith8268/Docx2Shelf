@@ -17,15 +17,13 @@ Features:
 
 from __future__ import annotations
 
-import io
+import hashlib
 import mimetypes
-import os
 import shutil
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
-import hashlib
+from typing import Dict, List, Optional, Tuple
 
 
 class ImageFormat(Enum):
@@ -465,7 +463,6 @@ class ImageOptimizer:
         if self.config.use_parallel_processing and len(image_paths) > 1:
             # Real parallel processing implementation
             import concurrent.futures
-            import threading
 
             # Limit workers to avoid overwhelming the system
             max_workers = min(self.config.max_workers, len(image_paths), 4)

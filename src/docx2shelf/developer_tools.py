@@ -8,19 +8,15 @@ and code generation tools for enhanced developer productivity.
 from __future__ import annotations
 
 import ast
-import json
-import os
-import shutil
 import subprocess
-import tempfile
 import time
-import watchdog
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Callable, Generator
-from watchdog.observers import Observer
+from typing import Any, Callable, Dict, List
+
 from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 
 @dataclass
