@@ -17,10 +17,13 @@ echo Version details:
 
 :: Check Python version compatibility
 echo Checking Python version compatibility...
-!PYTHON_CMD! -c "import sys; print('OK' if sys.version_info[:2] >= (3, 11) else 'FAIL')" 2>nul > version_check.tmp
-set /p VERSION_RESULT=<version_check.tmp
-del version_check.tmp 2>nul
-if not "!VERSION_RESULT!"=="OK" (
+set "VERSION_OK=0"
+for /f "tokens=2" %%i in ('!PYTHON_CMD! --version 2^>^&1') do (
+    for /f "tokens=1,2 delims=." %%a in ("%%i") do (
+        if %%a GEQ 3 if %%b GEQ 11 set "VERSION_OK=1"
+    )
+)
+if !VERSION_OK! equ 0 (
     echo.
     echo WARNING: Your Python version is older than required.
     echo Docx2Shelf requires Python 3.11 or higher (current latest: Python 3.12).
@@ -60,11 +63,16 @@ if not "!VERSION_RESULT!"=="OK" (
             :: Verify the new Python version
             echo Verifying new Python installation...
             !PYTHON_CMD! --version
-            !PYTHON_CMD! -c "import sys; print('Python ' + str(sys.version_info.major) + '.' + str(sys.version_info.minor) + '.' + str(sys.version_info.micro))"
 
-            :: Final compatibility check
-            !PYTHON_CMD! -c "import sys; print('OK' if sys.version_info[:2] >= (3, 11) else 'FAIL')" 2>nul
-            if !errorlevel! neq 0 (
+            :: Final compatibility check using version parsing
+            echo Verifying upgraded Python compatibility...
+            set "UPGRADED_VERSION_OK=0"
+            for /f "tokens=2" %%i in ('!PYTHON_CMD! --version 2^>^&1') do (
+                for /f "tokens=1,2 delims=." %%a in ("%%i") do (
+                    if %%a GEQ 3 if %%b GEQ 11 set "UPGRADED_VERSION_OK=1"
+                )
+            )
+            if !UPGRADED_VERSION_OK! equ 0 (
                 echo WARNING: Upgraded Python still shows as incompatible.
                 echo This may require a system restart or manual PATH configuration.
                 echo Continuing with installation attempt...

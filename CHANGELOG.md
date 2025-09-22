@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.6] - 2025-01-21
+### Hotfix: Native Version Parsing Approach
+
+#### Fixed
+- **Critical Syntax Error**: Completely replaced Python code execution with native batch script version parsing
+  - Uses `python --version` output parsing instead of executing Python code
+  - Native `for /f` loops with token parsing to extract version numbers
+  - Eliminates all Python `-c` command executions that were causing syntax errors
+  - Simple numeric comparison using `GEQ` operators
+  - Removes dependency on Python code execution for version detection
+  - More reliable across all Windows batch environments
+
 ## [1.5.5] - 2025-01-21
 ### Hotfix: File-Based Python Version Detection
 
