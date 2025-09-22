@@ -24,7 +24,8 @@ if %errorlevel% neq 0 (
     echo Docx2Shelf requires Python 3.11 or higher (current latest: Python 3.12).
     echo.
     echo Your version:
-    !PYTHON_CMD! --version 2>nul || echo "Unable to determine version"
+    !PYTHON_CMD! --version 2>nul
+    if !errorlevel! neq 0 echo Unable to determine version
     echo Required: Python 3.11.0 or newer
     echo.
     set /p "UPGRADE_PYTHON=Would you like to upgrade Python automatically? (Y/n): "

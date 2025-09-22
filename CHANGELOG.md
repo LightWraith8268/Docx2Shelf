@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.1] - 2025-01-21
+### Hotfix: Windows Install Script Syntax
+
+#### Fixed
+- **Batch Script Syntax Error**: Fixed "was unexpected at this time" error in Windows install.bat
+  - Replaced unsupported `||` operator with proper if/then syntax
+  - Improved error handling for Python version detection
+  - Ensures compatibility with all Windows command prompt versions
+
 ## [1.5.0] - 2025-01-21
 ### Enhanced Install Scripts with Optional Tool Installation
 
