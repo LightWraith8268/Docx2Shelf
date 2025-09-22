@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.4.6] - 2025-01-21
+### Documentation Cleanup: Remove Non-Working Install Methods
+
+#### Removed
+- **Non-Working Package Managers**: Removed references to non-functional installation methods
+  - Removed `pipx install docx2shelf` (not available on PyPI)
+  - Removed `brew install docx2shelf` (not available on Homebrew)
+  - Removed `winget install LightWraith8268.Docx2Shelf` (not available on winget)
+  - Removed `scoop install docx2shelf` (not available on Scoop)
+  - Removed Docker installation (image not available)
+
+#### Updated
+- **Installation Documentation**: Streamlined to only working methods
+  - Prioritized automated install scripts (install.bat and install.sh)
+  - Kept manual Git-based pip/pipx installation as alternative
+  - Updated plugin installation instructions to use actual CLI commands
+  - Removed unsupported plugin bundle installation parameters
+
+#### Improved
+- **Release Templates**: Updated GitHub release templates to show only working methods
+  - Automated releases now show correct installation commands
+  - Removed confusing non-working package manager references
+  - Clear guidance toward functional installation paths
+
+#### Technical
+- **Asset Management**: Ensured both install.bat and install.sh are present in releases
+  - Fixed missing install.sh in v1.4.5 release
+  - Verified asset URLs and download paths are accessible
+
 ## [1.4.5] - 2025-01-21
 ### Hotfix: Install Script Version Check
 

@@ -108,9 +108,33 @@ Docx2Shelf requires **Python 3.11 or newer**.
 
 ### Quick Install Options
 
-Choose the method that works best for your system:
+#### Automated Install Scripts (Recommended)
 
-#### Python Package Managers (Recommended)
+**Windows**: Download and run the installer script:
+```cmd
+curl -L -o install.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat && install.bat
+```
+Or using PowerShell:
+```powershell
+Invoke-WebRequest -Uri "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat" -OutFile "install.bat"; .\install.bat
+```
+
+**macOS/Linux**: Download and run the installer script:
+```bash
+curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh | bash
+```
+
+The install scripts provide:
+- Automatic Python dependency detection and installation
+- Smart version checking (only installs if newer version available)
+- Automatic PATH configuration
+- Self-cleanup after installation
+- Comprehensive error handling and troubleshooting
+
+#### Manual Python Installation
+
+If you prefer to install manually or need custom configuration:
+
 ```bash
 # pipx (recommended - isolated environment)
 pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git
@@ -119,61 +143,6 @@ pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git
 pip install git+https://github.com/LightWraith8268/Docx2Shelf.git
 ```
 
-#### Package Managers (Coming Soon)
-
-*Note: Package manager distributions are planned for future releases*
-
-**Homebrew (macOS/Linux):** *(Coming soon)*
-```bash
-# Will be available as: brew install docx2shelf
-```
-
-**Windows Package Manager:** *(Coming soon)*
-```bash
-# Will be available as: winget install LightWraith8268.Docx2Shelf
-```
-
-**Scoop (Windows):** *(Coming soon)*
-```bash
-# Will be available as: scoop install docx2shelf
-```
-
-#### Docker (Advanced Users)
-```bash
-docker run -v $(pwd):/workspace ghcr.io/lightwraith8268/docx2shelf build --input manuscript.docx --title "My Book" --author "Author"
-```
-
-#### Quick Install Scripts
-
-**Windows**: The `install.bat` script automatically installs Docx2Shelf and adds it to your system PATH for global usage:
-```cmd
-curl -L -o install.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat && install.bat
-```
-```powershell
-Invoke-WebRequest -Uri "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat" -OutFile "install.bat"; .\install.bat
-```
-
-Features:
-- Automatically detects and installs Python dependencies
-- Installs pipx if not present
-- Adds docx2shelf to system PATH permanently
-- Verifies installation and provides troubleshooting
-- Works with both `python` and `py` commands
-
-**macOS/Linux**: The `install.sh` script provides flexible installation options:
-```bash
-curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh | bash
-```
-
-Options:
-```bash
-# Install with specific method and extras
-./install.sh --method pipx --extras docx --with-tools pandoc
-
-# Available methods: pipx (default), pip-user, pip-system
-# Available extras: none, docx (default), pandoc, all
-# Available tools: none (default), pandoc, epubcheck, all
-```
 
 ### Updating Docx2Shelf
 
@@ -415,19 +384,25 @@ docx2shelf plugins marketplace update plugin-name
 docx2shelf plugins create-template my-plugin
 ```
 
-#### Installation with Plugin Bundles
+#### Plugin Installation
 
-Install Docx2Shelf with plugin bundles for your use case:
+After installing Docx2Shelf, you can add plugins through the interactive CLI:
 
 ```bash
-# Windows - with publishing bundle
-.\install.bat --with-plugins publishing
+# Launch interactive plugin manager
+docx2shelf interactive
 
-# macOS/Linux - with workflow bundle
-./install.sh --with-plugins workflow
+# Then navigate to: Plugins > Marketplace > Browse Available Plugins
+```
 
-# Premium installation (all plugins)
-./install.sh --with-plugins premium --with-tools all
+Or install plugins directly via command line:
+```bash
+# Install specific plugins
+docx2shelf plugins install anthology-builder
+docx2shelf plugins install store-profiles
+
+# List available plugins
+docx2shelf plugins marketplace
 ```
 
 #### Core Built-in Plugins

@@ -95,16 +95,13 @@ jobs:
 
         ## 💡 Alternative Installation Methods
 
+        **Manual Python Installation:**
         ```bash
-        # PyPI
-        pipx install docx2shelf
+        # pipx (recommended - isolated environment)
+        pipx install git+https://github.com/${{ github.repository }}.git
 
-        # Homebrew
-        brew install docx2shelf
-
-        # Package managers
-        winget install LightWraith8268.Docx2Shelf
-        scoop install docx2shelf
+        # or with pip
+        pip install git+https://github.com/${{ github.repository }}.git
         ```
 
         See [installation guide](https://github.com/${{ github.repository }}#installation) for more options.
