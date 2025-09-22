@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.4.4] - 2025-01-21
+### Smart Install Scripts & Version Management
+
+#### Added
+- **Smart Version Checking**: Install scripts now check current version before proceeding
+  - Only installs if newer version is available on GitHub
+  - Provides clear feedback on version comparisons (current vs latest)
+  - Allows forced reinstallation if user wants to reinstall same version
+  - Handles development versions (newer than latest release) with user prompts
+- **Automatic Script Self-Deletion**: Install scripts offer to clean themselves up after successful installation
+  - User-friendly prompts with sensible defaults (delete by default)
+  - Helps keep user systems clean by removing downloaded installers
+  - Graceful fallback if deletion fails (with informative messages)
+- **Cross-Platform Update Enhancement**: Interactive CLI update command now supports both Windows and Unix systems
+  - Automatically detects platform and downloads appropriate installer (install.bat or install.sh)
+  - Enhanced user feedback showing platform detection and installer URLs
+  - Improved error handling with platform-specific fallback instructions
+
+#### Improved
+- **Install Script Intelligence**: Scripts now provide much better user experience
+  - Clear messaging about version status and installation necessity
+  - Reduces unnecessary downloads and installations
+  - Better feedback during the installation process
+- **Release Asset Management**: Both install.bat and install.sh now properly included in GitHub releases
+  - install.sh copied to scripts/ directory for workflow compatibility
+  - Ensures both Windows and Unix installers are available via releases
+
+#### Technical
+- **Version Comparison Logic**: Robust version string comparison supporting semantic versioning
+  - Handles version prefixes (removes 'v' if present)
+  - Numeric comparison with proper padding for accurate results
+  - Cross-platform implementation (batch script and shell script)
+
 ## [1.4.3] - 2025-01-21
 ### Interactive Configuration & User Experience Enhancement
 

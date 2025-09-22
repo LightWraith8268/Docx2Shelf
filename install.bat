@@ -107,6 +107,54 @@ if not "!LATEST_VERSION!"=="" (
     echo [Note] Could not determine latest version (continuing anyway)
 )
 
+:: Check if docx2shelf is already installed and compare versions
+echo Checking current installation...
+call :check_current_version
+if not "!CURRENT_VERSION!"=="" (
+    echo Current version installed: !CURRENT_VERSION!
+
+    if not "!LATEST_VERSION!"=="" (
+        call :compare_versions "!CURRENT_VERSION!" "!LATEST_VERSION!"
+        if !VERSION_COMPARISON! equ 0 (
+            echo.
+            echo [INFO] You already have the latest version (!CURRENT_VERSION!) installed.
+            set /p "FORCE_REINSTALL=Would you like to reinstall anyway? (y/N): "
+            if /i not "!FORCE_REINSTALL!"=="y" (
+                echo Installation cancelled - already up to date.
+                echo.
+                set /p "DELETE_SCRIPT=Delete this installer script? (Y/n): "
+                if /i not "!DELETE_SCRIPT!"=="n" (
+                    echo Deleting installer script...
+                    (goto) 2>nul & del "%~f0"
+                )
+                pause
+                exit /b 0
+            )
+            echo Proceeding with reinstallation...
+        ) else if !VERSION_COMPARISON! equ 1 (
+            echo [INFO] Newer version available: !LATEST_VERSION! (currently have !CURRENT_VERSION!)
+            echo Proceeding with upgrade...
+        ) else (
+            echo [INFO] You have a newer version (!CURRENT_VERSION!) than the latest release (!LATEST_VERSION!)
+            echo This may be a development version.
+            set /p "CONTINUE_ANYWAY=Continue with installation anyway? (y/N): "
+            if /i not "!CONTINUE_ANYWAY!"=="y" (
+                echo Installation cancelled.
+                echo.
+                set /p "DELETE_SCRIPT=Delete this installer script? (Y/n): "
+                if /i not "!DELETE_SCRIPT!"=="n" (
+                    echo Deleting installer script...
+                    (goto) 2>nul & del "%~f0"
+                )
+                pause
+                exit /b 0
+            )
+        )
+    )
+) else (
+    echo No current installation detected.
+)
+
 :: Install Docx2Shelf
 echo.
 echo Installing Docx2Shelf from GitHub (latest version)...
@@ -184,6 +232,13 @@ if %errorlevel% equ 0 (
     echo ** NEW USER? Start with: docx2shelf **
     echo.
     echo Installation completed successfully!
+    echo.
+    set /p "DELETE_SCRIPT=Delete this installer script? (Y/n): "
+    if /i not "!DELETE_SCRIPT!"=="n" (
+        echo Deleting installer script...
+        echo Thank you for using Docx2Shelf!
+        (goto) 2>nul & del "%~f0"
+    )
     pause
 ) else (
     echo.
@@ -514,6 +569,52 @@ if "!LATEST_VERSION!"=="" (
     echo [Note] Could not retrieve version info from GitHub API
 ) else (
     echo Found latest release: !LATEST_VERSION!
+)
+
+exit /b 0
+
+:check_current_version
+:: Check if docx2shelf is installed and get its version
+set "CURRENT_VERSION="
+docx2shelf --version >nul 2>&1
+if !errorlevel! equ 0 (
+    for /f "tokens=*" %%A in ('docx2shelf --version 2^>nul') do (
+        set "VERSION_OUTPUT=%%A"
+        :: Extract version number from output like "docx2shelf 1.4.3"
+        for /f "tokens=2" %%B in ("!VERSION_OUTPUT!") do set "CURRENT_VERSION=%%B"
+    )
+)
+exit /b 0
+
+:compare_versions
+:: Compare two version strings (v1 v2)
+:: Returns: VERSION_COMPARISON = 0 (equal), 1 (v2 newer), -1 (v1 newer)
+set "V1=%~1"
+set "V2=%~2"
+set "VERSION_COMPARISON=0"
+
+:: Remove 'v' prefix if present
+set "V1=!V1:v=!"
+set "V2=!V2:v=!"
+
+:: Simple string comparison for versions like "1.4.2" vs "1.4.3"
+:: Convert to comparable numbers by replacing dots
+set "V1_NUM=!V1:.=!"
+set "V2_NUM=!V2:.=!"
+
+:: Pad with zeros to ensure proper numeric comparison
+for /l %%i in (1,1,10) do (
+    if "!V1_NUM:~%%i,1!"=="" set "V1_NUM=!V1_NUM!0"
+    if "!V2_NUM:~%%i,1!"=="" set "V2_NUM=!V2_NUM!0"
+)
+
+:: Compare numerically
+if !V1_NUM! lss !V2_NUM! (
+    set "VERSION_COMPARISON=1"
+) else if !V1_NUM! gtr !V2_NUM! (
+    set "VERSION_COMPARISON=-1"
+) else (
+    set "VERSION_COMPARISON=0"
 )
 
 exit /b 0

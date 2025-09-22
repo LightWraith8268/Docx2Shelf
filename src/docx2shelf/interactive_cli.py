@@ -1582,9 +1582,28 @@ class InteractiveCLI:
         print("https://github.com/LightWraith8268/Docx2Shelf")
         print()
 
+        # Detect platform and set appropriate installer URL
+        import platform
+        system = platform.system().lower()
+
+        if system == "windows":
+            installer_url = "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat"
+            installer_suffix = ".bat"
+        else:
+            installer_url = "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh"
+            installer_suffix = ".sh"
+
+        print(f"Platform detected: {system}")
+        print(f"Installer: {installer_url}")
+        print()
+        print("Note: The installer will check your current version and only install if")
+        print("      a newer version is available. It will also offer to delete itself")
+        print("      after successful installation.")
+        print()
+
         confirm = input("Do you want to proceed with the update? (y/N): ").strip().lower()
         if confirm in ['y', 'yes']:
-            print("\nDownloading and running installer from GitHub...")
+            print(f"\nDownloading and running installer from GitHub...")
             print("Please wait while the update completes...")
 
             # Import subprocess here to avoid import at module level
@@ -1595,27 +1614,39 @@ class InteractiveCLI:
 
             try:
                 # Download the installer
-                installer_url = "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat"
+                print(f"Downloading from: {installer_url}")
                 response = requests.get(installer_url)
                 response.raise_for_status()
 
                 # Save to temp file and execute
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.bat', delete=False) as f:
+                with tempfile.NamedTemporaryFile(mode='w', suffix=installer_suffix, delete=False) as f:
                     f.write(response.text)
                     temp_installer = f.name
 
+                # Make executable on Unix systems
+                if system != "windows":
+                    import os
+                    os.chmod(temp_installer, 0o755)
+
                 print(f"Executing installer: {temp_installer}")
-                subprocess.run([temp_installer], shell=True)
+
+                if system == "windows":
+                    subprocess.run([temp_installer], shell=True)
+                else:
+                    subprocess.run(["/bin/bash", temp_installer])
 
                 # Clean up
                 Path(temp_installer).unlink(missing_ok=True)
 
-                print("\nUpdate completed! Please restart docx2shelf to use the new version.")
+                print("\nUpdate process completed!")
+                print("If an update was installed, please restart docx2shelf to use the new version.")
 
             except Exception as e:
                 print(f"\nUpdate failed: {e}")
                 print("Please download and run the installer manually:")
-                print("https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat")
+                print(f"  {installer_url}")
+                if system != "windows":
+                    print("Or use: curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh | bash")
         else:
             print("\nUpdate cancelled.")
 
