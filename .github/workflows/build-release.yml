@@ -155,7 +155,7 @@ jobs:
         # Create NSIS script
         $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.7.6"
+        !define APP_VERSION "1.7.7"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name `${APP_NAME}`
@@ -248,8 +248,33 @@ jobs:
         $nsis_script | Out-File -FilePath "installer.nsi" -Encoding ASCII
 
         # Add chocolatey tools to PATH and run makensis
-        $env:PATH += ";C:\ProgramData\chocolatey\lib\nsis\tools"
-        & "C:\ProgramData\chocolatey\lib\nsis\tools\makensis.exe" installer.nsi
+        $env:PATH += ";C:\ProgramData\chocolatey\lib\nsis\tools;C:\Program Files (x86)\NSIS"
+
+        # Try different possible locations for makensis
+        $makensis_paths = @(
+            "C:\Program Files (x86)\NSIS\makensis.exe",
+            "C:\ProgramData\chocolatey\lib\nsis\tools\makensis.exe",
+            "makensis.exe"
+        )
+
+        $makensis_found = $false
+        foreach ($path in $makensis_paths) {
+            if (Test-Path $path -ErrorAction SilentlyContinue) {
+                echo "Found makensis at: $path"
+                & $path installer.nsi
+                $makensis_found = $true
+                break
+            }
+        }
+
+        if (-not $makensis_found) {
+            echo "ERROR: makensis.exe not found in any expected location"
+            echo "Available files in C:\Program Files (x86)\NSIS:"
+            if (Test-Path "C:\Program Files (x86)\NSIS") { Get-ChildItem "C:\Program Files (x86)\NSIS" }
+            echo "Available files in C:\ProgramData\chocolatey\lib\nsis\tools:"
+            if (Test-Path "C:\ProgramData\chocolatey\lib\nsis\tools") { Get-ChildItem "C:\ProgramData\chocolatey\lib\nsis\tools" }
+            exit 1
+        }
 
     - name: Create macOS DMG
       if: matrix.installer-type == 'dmg'

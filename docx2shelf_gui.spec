@@ -128,13 +128,13 @@ if sys.platform == "darwin":
         name="Docx2Shelf.app",
         icon=None,  # Disable icon for cross-platform compatibility
         bundle_identifier="com.docx2shelf.app",
-        version="1.7.6",
+        version="1.7.7",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '1.7.6',
-            'CFBundleShortVersionString': '1.7.6',
+            'CFBundleVersion': '1.7.7',
+            'CFBundleShortVersionString': '1.7.7',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',
