@@ -51,7 +51,9 @@
       "Bash(git checkout:*)",
       "Bash(bash:*)",
       "Read(//s/**)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(pyinstaller:*)",
+      "Bash(gh run view:*)"
     ],
     "deny": [],
     "ask": []

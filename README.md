@@ -128,34 +128,42 @@ Download and run:
 - **macOS**: macOS 10.15+ (Catalina or newer)
 - **Linux**: Modern distribution with glibc 2.28+ (Ubuntu 18.04+, CentOS 8+)
 
-### 🐍 Python Installation
+### 💾 GUI Installers (Recommended)
 
-For developers or users who prefer Python environments:
+Download the latest installer for your platform from the [Releases page](https://github.com/LightWraith8268/Docx2Shelf/releases/latest):
 
-Docx2Shelf requires **Python 3.11 or newer**.
+**🪟 Windows**
+- Download `Docx2Shelf-Windows-Installer.exe`
+- Double-click to install with desktop shortcuts and file associations
 
-#### Automated Install Scripts
+**🍎 macOS**
+- Download `Docx2Shelf-macOS-Installer.dmg`
+- Open and drag Docx2Shelf to Applications folder
 
-**Windows**: Download and run the installer script:
-```cmd
-curl -L -o install.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat && install.bat
-```
+**🐧 Linux**
+- Download `Docx2Shelf-Linux-x86_64.AppImage`
+- Make executable: `chmod +x Docx2Shelf-*.AppImage`
+- Run: `./Docx2Shelf-*.AppImage`
 
-**macOS/Linux**: Download and run the installer script:
-```bash
-curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh | bash
-```
+### 📦 Portable Versions
 
-The install scripts provide:
-- **Automatic Python dependency detection and installation**
-- **Smart version checking** (only installs if newer version available)
-- **Optional tool installation** - Pandoc and EPUBCheck
-- **Automatic PATH configuration**
-- **Comprehensive error handling and troubleshooting**
+For users who prefer portable applications without installation:
 
-#### Manual Python Installation
+**🪟 Windows Portable**
+- Download `Docx2Shelf-windows-portable.zip`
+- Extract and run `Docx2Shelf.exe`
 
-If you prefer to install manually or need custom configuration:
+**🍎 macOS Portable**
+- Download `Docx2Shelf-macos-portable.zip`
+- Extract and run `Docx2Shelf.app`
+
+**🐧 Linux Portable**
+- Download `Docx2Shelf-linux-portable.tar.gz`
+- Extract and run `./Docx2Shelf`
+
+### 🐍 Python Installation (For Developers)
+
+If you need the Python package for development:
 
 ```bash
 # pipx (recommended - isolated environment)
@@ -165,48 +173,26 @@ pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git
 pip install git+https://github.com/LightWraith8268/Docx2Shelf.git
 ```
 
+Requires **Python 3.11 or newer**.
 
-### Updating Docx2Shelf
+### 🔄 Updating
 
-To update your installed Docx2Shelf to the latest version, simply run:
+**GUI Version**: The application includes built-in update checking. When an update is available, you'll see a notification with download links.
 
+**Python Version**:
 ```bash
 docx2shelf update
 ```
 
-### Uninstalling Docx2Shelf
+### 🗑️ Uninstalling
 
-To completely remove Docx2Shelf from your system, use our universal uninstaller scripts that work across all installation methods:
+**🪟 Windows**: Go to Settings → Apps → Installed Apps, find Docx2Shelf and click Uninstall
 
-**If you used the install scripts** (recommended), the uninstall script was automatically downloaded:
+**🍎 macOS**: Download `Uninstall-Docx2Shelf.command` from releases and run it, or drag the app to Trash
 
-**Windows:**
-```cmd
-uninstall.bat
-```
+**🐧 Linux**: Download `uninstall-docx2shelf.sh` from releases and run it, or delete the AppImage file
 
-**macOS/Linux:**
-```bash
-./uninstall.sh
-```
-
-**If you don't have the local uninstall scripts**, download them:
-
-**Windows:**
-```cmd
-curl -L -o uninstall.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.bat && uninstall.bat
-```
-
-**macOS/Linux:**
-```bash
-curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/uninstall.sh | bash
-```
-
-The uninstall scripts automatically detect and remove Docx2Shelf from:
-- pip/pip3 installations
-- pipx installations
-- conda/mamba installations
-- System package managers (apt, yum, dnf, pacman, zypper, brew, MacPorts, winget, scoop, chocolatey)
+**Python**: `pip uninstall docx2shelf` or `pipx uninstall docx2shelf`
 - User data directories and configuration files
 - Associated tools and dependencies
 

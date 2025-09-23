@@ -2936,9 +2936,8 @@ def run_update(args: argparse.Namespace) -> int:
 
     except ImportError:
         print("Update functionality not available.")
-        print("Please reinstall using the installation script:")
-        print("  Windows: install.bat")
-        print("  macOS/Linux: install.sh")
+        print("Please download the latest installer from:")
+        print("  https://github.com/LightWraith8268/Docx2Shelf/releases/latest")
         return 1
     except Exception as e:
         print(f"Update failed: {e}")

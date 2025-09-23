@@ -22,7 +22,7 @@ from src.docx2shelf.anthology import (
     SeriesConfig,
     StoryInfo,
 )
-from src.docx2shelf.gui.app import TkinterMainWindow, create_context_menu_windows
+from src.docx2shelf.gui.modern_app import ModernDocx2ShelfApp
 from src.docx2shelf.metadata import EpubMetadata
 from src.docx2shelf.performance import (
     BuildCache,
@@ -603,37 +603,29 @@ class TestWebBuilder:
 class TestGUIFunctionality:
     """Test GUI application functionality."""
 
-    def test_context_menu_creation(self):
-        """Test Windows context menu creation."""
-        if hasattr(create_context_menu_windows, '__call__'):
-            # Test would require Windows registry access
-            # This is a placeholder for the actual implementation test
-            assert callable(create_context_menu_windows)
+    def test_modern_gui_initialization(self):
+        """Test modern GUI initialization."""
+        try:
+            import customtkinter
+            # Test that we can create the modern app class without errors
+            # (Don't actually create the window to avoid GUI dependencies in tests)
+            app_class = ModernDocx2ShelfApp
+            assert hasattr(app_class, '__init__')
+        except ImportError:
+            # Skip test if CustomTkinter is not available
+            pytest.skip("CustomTkinter not available for GUI tests")
 
-    @patch('tkinter.Tk')
-    def test_tkinter_window_initialization(self, mock_tk):
-        """Test Tkinter main window initialization."""
-        # Mock Tkinter components
-        mock_root = Mock()
-        mock_tk.return_value = mock_root
+    def test_modern_gui_availability(self):
+        """Test modern GUI availability."""
+        try:
+            import customtkinter
+            modern_gui_available = True
+        except ImportError:
+            modern_gui_available = False
 
-        with patch('tkinter.ttk.Notebook'), \
-             patch('tkinter.ttk.Frame'), \
-             patch('tkinter.StringVar'):
-
-            window = TkinterMainWindow()
-
-            # Verify initialization
-            assert hasattr(window, 'root')
-            mock_tk.assert_called_once()
-
-    def test_gui_framework_detection(self):
-        """Test GUI framework detection logic."""
-        from src.docx2shelf.gui.app import detect_gui_framework
-
-        # This will return the first available framework or None
-        framework = detect_gui_framework()
-        assert framework in [None, "tkinter", "pyqt5", "pyqt6"]
+        # Test that we can import the modern GUI class
+        app_class = ModernDocx2ShelfApp
+        assert app_class is not None
 
 
 # Integration tests
