@@ -8,25 +8,27 @@ from pathlib import Path
 
 def get_version() -> str:
     """Get the version of docx2shelf."""
+    # When running from source, prioritize pyproject.toml
     try:
-        # Try to get version from installed package metadata
+        pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
+        if pyproject_path.exists():
+            content = pyproject_path.read_text(encoding='utf-8')
+            for line in content.splitlines():
+                if line.strip().startswith('version = '):
+                    # Extract version from 'version = "1.6.3"'
+                    version = line.split('=')[1].strip().strip('"\'')
+                    return version
+    except Exception:
+        pass
+
+    try:
+        # Fallback to installed package metadata
         return importlib.metadata.version("docx2shelf")
     except importlib.metadata.PackageNotFoundError:
-        # Fallback: read from pyproject.toml if running from source
-        try:
-            pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
-            if pyproject_path.exists():
-                content = pyproject_path.read_text(encoding='utf-8')
-                for line in content.splitlines():
-                    if line.strip().startswith('version = '):
-                        # Extract version from 'version = "1.3.5"'
-                        version = line.split('=')[1].strip().strip('"\'')
-                        return version
-        except Exception:
-            pass
+        pass
 
-        # Ultimate fallback
-        return "unknown"
+    # Ultimate fallback
+    return "unknown"
 
 
 def get_version_info() -> dict[str, str]:

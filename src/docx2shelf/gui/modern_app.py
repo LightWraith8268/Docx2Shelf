@@ -20,7 +20,7 @@ from ..assemble import assemble_epub
 from ..convert import docx_to_html_chunks
 from ..metadata import EpubMetadata, BuildOptions
 from ..settings import get_settings_manager
-from ..update import check_for_updates as check_updates, perform_update
+from ..update import check_for_updates as check_updates, download_and_install_update
 
 class ModernDocx2ShelfApp:
     """Modern Docx2Shelf application using CustomTkinter."""
@@ -35,7 +35,7 @@ class ModernDocx2ShelfApp:
 
         # Initialize main window with fixed positioning
         self.root = ctk.CTk()
-        self.root.title("Docx2Shelf - Modern GUI")
+        self.root.title("🪶 Docx2Shelf - Modern GUI")
         self.root.geometry("1200x800")
         self.root.minsize(800, 600)
 
@@ -56,6 +56,9 @@ class ModernDocx2ShelfApp:
 
         # Setup the interface
         self.setup_ui()
+
+        # Check for updates on startup if enabled
+        self.root.after(2000, self.check_for_updates_on_startup)  # Check after 2 seconds
 
     def set_window_icon(self):
         """Set window icon if available."""
@@ -80,8 +83,8 @@ class ModernDocx2ShelfApp:
 
         except Exception as e:
             print(f"Could not set window icon: {e}")
-            # Fallback to emoji in title
-            self.root.title("📖 Docx2Shelf - Modern GUI")
+            # Fallback to feather quill emoji in title
+            self.root.title("🪶 Docx2Shelf - Modern GUI")
 
     def create_text_icon(self):
         """Create a simple text-based icon using PIL."""
@@ -90,7 +93,7 @@ class ModernDocx2ShelfApp:
             import tempfile
             import os
 
-            # Create a simple icon with "D2S" text
+            # Create a simple icon with feather quill
             size = (32, 32)
             image = Image.new('RGBA', size, (0, 120, 204, 255))  # Blue background
             draw = ImageDraw.Draw(image)
@@ -104,15 +107,25 @@ class ModernDocx2ShelfApp:
                 except:
                     font = ImageFont.load_default()
 
-            # Draw "D2S" text in white
-            text = "D2S"
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-
-            x = (size[0] - text_width) // 2
-            y = (size[1] - text_height) // 2
-            draw.text((x, y), text, fill=(255, 255, 255, 255), font=font)
+            # Draw feather quill symbol in white
+            text = "🪶"
+            try:
+                # Try to draw the feather emoji
+                bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+                x = (size[0] - text_width) // 2
+                y = (size[1] - text_height) // 2
+                draw.text((x, y), text, fill=(255, 255, 255, 255), font=font)
+            except:
+                # Fallback to simple "Q" for Quill
+                text = "Q"
+                bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+                x = (size[0] - text_width) // 2
+                y = (size[1] - text_height) // 2
+                draw.text((x, y), text, fill=(255, 255, 255, 255), font=font)
 
             # Save to temporary file
             temp_dir = tempfile.gettempdir()
@@ -144,7 +157,18 @@ class ModernDocx2ShelfApp:
                                  font=ctk.CTkFont(size=24, weight="bold"))
         title_label.pack(side="left")
 
-        version_label = ctk.CTkLabel(title_frame, text="v1.6.3",
+        # Get actual version
+        try:
+            from ..version import get_version
+            current_version = get_version()
+        except Exception:
+            try:
+                from importlib import metadata
+                current_version = metadata.version("docx2shelf")
+            except Exception:
+                current_version = "dev"
+
+        version_label = ctk.CTkLabel(title_frame, text=f"v{current_version}",
                                    font=ctk.CTkFont(size=14))
         version_label.pack(side="left", padx=(10, 0))
 
@@ -173,12 +197,20 @@ class ModernDocx2ShelfApp:
         self.tabview.add("📄 Convert")
         self.tabview.add("⚙️ Settings")
         self.tabview.add("📦 Batch")
+        self.tabview.add("🎨 Themes")
+        self.tabview.add("🔍 Quality")
+        self.tabview.add("🛠️ Tools")
+        self.tabview.add("🧙 Wizard")
         self.tabview.add("ℹ️ About")
 
         # Setup individual tabs
         self.setup_convert_tab()
         self.setup_settings_tab()
         self.setup_batch_tab()
+        self.setup_themes_tab()
+        self.setup_quality_tab()
+        self.setup_tools_tab()
+        self.setup_wizard_tab()
         self.setup_about_tab()
 
     def setup_convert_tab(self):
@@ -211,16 +243,51 @@ class ModernDocx2ShelfApp:
                                  font=ctk.CTkFont(size=12))
         browse_btn.pack(side="right")
 
-        # Drag and drop area
+    def setup_drag_and_drop(self, widget):
+        """Setup drag and drop functionality for file input."""
+        try:
+            # Try to implement tkinterdnd2 if available
+            try:
+                import tkinterdnd2 as tkdnd
+                # Convert CTk widget to underlying tk widget for drag/drop
+                tk_widget = widget._canvas if hasattr(widget, '_canvas') else widget
+                tk_widget.drop_target_register(tkdnd.DND_FILES)
+                tk_widget.dnd_bind('<<Drop>>', self.handle_file_drop)
+            except ImportError:
+                # Fallback: just bind double-click to browse
+                widget.bind("<Double-Button-1>", lambda e: self.browse_file())
+        except Exception as e:
+            # Silent fallback
+            widget.bind("<Double-Button-1>", lambda e: self.browse_file())
+
+    def handle_file_drop(self, event):
+        """Handle dropped files."""
+        try:
+            files = event.data.split()
+            if files:
+                file_path = files[0].strip('{}')  # Remove braces if present
+                if file_path.lower().endswith(('.docx', '.md', '.txt', '.html', '.htm')):
+                    self.file_entry.delete(0, 'end')
+                    self.file_entry.insert(0, file_path)
+                    self.current_file = file_path
+                else:
+                    self.show_error("Unsupported file type. Please select a DOCX, MD, TXT, or HTML file.")
+        except Exception as e:
+            self.show_error(f"Error handling dropped file: {str(e)}")
+
+        # Drag and drop area (basic implementation)
         drop_frame = ctk.CTkFrame(file_section, height=100, corner_radius=15,
                                 border_width=2, border_color="#cccccc")
         drop_frame.pack(fill="x", padx=20, pady=(0, 20))
         drop_frame.pack_propagate(False)
 
         drop_label = ctk.CTkLabel(drop_frame,
-                                text="💭 Drag and drop your document here\n(DOCX, MD, TXT, HTML)",
+                                text="💭 Drag and drop your document here\n(DOCX, MD, TXT, HTML)\n\nOr use the Browse button above",
                                 font=ctk.CTkFont(size=14))
         drop_label.pack(expand=True)
+
+        # Set up drag and drop event handlers
+        self.setup_drag_and_drop(drop_frame)
 
         # Metadata Section
         metadata_section = ctk.CTkFrame(scrollable_frame, corner_radius=15)
@@ -832,7 +899,7 @@ class ModernDocx2ShelfApp:
                                  font=ctk.CTkFont(size=20, weight="bold"))
         about_label.pack(pady=20)
 
-        # About info
+        # About info with CLI feature compatibility
         info_text = """Docx2Shelf v1.6.3 - Modern GUI
 
 Document to EPUB Converter with AI Features
@@ -841,8 +908,14 @@ Document to EPUB Converter with AI Features
 • AI-powered chapter detection and metadata enhancement
 • Professional EPUB output for all major ebook stores
 • Modern interface with dark/light themes
+• Batch processing for multiple documents
+• Automatic updates and tool management
+• Full feature parity with CLI interface
+• Cross-platform compatibility
 
-Built with CustomTkinter for a modern appearance."""
+Built with CustomTkinter for a modern appearance.
+
+CLI Access: Run 'docx2shelf --help' for command-line usage"""
 
         info_label = ctk.CTkLabel(about_frame, text=info_text,
                                 font=ctk.CTkFont(size=14),
@@ -907,27 +980,90 @@ Built with CustomTkinter for a modern appearance."""
         thread.start()
 
     def conversion_worker(self):
-        """Background conversion worker."""
+        """Background conversion worker with real implementation."""
         try:
+            from tkinter import filedialog
+            import os
+            from pathlib import Path
+            from ..metadata import EpubMetadata, BuildOptions
+            from ..convert import docx_to_html_chunks
+            from ..assemble import assemble_epub
+
+            # Update progress
+            self.root.after(0, lambda: self.progress_bar.set(0.1))
+            self.root.after(0, lambda: self.progress_label.configure(text="Preparing conversion..."))
+
+            # Validate inputs
+            if not self.current_file:
+                raise ValueError("No input file selected")
+
+            if not self.title_entry.get().strip():
+                raise ValueError("Title is required")
+
+            if not self.author_entry.get().strip():
+                raise ValueError("Author is required")
+
+            # Create metadata from form inputs
+            metadata = EpubMetadata(
+                title=self.title_entry.get().strip(),
+                author=self.author_entry.get().strip(),
+                language=self.language_combo.get().lower()[:2],
+                description=self.description_text.get("0.0", "end").strip() or None,
+                genre=self.genre_entry.get().strip() or None
+            )
+
+            # Create build options
+            options = BuildOptions(
+                use_ai_detection=self.ai_detection.get(),
+                theme=self.css_theme.get().lower().replace('-', ''),
+                include_toc=self.include_toc.get(),
+                validate_epub=self.validate_epub.get()
+            )
+
             # Update progress
             self.root.after(0, lambda: self.progress_bar.set(0.2))
             self.root.after(0, lambda: self.progress_label.configure(text="Reading document..."))
 
-            # Simulate conversion steps
-            import time
-            time.sleep(1)
+            # Convert document to HTML chunks
+            chunks = docx_to_html_chunks(self.current_file)
 
-            self.root.after(0, lambda: self.progress_bar.set(0.4))
+            self.root.after(0, lambda: self.progress_bar.set(0.5))
             self.root.after(0, lambda: self.progress_label.configure(text="Processing content..."))
-            time.sleep(1)
 
-            self.root.after(0, lambda: self.progress_bar.set(0.6))
+            # Generate output path
+            input_path = Path(self.current_file)
+            default_name = f"{metadata.title.replace(' ', '_').replace(':', '_')}.epub"
+
+            # Use main thread to show save dialog
+            output_path = None
+            def show_save_dialog():
+                nonlocal output_path
+                output_path = filedialog.asksaveasfilename(
+                    title="Save EPUB as...",
+                    defaultextension=".epub",
+                    filetypes=[("EPUB files", "*.epub"), ("All files", "*.*")],
+                    initialname=default_name
+                )
+
+            self.root.after(0, show_save_dialog)
+
+            # Wait for dialog to complete
+            while output_path is None:
+                import time
+                time.sleep(0.1)
+
+            if not output_path:
+                # User cancelled
+                self.root.after(0, lambda: self.convert_btn.configure(state="normal", text="🚀 Convert to EPUB"))
+                self.root.after(0, lambda: self.progress_label.configure(text="Conversion cancelled"))
+                self.root.after(0, lambda: self.progress_bar.set(0))
+                return
+
+            self.root.after(0, lambda: self.progress_bar.set(0.7))
             self.root.after(0, lambda: self.progress_label.configure(text="Generating EPUB..."))
-            time.sleep(1)
 
-            self.root.after(0, lambda: self.progress_bar.set(0.8))
-            self.root.after(0, lambda: self.progress_label.configure(text="Finalizing..."))
-            time.sleep(1)
+            # Assemble EPUB
+            assemble_epub(chunks, metadata, output_path, options)
 
             self.root.after(0, lambda: self.progress_bar.set(1.0))
             self.root.after(0, lambda: self.progress_label.configure(text="Conversion complete!"))
@@ -935,12 +1071,15 @@ Built with CustomTkinter for a modern appearance."""
             # Re-enable button
             self.root.after(0, lambda: self.convert_btn.configure(state="normal", text="🚀 Convert to EPUB"))
 
-            # Show success message
-            self.root.after(0, lambda: self.show_success("EPUB conversion completed successfully!"))
+            # Show success message with file location
+            success_msg = f"EPUB conversion completed successfully!\n\nSaved to: {output_path}"
+            self.root.after(0, lambda: self.show_success_with_open_option(success_msg, output_path))
 
         except Exception as e:
             self.root.after(0, lambda: self.show_error(f"Conversion failed: {str(e)}"))
             self.root.after(0, lambda: self.convert_btn.configure(state="normal", text="🚀 Convert to EPUB"))
+            self.root.after(0, lambda: self.progress_bar.set(0))
+            self.root.after(0, lambda: self.progress_label.configure(text="Conversion failed"))
 
     def show_help(self):
         """Show help dialog."""
@@ -1160,18 +1299,29 @@ Built with CustomTkinter for a modern appearance."""
                 # Show checking message
                 self.root.after(0, lambda: self.show_update_checking())
 
-                # Check for updates
+                # Import and check for updates
+                from ..update import check_for_updates as check_updates
                 result = check_updates()
-                current_version = get_version_info()['version']
+
+                try:
+                    from ..version import get_version
+                    current_version = get_version()
+                except Exception:
+                    try:
+                        from importlib import metadata
+                        current_version = metadata.version("docx2shelf")
+                    except:
+                        current_version = "unknown"
 
                 if result and result.get('update_available'):
                     latest_version = result.get('latest_version', 'Unknown')
                     download_url = result.get('download_url', '')
+                    installer_name = result.get('installer_name', 'installer')
                     changelog = result.get('changelog', 'No changelog available.')
 
                     # Show update available dialog
                     self.root.after(0, lambda: self.show_update_available(
-                        current_version, latest_version, changelog, download_url))
+                        current_version, latest_version, changelog, download_url, installer_name))
                 else:
                     # No update available
                     self.root.after(0, lambda: self.show_update_current(current_version))
@@ -1188,15 +1338,16 @@ Built with CustomTkinter for a modern appearance."""
         """Show update checking dialog."""
         self.update_dialog = ctk.CTkToplevel(self.root)
         self.update_dialog.title("🔄 Checking for Updates")
-        self.update_dialog.geometry("400x150")
+        self.update_dialog.geometry("450x180")
         self.update_dialog.transient(self.root)
         self.update_dialog.grab_set()
+        self.update_dialog.resizable(False, False)
 
         # Center the dialog
         self.update_dialog.update_idletasks()
-        x = (self.update_dialog.winfo_screenwidth() // 2) - (400 // 2)
-        y = (self.update_dialog.winfo_screenheight() // 2) - (150 // 2)
-        self.update_dialog.geometry(f"400x150+{x}+{y}")
+        x = (self.update_dialog.winfo_screenwidth() // 2) - (450 // 2)
+        y = (self.update_dialog.winfo_screenheight() // 2) - (180 // 2)
+        self.update_dialog.geometry(f"450x180+{x}+{y}")
 
         ctk.CTkLabel(self.update_dialog, text="🔄 Checking for Updates...",
                     font=ctk.CTkFont(size=16, weight="bold")).pack(pady=20)
@@ -1209,16 +1360,24 @@ Built with CustomTkinter for a modern appearance."""
         ctk.CTkLabel(self.update_dialog, text="Please wait while we check for the latest version...",
                     font=ctk.CTkFont(size=12)).pack(pady=10)
 
-    def show_update_available(self, current_version, latest_version, changelog, download_url):
+    def show_update_available(self, current_version, latest_version, changelog, download_url, installer_name=None):
         """Show update available dialog."""
         if hasattr(self, 'update_dialog'):
             self.update_dialog.destroy()
 
         update_window = ctk.CTkToplevel(self.root)
         update_window.title("🆙 Update Available")
-        update_window.geometry("500x400")
+        update_window.geometry("600x500")
         update_window.transient(self.root)
         update_window.grab_set()
+        update_window.resizable(True, True)
+        update_window.minsize(500, 400)
+
+        # Center the dialog
+        update_window.update_idletasks()
+        x = (update_window.winfo_screenwidth() // 2) - (600 // 2)
+        y = (update_window.winfo_screenheight() // 2) - (500 // 2)
+        update_window.geometry(f"600x500+{x}+{y}")
 
         # Header
         header_label = ctk.CTkLabel(update_window, text="🎉 Update Available!",
@@ -1247,8 +1406,8 @@ Built with CustomTkinter for a modern appearance."""
         button_frame = ctk.CTkFrame(update_window, fg_color="transparent")
         button_frame.pack(fill="x", padx=20, pady=(0, 20))
 
-        download_btn = ctk.CTkButton(button_frame, text="🔽 Download Update",
-                                   command=lambda: self.download_update(download_url),
+        download_btn = ctk.CTkButton(button_frame, text="🔽 Download & Install",
+                                   command=lambda: self.download_update(download_url, installer_name),
                                    height=40, corner_radius=20,
                                    font=ctk.CTkFont(size=14, weight="bold"))
         download_btn.pack(side="left", padx=(0, 10))
@@ -1266,24 +1425,28 @@ Built with CustomTkinter for a modern appearance."""
 
         self.show_success(f"You're already running the latest version!\n\nCurrent version: {current_version}")
 
-    def download_update(self, download_url):
-        """Download and install update."""
-        import webbrowser
+    def download_update(self, download_url, installer_name=None):
+        """Download and install update automatically."""
         import threading
 
         def download_thread():
             try:
                 if download_url:
-                    # Open download URL in browser
-                    webbrowser.open(download_url)
-                    self.root.after(0, lambda: self.show_success(
-                        "Update download started!\n\nThe download page has been opened in your browser.\n"
-                        "Please download and install the latest version."))
+                    # Show downloading dialog
+                    self.root.after(0, lambda: self.show_update_downloading())
+
+                    # Use the enhanced download function
+                    success = download_and_install_update(download_url, installer_name or "installer")
+
+                    if success:
+                        self.root.after(0, lambda: self.show_update_success())
+                    else:
+                        self.root.after(0, lambda: self.show_update_manual(download_url))
                 else:
                     self.root.after(0, lambda: self.show_error(
                         "Download URL not available.\nPlease visit the project page to download manually."))
             except Exception as e:
-                self.root.after(0, lambda: self.show_error(f"Failed to open download: {str(e)}"))
+                self.root.after(0, lambda: self.show_error(f"Failed to download update: {str(e)}"))
 
         thread = threading.Thread(target=download_thread)
         thread.daemon = True
@@ -1664,6 +1827,791 @@ Built with CustomTkinter for a modern appearance."""
         self.batch_log.insert("end", log_entry)
         self.batch_log.see("end")
 
+    def setup_themes_tab(self):
+        """Setup the themes management tab."""
+        themes_frame = self.tabview.tab("🎨 Themes")
+
+        # Create scrollable frame
+        scrollable_themes = ctk.CTkScrollableFrame(themes_frame)
+        scrollable_themes.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Themes header
+        themes_label = ctk.CTkLabel(scrollable_themes, text="🎨 Theme Management",
+                                  font=ctk.CTkFont(size=20, weight="bold"))
+        themes_label.pack(pady=(0, 20))
+
+        # Current themes section
+        current_section = ctk.CTkFrame(scrollable_themes, corner_radius=15)
+        current_section.pack(fill="x", padx=5, pady=(0, 15))
+
+        current_label = ctk.CTkLabel(current_section, text="📋 Available Themes",
+                                   font=ctk.CTkFont(size=16, weight="bold"))
+        current_label.pack(pady=(15, 10))
+
+        # Theme list
+        theme_content = ctk.CTkFrame(current_section, fg_color="transparent")
+        theme_content.pack(fill="x", padx=20, pady=(0, 20))
+
+        # Built-in themes
+        themes = [
+            ("Serif", "Classic serif font theme with traditional book styling"),
+            ("Sans-serif", "Modern sans-serif theme for clean readability"),
+            ("Print-like", "Newspaper-style theme optimized for print"),
+        ]
+
+        for theme_name, description in themes:
+            theme_row = ctk.CTkFrame(theme_content)
+            theme_row.pack(fill="x", pady=5)
+
+            # Theme info
+            info_frame = ctk.CTkFrame(theme_row, fg_color="transparent")
+            info_frame.pack(side="left", fill="x", expand=True, padx=15, pady=10)
+
+            name_label = ctk.CTkLabel(info_frame, text=theme_name,
+                                    font=ctk.CTkFont(size=14, weight="bold"))
+            name_label.pack(anchor="w")
+
+            desc_label = ctk.CTkLabel(info_frame, text=description,
+                                    font=ctk.CTkFont(size=11),
+                                    wraplength=300)
+            desc_label.pack(anchor="w")
+
+            # Theme actions
+            action_frame = ctk.CTkFrame(theme_row, fg_color="transparent")
+            action_frame.pack(side="right", padx=15, pady=10)
+
+            preview_btn = ctk.CTkButton(action_frame, text="👁️ Preview",
+                                      command=lambda t=theme_name: self.preview_theme(t),
+                                      width=80, height=30, corner_radius=15)
+            preview_btn.pack(side="left", padx=(0, 5))
+
+            apply_btn = ctk.CTkButton(action_frame, text="✓ Apply",
+                                    command=lambda t=theme_name: self.apply_theme(t),
+                                    width=70, height=30, corner_radius=15)
+            apply_btn.pack(side="right")
+
+    def setup_quality_tab(self):
+        """Setup the quality analysis tab."""
+        quality_frame = self.tabview.tab("🔍 Quality")
+
+        # Create scrollable frame
+        scrollable_quality = ctk.CTkScrollableFrame(quality_frame)
+        scrollable_quality.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Quality header
+        quality_label = ctk.CTkLabel(scrollable_quality, text="🔍 Quality Analysis",
+                                   font=ctk.CTkFont(size=20, weight="bold"))
+        quality_label.pack(pady=(0, 20))
+
+        # File input section
+        input_section = ctk.CTkFrame(scrollable_quality, corner_radius=15)
+        input_section.pack(fill="x", padx=5, pady=(0, 15))
+
+        input_label = ctk.CTkLabel(input_section, text="📁 Select EPUB File",
+                                 font=ctk.CTkFont(size=16, weight="bold"))
+        input_label.pack(pady=(15, 10))
+
+        input_content = ctk.CTkFrame(input_section, fg_color="transparent")
+        input_content.pack(fill="x", padx=20, pady=(0, 20))
+
+        file_row = ctk.CTkFrame(input_content, fg_color="transparent")
+        file_row.pack(fill="x")
+
+        self.quality_file_entry = ctk.CTkEntry(file_row, placeholder_text="Select an EPUB file to analyze...",
+                                             height=40, font=ctk.CTkFont(size=12))
+        self.quality_file_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+
+        browse_quality_btn = ctk.CTkButton(file_row, text="📂 Browse",
+                                         command=self.browse_epub_file,
+                                         height=40, corner_radius=20)
+        browse_quality_btn.pack(side="right")
+
+        # Analysis results
+        results_section = ctk.CTkFrame(scrollable_quality, corner_radius=15)
+        results_section.pack(fill="both", expand=True, padx=5, pady=(0, 15))
+
+        results_label = ctk.CTkLabel(results_section, text="📈 Analysis Results",
+                                   font=ctk.CTkFont(size=16, weight="bold"))
+        results_label.pack(pady=(15, 10))
+
+        self.quality_results = ctk.CTkTextbox(results_section, height=300,
+                                            font=ctk.CTkFont(size=11))
+        self.quality_results.pack(fill="both", expand=True, padx=20, pady=(0, 15))
+        self.quality_results.insert("0.0", "No analysis performed yet. Select an EPUB file and click 'Analyze' to begin.")
+
+        # Action buttons
+        action_frame = ctk.CTkFrame(scrollable_quality, fg_color="transparent")
+        action_frame.pack(fill="x", padx=5, pady=(0, 10))
+
+        analyze_btn = ctk.CTkButton(action_frame, text="🔍 Analyze EPUB",
+                                  command=self.analyze_epub_quality,
+                                  height=45, corner_radius=22,
+                                  font=ctk.CTkFont(size=16, weight="bold"))
+        analyze_btn.pack(side="left", padx=(0, 15))
+
+        doctor_btn = ctk.CTkButton(action_frame, text="🩺 Run Doctor",
+                                 command=self.run_system_doctor,
+                                 height=45, corner_radius=22,
+                                 font=ctk.CTkFont(size=14))
+        doctor_btn.pack(side="right")
+
+    def setup_tools_tab(self):
+        """Setup the tools management tab."""
+        tools_frame = self.tabview.tab("🛠️ Tools")
+
+        # Create scrollable frame
+        scrollable_tools = ctk.CTkScrollableFrame(tools_frame)
+        scrollable_tools.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Tools header
+        tools_label = ctk.CTkLabel(scrollable_tools, text="🛠️ Tool Management",
+                                 font=ctk.CTkFont(size=20, weight="bold"))
+        tools_label.pack(pady=(0, 20))
+
+        # Tool status section
+        status_section = ctk.CTkFrame(scrollable_tools, corner_radius=15)
+        status_section.pack(fill="x", padx=5, pady=(0, 15))
+
+        status_label = ctk.CTkLabel(status_section, text="🔍 Tool Status",
+                                  font=ctk.CTkFont(size=16, weight="bold"))
+        status_label.pack(pady=(15, 10))
+
+        status_content = ctk.CTkFrame(status_section, fg_color="transparent")
+        status_content.pack(fill="x", padx=20, pady=(0, 20))
+
+        # Tool status display
+        self.tool_status_frame = ctk.CTkFrame(status_content)
+        self.tool_status_frame.pack(fill="x")
+
+        # Tool output
+        output_section = ctk.CTkFrame(scrollable_tools, corner_radius=15)
+        output_section.pack(fill="both", expand=True, padx=5, pady=(0, 10))
+
+        output_label = ctk.CTkLabel(output_section, text="📜 Tool Output",
+                                  font=ctk.CTkFont(size=16, weight="bold"))
+        output_label.pack(pady=(15, 10))
+
+        self.tool_output = ctk.CTkTextbox(output_section, height=200,
+                                        font=ctk.CTkFont(size=10, family="Courier"))
+        self.tool_output.pack(fill="both", expand=True, padx=20, pady=(0, 15))
+        self.tool_output.insert("0.0", "Tool management output will appear here...")
+
+        # Refresh button
+        refresh_btn = ctk.CTkButton(scrollable_tools, text="🔄 Refresh Tool Status",
+                                  command=self.refresh_tool_status,
+                                  height=40, corner_radius=20)
+        refresh_btn.pack(pady=10)
+
+        # Initialize tool status
+        self.refresh_tool_status()
+
+    # Theme management methods
+    def preview_theme(self, theme_name):
+        """Preview a theme."""
+        try:
+            preview_window = ctk.CTkToplevel(self.root)
+            preview_window.title(f"🎨 Preview: {theme_name}")
+            preview_window.geometry("600x400")
+            preview_window.transient(self.root)
+
+            content = f"""Preview of {theme_name} Theme
+
+This shows how your EPUB will look with this theme.
+
+Chapter 1: Introduction
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+Bold text and italic text examples.
+• List item 1
+• List item 2"""
+
+            preview_text = ctk.CTkTextbox(preview_window, font=ctk.CTkFont(size=12))
+            preview_text.pack(fill="both", expand=True, padx=20, pady=20)
+            preview_text.insert("0.0", content)
+            preview_text.configure(state="disabled")
+
+        except Exception as e:
+            self.show_error(f"Failed to preview theme: {str(e)}")
+
+    def apply_theme(self, theme_name):
+        """Apply a theme as the default."""
+        try:
+            self.css_theme.set(theme_name)
+            self.show_success(f"Theme '{theme_name}' applied as default.")
+        except Exception as e:
+            self.show_error(f"Failed to apply theme: {str(e)}")
+
+    # Quality analysis methods
+    def browse_epub_file(self):
+        """Browse for EPUB file to analyze."""
+        try:
+            from tkinter import filedialog
+
+            file_path = filedialog.askopenfilename(
+                title="Select EPUB File",
+                filetypes=[("EPUB files", "*.epub"), ("All files", "*.*")]
+            )
+
+            if file_path:
+                self.quality_file_entry.delete(0, 'end')
+                self.quality_file_entry.insert(0, file_path)
+
+        except Exception as e:
+            self.show_error(f"Failed to select EPUB file: {str(e)}")
+
+    def analyze_epub_quality(self):
+        """Analyze EPUB file quality."""
+        try:
+            epub_path = self.quality_file_entry.get().strip()
+            if not epub_path:
+                self.show_error("Please select an EPUB file first.")
+                return
+
+            self.quality_results.delete("0.0", "end")
+            self.quality_results.insert("0.0", "Analyzing EPUB file...\n\n")
+
+            import threading
+            thread = threading.Thread(target=self.quality_analysis_worker, args=(epub_path,))
+            thread.daemon = True
+            thread.start()
+
+        except Exception as e:
+            self.show_error(f"Failed to start analysis: {str(e)}")
+
+    def quality_analysis_worker(self, epub_path):
+        """Background worker for quality analysis."""
+        try:
+            import os
+            import zipfile
+            from datetime import datetime
+
+            results = []
+            results.append(f"Quality Analysis Report")
+            results.append(f"File: {os.path.basename(epub_path)}")
+            results.append(f"Size: {os.path.getsize(epub_path) / 1024:.1f} KB")
+            results.append("=" * 50)
+
+            # Basic EPUB validation
+            try:
+                with zipfile.ZipFile(epub_path, 'r') as epub_zip:
+                    file_list = epub_zip.namelist()
+                    results.append(f"✓ Valid ZIP structure ({len(file_list)} files)")
+
+                    # Check required files
+                    if 'META-INF/container.xml' in file_list:
+                        results.append("✓ Found container.xml")
+                    else:
+                        results.append("✗ Missing container.xml")
+
+                    if 'mimetype' in file_list:
+                        results.append("✓ Found mimetype")
+                    else:
+                        results.append("✗ Missing mimetype")
+
+                    # Count content
+                    html_files = [f for f in file_list if f.endswith(('.html', '.xhtml'))]
+                    results.append(f"Content files: {len(html_files)}")
+
+            except zipfile.BadZipFile:
+                results.append("✗ Invalid ZIP file")
+
+            results.append("\nAnalysis complete.")
+            final_report = "\n".join(results)
+            self.root.after(0, lambda: self.update_quality_results(final_report))
+
+        except Exception as e:
+            error_msg = f"Analysis failed: {str(e)}"
+            self.root.after(0, lambda: self.update_quality_results(error_msg))
+
+    def update_quality_results(self, results):
+        """Update quality analysis results in UI."""
+        self.quality_results.delete("0.0", "end")
+        self.quality_results.insert("0.0", results)
+
+    def run_system_doctor(self):
+        """Run system diagnostics."""
+        try:
+            self.quality_results.delete("0.0", "end")
+            self.quality_results.insert("0.0", "Running system diagnostics...\n\n")
+
+            import threading
+            thread = threading.Thread(target=self.doctor_worker)
+            thread.daemon = True
+            thread.start()
+
+        except Exception as e:
+            self.show_error(f"Failed to run doctor: {str(e)}")
+
+    def doctor_worker(self):
+        """Background worker for system doctor."""
+        try:
+            import sys
+            import platform
+            from datetime import datetime
+
+            results = []
+            results.append("System Diagnostics Report")
+            results.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            results.append("=" * 40)
+
+            # System info
+            results.append(f"Platform: {platform.system()} {platform.release()}")
+            results.append(f"Python: {sys.version.split()[0]}")
+
+            # Check dependencies
+            packages = ['customtkinter', 'ebooklib', 'platformdirs']
+            for package in packages:
+                try:
+                    __import__(package)
+                    results.append(f"✓ {package} - installed")
+                except ImportError:
+                    results.append(f"✗ {package} - missing")
+
+            results.append("\nDiagnostics complete.")
+            final_report = "\n".join(results)
+            self.root.after(0, lambda: self.update_quality_results(final_report))
+
+        except Exception as e:
+            error_msg = f"Doctor failed: {str(e)}"
+            self.root.after(0, lambda: self.update_quality_results(error_msg))
+
+    # Tool management methods
+    def refresh_tool_status(self):
+        """Refresh the status of all tools."""
+        try:
+            # Clear existing status
+            for widget in self.tool_status_frame.winfo_children():
+                widget.destroy()
+
+            # Check tool status
+            tools = ['pandoc', 'epubcheck']
+
+            for tool in tools:
+                status_row = ctk.CTkFrame(self.tool_status_frame)
+                status_row.pack(fill="x", pady=2)
+
+                tool_label = ctk.CTkLabel(status_row, text=tool.title(),
+                                        font=ctk.CTkFont(size=12, weight="bold"))
+                tool_label.pack(side="left", padx=15, pady=5)
+
+                # Check availability
+                try:
+                    import subprocess
+                    result = subprocess.run([tool, '--version'],
+                                          capture_output=True, text=True, timeout=5)
+                    if result.returncode == 0:
+                        status_text = "✓ Available"
+                        status_color = "green"
+                    else:
+                        status_text = "✗ Not working"
+                        status_color = "red"
+                except (FileNotFoundError, subprocess.TimeoutExpired):
+                    status_text = "✗ Not found"
+                    status_color = "red"
+
+                status_label = ctk.CTkLabel(status_row, text=status_text,
+                                          text_color=status_color,
+                                          font=ctk.CTkFont(size=12))
+                status_label.pack(side="right", padx=15, pady=5)
+
+        except Exception as e:
+            self.tool_output.delete("0.0", "end")
+            self.tool_output.insert("0.0", f"Error checking tools: {str(e)}")
+
+    def setup_wizard_tab(self):
+        """Setup the interactive conversion wizard tab."""
+        wizard_frame = self.tabview.tab("🧙 Wizard")
+
+        # Create scrollable frame
+        scrollable_wizard = ctk.CTkScrollableFrame(wizard_frame)
+        scrollable_wizard.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Wizard header
+        wizard_label = ctk.CTkLabel(scrollable_wizard, text="🧙 Interactive Conversion Wizard",
+                                  font=ctk.CTkFont(size=20, weight="bold"))
+        wizard_label.pack(pady=(0, 20))
+
+        # Step indicator
+        steps_section = ctk.CTkFrame(scrollable_wizard, corner_radius=15)
+        steps_section.pack(fill="x", padx=5, pady=(0, 15))
+
+        steps_label = ctk.CTkLabel(steps_section, text="📋 Conversion Steps",
+                                 font=ctk.CTkFont(size=16, weight="bold"))
+        steps_label.pack(pady=(15, 10))
+
+        # Step progress
+        self.wizard_steps = [
+            "1. Select Document",
+            "2. Enter Metadata",
+            "3. Choose Options",
+            "4. Review Settings",
+            "5. Convert"
+        ]
+
+        self.current_step = 0
+        self.step_labels = []
+
+        steps_content = ctk.CTkFrame(steps_section, fg_color="transparent")
+        steps_content.pack(fill="x", padx=20, pady=(0, 20))
+
+        for i, step in enumerate(self.wizard_steps):
+            step_frame = ctk.CTkFrame(steps_content, fg_color="transparent")
+            step_frame.pack(fill="x", pady=2)
+
+            # Step indicator
+            if i == 0:
+                indicator = "▶️"
+                color = ("blue", "lightblue")
+            else:
+                indicator = "⭕"
+                color = ("gray", "lightgray")
+
+            step_label = ctk.CTkLabel(step_frame, text=f"{indicator} {step}",
+                                    font=ctk.CTkFont(size=12),
+                                    text_color=color)
+            step_label.pack(anchor="w")
+            self.step_labels.append(step_label)
+
+        # Current step content
+        content_section = ctk.CTkFrame(scrollable_wizard, corner_radius=15)
+        content_section.pack(fill="both", expand=True, padx=5, pady=(0, 15))
+
+        self.wizard_content_label = ctk.CTkLabel(content_section, text="Step 1: Select Document",
+                                               font=ctk.CTkFont(size=16, weight="bold"))
+        self.wizard_content_label.pack(pady=(15, 10))
+
+        # Dynamic content area
+        self.wizard_content_frame = ctk.CTkFrame(content_section, fg_color="transparent")
+        self.wizard_content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+
+        # Navigation buttons
+        nav_frame = ctk.CTkFrame(scrollable_wizard, fg_color="transparent")
+        nav_frame.pack(fill="x", padx=5, pady=(0, 10))
+
+        self.wizard_back_btn = ctk.CTkButton(nav_frame, text="⬅️ Back",
+                                           command=self.wizard_back,
+                                           height=40, corner_radius=20,
+                                           state="disabled")
+        self.wizard_back_btn.pack(side="left")
+
+        self.wizard_next_btn = ctk.CTkButton(nav_frame, text="Next ➡️",
+                                           command=self.wizard_next,
+                                           height=40, corner_radius=20)
+        self.wizard_next_btn.pack(side="right")
+
+        # Initialize wizard
+        self.setup_wizard_step()
+
+    def setup_wizard_step(self):
+        """Setup the current wizard step."""
+        # Clear previous content
+        for widget in self.wizard_content_frame.winfo_children():
+            widget.destroy()
+
+        # Update step indicator
+        for i, label in enumerate(self.step_labels):
+            if i == self.current_step:
+                label.configure(text=f"▶️ {self.wizard_steps[i]}",
+                              text_color=("blue", "lightblue"))
+            elif i < self.current_step:
+                label.configure(text=f"✅ {self.wizard_steps[i]}",
+                              text_color=("green", "lightgreen"))
+            else:
+                label.configure(text=f"⭕ {self.wizard_steps[i]}",
+                              text_color=("gray", "lightgray"))
+
+        # Update navigation buttons
+        self.wizard_back_btn.configure(state="normal" if self.current_step > 0 else "disabled")
+
+        if self.current_step == 0:
+            self.setup_wizard_file_step()
+        elif self.current_step == 1:
+            self.setup_wizard_metadata_step()
+        elif self.current_step == 2:
+            self.setup_wizard_options_step()
+        elif self.current_step == 3:
+            self.setup_wizard_review_step()
+        elif self.current_step == 4:
+            self.setup_wizard_convert_step()
+
+    def setup_wizard_file_step(self):
+        """Setup file selection step."""
+        self.wizard_content_label.configure(text="Step 1: Select Your Document")
+
+        instruction = ctk.CTkLabel(self.wizard_content_frame,
+                                 text="Choose the document you want to convert to EPUB.\nSupported formats: DOCX, Markdown, TXT, HTML",
+                                 font=ctk.CTkFont(size=12))
+        instruction.pack(pady=10)
+
+        # File input
+        file_frame = ctk.CTkFrame(self.wizard_content_frame)
+        file_frame.pack(fill="x", pady=10)
+
+        self.wizard_file_entry = ctk.CTkEntry(file_frame, placeholder_text="Select a document file...",
+                                            height=40, font=ctk.CTkFont(size=12))
+        self.wizard_file_entry.pack(side="left", fill="x", expand=True, padx=(15, 10), pady=15)
+
+        wizard_browse_btn = ctk.CTkButton(file_frame, text="📂 Browse",
+                                        command=self.wizard_browse_file,
+                                        height=40, corner_radius=20)
+        wizard_browse_btn.pack(side="right", padx=(0, 15), pady=15)
+
+        # Copy from main tab if file is already selected
+        if hasattr(self, 'current_file') and self.current_file:
+            self.wizard_file_entry.insert(0, self.current_file)
+
+    def setup_wizard_metadata_step(self):
+        """Setup metadata entry step."""
+        self.wizard_content_label.configure(text="Step 2: Enter Book Information")
+
+        instruction = ctk.CTkLabel(self.wizard_content_frame,
+                                 text="Fill in the details about your book. Title and Author are required.",
+                                 font=ctk.CTkFont(size=12))
+        instruction.pack(pady=10)
+
+        # Metadata form
+        form_frame = ctk.CTkFrame(self.wizard_content_frame)
+        form_frame.pack(fill="x", pady=10, padx=20)
+
+        # Title
+        ctk.CTkLabel(form_frame, text="📖 Title *", font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=15, pady=(15, 5))
+        self.wizard_title_entry = ctk.CTkEntry(form_frame, placeholder_text="Enter book title...", height=35)
+        self.wizard_title_entry.pack(fill="x", padx=15, pady=(0, 10))
+
+        # Author
+        ctk.CTkLabel(form_frame, text="✍️ Author *", font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=15, pady=(0, 5))
+        self.wizard_author_entry = ctk.CTkEntry(form_frame, placeholder_text="Enter author name...", height=35)
+        self.wizard_author_entry.pack(fill="x", padx=15, pady=(0, 10))
+
+        # Language and Genre
+        lang_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
+        lang_frame.pack(fill="x", padx=15, pady=(0, 10))
+
+        lang_col = ctk.CTkFrame(lang_frame, fg_color="transparent")
+        lang_col.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        ctk.CTkLabel(lang_col, text="🌍 Language", font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w")
+        self.wizard_language_combo = ctk.CTkComboBox(lang_col, values=["English", "Spanish", "French", "German", "Italian"], height=35)
+        self.wizard_language_combo.pack(fill="x", pady=(5, 0))
+        self.wizard_language_combo.set("English")
+
+        genre_col = ctk.CTkFrame(lang_frame, fg_color="transparent")
+        genre_col.pack(side="right", fill="x", expand=True, padx=(10, 0))
+        ctk.CTkLabel(genre_col, text="🏷️ Genre", font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w")
+        self.wizard_genre_entry = ctk.CTkEntry(genre_col, placeholder_text="e.g., Fantasy, Romance...", height=35)
+        self.wizard_genre_entry.pack(fill="x", pady=(5, 0))
+
+        # Description
+        ctk.CTkLabel(form_frame, text="📝 Description", font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=15, pady=(10, 5))
+        self.wizard_description_text = ctk.CTkTextbox(form_frame, height=80)
+        self.wizard_description_text.pack(fill="x", padx=15, pady=(0, 15))
+
+    def setup_wizard_options_step(self):
+        """Setup conversion options step."""
+        self.wizard_content_label.configure(text="Step 3: Choose Conversion Options")
+
+        instruction = ctk.CTkLabel(self.wizard_content_frame,
+                                 text="Select how you want your EPUB to be created.",
+                                 font=ctk.CTkFont(size=12))
+        instruction.pack(pady=10)
+
+        options_frame = ctk.CTkFrame(self.wizard_content_frame)
+        options_frame.pack(fill="x", pady=10, padx=20)
+
+        # Theme selection
+        ctk.CTkLabel(options_frame, text="🎨 CSS Theme", font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=15, pady=(15, 5))
+        self.wizard_css_theme = ctk.CTkSegmentedButton(options_frame, values=["Serif", "Sans-serif", "Print-like"])
+        self.wizard_css_theme.pack(fill="x", padx=15, pady=(0, 15))
+        self.wizard_css_theme.set("Serif")
+
+        # Options checkboxes
+        self.wizard_include_toc = ctk.CTkCheckBox(options_frame, text="📋 Include Table of Contents")
+        self.wizard_include_toc.pack(anchor="w", padx=15, pady=2)
+        self.wizard_include_toc.select()
+
+        self.wizard_ai_detection = ctk.CTkCheckBox(options_frame, text="🤖 AI Chapter Detection")
+        self.wizard_ai_detection.pack(anchor="w", padx=15, pady=2)
+
+        self.wizard_validate_epub = ctk.CTkCheckBox(options_frame, text="✅ Validate EPUB Output")
+        self.wizard_validate_epub.pack(anchor="w", padx=15, pady=(2, 15))
+        self.wizard_validate_epub.select()
+
+    def setup_wizard_review_step(self):
+        """Setup review settings step."""
+        self.wizard_content_label.configure(text="Step 4: Review Your Settings")
+
+        instruction = ctk.CTkLabel(self.wizard_content_frame,
+                                 text="Please review your settings before conversion.",
+                                 font=ctk.CTkFont(size=12))
+        instruction.pack(pady=10)
+
+        review_frame = ctk.CTkFrame(self.wizard_content_frame)
+        review_frame.pack(fill="both", expand=True, pady=10)
+
+        # Review content
+        self.wizard_review_text = ctk.CTkTextbox(review_frame, height=200)
+        self.wizard_review_text.pack(fill="both", expand=True, padx=15, pady=15)
+
+        # Generate review content
+        self.update_wizard_review()
+
+    def setup_wizard_convert_step(self):
+        """Setup final conversion step."""
+        self.wizard_content_label.configure(text="Step 5: Convert to EPUB")
+
+        instruction = ctk.CTkLabel(self.wizard_content_frame,
+                                 text="Ready to convert your document to EPUB!",
+                                 font=ctk.CTkFont(size=12))
+        instruction.pack(pady=10)
+
+        convert_frame = ctk.CTkFrame(self.wizard_content_frame)
+        convert_frame.pack(fill="x", pady=10)
+
+        # Progress
+        self.wizard_progress_label = ctk.CTkLabel(convert_frame, text="Ready to convert", font=ctk.CTkFont(size=14))
+        self.wizard_progress_label.pack(pady=(15, 5))
+
+        self.wizard_progress_bar = ctk.CTkProgressBar(convert_frame, height=20)
+        self.wizard_progress_bar.pack(fill="x", padx=15, pady=(0, 15))
+        self.wizard_progress_bar.set(0)
+
+        # Update navigation for final step
+        self.wizard_next_btn.configure(text="🚀 Convert", command=self.wizard_convert)
+
+    def wizard_browse_file(self):
+        """Browse for file in wizard."""
+        try:
+            from tkinter import filedialog
+            file_path = filedialog.askopenfilename(
+                title="Select Document File",
+                filetypes=[
+                    ("Word Documents", "*.docx"),
+                    ("Markdown files", "*.md"),
+                    ("Text files", "*.txt"),
+                    ("HTML files", "*.html;*.htm"),
+                    ("All files", "*.*")
+                ]
+            )
+            if file_path:
+                self.wizard_file_entry.delete(0, 'end')
+                self.wizard_file_entry.insert(0, file_path)
+        except Exception as e:
+            self.show_error(f"Failed to select file: {str(e)}")
+
+    def wizard_next(self):
+        """Go to next wizard step."""
+        if self.current_step < len(self.wizard_steps) - 1:
+            # Validate current step
+            if self.validate_wizard_step():
+                self.current_step += 1
+                self.setup_wizard_step()
+
+    def wizard_back(self):
+        """Go to previous wizard step."""
+        if self.current_step > 0:
+            self.current_step -= 1
+            self.setup_wizard_step()
+
+    def validate_wizard_step(self):
+        """Validate current wizard step."""
+        if self.current_step == 0:  # File selection
+            if not hasattr(self, 'wizard_file_entry') or not self.wizard_file_entry.get().strip():
+                self.show_error("Please select a document file.")
+                return False
+        elif self.current_step == 1:  # Metadata
+            if not self.wizard_title_entry.get().strip():
+                self.show_error("Please enter a title.")
+                return False
+            if not self.wizard_author_entry.get().strip():
+                self.show_error("Please enter an author name.")
+                return False
+        return True
+
+    def update_wizard_review(self):
+        """Update the review text with current settings."""
+        try:
+            review_text = "Conversion Settings Review\n"
+            review_text += "=" * 30 + "\n\n"
+
+            review_text += f"📁 Input File: {getattr(self, 'wizard_file_entry', {}).get() or 'Not selected'}\n"
+            review_text += f"📖 Title: {getattr(self, 'wizard_title_entry', {}).get() or 'Not set'}\n"
+            review_text += f"✍️ Author: {getattr(self, 'wizard_author_entry', {}).get() or 'Not set'}\n"
+            review_text += f"🌍 Language: {getattr(self, 'wizard_language_combo', {}).get() or 'English'}\n"
+            review_text += f"🏷️ Genre: {getattr(self, 'wizard_genre_entry', {}).get() or 'Not specified'}\n\n"
+
+            review_text += f"🎨 Theme: {getattr(self, 'wizard_css_theme', {}).get() or 'Serif'}\n"
+            review_text += f"📋 Table of Contents: {'Yes' if getattr(self, 'wizard_include_toc', {}).get() else 'No'}\n"
+            review_text += f"🤖 AI Detection: {'Yes' if getattr(self, 'wizard_ai_detection', {}).get() else 'No'}\n"
+            review_text += f"✅ Validate EPUB: {'Yes' if getattr(self, 'wizard_validate_epub', {}).get() else 'No'}\n\n"
+
+            desc = getattr(self, 'wizard_description_text', {}).get("0.0", "end") or ""
+            if desc.strip():
+                review_text += f"📝 Description:\n{desc.strip()}\n"
+
+            self.wizard_review_text.delete("0.0", "end")
+            self.wizard_review_text.insert("0.0", review_text)
+        except Exception as e:
+            self.wizard_review_text.delete("0.0", "end")
+            self.wizard_review_text.insert("0.0", f"Error generating review: {str(e)}")
+
+    def wizard_convert(self):
+        """Start conversion from wizard."""
+        try:
+            # Copy wizard values to main form
+            if hasattr(self, 'wizard_file_entry'):
+                self.current_file = self.wizard_file_entry.get()
+                self.file_entry.delete(0, 'end')
+                self.file_entry.insert(0, self.current_file)
+
+            if hasattr(self, 'wizard_title_entry'):
+                self.title_entry.delete(0, 'end')
+                self.title_entry.insert(0, self.wizard_title_entry.get())
+
+            if hasattr(self, 'wizard_author_entry'):
+                self.author_entry.delete(0, 'end')
+                self.author_entry.insert(0, self.wizard_author_entry.get())
+
+            if hasattr(self, 'wizard_language_combo'):
+                self.language_combo.set(self.wizard_language_combo.get())
+
+            if hasattr(self, 'wizard_genre_entry'):
+                self.genre_entry.delete(0, 'end')
+                self.genre_entry.insert(0, self.wizard_genre_entry.get())
+
+            if hasattr(self, 'wizard_description_text'):
+                desc = self.wizard_description_text.get("0.0", "end").strip()
+                self.description_text.delete("0.0", "end")
+                self.description_text.insert("0.0", desc)
+
+            if hasattr(self, 'wizard_css_theme'):
+                self.css_theme.set(self.wizard_css_theme.get())
+
+            if hasattr(self, 'wizard_include_toc'):
+                if self.wizard_include_toc.get():
+                    self.include_toc.select()
+                else:
+                    self.include_toc.deselect()
+
+            if hasattr(self, 'wizard_ai_detection'):
+                if self.wizard_ai_detection.get():
+                    self.ai_detection.select()
+                else:
+                    self.ai_detection.deselect()
+
+            if hasattr(self, 'wizard_validate_epub'):
+                if self.wizard_validate_epub.get():
+                    self.validate_epub.select()
+                else:
+                    self.validate_epub.deselect()
+
+            # Start conversion using the main conversion worker
+            self.start_conversion()
+
+            # Show success message
+            self.show_success("Conversion started! Check the Convert tab for progress.")
+
+        except Exception as e:
+            self.show_error(f"Failed to start conversion: {str(e)}")
+
     def show_error(self, message):
         """Show error message."""
         error_window = ctk.CTkToplevel(self.root)
@@ -1686,6 +2634,133 @@ Built with CustomTkinter for a modern appearance."""
                              height=35, corner_radius=17)
         ok_btn.pack(pady=20)
 
+    def show_update_downloading(self):
+        """Show downloading update dialog."""
+        self.download_dialog = ctk.CTkToplevel(self.root)
+        self.download_dialog.title("🔽 Downloading Update")
+        self.download_dialog.geometry("400x150")
+        self.download_dialog.transient(self.root)
+        self.download_dialog.grab_set()
+
+        # Center the dialog
+        self.download_dialog.update_idletasks()
+        x = (self.download_dialog.winfo_screenwidth() // 2) - (400 // 2)
+        y = (self.download_dialog.winfo_screenheight() // 2) - (150 // 2)
+        self.download_dialog.geometry(f"400x150+{x}+{y}")
+
+        ctk.CTkLabel(self.download_dialog, text="🔽 Downloading Update...",
+                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=20)
+
+        # Progress bar
+        progress = ctk.CTkProgressBar(self.download_dialog, mode="indeterminate")
+        progress.pack(pady=10, padx=40, fill="x")
+        progress.start()
+
+        ctk.CTkLabel(self.download_dialog, text="Please wait while the update is downloaded and installed...",
+                    font=ctk.CTkFont(size=12)).pack(pady=10)
+
+    def show_update_success(self):
+        """Show update success dialog."""
+        if hasattr(self, 'download_dialog'):
+            self.download_dialog.destroy()
+
+        success_window = ctk.CTkToplevel(self.root)
+        success_window.title("✅ Update Complete")
+        success_window.geometry("400x200")
+        success_window.transient(self.root)
+        success_window.grab_set()
+
+        success_label = ctk.CTkLabel(success_window, text="🎉 Update Installed!",
+                                   font=ctk.CTkFont(size=18, weight="bold"))
+        success_label.pack(pady=20)
+
+        message_label = ctk.CTkLabel(success_window, text="The update has been successfully installed.\n\nPlease restart Docx2Shelf to use the new version.",
+                                   font=ctk.CTkFont(size=12),
+                                   wraplength=350)
+        message_label.pack(padx=20, pady=10)
+
+        restart_btn = ctk.CTkButton(success_window, text="🔄 Restart Now",
+                                  command=self.restart_application,
+                                  height=35, corner_radius=17)
+        restart_btn.pack(side="left", padx=(80, 10), pady=20)
+
+        later_btn = ctk.CTkButton(success_window, text="⏰ Later",
+                                command=success_window.destroy,
+                                height=35, corner_radius=17)
+        later_btn.pack(side="right", padx=(10, 80), pady=20)
+
+    def show_update_manual(self, download_url):
+        """Show manual update dialog."""
+        if hasattr(self, 'download_dialog'):
+            self.download_dialog.destroy()
+
+        import webbrowser
+
+        manual_window = ctk.CTkToplevel(self.root)
+        manual_window.title("🔗 Manual Update Required")
+        manual_window.geometry("450x200")
+        manual_window.transient(self.root)
+        manual_window.grab_set()
+
+        header_label = ctk.CTkLabel(manual_window, text="🔗 Manual Update Required",
+                                  font=ctk.CTkFont(size=16, weight="bold"))
+        header_label.pack(pady=20)
+
+        message_label = ctk.CTkLabel(manual_window, text="Automatic update failed. Please download and install the update manually.",
+                                   font=ctk.CTkFont(size=12),
+                                   wraplength=400)
+        message_label.pack(padx=20, pady=10)
+
+        button_frame = ctk.CTkFrame(manual_window, fg_color="transparent")
+        button_frame.pack(fill="x", padx=20, pady=20)
+
+        open_btn = ctk.CTkButton(button_frame, text="🌐 Open Download Page",
+                               command=lambda: webbrowser.open(download_url),
+                               height=35, corner_radius=17)
+        open_btn.pack(side="left", padx=(0, 10))
+
+        close_btn = ctk.CTkButton(button_frame, text="✖ Close",
+                                command=manual_window.destroy,
+                                height=35, corner_radius=17)
+        close_btn.pack(side="right")
+
+    def restart_application(self):
+        """Restart the application."""
+        import sys
+        import os
+        import subprocess
+
+        try:
+            # Close current application
+            self.root.destroy()
+
+            # Restart using the same command
+            if hasattr(sys, 'frozen'):
+                # Running as executable
+                subprocess.Popen([sys.executable] + sys.argv[1:])
+            else:
+                # Running as script
+                subprocess.Popen([sys.executable, '-m', 'docx2shelf.gui.modern_app'])
+        except Exception as e:
+            print(f"Failed to restart application: {e}")
+
+        sys.exit(0)
+
+    def browse_output_directory(self):
+        """Browse for default output directory."""
+        try:
+            from tkinter import filedialog
+
+            directory = filedialog.askdirectory(
+                title="Select Default Output Directory"
+            )
+
+            if directory:
+                self.output_dir_var.set(directory)
+
+        except Exception as e:
+            self.show_error(f"Failed to select directory: {str(e)}")
+
     def show_success(self, message):
         """Show success message."""
         success_window = ctk.CTkToplevel(self.root)
@@ -1707,6 +2782,147 @@ Built with CustomTkinter for a modern appearance."""
                              command=success_window.destroy,
                              height=35, corner_radius=17)
         ok_btn.pack(pady=20)
+
+    def show_success_with_open_option(self, message, file_path=None):
+        """Show success message with option to open file."""
+        success_window = ctk.CTkToplevel(self.root)
+        success_window.title("✅ Success")
+        success_window.geometry("450x250")
+        success_window.transient(self.root)
+        success_window.grab_set()
+
+        success_label = ctk.CTkLabel(success_window, text="✅ Success",
+                                   font=ctk.CTkFont(size=18, weight="bold"))
+        success_label.pack(pady=20)
+
+        message_label = ctk.CTkLabel(success_window, text=message,
+                                   font=ctk.CTkFont(size=12),
+                                   wraplength=400)
+        message_label.pack(padx=20, pady=10)
+
+        button_frame = ctk.CTkFrame(success_window, fg_color="transparent")
+        button_frame.pack(fill="x", padx=20, pady=20)
+
+        if file_path:
+            import os
+            import subprocess
+            import platform
+
+            def open_file():
+                try:
+                    if platform.system() == "Windows":
+                        os.startfile(file_path)
+                    elif platform.system() == "Darwin":  # macOS
+                        subprocess.run(["open", file_path])
+                    else:  # Linux
+                        subprocess.run(["xdg-open", file_path])
+                except Exception as e:
+                    self.show_error(f"Failed to open file: {str(e)}")
+                success_window.destroy()
+
+            def open_folder():
+                try:
+                    folder_path = os.path.dirname(file_path)
+                    if platform.system() == "Windows":
+                        os.startfile(folder_path)
+                    elif platform.system() == "Darwin":  # macOS
+                        subprocess.run(["open", folder_path])
+                    else:  # Linux
+                        subprocess.run(["xdg-open", folder_path])
+                except Exception as e:
+                    self.show_error(f"Failed to open folder: {str(e)}")
+                success_window.destroy()
+
+            open_file_btn = ctk.CTkButton(button_frame, text="📄 Open EPUB",
+                                        command=open_file,
+                                        height=35, corner_radius=17)
+            open_file_btn.pack(side="left", padx=(0, 10))
+
+            open_folder_btn = ctk.CTkButton(button_frame, text="📁 Open Folder",
+                                          command=open_folder,
+                                          height=35, corner_radius=17)
+            open_folder_btn.pack(side="left", padx=(0, 10))
+
+        ok_btn = ctk.CTkButton(button_frame, text="OK",
+                             command=success_window.destroy,
+                             height=35, corner_radius=17)
+        ok_btn.pack(side="right")
+
+    def check_for_updates_on_startup(self):
+        """Check for updates on startup if enabled in settings."""
+        try:
+            # Only check if auto-update checking is enabled
+            if hasattr(self, 'updates_var') and self.updates_var.get():
+                import threading
+
+                def startup_update_check():
+                    try:
+                        from ..update import check_for_updates as check_updates
+                        result = check_updates()
+                        if result and result.get('update_available'):
+                            # Show non-intrusive update notification
+                            self.root.after(0, lambda: self.show_startup_update_notification(result))
+                    except Exception:
+                        # Silently fail for startup checks
+                        pass
+
+                thread = threading.Thread(target=startup_update_check)
+                thread.daemon = True
+                thread.start()
+        except Exception:
+            # Silently fail for startup checks
+            pass
+
+    def show_startup_update_notification(self, update_info):
+        """Show a non-intrusive update notification."""
+        latest_version = update_info.get('latest_version', 'Unknown')
+
+        # Create a small notification at the top of the window
+        notification = ctk.CTkFrame(self.root, height=40, corner_radius=0,
+                                  fg_color=("#e3f2fd", "#1565c0"))
+        notification.pack(fill="x", side="top", before=self.tabview.master)
+        notification.pack_propagate(False)
+
+        message_frame = ctk.CTkFrame(notification, fg_color="transparent")
+        message_frame.pack(expand=True, fill="both")
+
+        update_label = ctk.CTkLabel(message_frame,
+                                  text=f"🎆 Update available: v{latest_version}",
+                                  font=ctk.CTkFont(size=12, weight="bold"))
+        update_label.pack(side="left", padx=20, pady=10)
+
+        button_frame = ctk.CTkFrame(message_frame, fg_color="transparent")
+        button_frame.pack(side="right", padx=20, pady=5)
+
+        update_btn = ctk.CTkButton(button_frame, text="Update",
+                                 command=lambda: self.handle_startup_update(update_info, notification),
+                                 height=25, width=70, corner_radius=12,
+                                 font=ctk.CTkFont(size=10))
+        update_btn.pack(side="left", padx=(0, 5))
+
+        dismiss_btn = ctk.CTkButton(button_frame, text="✖",
+                                  command=lambda: notification.destroy(),
+                                  height=25, width=25, corner_radius=12,
+                                  font=ctk.CTkFont(size=10))
+        dismiss_btn.pack(side="right")
+
+    def handle_startup_update(self, update_info, notification):
+        """Handle update from startup notification."""
+        notification.destroy()
+
+        # Show full update dialog
+        try:
+            from ..version import get_version
+            current_version = get_version()
+        except Exception:
+            current_version = "unknown"
+
+        latest_version = update_info.get('latest_version', 'Unknown')
+        download_url = update_info.get('download_url', '')
+        installer_name = update_info.get('installer_name', 'installer')
+        changelog = update_info.get('changelog', 'No changelog available.')
+
+        self.show_update_available(current_version, latest_version, changelog, download_url, installer_name)
 
     def run(self):
         """Run the application."""

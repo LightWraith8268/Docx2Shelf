@@ -74,12 +74,9 @@ jobs:
           echo "Linux icon placeholder" > assets/icons/docx2shelf.png
         fi
 
-    - name: Generate build spec
-      run: python build_config.py
-
-    - name: Build with PyInstaller
+    - name: Build GUI executable with PyInstaller
       run: |
-        pyinstaller docx2shelf.spec --clean --noconfirm
+        pyinstaller docx2shelf_gui.spec --clean --noconfirm
 
     - name: Create portable archive (Windows)
       if: matrix.os == 'windows-latest'
@@ -98,19 +95,23 @@ jobs:
         cd dist
         tar -czf docx2shelf-linux-portable.tar.gz Docx2Shelf/
 
-    - name: Test executable
+    - name: Test GUI executable
       shell: bash
       run: |
+        # Test that the GUI executable exists and is a valid binary
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          ./dist/Docx2Shelf/Docx2Shelf.exe --version || echo "GUI mode test"
+          ls -la ./dist/Docx2Shelf/Docx2Shelf.exe
+          file ./dist/Docx2Shelf/Docx2Shelf.exe || echo "Windows executable ready"
         elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-          ./dist/Docx2Shelf.app/Contents/MacOS/Docx2Shelf --version || echo "GUI mode test"
+          ls -la ./dist/Docx2Shelf.app/Contents/MacOS/Docx2Shelf
+          file ./dist/Docx2Shelf.app/Contents/MacOS/Docx2Shelf || echo "macOS app bundle ready"
         else
-          ./dist/Docx2Shelf/Docx2Shelf --version || echo "GUI mode test"
+          ls -la ./dist/Docx2Shelf/Docx2Shelf
+          file ./dist/Docx2Shelf/Docx2Shelf || echo "Linux executable ready"
         fi
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.artifact }}
         path: |
@@ -135,7 +136,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Download build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: docx2shelf-${{ matrix.installer-type == 'nsis' && 'windows' || matrix.installer-type == 'dmg' && 'macos' || 'linux' }}
 
@@ -148,24 +149,56 @@ jobs:
         # Create NSIS script
         $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.6.2"
+        !define APP_VERSION "1.6.3"
+        !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name `${APP_NAME}`
         OutFile "Docx2Shelf-Setup.exe"
         InstallDir `$PROGRAMFILES\Docx2Shelf`
+        RequestExecutionLevel admin
 
-        Page directory
-        Page instfiles
+        # Modern UI
+        !include "MUI2.nsh"
+        !define MUI_ICON "src\docx2shelf\gui\assets\icon.ico"
+        !define MUI_UNICON "src\docx2shelf\gui\assets\icon.ico"
+
+        # Pages
+        !insertmacro MUI_PAGE_WELCOME
+        !insertmacro MUI_PAGE_LICENSE "LICENSE"
+        !insertmacro MUI_PAGE_DIRECTORY
+        !insertmacro MUI_PAGE_INSTFILES
+        !insertmacro MUI_PAGE_FINISH
+
+        # Uninstaller pages
+        !insertmacro MUI_UNPAGE_WELCOME
+        !insertmacro MUI_UNPAGE_CONFIRM
+        !insertmacro MUI_UNPAGE_INSTFILES
+        !insertmacro MUI_UNPAGE_FINISH
+
+        # Languages
+        !insertmacro MUI_LANGUAGE "English"
 
         Section "Install"
             SetOutPath `$INSTDIR`
             File /r "dist\Docx2Shelf\*"
 
-            CreateShortcut "`$DESKTOP\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe"
-            CreateShortcut "`$SMPROGRAMS\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe"
+            # Create shortcuts
+            CreateShortcut "`$DESKTOP\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe" "" "" "" SW_SHOWNORMAL "" "Document to EPUB Converter"
+            CreateShortcut "`$SMPROGRAMS\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe" "" "" "" SW_SHOWNORMAL "" "Document to EPUB Converter"
 
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf"
+            # Register application
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf - Document to EPUB Converter"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "`${APP_VERSION}`"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "Docx2Shelf Contributors"
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "UninstallString" "`$INSTDIR\uninstall.exe"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation" "`$INSTDIR"
+            WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
+            WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
+
+            # File associations for supported formats
+            WriteRegStr HKCR ".docx\OpenWithProgids" "Docx2Shelf.Document" ""
+            WriteRegStr HKCR "Docx2Shelf.Document" "" "Docx2Shelf Document"
+            WriteRegStr HKCR "Docx2Shelf.Document\shell\open\command" "" "`$INSTDIR\Docx2Shelf.exe `"%1`""
 
             WriteUninstaller "`$INSTDIR\uninstall.exe"
         SectionEnd
@@ -175,6 +208,8 @@ jobs:
             Delete "`$SMPROGRAMS\Docx2Shelf.lnk"
             RMDir /r "`$INSTDIR"
             DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
+            DeleteRegKey HKCR ".docx\OpenWithProgids\Docx2Shelf.Document"
+            DeleteRegKey HKCR "Docx2Shelf.Document"
         SectionEnd
         "@
 
@@ -242,7 +277,7 @@ jobs:
         ./appimagetool-x86_64.AppImage Docx2Shelf.AppDir Docx2Shelf-x86_64.AppImage
 
     - name: Upload installer artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: installers-${{ matrix.installer-type }}
         path: |
@@ -259,7 +294,9 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
 
     - name: Organize release files
       run: |
@@ -385,17 +422,6 @@ jobs:
 
         EOF
 
-    - name: Upload install.bat
-      run: |
-        # Copy the latest install.bat to release assets
-        if [ -f "install.bat" ]; then
-          cp install.bat release-assets/
-        fi
-
-        # Also copy install.sh for Linux/macOS users
-        if [ -f "scripts/install.sh" ]; then
-          cp scripts/install.sh release-assets/
-        fi
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
