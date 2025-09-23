@@ -106,7 +106,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=icon if os.path.exists(icon) else None,
+    icon=None,  # Disable icon for cross-platform compatibility
 )
 
 # Create distribution
@@ -126,15 +126,15 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name="Docx2Shelf.app",
-        icon=icon if os.path.exists(icon) else None,
+        icon=None,  # Disable icon for cross-platform compatibility
         bundle_identifier="com.docx2shelf.app",
-        version="1.6.9",
+        version="1.7.0",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '1.6.9',
-            'CFBundleShortVersionString': '1.6.9',
+            'CFBundleVersion': '1.7.0',
+            'CFBundleShortVersionString': '1.7.0',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',
