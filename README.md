@@ -104,19 +104,41 @@ Docx2Shelf is designed to be a comprehensive and easy-to-use tool for authors an
 
 ## Installation
 
+### 📦 Standalone Installers (Recommended)
+
+Get Docx2Shelf without installing Python or managing dependencies:
+
+#### Windows
+Download and run the installer:
+- **[Windows Installer (.exe)](https://github.com/LightWraith8268/Docx2Shelf/releases/latest)** - Double-click to install with Start Menu and Desktop shortcuts
+- **[Windows Portable (.zip)](https://github.com/LightWraith8268/Docx2Shelf/releases/latest)** - Extract and run anywhere, no installation required
+
+#### macOS
+Download and install:
+- **[macOS Installer (.dmg)](https://github.com/LightWraith8268/Docx2Shelf/releases/latest)** - Drag to Applications folder
+- **[macOS Portable (.zip)](https://github.com/LightWraith8268/Docx2Shelf/releases/latest)** - Extract and run the .app bundle
+
+#### Linux
+Download and run:
+- **[Linux AppImage (.AppImage)](https://github.com/LightWraith8268/Docx2Shelf/releases/latest)** - Make executable and run: `chmod +x Docx2Shelf-*.AppImage && ./Docx2Shelf-*.AppImage`
+- **[Linux Portable (.tar.gz)](https://github.com/LightWraith8268/Docx2Shelf/releases/latest)** - Extract and run the binary
+
+**System Requirements:**
+- **Windows**: Windows 10/11 (64-bit)
+- **macOS**: macOS 10.15+ (Catalina or newer)
+- **Linux**: Modern distribution with glibc 2.28+ (Ubuntu 18.04+, CentOS 8+)
+
+### 🐍 Python Installation
+
+For developers or users who prefer Python environments:
+
 Docx2Shelf requires **Python 3.11 or newer**.
 
-### Quick Install Options
-
-#### Automated Install Scripts (Recommended)
+#### Automated Install Scripts
 
 **Windows**: Download and run the installer script:
 ```cmd
 curl -L -o install.bat https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat && install.bat
-```
-Or using PowerShell:
-```powershell
-Invoke-WebRequest -Uri "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat" -OutFile "install.bat"; .\install.bat
 ```
 
 **macOS/Linux**: Download and run the installer script:
@@ -126,16 +148,9 @@ curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download
 
 The install scripts provide:
 - **Automatic Python dependency detection and installation**
-  - Detects compatible Python versions (3.11+)
-  - Offers to automatically install Python 3.11 if not found (Windows)
-  - Provides clear version compatibility messaging
 - **Smart version checking** (only installs if newer version available)
 - **Optional tool installation** - Pandoc and EPUBCheck
-  - Interactive prompts to install essential tools
-  - Pandoc for high-quality DOCX conversion
-  - EPUBCheck for industry-standard validation
 - **Automatic PATH configuration**
-- **Self-cleanup after installation**
 - **Comprehensive error handling and troubleshooting**
 
 #### Manual Python Installation
@@ -341,23 +356,25 @@ docx2shelf gui
 - Works on Windows, macOS, and Linux
 
 #### Web Interface
-Modern web-based builder for teams and remote access:
+Modern web-based builder that runs entirely in your browser:
+
+**[🌐 Try Docx2Shelf Web](https://lightwraith8268.github.io/Docx2Shelf/web/)** - No installation required!
 
 ```bash
-# Start local web server
+# Or run locally
 docx2shelf web --port 8080
-
 # Access at http://localhost:8080
 ```
 
 **Features:**
-- Modern responsive web interface
-- Project management and organization
-- Collaborative editing capabilities
-- REST API for automation
-- File upload and cloud storage integration
-- Mobile-friendly design
-- Real-time conversion status
+- **Browser-based conversion** - Works entirely client-side, no data sent to servers
+- **AI chapter detection** - Local LLM processing with WebLLM integration
+- **Drag-and-drop interface** - Modern responsive design
+- **Multiple input formats** - DOCX, HTML, Markdown, TXT support
+- **Real-time preview** - See your EPUB structure as you build
+- **Offline capable** - Service Worker support for offline use
+- **Mobile-friendly** - Works on tablets and smartphones
+- **Privacy-focused** - All processing happens in your browser
 
 ### Plugin Ecosystem & Marketplace
 

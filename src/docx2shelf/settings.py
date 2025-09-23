@@ -11,7 +11,7 @@ import json
 import logging
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 try:
     from platformdirs import user_config_dir, user_data_dir
@@ -77,6 +77,28 @@ class FileDefaults:
 
 
 @dataclass
+class AIDetectionSettings:
+    """AI chapter detection settings."""
+    # General AI settings
+    confidence_threshold: float = 0.7
+    min_chapter_length: int = 500
+    enable_heuristics: bool = True
+    combine_methods: bool = True
+
+    # Remote AI settings
+    use_free_api: bool = True
+    api_key: str = ""
+    model: str = "gpt-3.5-turbo"
+
+    # Local LLM settings
+    use_local_llm: bool = False
+    local_llm_endpoint: str = "http://localhost:11434"
+    local_llm_model: str = "llama2"
+    local_llm_timeout: int = 30
+    local_llm_max_tokens: int = 1000
+
+
+@dataclass
 class AdvancedSettings:
     """Advanced application settings."""
     enable_logging: bool = True
@@ -96,6 +118,7 @@ class ApplicationSettings:
     ui_preferences: UIPreferences = field(default_factory=UIPreferences)
     file_defaults: FileDefaults = field(default_factory=FileDefaults)
     advanced_settings: AdvancedSettings = field(default_factory=AdvancedSettings)
+    ai_detection: AIDetectionSettings = field(default_factory=AIDetectionSettings)
     enterprise_config: Optional[EnterpriseConfig] = None
     version: str = "1.0"
 
@@ -143,6 +166,8 @@ class SettingsManager:
                     settings.file_defaults = FileDefaults(**data['file_defaults'])
                 if 'advanced_settings' in data:
                     settings.advanced_settings = AdvancedSettings(**data['advanced_settings'])
+                if 'ai_detection' in data:
+                    settings.ai_detection = AIDetectionSettings(**data['ai_detection'])
                 if 'version' in data:
                     settings.version = data['version']
 
@@ -172,6 +197,7 @@ class SettingsManager:
                 'ui_preferences': asdict(settings.ui_preferences),
                 'file_defaults': asdict(settings.file_defaults),
                 'advanced_settings': asdict(settings.advanced_settings),
+                'ai_detection': asdict(settings.ai_detection),
                 'version': settings.version
             }
 
@@ -251,6 +277,8 @@ class SettingsManager:
             settings.file_defaults = FileDefaults(**data['file_defaults'])
         if 'advanced_settings' in data:
             settings.advanced_settings = AdvancedSettings(**data['advanced_settings'])
+        if 'ai_detection' in data:
+            settings.ai_detection = AIDetectionSettings(**data['ai_detection'])
         if 'enterprise_config' in data and data['enterprise_config']:
             settings.enterprise_config = EnterpriseConfig(**data['enterprise_config'])
         if 'version' in data:

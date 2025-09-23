@@ -450,6 +450,9 @@ def _arg_parser() -> argparse.ArgumentParser:
     # Interactive CLI command
     sub.add_parser("interactive", help="Launch interactive menu-driven CLI interface")
 
+    # GUI command
+    sub.add_parser("gui", help="Launch graphical user interface")
+
     # --- Checklist subcommand ---
     check = sub.add_parser("checklist", help="Run publishing store compatibility checklists")
     check.add_argument("--metadata", help="Path to metadata.txt file (default: ./metadata.txt)")
@@ -808,7 +811,7 @@ def _print_checklist(args: argparse.Namespace) -> None:
     print("\n== Metadata Checklist ==")
     print("(Press Enter to skip/keep current when prompted)\n")
     for name, val in items:
-        display = str(val) if val is not None and str(val).strip() != "" else "—"
+        display = str(val) if val is not None and str(val).strip() != "" else "-"
         print(f" {checked(val)} {name}: {display}")
     print("")
 
@@ -1135,7 +1138,7 @@ def run_batch_mode(args: argparse.Namespace) -> int:
         if args.report:
             report_path = Path(args.report)
             create_batch_report(summary, report_path)
-            print(f"📄 Batch report written to: {report_path}")
+            print(f"[BATCH] Batch report written to: {report_path}")
 
         # Return non-zero if any files failed
         return 0 if summary['failed'] == 0 else 1
@@ -1175,7 +1178,7 @@ def run_build(args: argparse.Namespace) -> int:
             from .profiles import apply_profile_to_args
             apply_profile_to_args(args, args.profile)
             if not getattr(args, 'quiet', False):
-                print(f"📋 Applied profile: {args.profile}")
+                print(f"[PROFILE] Applied profile: {args.profile}")
         except ImportError:
             print("Warning: Profile system not available", file=sys.stderr)
         except Exception as e:
@@ -1343,19 +1346,19 @@ def run_build(args: argparse.Namespace) -> int:
                     # AI metadata enhancement
                     if getattr(args, 'ai_enhance', False):
                         if not getattr(args, 'quiet', False):
-                            print("🤖 Enhancing metadata with AI...")
+                            print("[AI] Enhancing metadata with AI...")
                         enhanced = enhance_metadata_with_ai(
                             content, meta,
                             interactive=getattr(args, 'ai_interactive', False)
                         )
                         meta = enhanced.original
                         if not getattr(args, 'quiet', False) and enhanced.applied_suggestions:
-                            print(f"✅ Applied {len(enhanced.applied_suggestions)} AI metadata suggestions")
+                            print(f"[AI] Applied {len(enhanced.applied_suggestions)} AI metadata suggestions")
 
                     # AI genre detection
                     if getattr(args, 'ai_genre', False):
                         if not getattr(args, 'quiet', False):
-                            print("🎯 Detecting genres with AI...")
+                            print("[AI] Detecting genres with AI...")
                         genre_result = detect_genre_with_ai(content, {
                             'title': meta.title,
                             'author': meta.author,
@@ -1366,14 +1369,14 @@ def run_build(args: argparse.Namespace) -> int:
                         if genre_result.keywords and not meta.keywords:
                             meta.keywords = genre_result.keywords[:10]
                         if not getattr(args, 'quiet', False):
-                            print(f"✅ AI detected genre: {getattr(meta, 'genre', 'None')}")
+                            print(f"[AI] AI detected genre: {getattr(meta, 'genre', 'None')}")
 
             except Exception as e:
                 if not getattr(args, 'quiet', False):
-                    print(f"⚠️  AI enhancement failed: {e}")
+                    print(f"[WARNING] AI enhancement failed: {e}")
         else:
             if not getattr(args, 'quiet', False):
-                print("⚠️  AI features requested but not available")
+                print("[WARNING] AI features requested but not available")
 
     # Apply store profile optimizations if specified
     if getattr(args, 'store_profile', None):
@@ -2643,7 +2646,7 @@ def run_ai_metadata(args) -> int:
     # Check AI availability
     ai_manager = get_ai_manager()
     if not ai_manager.is_available():
-        print("⚠️  AI features not available. Please check your AI configuration.")
+        print("[WARNING] AI features not available. Please check your AI configuration.")
         return 1
 
     try:
@@ -2668,7 +2671,7 @@ def run_ai_metadata(args) -> int:
         # Output results
         if args.output:
             _save_metadata_to_file(enhanced.original, Path(args.output))
-            print(f"✅ Enhanced metadata saved to: {args.output}")
+            print(f"[SUCCESS] Enhanced metadata saved to: {args.output}")
         else:
             print("\n📊 Enhanced Metadata:")
             print(f"   Title: {enhanced.original.title}")
@@ -2694,7 +2697,7 @@ def run_ai_genre(args) -> int:
     # Check AI availability
     ai_manager = get_ai_manager()
     if not ai_manager.is_available():
-        print("⚠️  AI features not available. Please check your AI configuration.")
+        print("[WARNING] AI features not available. Please check your AI configuration.")
         return 1
 
     try:
@@ -2748,7 +2751,7 @@ def run_ai_alt_text(args) -> int:
     # Check AI availability
     ai_manager = get_ai_manager()
     if not ai_manager.is_available():
-        print("⚠️  AI features not available. Please check your AI configuration.")
+        print("[WARNING] AI features not available. Please check your AI configuration.")
         return 1
 
     try:
@@ -2799,14 +2802,14 @@ def run_ai_config(args) -> int:
             if hasattr(config, key):
                 setattr(config, key, value)
                 # Save configuration would go here
-                print(f"✅ Set {key} = {value}")
+                print(f"[SET] {key} = {value}")
             else:
                 print(f"Error: Unknown configuration key: {key}")
                 return 1
 
         elif args.reset:
             # Reset to defaults would go here
-            print("✅ AI configuration reset to defaults")
+            print("[SUCCESS] AI configuration reset to defaults")
 
         return 0
 
@@ -2901,6 +2904,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         from .interactive_cli import run_interactive_cli
         run_interactive_cli()
         return 0
+    if args.command == "gui":
+        from .gui.modern_app import main as run_modern_gui
+        return run_modern_gui()
     if args.command == "checklist":
         return run_checklist(args)
     if args.command == "quality":

@@ -1,5 +1,77 @@
 # Changelog
 
+## [1.6.3] - 2025-01-22
+### Major: Modern GUI with CustomTkinter & Complete Feature Implementation
+
+#### Added
+- **Modern CustomTkinter GUI**: Complete rewrite with professional 2025 design standards
+  - True rounded corners and modern styling throughout
+  - Dark mode as default with smooth theme switching
+  - Professional blue color scheme and typography
+  - Fixed theme toggle behavior preserving window geometry
+  - Responsive layout optimized for all screen sizes
+
+- **Complete Settings Tab**: Fully functional settings interface
+  - General Settings: Auto-save, tooltips, window memory, update checking
+  - Default Output Settings: Format selection, structure preservation, backup options
+  - AI Detection Settings: Enable/disable AI, confidence threshold slider
+  - Advanced Settings: Processing threads, memory limits with interactive sliders
+  - Settings Actions: Save, reset, export/import with JSON support
+  - Manual update checking with "Check for Updates Now" button
+
+- **Complete Batch Processing Tab**: Professional batch conversion system
+  - File Management: Add files/folders, remove individual files, clear all
+  - Batch Settings: Common author, output directory selection, overwrite options
+  - Real-time Progress: Progress bars, current file display, detailed processing log
+  - Control Functions: Start, pause/resume, stop with proper state management
+  - Results View: Comprehensive success/failure reporting with detailed statistics
+  - Background processing with proper threading and UI updates
+
+- **Comprehensive Update System**: Integrated update functionality
+  - Automatic update checking option in settings
+  - Manual update checking with professional progress dialogs
+  - Update available dialog with changelog display and download links
+  - Background update checks with non-blocking UI
+  - Seamless browser integration for update downloads
+
+- **Application Icon**: Restored original quill pen icon
+  - Professional quill design representing writing and authorship
+  - Multiple icon sizes (16x16, 32x32, 48x48) for all Windows contexts
+  - Automatic icon detection and fallback system
+  - PNG backup for compatibility
+
+- **GUI Command Integration**: Modern interface as primary option
+  - Added `docx2shelf gui` CLI command for launching graphical interface
+  - CustomTkinter added as core dependency in pyproject.toml
+  - Modern GUI exported as default from gui module
+  - Removed interface selector - modern GUI is now the only option
+
+#### Enhanced
+- **Professional User Experience**: Complete 2025 design implementation
+  - Comprehensive help system with modern dialog design
+  - Enhanced button styling with proper corner radius
+  - Professional color scheme with accessibility considerations
+  - Consistent iconography and visual hierarchy
+
+- **Settings Integration**: All placeholder functionality replaced
+  - Working update system properly integrated into settings
+  - All UI controls properly bound to functional backend
+  - Comprehensive error handling and user feedback
+  - Professional dialog design for all user interactions
+
+#### Technical Improvements
+- **Modern Architecture**: Clean separation of concerns
+  - Proper threading for background operations
+  - Professional error handling with user-friendly messages
+  - Memory management and resource cleanup
+  - Type hints and modern Python practices
+
+- **Enhanced Reliability**: Robust operation handling
+  - Graceful error recovery and user notification
+  - Proper state management for all operations
+  - Resource cleanup and memory optimization
+  - Cross-platform compatibility improvements
+
 ## [1.6.2] - 2025-01-21
 ### Major: Comprehensive Settings System Implementation
 

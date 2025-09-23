@@ -550,7 +550,7 @@ def tools_doctor() -> int:
             print("    - Run 'pip install pypandoc' to install Python integration")
 
     # Check EPUBCheck
-    print("\n📖 EPUBCheck Status:")
+    print("\n[EPUBCHECK] EPUBCheck Status:")
     epubcheck_cmd_list = epubcheck_cmd()
     if epubcheck_cmd_list:
         print(f"  [OK] Found at: {epubcheck_cmd_list[0]}")
@@ -577,7 +577,7 @@ def tools_doctor() -> int:
         issues_found += 1
 
     # Check Java (for EPUBCheck)
-    print("\n☕ Java Status:")
+    print("\n[JAVA] Java Status:")
     try:
         result = subprocess.run(["java", "-version"],
                               capture_output=True, text=True, timeout=5)
@@ -595,7 +595,7 @@ def tools_doctor() -> int:
         issues_found += 1
 
     # Check version pins configuration
-    print("\n📌 Version Pins:")
+    print("\n[PINS] Version Pins:")
     config = load_version_pins()
     preset = config.get("preset", "latest")
     print(f"  Current preset: {preset}")

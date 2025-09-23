@@ -49,7 +49,9 @@
       "Bash(./test_version.sh:*)",
       "Bash(curl:*)",
       "Bash(git checkout:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Read(//s/**)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": []
