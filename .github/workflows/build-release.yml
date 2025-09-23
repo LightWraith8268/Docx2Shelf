@@ -149,7 +149,7 @@ jobs:
         # Create NSIS script
         $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.6.4"
+        !define APP_VERSION "1.6.5"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name `${APP_NAME}`
@@ -197,19 +197,44 @@ jobs:
 
             # File associations for supported formats
             WriteRegStr HKCR ".docx\OpenWithProgids" "Docx2Shelf.Document" ""
+            WriteRegStr HKCR ".md\OpenWithProgids" "Docx2Shelf.Document" ""
+            WriteRegStr HKCR ".html\OpenWithProgids" "Docx2Shelf.Document" ""
+            WriteRegStr HKCR ".htm\OpenWithProgids" "Docx2Shelf.Document" ""
+            WriteRegStr HKCR ".txt\OpenWithProgids" "Docx2Shelf.Document" ""
             WriteRegStr HKCR "Docx2Shelf.Document" "" "Docx2Shelf Document"
             WriteRegStr HKCR "Docx2Shelf.Document\shell\open\command" "" "`$INSTDIR\Docx2Shelf.exe `"%1`""
+            WriteRegStr HKCR "Docx2Shelf.Document\DefaultIcon" "" "`$INSTDIR\Docx2Shelf.exe,0"
 
             WriteUninstaller "`$INSTDIR\uninstall.exe"
         SectionEnd
 
         Section "Uninstall"
+            # Remove shortcuts
             Delete "`$DESKTOP\Docx2Shelf.lnk"
             Delete "`$SMPROGRAMS\Docx2Shelf.lnk"
-            RMDir /r "`$INSTDIR"
-            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
+
+            # Remove file associations
             DeleteRegKey HKCR ".docx\OpenWithProgids\Docx2Shelf.Document"
+            DeleteRegKey HKCR ".md\OpenWithProgids\Docx2Shelf.Document"
+            DeleteRegKey HKCR ".html\OpenWithProgids\Docx2Shelf.Document"
+            DeleteRegKey HKCR ".txt\OpenWithProgids\Docx2Shelf.Document"
             DeleteRegKey HKCR "Docx2Shelf.Document"
+
+            # Remove registry entries
+            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
+
+            # Remove application files (with confirmation)
+            MessageBox MB_YESNO "Remove all application files and settings?" IDNO SkipFiles
+                RMDir /r "`$INSTDIR"
+                # Remove user settings (optional)
+                MessageBox MB_YESNO "Also remove user settings and preferences?" IDNO SkipSettings
+                    RMDir /r "`$APPDATA\Docx2Shelf"
+                    RMDir /r "`$LOCALAPPDATA\Docx2Shelf"
+                SkipSettings:
+            SkipFiles:
+
+            # Final cleanup message
+            MessageBox MB_OK "Docx2Shelf has been successfully uninstalled."
         SectionEnd
         "@
 
@@ -223,6 +248,55 @@ jobs:
 
         mkdir -p dmg-staging
         cp -R dist/Docx2Shelf.app dmg-staging/
+
+        # Create uninstall script
+        cat > dmg-staging/Uninstall-Docx2Shelf.command << 'EOF'
+        #!/bin/bash
+        # Docx2Shelf Uninstaller for macOS
+
+        echo "=========================================="
+        echo "       Docx2Shelf Uninstaller"
+        echo "=========================================="
+        echo ""
+
+        # Check if running as admin (for system-wide removal)
+        if [[ $EUID -eq 0 ]]; then
+            echo "Running with administrator privileges..."
+            APP_PATH="/Applications/Docx2Shelf.app"
+        else
+            echo "Running as user (will remove from user Applications)..."
+            APP_PATH="$HOME/Applications/Docx2Shelf.app"
+        fi
+
+        # Remove application
+        if [ -d "$APP_PATH" ]; then
+            echo "Removing Docx2Shelf application..."
+            rm -rf "$APP_PATH"
+            echo "✓ Application removed from $APP_PATH"
+        else
+            echo "⚠ Application not found at $APP_PATH"
+        fi
+
+        # Remove user settings
+        echo ""
+        read -p "Do you want to remove user settings and preferences? (y/N): " remove_settings
+        if [[ $remove_settings =~ ^[Yy]$ ]]; then
+            rm -rf "$HOME/Library/Preferences/com.docx2shelf.app.plist" 2>/dev/null
+            rm -rf "$HOME/Library/Application Support/Docx2Shelf" 2>/dev/null
+            rm -rf "$HOME/Library/Caches/com.docx2shelf.app" 2>/dev/null
+            echo "✓ User settings removed"
+        fi
+
+        echo ""
+        echo "=========================================="
+        echo "Docx2Shelf has been successfully uninstalled!"
+        echo "=========================================="
+        echo "Press any key to close this window..."
+        read -n 1 -s
+
+        EOF
+
+        chmod +x dmg-staging/Uninstall-Docx2Shelf.command
 
         create-dmg \
           --volname "Docx2Shelf Installer" \
@@ -276,6 +350,72 @@ jobs:
         # Build AppImage
         ./appimagetool-x86_64.AppImage Docx2Shelf.AppDir Docx2Shelf-x86_64.AppImage
 
+        # Create separate uninstaller script for Linux
+        cat > uninstall-docx2shelf.sh << 'EOF'
+        #!/bin/bash
+        # Docx2Shelf Uninstaller for Linux
+
+        echo "=========================================="
+        echo "       Docx2Shelf Uninstaller"
+        echo "=========================================="
+        echo ""
+
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        APPIMAGE_PATH="$SCRIPT_DIR/Docx2Shelf-"*".AppImage"
+
+        # Remove AppImage file
+        if ls $APPIMAGE_PATH 1> /dev/null 2>&1; then
+            echo "Found AppImage files:"
+            ls -1 $APPIMAGE_PATH
+            echo ""
+            read -p "Remove AppImage executable(s)? (y/N): " remove_app
+            if [[ $remove_app =~ ^[Yy]$ ]]; then
+                rm -f $APPIMAGE_PATH
+                echo "✓ AppImage executable(s) removed"
+            fi
+        else
+            echo "⚠ No AppImage files found in current directory"
+        fi
+
+        # Remove desktop integration (if installed)
+        DESKTOP_FILE="$HOME/.local/share/applications/Docx2Shelf.desktop"
+        if [ -f "$DESKTOP_FILE" ]; then
+            echo ""
+            read -p "Remove desktop integration? (y/N): " remove_desktop
+            if [[ $remove_desktop =~ ^[Yy]$ ]]; then
+                rm -f "$DESKTOP_FILE"
+                rm -f "$HOME/.local/share/icons/hicolor/*/apps/docx2shelf.*" 2>/dev/null
+                echo "✓ Desktop integration removed"
+            fi
+        fi
+
+        # Remove user settings
+        echo ""
+        read -p "Remove user settings and preferences? (y/N): " remove_settings
+        if [[ $remove_settings =~ ^[Yy]$ ]]; then
+            rm -rf "$HOME/.config/Docx2Shelf" 2>/dev/null
+            rm -rf "$HOME/.local/share/Docx2Shelf" 2>/dev/null
+            rm -rf "$HOME/.cache/Docx2Shelf" 2>/dev/null
+            echo "✓ User settings removed"
+        fi
+
+        # Remove this uninstaller script
+        echo ""
+        read -p "Remove this uninstaller script? (y/N): " remove_script
+        if [[ $remove_script =~ ^[Yy]$ ]]; then
+            echo "✓ Removing uninstaller script..."
+            rm -f "$0"
+        fi
+
+        echo ""
+        echo "=========================================="
+        echo "Docx2Shelf uninstallation completed!"
+        echo "=========================================="
+
+        EOF
+
+        chmod +x uninstall-docx2shelf.sh
+
     - name: Upload installer artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -284,6 +424,8 @@ jobs:
           *.exe
           *.dmg
           *.AppImage
+          *.sh
+          *.command
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -307,6 +449,10 @@ jobs:
         find . -name "Docx2Shelf-Setup.exe" -exec cp {} release-assets/ \;
         find . -name "Docx2Shelf-Installer.dmg" -exec cp {} release-assets/ \;
         find . -name "Docx2Shelf-x86_64.AppImage" -exec cp {} release-assets/ \;
+
+        # Copy uninstaller scripts
+        find . -name "Uninstall-Docx2Shelf.command" -exec cp {} release-assets/ \;
+        find . -name "uninstall-docx2shelf.sh" -exec cp {} release-assets/ \;
 
         # Copy portable versions
         find . -name "docx2shelf-*-portable.*" -exec cp {} release-assets/ \;
@@ -372,6 +518,11 @@ jobs:
         - **macOS Portable**: [Docx2Shelf-${VERSION}-macos-portable.zip](./Docx2Shelf-${VERSION}-macos-portable.zip)
         - **Linux Portable**: [Docx2Shelf-${VERSION}-linux-portable.tar.gz](./Docx2Shelf-${VERSION}-linux-portable.tar.gz)
 
+        ### Uninstallers
+        - **macOS**: [Uninstall-Docx2Shelf.command](./Uninstall-Docx2Shelf.command) (for manual uninstallation)
+        - **Linux**: [uninstall-docx2shelf.sh](./uninstall-docx2shelf.sh) (for AppImage users)
+        - **Windows**: Built-in uninstaller (accessible via Control Panel or Start Menu)
+
         ### Verification
         - [SHA256 Checksums](./SHA256SUMS.txt)
         - [MD5 Checksums](./MD5SUMS.txt)
@@ -392,6 +543,21 @@ jobs:
         1. Download \`Docx2Shelf-${VERSION}-Linux-x86_64.AppImage\`
         2. Make executable: \`chmod +x Docx2Shelf-*.AppImage\`
         3. Run: \`./Docx2Shelf-*.AppImage\`
+
+        ## 🗑️ Uninstallation
+
+        ### Windows
+        1. Go to **Settings** → **Apps** → **Installed Apps**
+        2. Find **Docx2Shelf** and click **Uninstall**
+        3. Or run \`uninstall.exe\` from the installation folder
+
+        ### macOS
+        1. Download and run [Uninstall-Docx2Shelf.command](./Uninstall-Docx2Shelf.command)
+        2. Or manually drag Docx2Shelf from Applications to Trash
+
+        ### Linux
+        1. Download and run [uninstall-docx2shelf.sh](./uninstall-docx2shelf.sh)
+        2. Or simply delete the AppImage file
 
         ## 🛠️ System Requirements
 
