@@ -128,10 +128,13 @@ jobs:
         include:
           - os: windows-latest
             installer-type: nsis
+            artifact-name: docx2shelf-windows
           - os: macos-latest
             installer-type: dmg
+            artifact-name: docx2shelf-macos
           - os: ubuntu-latest
             installer-type: appimage
+            artifact-name: docx2shelf-linux
 
     steps:
     - uses: actions/checkout@v4
@@ -139,7 +142,7 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
-        name: docx2shelf-${{ matrix.installer-type == 'nsis' && 'windows' || matrix.installer-type == 'dmg' && 'macos' || 'linux' }}
+        name: ${{ matrix.artifact-name }}
 
     - name: Create Windows installer (NSIS)
       if: matrix.installer-type == 'nsis'
@@ -150,7 +153,7 @@ jobs:
         # Create NSIS script
         $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.7.1"
+        !define APP_VERSION "1.7.2"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name `${APP_NAME}`
