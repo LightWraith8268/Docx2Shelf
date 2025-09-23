@@ -155,7 +155,7 @@ jobs:
         # Create NSIS script
         $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.7.3"
+        !define APP_VERSION "1.7.4"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name `${APP_NAME}`
@@ -246,7 +246,10 @@ jobs:
         "@
 
         $nsis_script | Out-File -FilePath "installer.nsi" -Encoding ASCII
-        makensis installer.nsi
+
+        # Add chocolatey tools to PATH and run makensis
+        $env:PATH += ";C:\ProgramData\chocolatey\lib\nsis\tools"
+        & "C:\ProgramData\chocolatey\lib\nsis\tools\makensis.exe" installer.nsi
 
     - name: Create macOS DMG
       if: matrix.installer-type == 'dmg'
