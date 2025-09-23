@@ -1,8 +1,8 @@
 # 🪶 Docx2Shelf
 
-**Professional standalone GUI application** for converting documents to EPUB ebooks. No command-line required!
+**Professional desktop application** for converting documents to EPUB ebooks. Simple, powerful, and completely GUI-based.
 
-Docx2Shelf is a complete desktop application designed for authors and publishers who want professional EPUB creation without technical complexity. The modern graphical interface handles all aspects of ebook creation: document conversion, cover integration, metadata management, chapter splitting, CSS theming, quality validation, and batch processing. Features high-fidelity Pandoc conversions with intelligent fallbacks, built-in update management, and comprehensive tool integration.
+Docx2Shelf is a complete desktop application designed for authors and publishers who want professional EPUB creation through an intuitive graphical interface. No command-line knowledge required! The application handles all aspects of ebook creation: document conversion, cover integration, metadata management, chapter splitting, CSS theming, quality validation, and batch processing. Features high-fidelity Pandoc conversions with intelligent fallbacks, built-in update management, and comprehensive tool integration.
 
 ## ✨ Features
 
@@ -78,38 +78,29 @@ For users who prefer portable applications without installation:
 - Download `Docx2Shelf-linux-portable.tar.gz`
 - Extract and run `./Docx2Shelf`
 
-### 🐍 Python Installation (For Developers)
-
-If you need the Python package for development:
-
-```bash
-# pipx (recommended - isolated environment)
-pipx install git+https://github.com/LightWraith8268/Docx2Shelf.git
-
-# or with pip
-pip install git+https://github.com/LightWraith8268/Docx2Shelf.git
-```
-
-Requires **Python 3.11 or newer**.
-
 ### 🔄 Updating
 
-**GUI Version**: The application includes built-in update checking. When an update is available, you'll see a notification with download links.
-
-**Python Version**:
-```bash
-docx2shelf update
-```
+The application includes built-in update checking. When an update is available, you'll see a notification with download links to get the latest version.
 
 ### 🗑️ Uninstalling
 
-**🪟 Windows**: Go to Settings → Apps → Installed Apps, find Docx2Shelf and click Uninstall
+**🪟 Windows**:
+1. Go to Settings → Apps → Installed Apps
+2. Find "Docx2Shelf" and click Uninstall
+3. Follow the uninstaller prompts to remove all files and settings
 
-**🍎 macOS**: Download `Uninstall-Docx2Shelf.command` from releases and run it, or drag the app to Trash
+**🍎 macOS**:
+1. **Easy Method**: Download `Uninstall-Docx2Shelf.command` from [releases](https://github.com/LightWraith8268/Docx2Shelf/releases/latest) and double-click to run
+2. **Manual Method**: Drag Docx2Shelf from Applications folder to Trash
+3. **Complete Removal**: Also delete these folders if they exist:
+   - `~/Library/Preferences/com.docx2shelf.app.plist`
+   - `~/Library/Application Support/Docx2Shelf`
+   - `~/Library/Caches/com.docx2shelf.app`
 
-**🐧 Linux**: Download `uninstall-docx2shelf.sh` from releases and run it, or delete the AppImage file
-
-**Python**: `pip uninstall docx2shelf` or `pipx uninstall docx2shelf`
+**🐧 Linux**:
+1. **Easy Method**: Download `uninstall-docx2shelf.sh` from [releases](https://github.com/LightWraith8268/Docx2Shelf/releases/latest) and run it
+2. **Manual Method**: Delete the AppImage file
+3. **Complete Removal**: Also delete `~/.config/Docx2Shelf` and `~/.local/share/Docx2Shelf` if they exist
 
 ## 🚀 Getting Started
 
@@ -139,10 +130,11 @@ docx2shelf update
 
 ## 🎯 Why Choose Docx2Shelf?
 
-- **🚀 No Technical Knowledge Required**: Professional EPUB creation through an intuitive interface
-- **💻 Cross-Platform**: Works on Windows, macOS, and Linux with native installers
-- **📖 Publisher Ready**: Industry-standard EPUB 3 output compatible with all major platforms
-- **🔒 Privacy First**: Completely offline - your manuscripts never leave your computer
+- **🖱️ Pure GUI Experience**: Everything accessible through the graphical interface - no terminal required
+- **🚀 Zero Technical Knowledge**: Professional EPUB creation with point-and-click simplicity
+- **💻 Native Desktop App**: Feels natural on Windows, macOS, and Linux with proper installers
+- **📖 Publisher Ready**: Industry-standard EPUB 3 output compatible with all major ebook platforms
+- **🔒 Privacy First**: Completely offline operation - your manuscripts never leave your computer
 - **🆓 Open Source**: Free forever with active community development
 - **⚡ High Performance**: Fast conversions with Pandoc integration and intelligent fallbacks
 
