@@ -147,13 +147,15 @@ jobs:
     - name: Create Windows installer (NSIS)
       if: matrix.installer-type == 'nsis'
       run: |
+        echo "Starting Windows installer creation..."
+
         # Install NSIS
         choco install nsis -y
 
         # Create NSIS script
         $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.7.2"
+        !define APP_VERSION "1.7.3"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name `${APP_NAME}`
@@ -249,6 +251,7 @@ jobs:
     - name: Create macOS DMG
       if: matrix.installer-type == 'dmg'
       run: |
+        echo "Starting macOS DMG creation..."
         brew install create-dmg
 
         mkdir -p dmg-staging
@@ -317,6 +320,8 @@ jobs:
     - name: Create Linux AppImage
       if: matrix.installer-type == 'appimage'
       run: |
+        echo "Starting Linux AppImage creation..."
+
         # Install FUSE for AppImage creation
         sudo apt-get update
         sudo apt-get install -y fuse libfuse2
