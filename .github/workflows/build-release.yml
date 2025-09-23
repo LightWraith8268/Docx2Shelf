@@ -8,6 +8,11 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+  actions: read
+
 jobs:
   build:
     strategy:
@@ -155,7 +160,7 @@ jobs:
         # Create NSIS script (using single quote to avoid PowerShell variable expansion)
         $nsis_script = @'
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.8.0"
+        !define APP_VERSION "1.8.1"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name "${APP_NAME}"
