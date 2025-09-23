@@ -160,7 +160,7 @@ jobs:
         # Create NSIS script (using single quote to avoid PowerShell variable expansion)
         $nsis_script = @'
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.8.1"
+        !define APP_VERSION "1.8.2"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name "${APP_NAME}"
@@ -178,8 +178,16 @@ jobs:
         !insertmacro MUI_PAGE_WELCOME
         # Skip license page if LICENSE file not found
         # !insertmacro MUI_PAGE_LICENSE "LICENSE"
+        !insertmacro MUI_PAGE_COMPONENTS
         !insertmacro MUI_PAGE_DIRECTORY
         !insertmacro MUI_PAGE_INSTFILES
+
+        # Finish page configuration
+        !define MUI_FINISHPAGE_RUN "$INSTDIR\Docx2Shelf.exe"
+        !define MUI_FINISHPAGE_RUN_TEXT "Launch Docx2Shelf now"
+        !define MUI_FINISHPAGE_SHOWREADME ""
+        !define MUI_FINISHPAGE_SHOWREADME_TEXT "View README"
+        !define MUI_FINISHPAGE_SHOWREADME_FUNCTION ShowReadme
         !insertmacro MUI_PAGE_FINISH
 
         # Uninstaller pages
@@ -191,13 +199,15 @@ jobs:
         # Languages
         !insertmacro MUI_LANGUAGE "English"
 
-        Section "Install"
+        # Component descriptions
+        ComponentText "Choose which features you want to install:"
+
+        # Main application (required)
+        Section "!Docx2Shelf Application" SecMain
+            SectionIn RO  # Read-only, always installed
+
             SetOutPath "$INSTDIR"
             File /r "dist\Docx2Shelf\*"
-
-            # Create shortcuts
-            CreateShortcut "$DESKTOP\Docx2Shelf.lnk" "$INSTDIR\Docx2Shelf.exe"
-            CreateShortcut "$SMPROGRAMS\Docx2Shelf.lnk" "$INSTDIR\Docx2Shelf.exe"
 
             # Register application
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf"
@@ -208,7 +218,23 @@ jobs:
             WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
             WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
 
-            # File associations for supported formats
+            WriteUninstaller "$INSTDIR\uninstall.exe"
+        SectionEnd
+
+        # Desktop shortcut (optional)
+        Section "Desktop Shortcut" SecDesktop
+            CreateShortcut "$DESKTOP\Docx2Shelf.lnk" "$INSTDIR\Docx2Shelf.exe" "" "$INSTDIR\Docx2Shelf.exe" 0 SW_SHOWNORMAL "" "Launch Docx2Shelf - Document to EPUB Converter"
+        SectionEnd
+
+        # Start Menu shortcuts (optional, checked by default)
+        Section "Start Menu Shortcuts" SecStartMenu
+            CreateDirectory "$SMPROGRAMS\Docx2Shelf"
+            CreateShortcut "$SMPROGRAMS\Docx2Shelf\Docx2Shelf.lnk" "$INSTDIR\Docx2Shelf.exe" "" "$INSTDIR\Docx2Shelf.exe" 0 SW_SHOWNORMAL "" "Launch Docx2Shelf"
+            CreateShortcut "$SMPROGRAMS\Docx2Shelf\Uninstall Docx2Shelf.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0 SW_SHOWNORMAL "" "Uninstall Docx2Shelf"
+        SectionEnd
+
+        # File associations (optional, checked by default)
+        Section "File Associations" SecFileAssoc
             WriteRegStr HKCR ".docx\OpenWithProgids" "Docx2Shelf.Document" ""
             WriteRegStr HKCR ".md\OpenWithProgids" "Docx2Shelf.Document" ""
             WriteRegStr HKCR ".html\OpenWithProgids" "Docx2Shelf.Document" ""
@@ -217,19 +243,40 @@ jobs:
             WriteRegStr HKCR "Docx2Shelf.Document" "" "Docx2ShelfDocument"
             WriteRegStr HKCR "Docx2Shelf.Document\shell\open\command" "" "$INSTDIR\Docx2Shelf.exe $\"%1$\""
             WriteRegStr HKCR "Docx2Shelf.Document\DefaultIcon" "" "$INSTDIR\Docx2Shelf.exe,0"
-
-            WriteUninstaller "$INSTDIR\uninstall.exe"
         SectionEnd
+
+        # Component descriptions
+        !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+            !insertmacro MUI_DESCRIPTION_TEXT ${SecMain} "Core Docx2Shelf application files (required)"
+            !insertmacro MUI_DESCRIPTION_TEXT ${SecDesktop} "Create a desktop shortcut for easy access"
+            !insertmacro MUI_DESCRIPTION_TEXT ${SecStartMenu} "Add Docx2Shelf to the Start Menu"
+            !insertmacro MUI_DESCRIPTION_TEXT ${SecFileAssoc} "Associate supported file types (.docx, .md, .html, .txt) with Docx2Shelf"
+        !insertmacro MUI_FUNCTION_DESCRIPTION_END
+
+        # Set default selections (Start Menu and File Associations checked by default)
+        Function .onInit
+            # Select Start Menu and File Associations by default
+            SectionSetFlags ${SecStartMenu} ${SF_SELECTED}
+            SectionSetFlags ${SecFileAssoc} ${SF_SELECTED}
+        FunctionEnd
+
+        # ShowReadme function for finish page
+        Function ShowReadme
+            ExecShell "open" "https://github.com/LightWraith8268/Docx2Shelf/blob/main/README.md"
+        FunctionEnd
 
         Section "Uninstall"
             # Remove shortcuts
             Delete "$DESKTOP\Docx2Shelf.lnk"
-            Delete "$SMPROGRAMS\Docx2Shelf.lnk"
+            Delete "$SMPROGRAMS\Docx2Shelf\Docx2Shelf.lnk"
+            Delete "$SMPROGRAMS\Docx2Shelf\Uninstall Docx2Shelf.lnk"
+            RMDir "$SMPROGRAMS\Docx2Shelf"
 
             # Remove file associations
             DeleteRegKey HKCR ".docx\OpenWithProgids\Docx2Shelf.Document"
             DeleteRegKey HKCR ".md\OpenWithProgids\Docx2Shelf.Document"
             DeleteRegKey HKCR ".html\OpenWithProgids\Docx2Shelf.Document"
+            DeleteRegKey HKCR ".htm\OpenWithProgids\Docx2Shelf.Document"
             DeleteRegKey HKCR ".txt\OpenWithProgids\Docx2Shelf.Document"
             DeleteRegKey HKCR "Docx2Shelf.Document"
 
