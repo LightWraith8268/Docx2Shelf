@@ -155,7 +155,7 @@ jobs:
         # Create NSIS script
         $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.7.7"
+        !define APP_VERSION "1.7.8"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name `${APP_NAME}`
@@ -171,7 +171,8 @@ jobs:
 
         # Pages
         !insertmacro MUI_PAGE_WELCOME
-        !insertmacro MUI_PAGE_LICENSE "LICENSE"
+        # Skip license page if LICENSE file not found
+        # !insertmacro MUI_PAGE_LICENSE "LICENSE"
         !insertmacro MUI_PAGE_DIRECTORY
         !insertmacro MUI_PAGE_INSTFILES
         !insertmacro MUI_PAGE_FINISH
