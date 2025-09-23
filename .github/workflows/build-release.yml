@@ -57,6 +57,7 @@ jobs:
         pip install pyinstaller>=6.0
 
     - name: Create assets directory
+      shell: bash
       run: |
         mkdir -p src/docx2shelf/gui/assets
 
