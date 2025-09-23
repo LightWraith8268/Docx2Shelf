@@ -53,7 +53,11 @@
       "Read(//s/**)",
       "Bash(git config:*)",
       "Bash(pyinstaller:*)",
-      "Bash(gh run view:*)"
+      "Bash(gh run view:*)",
+      "Bash(gh run download:*)",
+      "Bash(awk:*)",
+      "Bash(xargs gh run view:*)",
+      "Bash(C:ProgramDatachocolateylibnsistools\"\n- Changed: makensis installer.nsi → & \"C:ProgramDatachocolateylibnsistoolsmakensis.exe\" installer.nsi\n- Updated version to 1.7.4\n\n**Status**:\n- ✅ macOS DMG installer: Working (confirmed in v1.7.3) \n- 🔧 Windows NSIS installer: Should work with PATH fix\n- 🔧 Linux AppImage installer: Should work (was running before cancellation)\n\nThis should enable all three installer types to complete successfully.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

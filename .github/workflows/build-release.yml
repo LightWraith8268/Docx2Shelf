@@ -341,8 +341,8 @@ jobs:
         # Copy application files
         cp -r dist/Docx2Shelf/* Docx2Shelf.AppDir/usr/bin/
 
-        # Create desktop file
-        cat > Docx2Shelf.AppDir/usr/share/applications/docx2shelf.desktop << EOF
+        # Create desktop file in AppDir root (required by AppImage)
+        cat > Docx2Shelf.AppDir/docx2shelf.desktop << EOF
         [Desktop Entry]
         Type=Application
         Name=Docx2Shelf
@@ -352,7 +352,11 @@ jobs:
         Categories=Office;Publishing;
         EOF
 
-        # Copy icon
+        # Also copy to standard location for system integration
+        cp Docx2Shelf.AppDir/docx2shelf.desktop Docx2Shelf.AppDir/usr/share/applications/
+
+        # Copy icon to AppDir root and standard location
+        cp src/docx2shelf/gui/assets/icon.png Docx2Shelf.AppDir/docx2shelf.png
         cp src/docx2shelf/gui/assets/icon.png Docx2Shelf.AppDir/usr/share/icons/hicolor/256x256/apps/docx2shelf.png
 
         # Create AppRun
