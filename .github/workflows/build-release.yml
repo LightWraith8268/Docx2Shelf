@@ -155,7 +155,7 @@ jobs:
         # Create NSIS script
         $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.7.8"
+        !define APP_VERSION "1.7.9"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name `${APP_NAME}`
@@ -195,9 +195,9 @@ jobs:
             CreateShortcut "`$SMPROGRAMS\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe"
 
             # Register application
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf - Document to EPUB Converter"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf"
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "`${APP_VERSION}`"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "Docx2Shelf Contributors"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "Docx2ShelfContributors"
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "UninstallString" "`$INSTDIR\uninstall.exe"
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation" "`$INSTDIR"
             WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
@@ -209,7 +209,7 @@ jobs:
             WriteRegStr HKCR ".html\OpenWithProgids" "Docx2Shelf.Document" ""
             WriteRegStr HKCR ".htm\OpenWithProgids" "Docx2Shelf.Document" ""
             WriteRegStr HKCR ".txt\OpenWithProgids" "Docx2Shelf.Document" ""
-            WriteRegStr HKCR "Docx2Shelf.Document" "" "Docx2Shelf Document"
+            WriteRegStr HKCR "Docx2Shelf.Document" "" "Docx2ShelfDocument"
             WriteRegStr HKCR "Docx2Shelf.Document\shell\open\command" "" "`$INSTDIR\Docx2Shelf.exe `"%1`""
             WriteRegStr HKCR "Docx2Shelf.Document\DefaultIcon" "" "`$INSTDIR\Docx2Shelf.exe,0"
 
