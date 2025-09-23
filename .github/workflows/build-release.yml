@@ -150,7 +150,7 @@ jobs:
         # Create NSIS script
         $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.6.6"
+        !define APP_VERSION "1.7.1"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name `${APP_NAME}`
@@ -160,8 +160,9 @@ jobs:
 
         # Modern UI
         !include "MUI2.nsh"
-        !define MUI_ICON "src\docx2shelf\gui\assets\icon.ico"
-        !define MUI_UNICON "src\docx2shelf\gui\assets\icon.ico"
+        # Icons disabled for compatibility
+        #!define MUI_ICON "src\docx2shelf\gui\assets\icon.ico"
+        #!define MUI_UNICON "src\docx2shelf\gui\assets\icon.ico"
 
         # Pages
         !insertmacro MUI_PAGE_WELCOME
@@ -184,8 +185,8 @@ jobs:
             File /r "dist\Docx2Shelf\*"
 
             # Create shortcuts
-            CreateShortcut "`$DESKTOP\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe" "" "" "" SW_SHOWNORMAL "" "Document to EPUB Converter"
-            CreateShortcut "`$SMPROGRAMS\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe" "" "" "" SW_SHOWNORMAL "" "Document to EPUB Converter"
+            CreateShortcut "`$DESKTOP\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe"
+            CreateShortcut "`$SMPROGRAMS\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe"
 
             # Register application
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf - Document to EPUB Converter"
@@ -301,7 +302,6 @@ jobs:
 
         create-dmg \
           --volname "Docx2Shelf Installer" \
-          --volicon "src/docx2shelf/gui/assets/icon.icns" \
           --window-pos 200 120 \
           --window-size 600 400 \
           --icon-size 100 \
@@ -314,6 +314,10 @@ jobs:
     - name: Create Linux AppImage
       if: matrix.installer-type == 'appimage'
       run: |
+        # Install FUSE for AppImage creation
+        sudo apt-get update
+        sudo apt-get install -y fuse libfuse2
+
         # Download AppImage tools
         wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
         chmod +x appimagetool-x86_64.AppImage
