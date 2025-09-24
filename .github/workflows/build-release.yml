@@ -162,13 +162,13 @@ jobs:
         # Create NSIS script (using single quote to avoid PowerShell variable expansion)
         $nsis_script = @'
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.8.8"
+        !define APP_VERSION "1.8.9"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name "${APP_NAME}"
         OutFile "Docx2Shelf-Setup.exe"
-        InstallDir "$LOCALAPPDATA\Programs\Docx2Shelf"
-        RequestExecutionLevel user
+        InstallDir "$PROGRAMFILES64\Docx2Shelf"
+        RequestExecutionLevel admin
 
         # Modern UI
         !include "MUI2.nsh"
@@ -212,14 +212,14 @@ jobs:
             SetOutPath "$INSTDIR"
             File /r "dist\Docx2Shelf\*"
 
-            # Register application (per-user installation)
-            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf"
-            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "${APP_VERSION}"
-            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "Docx2Shelf Contributors"
-            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "UninstallString" "$INSTDIR\uninstall.exe"
-            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation" "$INSTDIR"
-            WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
-            WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
+            # Register application (system-wide installation)
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "${APP_VERSION}"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "Docx2Shelf Contributors"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "UninstallString" "$INSTDIR\uninstall.exe"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation" "$INSTDIR"
+            WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
+            WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
 
             WriteUninstaller "$INSTDIR\uninstall.exe"
         SectionEnd
@@ -264,7 +264,7 @@ jobs:
 
 
             # Remove registry entries
-            DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
+            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
 
             # Remove application files (with confirmation)
             MessageBox MB_YESNO "Remove application files and settings?" IDNO SkipFiles
