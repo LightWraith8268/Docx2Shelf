@@ -90,20 +90,7 @@ else:
     icon = "src/docx2shelf/gui/assets/icon.png"
 
 # Create executable with metadata to reduce false positives
-if sys.platform == "win32":
-    version_info = {
-        'version': (1, 8, 3, 0),
-        'file_version': (1, 8, 3, 0),
-        'product_version': (1, 8, 3, 0),
-        'file_description': 'Docx2Shelf - Document to EPUB Converter',
-        'product_name': 'Docx2Shelf',
-        'company_name': 'Docx2Shelf Project',
-        'legal_copyright': 'MIT License',
-        'original_filename': 'Docx2Shelf.exe',
-        'internal_name': 'Docx2Shelf'
-    }
-else:
-    version_info = None
+version_info = None  # PyInstaller version parameter expects file path, not dict
 
 exe = EXE(
     pyz,
@@ -147,13 +134,13 @@ if sys.platform == "darwin":
         name="Docx2Shelf.app",
         icon=icon,  # Use platform-specific icon
         bundle_identifier="com.docx2shelf.app",
-        version="1.8.3",
+        version="1.8.4",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '1.8.3',
-            'CFBundleShortVersionString': '1.8.3',
+            'CFBundleVersion': '1.8.4',
+            'CFBundleShortVersionString': '1.8.4',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',
