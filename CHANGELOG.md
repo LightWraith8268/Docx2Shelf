@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.9.5] - 2025-01-24
+### Bug Fixes - Rebuilt Binaries with Syntax Fix
+
+#### Fixed
+- **Properly rebuilt binaries**: Fixed v1.9.4 release that still contained old binaries with syntax errors
+- **Actual GUI functionality restored**: Binaries now contain the corrected modern_app.py without escaped quotes
+- **Complete syntax error resolution**: All compiled executables can now launch GUI without Python syntax errors
+
+#### Technical Details
+- Rebuilt PyInstaller executables with the corrected source code from v1.9.4
+- Ensured all platforms (Windows, macOS, Linux) contain the syntax fixes
+- Previous v1.9.4 release assets were from v1.9.3 and still had the syntax errors
+
 ## [1.9.4] - 2025-01-24
 ### Bug Fixes - Critical GUI Syntax Error
 
