@@ -31,8 +31,6 @@ def main():
         except ImportError:
             # Try relative import for PyInstaller bundles
             try:
-                import sys
-                import os
                 # Add current directory and parent directories to Python path
                 current_dir = os.path.dirname(os.path.abspath(__file__))
                 parent_dir = os.path.dirname(current_dir)

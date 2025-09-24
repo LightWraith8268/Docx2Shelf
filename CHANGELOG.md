@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.9.3] - 2025-01-24
+### Bug Fixes - GUI Launch Error
+
+#### Fixed
+- **Fixed UnboundLocalError in gui_main.py**: Removed redundant import statements that were causing "cannot access local variable 'sys'" error
+- **Improved error handling**: GUI entry point now handles module imports more reliably
+- **Better PyInstaller compatibility**: Eliminated variable shadowing issues in exception handlers
+
+#### Technical Details
+- Removed duplicate `import sys` and `import os` statements inside exception handler
+- Module-level imports now properly accessible throughout the function scope
+- Fixed variable scoping issue that prevented GUI application from launching
+
 ## [1.9.2] - 2025-01-24
 ### Bug Fixes - Enhanced PyInstaller Module Resolution
 
