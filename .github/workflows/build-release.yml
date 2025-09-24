@@ -581,94 +581,94 @@ jobs:
         echo "Generated checksums:"
         cat SHA256SUMS.txt
 
-    - name: Create release notes
+    - name: Create release notes from changelog
       run: |
         VERSION=${GITHUB_REF#refs/tags/v}
+        export VERSION
 
-        cat > RELEASE_NOTES.md << EOF
-        # Docx2Shelf v${VERSION}
+        # Extract changelog section for this version from CHANGELOG.md
+        python3 << 'EOF'
+        import re
+        import sys
+        import os
 
-        ## 📥 Downloads
+        version = os.environ.get('VERSION', '')
+        if not version:
+            github_ref = os.environ.get('GITHUB_REF', '')
+            if 'refs/tags/v' in github_ref:
+                version = github_ref.replace('refs/tags/v', '')
 
-        ### Installers (Recommended)
-        - **Windows**: [Docx2Shelf-${VERSION}-Windows-Installer.exe](./Docx2Shelf-${VERSION}-Windows-Installer.exe)
-        - **macOS**: [Docx2Shelf-${VERSION}-macOS-Installer.dmg](./Docx2Shelf-${VERSION}-macOS-Installer.dmg)
-        - **Linux**: [Docx2Shelf-${VERSION}-Linux-x86_64.AppImage](./Docx2Shelf-${VERSION}-Linux-x86_64.AppImage)
+        print(f"Extracting changelog for version: {version}")
 
-        ### Portable Versions
-        - **Windows Portable**: [Docx2Shelf-${VERSION}-windows-portable.zip](./Docx2Shelf-${VERSION}-windows-portable.zip)
-        - **macOS Portable**: [Docx2Shelf-${VERSION}-macos-portable.zip](./Docx2Shelf-${VERSION}-macos-portable.zip)
-        - **Linux Portable**: [Docx2Shelf-${VERSION}-linux-portable.tar.gz](./Docx2Shelf-${VERSION}-linux-portable.tar.gz)
+        try:
+            with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+                content = f.read()
 
-        ### Uninstallers
-        - **macOS**: [Uninstall-Docx2Shelf.command](./Uninstall-Docx2Shelf.command) (for manual uninstallation)
-        - **Linux**: [uninstall-docx2shelf.sh](./uninstall-docx2shelf.sh) (for AppImage users)
-        - **Windows**: Built-in uninstaller (accessible via Control Panel or Start Menu)
+            # Find the section for this version
+            pattern = rf'^## \[{re.escape(version)}\].*?(?=^## \[|\Z)'
+            match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
 
-        ### Verification
-        - [SHA256 Checksums](./SHA256SUMS.txt)
-        - [MD5 Checksums](./MD5SUMS.txt)
+            if match:
+                # Extract the changelog section
+                changelog_section = match.group(0).strip()
 
-        ## 🚀 Quick Start
+                # Convert the section header to match release format
+                changelog_section = re.sub(rf'^## \[{re.escape(version)}\].*', f'# Docx2Shelf v{version}', changelog_section, flags=re.MULTILINE)
 
-        ### Windows
-        1. Download \`Docx2Shelf-${VERSION}-Windows-Installer.exe\`
-        2. Run the installer
-        3. Launch from Start Menu or Desktop shortcut
+                # Add minimal downloads section at the end
+                downloads_section = f'''
 
-        ### macOS
-        1. Download \`Docx2Shelf-${VERSION}-macOS-Installer.dmg\`
-        2. Open the DMG and drag Docx2Shelf to Applications
-        3. Launch from Applications folder
+## 📥 Downloads
 
-        ### Linux
-        1. Download \`Docx2Shelf-${VERSION}-Linux-x86_64.AppImage\`
-        2. Make executable: \`chmod +x Docx2Shelf-*.AppImage\`
-        3. Run: \`./Docx2Shelf-*.AppImage\`
+**Installation instructions**: See [README.md](https://github.com/LightWraith8268/Docx2Shelf/blob/main/README.md) for detailed installation guide.
 
-        ## 🗑️ Uninstallation
+---
 
-        ### Windows
-        1. Go to **Settings** → **Apps** → **Installed Apps**
-        2. Find **Docx2Shelf** and click **Uninstall**
-        3. Or run \`uninstall.exe\` from the installation folder
+**Full Changelog**: https://github.com/LightWraith8268/Docx2Shelf/blob/main/CHANGELOG.md'''
 
-        ### macOS
-        1. Download and run [Uninstall-Docx2Shelf.command](./Uninstall-Docx2Shelf.command)
-        2. Or manually drag Docx2Shelf from Applications to Trash
+                release_notes = changelog_section + downloads_section
 
-        ### Linux
-        1. Download and run [uninstall-docx2shelf.sh](./uninstall-docx2shelf.sh)
-        2. Or simply delete the AppImage file
+                with open('RELEASE_NOTES.md', 'w', encoding='utf-8') as f:
+                    f.write(release_notes)
 
-        ## 🛠️ System Requirements
+                print(f"✅ Created release notes from changelog for version {version}")
+            else:
+                # Fallback if version not found in changelog
+                fallback_notes = f'''# Docx2Shelf v{version}
 
-        - **Windows**: Windows 10/11 (64-bit)
-        - **macOS**: macOS 10.15+ (Catalina or newer)
-        - **Linux**: Modern distribution with glibc 2.28+ (Ubuntu 18.04+, CentOS 8+)
+## 📥 Downloads
 
-        ## 🤖 AI Features
+**Installation instructions**: See [README.md](https://github.com/LightWraith8268/Docx2Shelf/blob/main/README.md) for detailed installation guide.
 
-        This release includes advanced AI chapter detection with support for:
-        - **Local LLMs** (Ollama, LM Studio, etc.)
-        - **Remote AI services** (OpenAI, Anthropic)
-        - **Free AI quota** for testing
-        - **Heuristic fallback** for offline use
+---
 
-        ## 🔐 Security Verification
+**Full Changelog**: https://github.com/LightWraith8268/Docx2Shelf/blob/main/CHANGELOG.md'''
 
-        Verify download integrity using checksums:
-        \`\`\`bash
-        # Windows
-        certutil -hashfile Docx2Shelf-${VERSION}-Windows-Installer.exe SHA256
+                with open('RELEASE_NOTES.md', 'w', encoding='utf-8') as f:
+                    f.write(fallback_notes)
 
-        # macOS/Linux
-        sha256sum Docx2Shelf-${VERSION}-*
-        \`\`\`
+                print(f"⚠️ Version {version} not found in CHANGELOG.md, created minimal release notes")
 
-        Compare against [SHA256SUMS.txt](./SHA256SUMS.txt)
+        except Exception as e:
+            print(f"❌ Error creating release notes: {e}")
+            # Fallback minimal release notes
+            fallback_notes = f'''# Docx2Shelf v{version}
 
+See [CHANGELOG.md](https://github.com/LightWraith8268/Docx2Shelf/blob/main/CHANGELOG.md) for details.
+
+## 📥 Downloads
+
+**Installation instructions**: See [README.md](https://github.com/LightWraith8268/Docx2Shelf/blob/main/README.md) for detailed installation guide.'''
+
+            with open('RELEASE_NOTES.md', 'w', encoding='utf-8') as f:
+                f.write(fallback_notes)
+
+            print("⚠️ Created fallback release notes")
         EOF
+
+        # Show what was created
+        echo "📄 Generated release notes:"
+        cat RELEASE_NOTES.md
 
 
     - name: Create Release
