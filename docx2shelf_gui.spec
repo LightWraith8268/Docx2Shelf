@@ -141,8 +141,44 @@ else:
     console = False
     icon = "src/docx2shelf/gui/assets/icon.png"
 
-# Create executable with metadata to reduce false positives
-version_info = None  # PyInstaller version parameter expects file path, not dict
+# Create version info to reduce false positives
+if sys.platform == "win32":
+    # Create version file for Windows
+    version_info = "version_info.txt"
+    with open(version_info, "w") as f:
+        f.write("""# UTF-8
+#
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 9, 3, 0),
+    prodvers=(1, 9, 3, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+    ),
+  kids=[
+    StringFileInfo(
+      [
+      StringTable(
+        u'040904B0',
+        [StringStruct(u'CompanyName', u'Docx2Shelf Contributors'),
+        StringStruct(u'FileDescription', u'Docx2Shelf - Document to EPUB Converter'),
+        StringStruct(u'FileVersion', u'1.9.3.0'),
+        StringStruct(u'InternalName', u'Docx2Shelf'),
+        StringStruct(u'LegalCopyright', u'MIT License'),
+        StringStruct(u'OriginalFilename', u'Docx2Shelf.exe'),
+        StringStruct(u'ProductName', u'Docx2Shelf'),
+        StringStruct(u'ProductVersion', u'1.9.3')])
+      ]),
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)
+""")
+else:
+    version_info = None
 
 exe = EXE(
     pyz,
@@ -164,7 +200,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=None,  # Disable icon until we have proper icon files
-    version=version_info,  # Add version metadata
+    version=version_info,  # Add version metadata for Windows
 )
 
 # Create distribution
