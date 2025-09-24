@@ -162,7 +162,7 @@ jobs:
         # Create NSIS script (using single quote to avoid PowerShell variable expansion)
         $nsis_script = @'
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.9.1"
+        !define APP_VERSION "1.9.2"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name "${APP_NAME}"

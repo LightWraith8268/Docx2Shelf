@@ -26,7 +26,28 @@ def main():
         sys.path.insert(0, str(base_path))
 
         # Import and launch the modern GUI
-        from docx2shelf.gui.modern_app import ModernDocx2ShelfApp
+        try:
+            from docx2shelf.gui.modern_app import ModernDocx2ShelfApp
+        except ImportError:
+            # Try relative import for PyInstaller bundles
+            try:
+                import sys
+                import os
+                # Add current directory and parent directories to Python path
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                parent_dir = os.path.dirname(current_dir)
+                sys.path.insert(0, current_dir)
+                sys.path.insert(0, parent_dir)
+                sys.path.insert(0, os.path.join(parent_dir, 'src'))
+
+                from docx2shelf.gui.modern_app import ModernDocx2ShelfApp
+            except ImportError as e2:
+                # Try direct import
+                try:
+                    import docx2shelf.gui.modern_app as modern_app_module
+                    ModernDocx2ShelfApp = modern_app_module.ModernDocx2ShelfApp
+                except ImportError:
+                    raise ImportError(f"Could not import ModernDocx2ShelfApp: {e2}")
 
         # Set up error handling for GUI mode
         try:

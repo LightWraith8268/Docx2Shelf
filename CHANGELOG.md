@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.9.2] - 2025-01-24
+### Bug Fixes - Enhanced PyInstaller Module Resolution
+
+#### Fixed
+- **Improved module import fallback**: Added multiple fallback methods for importing GUI modules in PyInstaller builds
+- **Enhanced pathex configuration**: Added multiple path entries to ensure proper module resolution
+- **Fixed GUI module structure**: Corrected __init__.py imports in GUI package
+- **Simplified data inclusion**: Include entire docx2shelf package to ensure proper module structure
+- **Better error handling**: More robust import error handling with detailed fallback mechanisms
+
+#### Technical Details
+- Added fallback import mechanisms with multiple path resolution strategies
+- Enhanced PyInstaller pathex with absolute paths for better module discovery
+- Fixed GUI package initialization to properly export ModernDocx2ShelfApp
+- Simplified data files inclusion to preserve proper Python package structure
+
 ## [1.9.1] - 2025-01-24
 ### Bug Fixes - PyInstaller Module Import Issue
 

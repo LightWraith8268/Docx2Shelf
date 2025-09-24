@@ -10,15 +10,11 @@ source_dir = Path(".") / "src"
 # Analysis
 a = Analysis(
     ['src/docx2shelf/gui_main.py'],
-    pathex=[str(source_dir)],
+    pathex=[str(source_dir), str(Path(".").absolute()), str(Path("src").absolute())],
     binaries=[],
     datas=[
         # Include all data files needed by the application
-        ('src/docx2shelf/assets', 'docx2shelf/assets'),
-        ('src/docx2shelf/templates', 'docx2shelf/templates'),
-        ('src/docx2shelf/gui/assets', 'docx2shelf/gui/assets'),
-        ('src/docx2shelf/assets/css', 'docx2shelf/assets/css'),
-        ('src', 'src'),  # Include the entire src directory for proper imports
+        ('src/docx2shelf', 'docx2shelf'),  # Include entire docx2shelf package with proper structure
     ],
     hiddenimports=[
         # GUI framework
@@ -190,13 +186,13 @@ if sys.platform == "darwin":
         name="Docx2Shelf.app",
         icon=None,  # Disable icon until we have proper icon files
         bundle_identifier="com.docx2shelf.app",
-        version="1.9.1",
+        version="1.9.2",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '1.9.1',
-            'CFBundleShortVersionString': '1.9.1',
+            'CFBundleVersion': '1.9.2',
+            'CFBundleShortVersionString': '1.9.2',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',
