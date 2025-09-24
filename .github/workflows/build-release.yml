@@ -4,9 +4,12 @@ on:
   push:
     tags:
       - 'v*'
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build release for'
+        required: true
+        default: 'v1.9.4'
 
 permissions:
   contents: write
