@@ -162,13 +162,13 @@ jobs:
         # Create NSIS script (using single quote to avoid PowerShell variable expansion)
         $nsis_script = @'
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.8.7"
+        !define APP_VERSION "1.8.8"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name "${APP_NAME}"
         OutFile "Docx2Shelf-Setup.exe"
-        InstallDir "$PROGRAMFILES\Docx2Shelf"
-        RequestExecutionLevel admin
+        InstallDir "$LOCALAPPDATA\Programs\Docx2Shelf"
+        RequestExecutionLevel user
 
         # Modern UI
         !include "MUI2.nsh"
@@ -212,14 +212,14 @@ jobs:
             SetOutPath "$INSTDIR"
             File /r "dist\Docx2Shelf\*"
 
-            # Register application
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "${APP_VERSION}"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "Docx2ShelfContributors"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "UninstallString" "$INSTDIR\uninstall.exe"
-            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation" "$INSTDIR"
-            WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
-            WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
+            # Register application (per-user installation)
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "${APP_VERSION}"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "Docx2Shelf Contributors"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "UninstallString" "$INSTDIR\uninstall.exe"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation" "$INSTDIR"
+            WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
+            WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
 
             WriteUninstaller "$INSTDIR\uninstall.exe"
         SectionEnd
@@ -236,31 +236,18 @@ jobs:
             CreateShortcut "$SMPROGRAMS\Docx2Shelf\Uninstall Docx2Shelf.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0 SW_SHOWNORMAL "" "Uninstall Docx2Shelf"
         SectionEnd
 
-        # File associations (optional, checked by default)
-        Section "File Associations" SecFileAssoc
-            WriteRegStr HKCR ".docx\OpenWithProgids" "Docx2Shelf.Document" ""
-            WriteRegStr HKCR ".md\OpenWithProgids" "Docx2Shelf.Document" ""
-            WriteRegStr HKCR ".html\OpenWithProgids" "Docx2Shelf.Document" ""
-            WriteRegStr HKCR ".htm\OpenWithProgids" "Docx2Shelf.Document" ""
-            WriteRegStr HKCR ".txt\OpenWithProgids" "Docx2Shelf.Document" ""
-            WriteRegStr HKCR "Docx2Shelf.Document" "" "Docx2ShelfDocument"
-            WriteRegStr HKCR "Docx2Shelf.Document\shell\open\command" "" "$INSTDIR\Docx2Shelf.exe $\"%1$\""
-            WriteRegStr HKCR "Docx2Shelf.Document\DefaultIcon" "" "$INSTDIR\Docx2Shelf.exe,0"
-        SectionEnd
 
         # Component descriptions
         !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
             !insertmacro MUI_DESCRIPTION_TEXT ${SecMain} "Core Docx2Shelf application files (required)"
             !insertmacro MUI_DESCRIPTION_TEXT ${SecDesktop} "Create a desktop shortcut for easy access"
             !insertmacro MUI_DESCRIPTION_TEXT ${SecStartMenu} "Add Docx2Shelf to the Start Menu"
-            !insertmacro MUI_DESCRIPTION_TEXT ${SecFileAssoc} "Associate supported file types (.docx, .md, .html, .txt) with Docx2Shelf"
         !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
-        # Set default selections (Start Menu and File Associations checked by default)
+        # Set default selections (Start Menu checked by default)
         Function .onInit
-            # Select Start Menu and File Associations by default
+            # Select Start Menu by default
             SectionSetFlags ${SecStartMenu} ${SF_SELECTED}
-            SectionSetFlags ${SecFileAssoc} ${SF_SELECTED}
         FunctionEnd
 
         # ShowReadme function for finish page
@@ -275,16 +262,9 @@ jobs:
             Delete "$SMPROGRAMS\Docx2Shelf\Uninstall Docx2Shelf.lnk"
             RMDir "$SMPROGRAMS\Docx2Shelf"
 
-            # Remove file associations
-            DeleteRegKey HKCR ".docx\OpenWithProgids\Docx2Shelf.Document"
-            DeleteRegKey HKCR ".md\OpenWithProgids\Docx2Shelf.Document"
-            DeleteRegKey HKCR ".html\OpenWithProgids\Docx2Shelf.Document"
-            DeleteRegKey HKCR ".htm\OpenWithProgids\Docx2Shelf.Document"
-            DeleteRegKey HKCR ".txt\OpenWithProgids\Docx2Shelf.Document"
-            DeleteRegKey HKCR "Docx2Shelf.Document"
 
             # Remove registry entries
-            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
+            DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
 
             # Remove application files (with confirmation)
             MessageBox MB_YESNO "Remove application files and settings?" IDNO SkipFiles
