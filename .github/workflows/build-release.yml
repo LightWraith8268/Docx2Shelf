@@ -41,6 +41,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+        architecture: 'x64'  # Explicitly request 64-bit Python
 
     - name: Install system dependencies (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
