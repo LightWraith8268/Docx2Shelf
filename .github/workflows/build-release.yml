@@ -63,6 +63,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .
         pip install pyinstaller>=6.0
+        pip install pillow  # Required for icon conversion
 
     - name: Create assets directory
       shell: bash
@@ -161,7 +162,7 @@ jobs:
         # Create NSIS script (using single quote to avoid PowerShell variable expansion)
         $nsis_script = @'
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.8.6"
+        !define APP_VERSION "1.8.7"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name "${APP_NAME}"
@@ -172,8 +173,9 @@ jobs:
         # Modern UI
         !include "MUI2.nsh"
         # Icons disabled for compatibility
-        !define MUI_ICON "src\docx2shelf\gui\assets\icon.ico"
-        !define MUI_UNICON "src\docx2shelf\gui\assets\icon.ico"
+        # Icons disabled until we have proper icon files
+        #!define MUI_ICON "src\docx2shelf\gui\assets\icon.ico"
+        #!define MUI_UNICON "src\docx2shelf\gui\assets\icon.ico"
 
         # Pages
         !insertmacro MUI_PAGE_WELCOME

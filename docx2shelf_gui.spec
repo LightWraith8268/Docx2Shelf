@@ -111,7 +111,7 @@ exe = EXE(
     target_arch=None,  # Use default architecture (64-bit on GitHub Actions)
     codesign_identity=None,
     entitlements_file=None,
-    icon=icon,  # Use platform-specific icon
+    icon=None,  # Disable icon until we have proper icon files
     version=version_info,  # Add version metadata
 )
 
@@ -132,15 +132,15 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name="Docx2Shelf.app",
-        icon=icon,  # Use platform-specific icon
+        icon=None,  # Disable icon until we have proper icon files
         bundle_identifier="com.docx2shelf.app",
-        version="1.8.6",
+        version="1.8.7",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '1.8.6',
-            'CFBundleShortVersionString': '1.8.6',
+            'CFBundleVersion': '1.8.7',
+            'CFBundleShortVersionString': '1.8.7',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',
