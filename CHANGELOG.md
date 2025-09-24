@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.9.1] - 2025-01-24
+### Bug Fixes - PyInstaller Module Import Issue
+
+#### Fixed
+- **PyInstaller Hidden Imports**: Added comprehensive list of all docx2shelf modules to prevent "no module named docx2shelf.gui.modern_app" error
+- **Asset Inclusion**: Improved data files inclusion to ensure all GUI assets are properly bundled
+- **Module Path Resolution**: Enhanced path handling for PyInstaller builds
+- **Import Coverage**: Added all missing docx2shelf submodules to hidden imports list
+
+#### Technical Details
+- Added all docx2shelf.* modules to PyInstaller hidden imports
+- Included comprehensive Python standard library modules
+- Enhanced data files inclusion for proper asset loading
+- Fixed GUI module import issues in standalone builds
+
 ## [1.9.0] - 2025-01-24
 ### Major: Enhanced GUI with Complete Theme System & Tools Management
 
