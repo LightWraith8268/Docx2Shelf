@@ -160,7 +160,7 @@ jobs:
         # Create NSIS script (using single quote to avoid PowerShell variable expansion)
         $nsis_script = @'
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.8.2"
+        !define APP_VERSION "1.8.3"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name "${APP_NAME}"
@@ -171,8 +171,8 @@ jobs:
         # Modern UI
         !include "MUI2.nsh"
         # Icons disabled for compatibility
-        #!define MUI_ICON "src\docx2shelf\gui\assets\icon.ico"
-        #!define MUI_UNICON "src\docx2shelf\gui\assets\icon.ico"
+        !define MUI_ICON "src\docx2shelf\gui\assets\icon.ico"
+        !define MUI_UNICON "src\docx2shelf\gui\assets\icon.ico"
 
         # Pages
         !insertmacro MUI_PAGE_WELCOME

@@ -89,7 +89,22 @@ else:
     console = False
     icon = "src/docx2shelf/gui/assets/icon.png"
 
-# Create executable
+# Create executable with metadata to reduce false positives
+if sys.platform == "win32":
+    version_info = {
+        'version': (1, 8, 3, 0),
+        'file_version': (1, 8, 3, 0),
+        'product_version': (1, 8, 3, 0),
+        'file_description': 'Docx2Shelf - Document to EPUB Converter',
+        'product_name': 'Docx2Shelf',
+        'company_name': 'Docx2Shelf Project',
+        'legal_copyright': 'MIT License',
+        'original_filename': 'Docx2Shelf.exe',
+        'internal_name': 'Docx2Shelf'
+    }
+else:
+    version_info = None
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -99,14 +114,18 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,  # Disable UPX to reduce antivirus false positives
     console=console,
     disable_windowed_traceback=False,
+    # Add runtime options to reduce false positives
+    noupx=True,
+    onefile=False,  # Keep as onedir to reduce packing suspicion
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # Disable icon for cross-platform compatibility
+    icon=icon,  # Use platform-specific icon
+    version=version_info,  # Add version metadata
 )
 
 # Create distribution
@@ -116,7 +135,7 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,  # Disable UPX to reduce antivirus false positives
     upx_exclude=[],
     name="Docx2Shelf",
 )
@@ -126,15 +145,15 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name="Docx2Shelf.app",
-        icon=None,  # Disable icon for cross-platform compatibility
+        icon=icon,  # Use platform-specific icon
         bundle_identifier="com.docx2shelf.app",
-        version="1.8.2",
+        version="1.8.3",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '1.8.2',
-            'CFBundleShortVersionString': '1.8.2',
+            'CFBundleVersion': '1.8.3',
+            'CFBundleShortVersionString': '1.8.3',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',
