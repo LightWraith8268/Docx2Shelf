@@ -147,19 +147,19 @@ def _get_platform_download_url(assets: list) -> tuple[str, str]:
     machine = platform.machine().lower()
 
     # Define platform-specific asset patterns with preference order
-    # Prefer installers over portable versions
+    # Prefer installers over portable versions - updated to match actual asset names
     platform_patterns = {
         "windows": [
-            ("installer", ["windows-installer.exe"]),  # Windows installer (preferred)
-            ("portable", ["windows-portable.zip"])     # Windows portable
+            ("installer", ["docx2shelf-setup.exe", "setup.exe"]),  # Windows installer (preferred)
+            ("portable", ["docx2shelf-windows-portable.zip", "windows-portable.zip"])  # Windows portable
         ],
         "darwin": [
-            ("installer", ["macos-installer.dmg"]),    # macOS DMG installer (preferred)
-            ("portable", ["macos-portable.zip"])       # macOS portable
+            ("installer", ["docx2shelf-installer.dmg", "installer.dmg"]),  # macOS DMG installer (preferred)
+            ("portable", ["docx2shelf-macos-portable.zip", "macos-portable.zip"])  # macOS portable
         ],
         "linux": [
-            ("installer", ["linux-x86_64.appimage"]), # Linux AppImage (preferred)
-            ("portable", ["linux-portable.tar.gz"])   # Linux portable
+            ("installer", ["docx2shelf-x86_64.appimage", "x86_64.appimage"]),  # Linux AppImage (preferred)
+            ("portable", ["docx2shelf-linux-portable.tar.gz", "linux-portable.tar.gz"])  # Linux portable
         ]
     }
 

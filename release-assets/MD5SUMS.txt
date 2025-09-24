@@ -1,8 +1,0 @@
-b0d6f9b2c76146ab421bd7a0c1e45f19 *Docx2Shelf-1.8.1-linux-portable.tar.gz
-0fbf8e9477d556a6eef16d0ebd440d98 *Docx2Shelf-1.8.1-Linux-x86_64.AppImage
-d668a107ce45f8ba1e6eb13668048461 *Docx2Shelf-1.8.1-macOS-Installer.dmg
-d28a0e96c5abaf379f72e70c0bda22f5 *Docx2Shelf-1.8.1-macos-portable.zip
-98dfbf281654e843b4764cdf0ef19935 *Docx2Shelf-1.8.1-Windows-Installer.exe
-444341ae048681496bbb2f401c1b23b5 *Docx2Shelf-1.8.1-windows-portable.zip
-41b7487ba105c6f0c1b10fc03eca0568 *SHA256SUMS.txt
-c13caf5788ed254b3837b5784f0996f2 *uninstall-docx2shelf.sh

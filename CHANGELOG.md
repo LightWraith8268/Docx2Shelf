@@ -1,5 +1,53 @@
 # Changelog
 
+## [1.9.0] - 2025-01-24
+### Major: Enhanced GUI with Complete Theme System & Tools Management
+
+#### Added
+- **Comprehensive Theme System**: Complete overhaul of theme management
+  - Genre-specific themes: Fantasy, Romance, Mystery, Sci-Fi, Thriller, Contemporary
+  - Non-fiction themes: Academic, Business, Biography, Children's Books
+  - Accessibility themes: Dyslexia-friendly, Night Reading mode
+  - Custom theme creation with live editor (font family, size, margins, line height)
+  - Font embedding system with subsetting for smaller file sizes
+  - Theme import/export and backup/restore functionality
+  - Two-column layout with theme browser and customization panels
+
+- **Advanced Tools & Plugin Management**: Professional tool installation interface
+  - Core tools installation: Pandoc, EPUBCheck, Calibre with version management
+  - AI tools support: Ollama, Whisper, Tesseract OCR as optional components
+  - Plugin marketplace with available plugins for installation
+  - Local plugin development tools and directory management
+  - Real-time status monitoring and system health checks
+  - Install/update/remove functionality with proper error handling
+
+- **Improved Settings Layout**: Multi-column design for better organization
+  - Left column: General Settings and Conversion Settings with default theme/quality presets
+  - Right column: UI Settings (theme, scaling) and Advanced Settings (debug, cache)
+  - Better visual grouping and workflow optimization
+  - Enhanced user experience with intuitive layout
+
+- **Enhanced Update System**: Improved GitHub integration
+  - Better asset detection matching current release naming patterns
+  - Support for multiple installer types (Setup.exe, DMG, AppImage)
+  - Improved version comparison and detection reliability
+  - Platform-specific download URL resolution
+
+#### Enhanced
+- **Tab Organization**: Logical tab ordering with Settings before About (last)
+  - New order: Convert → Wizard → Batch → Themes → Quality → Tools → Settings → About
+  - Better user workflow and feature discovery
+
+- **Installer Improvements**:
+  - Windows installer with "View README" checkbox unchecked by default
+  - Better user experience during installation process
+
+#### Fixed
+- Update system asset pattern matching for current release format
+- Version detection improvements for development and installed versions
+- Theme application and preview functionality
+- Settings persistence and configuration management
+
 ## [1.6.3] - 2025-01-22
 ### Major: Modern GUI with CustomTkinter & Complete Feature Implementation
 

@@ -162,7 +162,7 @@ jobs:
         # Create NSIS script (using single quote to avoid PowerShell variable expansion)
         $nsis_script = @'
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.8.9"
+        !define APP_VERSION "1.9.0"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name "${APP_NAME}"
@@ -191,6 +191,7 @@ jobs:
         !define MUI_FINISHPAGE_SHOWREADME ""
         !define MUI_FINISHPAGE_SHOWREADME_TEXT "View README"
         !define MUI_FINISHPAGE_SHOWREADME_FUNCTION ShowReadme
+        !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
         !insertmacro MUI_PAGE_FINISH
 
         # Uninstaller pages

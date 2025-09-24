@@ -193,14 +193,14 @@ class ModernDocx2ShelfApp:
         self.tabview = ctk.CTkTabview(main_frame, corner_radius=15)
         self.tabview.pack(fill="both", expand=True, padx=20, pady=20)
 
-        # Add tabs with modern styling
+        # Add tabs with modern styling - logical order with settings before about (last)
         self.tabview.add("📄 Convert")
-        self.tabview.add("⚙️ Settings")
+        self.tabview.add("🧙 Wizard")
         self.tabview.add("📦 Batch")
         self.tabview.add("🎨 Themes")
         self.tabview.add("🔍 Quality")
         self.tabview.add("🛠️ Tools")
-        self.tabview.add("🧙 Wizard")
+        self.tabview.add("⚙️ Settings")
         self.tabview.add("ℹ️ About")
 
         # Setup individual tabs
@@ -434,105 +434,229 @@ class ModernDocx2ShelfApp:
         help_btn.pack(side="right")
 
     def setup_settings_tab(self):
-        """Setup the comprehensive settings tab."""
+        """Setup the comprehensive settings tab with improved multi-column layout."""
         settings_frame = self.tabview.tab("⚙️ Settings")
 
-        # Create scrollable frame for settings
-        scrollable_settings = ctk.CTkScrollableFrame(settings_frame)
-        scrollable_settings.pack(fill="both", expand=True, padx=10, pady=10)
-
         # Settings header
-        settings_label = ctk.CTkLabel(scrollable_settings, text="🔧 Application Settings",
-                                    font=ctk.CTkFont(size=20, weight="bold"))
-        settings_label.pack(pady=(0, 20))
+        settings_header = ctk.CTkLabel(settings_frame, text="🔧 Application Settings",
+                                     font=ctk.CTkFont(size=20, weight="bold"))
+        settings_header.pack(pady=(15, 20))
 
-        # General Settings Section
-        general_section = ctk.CTkFrame(scrollable_settings, corner_radius=15)
-        general_section.pack(fill="x", padx=5, pady=(0, 15))
+        # Main container with two columns
+        main_container = ctk.CTkFrame(settings_frame, fg_color="transparent")
+        main_container.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+        # Left column
+        left_column = ctk.CTkScrollableFrame(main_container, corner_radius=15)
+        left_column.pack(side="left", fill="both", expand=True, padx=(0, 10))
+
+        # Right column
+        right_column = ctk.CTkScrollableFrame(main_container, corner_radius=15)
+        right_column.pack(side="right", fill="both", expand=True, padx=(10, 0))
+
+        # Setup left column content
+        self.setup_general_settings(left_column)
+        self.setup_conversion_settings(left_column)
+
+        # Setup right column content
+        self.setup_ui_settings(right_column)
+        self.setup_advanced_settings(right_column)
+
+    def setup_general_settings(self, parent):
+        """Setup general application settings."""
+        general_section = ctk.CTkFrame(parent, corner_radius=15)
+        general_section.pack(fill="x", padx=10, pady=(0, 15))
 
         general_label = ctk.CTkLabel(general_section, text="🎯 General Settings",
                                    font=ctk.CTkFont(size=16, weight="bold"))
         general_label.pack(pady=(15, 10))
 
         general_content = ctk.CTkFrame(general_section, fg_color="transparent")
-        general_content.pack(fill="x", padx=20, pady=(0, 20))
+        general_content.pack(fill="x", padx=15, pady=(0, 15))
 
         # Auto-save settings
         self.auto_save_var = ctk.BooleanVar(value=True)
         auto_save_check = ctk.CTkCheckBox(general_content, text="🔄 Auto-save settings",
                                         variable=self.auto_save_var,
                                         font=ctk.CTkFont(size=12))
-        auto_save_check.pack(anchor="w", pady=5)
-
-        # Show tooltips
-        self.tooltips_var = ctk.BooleanVar(value=True)
-        tooltips_check = ctk.CTkCheckBox(general_content, text="💡 Show tooltips",
-                                       variable=self.tooltips_var,
-                                       font=ctk.CTkFont(size=12))
-        tooltips_check.pack(anchor="w", pady=5)
+        auto_save_check.pack(anchor="w", pady=3)
 
         # Check for updates
         self.updates_var = ctk.BooleanVar(value=True)
-        updates_check = ctk.CTkCheckBox(general_content, text="🔄 Check for updates automatically",
+        updates_check = ctk.CTkCheckBox(general_content, text="🔄 Auto-check for updates",
                                       variable=self.updates_var,
                                       font=ctk.CTkFont(size=12))
-        updates_check.pack(anchor="w", pady=5)
+        updates_check.pack(anchor="w", pady=3)
 
         # Manual update check
-        update_frame = ctk.CTkFrame(general_content, fg_color="transparent")
-        update_frame.pack(fill="x", pady=5)
-
-        update_btn = ctk.CTkButton(update_frame, text="🆙 Check for Updates Now",
+        update_btn = ctk.CTkButton(general_content, text="🆙 Check for Updates Now",
                                  command=self.check_for_updates,
-                                 height=35, corner_radius=17,
-                                 font=ctk.CTkFont(size=12))
-        update_btn.pack(anchor="w")
+                                 height=30, corner_radius=15,
+                                 font=ctk.CTkFont(size=11))
+        update_btn.pack(anchor="w", pady=5)
 
-        # Remember window size
+        # Remember window state
         self.remember_window_var = ctk.BooleanVar(value=True)
-        remember_check = ctk.CTkCheckBox(general_content, text="📏 Remember window size and position",
+        remember_check = ctk.CTkCheckBox(general_content, text="📏 Remember window state",
                                        variable=self.remember_window_var,
                                        font=ctk.CTkFont(size=12))
-        remember_check.pack(anchor="w", pady=5)
+        remember_check.pack(anchor="w", pady=3)
 
-        # Show tooltips
-        self.show_tooltips_var = ctk.BooleanVar(value=True)
-        tooltips_check = ctk.CTkCheckBox(general_content, text="💭 Show helpful tooltips",
-                                       variable=self.show_tooltips_var,
-                                       font=ctk.CTkFont(size=12))
-        tooltips_check.pack(anchor="w", pady=5)
+    def setup_conversion_settings(self, parent):
+        """Setup conversion-related settings."""
+        conversion_section = ctk.CTkFrame(parent, corner_radius=15)
+        conversion_section.pack(fill="x", padx=10, pady=(0, 15))
 
-        # Default Output Settings Section
-        output_section = ctk.CTkFrame(scrollable_settings, corner_radius=15)
-        output_section.pack(fill="x", padx=5, pady=(0, 15))
+        conversion_label = ctk.CTkLabel(conversion_section, text="🔄 Conversion Settings",
+                                      font=ctk.CTkFont(size=16, weight="bold"))
+        conversion_label.pack(pady=(15, 10))
 
-        output_label = ctk.CTkLabel(output_section, text="📁 Default Output Settings",
-                                  font=ctk.CTkFont(size=16, weight="bold"))
-        output_label.pack(pady=(15, 10))
-
-        output_content = ctk.CTkFrame(output_section, fg_color="transparent")
-        output_content.pack(fill="x", padx=20, pady=(0, 20))
+        conversion_content = ctk.CTkFrame(conversion_section, fg_color="transparent")
+        conversion_content.pack(fill="x", padx=15, pady=(0, 15))
 
         # Default output directory
-        dir_frame = ctk.CTkFrame(output_content, fg_color="transparent")
-        dir_frame.pack(fill="x", pady=5)
+        ctk.CTkLabel(conversion_content, text="📂 Default Output Directory:",
+                    font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
 
-        ctk.CTkLabel(dir_frame, text="📂 Default Output Directory:",
-                    font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w")
-
-        dir_row = ctk.CTkFrame(dir_frame, fg_color="transparent")
-        dir_row.pack(fill="x", pady=(5, 0))
+        dir_row = ctk.CTkFrame(conversion_content, fg_color="transparent")
+        dir_row.pack(fill="x", pady=(0, 10))
 
         self.output_dir_var = ctk.StringVar()
         self.output_dir_entry = ctk.CTkEntry(dir_row, textvariable=self.output_dir_var,
                                            placeholder_text="Choose default output folder...",
-                                           font=ctk.CTkFont(size=11))
-        self.output_dir_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+                                           font=ctk.CTkFont(size=10))
+        self.output_dir_entry.pack(side="left", fill="x", expand=True, padx=(0, 5))
 
-        browse_dir_btn = ctk.CTkButton(dir_row, text="📂 Browse",
+        browse_dir_btn = ctk.CTkButton(dir_row, text="📁 Browse",
                                      command=self.browse_output_directory,
-                                     width=80, height=32, corner_radius=16)
+                                     width=70, height=28, corner_radius=14,
+                                     font=ctk.CTkFont(size=10))
         browse_dir_btn.pack(side="right")
+
+        # Default theme
+        ctk.CTkLabel(conversion_content, text="🎨 Default Theme:",
+                    font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(10, 5))
+
+        self.default_theme_var = ctk.StringVar(value="serif")
+        theme_menu = ctk.CTkOptionMenu(conversion_content, variable=self.default_theme_var,
+                                     values=["serif", "sans", "printlike", "fantasy", "romance"],
+                                     width=200, height=28,
+                                     font=ctk.CTkFont(size=10))
+        theme_menu.pack(anchor="w", pady=(0, 10))
+
+        # Quality preset
+        ctk.CTkLabel(conversion_content, text="🏆 Quality Preset:",
+                    font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
+
+        self.quality_preset_var = ctk.StringVar(value="standard")
+        quality_menu = ctk.CTkOptionMenu(conversion_content, variable=self.quality_preset_var,
+                                       values=["draft", "standard", "high", "premium"],
+                                       width=200, height=28,
+                                       font=ctk.CTkFont(size=10))
+        quality_menu.pack(anchor="w")
+
+    def setup_ui_settings(self, parent):
+        """Setup UI-related settings."""
+        ui_section = ctk.CTkFrame(parent, corner_radius=15)
+        ui_section.pack(fill="x", padx=10, pady=(0, 15))
+
+        ui_label = ctk.CTkLabel(ui_section, text="🎨 Interface Settings",
+                              font=ctk.CTkFont(size=16, weight="bold"))
+        ui_label.pack(pady=(15, 10))
+
+        ui_content = ctk.CTkFrame(ui_section, fg_color="transparent")
+        ui_content.pack(fill="x", padx=15, pady=(0, 15))
+
+        # Show tooltips
+        self.show_tooltips_var = ctk.BooleanVar(value=True)
+        tooltips_check = ctk.CTkCheckBox(ui_content, text="💡 Show tooltips",
+                                       variable=self.show_tooltips_var,
+                                       font=ctk.CTkFont(size=12))
+        tooltips_check.pack(anchor="w", pady=3)
+
+        # Show progress details
+        self.show_progress_var = ctk.BooleanVar(value=False)
+        progress_check = ctk.CTkCheckBox(ui_content, text="📈 Show detailed progress",
+                                       variable=self.show_progress_var,
+                                       font=ctk.CTkFont(size=12))
+        progress_check.pack(anchor="w", pady=3)
+
+        # Theme
+        ctk.CTkLabel(ui_content, text="🌙 App Theme:",
+                    font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(10, 5))
+
+        self.app_theme_var = ctk.StringVar(value="dark")
+        theme_menu = ctk.CTkOptionMenu(ui_content, variable=self.app_theme_var,
+                                     values=["light", "dark", "system"],
+                                     command=self.change_app_theme,
+                                     width=150, height=28,
+                                     font=ctk.CTkFont(size=10))
+        theme_menu.pack(anchor="w", pady=(0, 10))
+
+        # Font scaling
+        ctk.CTkLabel(ui_content, text="🔤 Interface Scale:",
+                    font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
+
+        self.ui_scale_var = ctk.StringVar(value="100%")
+        scale_menu = ctk.CTkOptionMenu(ui_content, variable=self.ui_scale_var,
+                                     values=["80%", "90%", "100%", "110%", "120%"],
+                                     command=self.change_ui_scale,
+                                     width=150, height=28,
+                                     font=ctk.CTkFont(size=10))
+        scale_menu.pack(anchor="w")
+
+    def setup_advanced_settings(self, parent):
+        """Setup advanced settings."""
+        advanced_section = ctk.CTkFrame(parent, corner_radius=15)
+        advanced_section.pack(fill="x", padx=10, pady=(0, 15))
+
+        advanced_label = ctk.CTkLabel(advanced_section, text="⚙️ Advanced Settings",
+                                    font=ctk.CTkFont(size=16, weight="bold"))
+        advanced_label.pack(pady=(15, 10))
+
+        advanced_content = ctk.CTkFrame(advanced_section, fg_color="transparent")
+        advanced_content.pack(fill="x", padx=15, pady=(0, 15))
+
+        # Debug mode
+        self.debug_mode_var = ctk.BooleanVar(value=False)
+        debug_check = ctk.CTkCheckBox(advanced_content, text="🐛 Debug mode",
+                                    variable=self.debug_mode_var,
+                                    font=ctk.CTkFont(size=12))
+        debug_check.pack(anchor="w", pady=3)
+
+        # Parallel processing
+        self.parallel_var = ctk.BooleanVar(value=True)
+        parallel_check = ctk.CTkCheckBox(advanced_content, text="⚡ Parallel processing",
+                                       variable=self.parallel_var,
+                                       font=ctk.CTkFont(size=12))
+        parallel_check.pack(anchor="w", pady=3)
+
+        # Cache cleanup
+        cache_btn = ctk.CTkButton(advanced_content, text="🗿 Clear Cache",
+                                command=self.clear_cache,
+                                height=30, corner_radius=15,
+                                font=ctk.CTkFont(size=11),
+                                fg_color="orange", hover_color="darkorange")
+        cache_btn.pack(anchor="w", pady=10)
+
+        # Reset settings
+        reset_btn = ctk.CTkButton(advanced_content, text="🔄 Reset All Settings",
+                                command=self.reset_settings,
+                                height=30, corner_radius=15,
+                                font=ctk.CTkFont(size=11),
+                                fg_color="darkred", hover_color="red")
+        reset_btn.pack(anchor="w", pady=5)
+
+        # Data directory
+        ctk.CTkLabel(advanced_content, text="📁 Data Directory:",
+                    font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(15, 5))
+
+        data_dir_btn = ctk.CTkButton(advanced_content, text="📂 Open Data Folder",
+                                   command=self.open_data_directory,
+                                   height=30, corner_radius=15,
+                                   font=ctk.CTkFont(size=11))
+        data_dir_btn.pack(anchor="w")
+
 
         # Auto-generate filenames
         self.auto_filename_var = ctk.BooleanVar(value=True)
@@ -1828,67 +1952,368 @@ CLI Access: Run 'docx2shelf --help' for command-line usage"""
         self.batch_log.see("end")
 
     def setup_themes_tab(self):
-        """Setup the themes management tab."""
+        """Setup the comprehensive themes management tab with genre themes and customization."""
         themes_frame = self.tabview.tab("🎨 Themes")
 
-        # Create scrollable frame
-        scrollable_themes = ctk.CTkScrollableFrame(themes_frame)
-        scrollable_themes.pack(fill="both", expand=True, padx=10, pady=10)
+        # Create main container with two columns
+        main_container = ctk.CTkFrame(themes_frame, fg_color="transparent")
+        main_container.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Themes header
-        themes_label = ctk.CTkLabel(scrollable_themes, text="🎨 Theme Management",
-                                  font=ctk.CTkFont(size=20, weight="bold"))
-        themes_label.pack(pady=(0, 20))
+        # Left column - Theme Browser
+        left_column = ctk.CTkFrame(main_container, corner_radius=15)
+        left_column.pack(side="left", fill="both", expand=True, padx=(0, 10))
 
-        # Current themes section
-        current_section = ctk.CTkFrame(scrollable_themes, corner_radius=15)
-        current_section.pack(fill="x", padx=5, pady=(0, 15))
+        # Right column - Theme Editor & Font Manager
+        right_column = ctk.CTkFrame(main_container, corner_radius=15)
+        right_column.pack(side="right", fill="both", expand=True, padx=(10, 0))
 
-        current_label = ctk.CTkLabel(current_section, text="📋 Available Themes",
-                                   font=ctk.CTkFont(size=16, weight="bold"))
-        current_label.pack(pady=(15, 10))
+        # Left Column Content
+        themes_header = ctk.CTkLabel(left_column, text="🎨 Theme Browser",
+                                   font=ctk.CTkFont(size=18, weight="bold"))
+        themes_header.pack(pady=(15, 10))
 
-        # Theme list
-        theme_content = ctk.CTkFrame(current_section, fg_color="transparent")
-        theme_content.pack(fill="x", padx=20, pady=(0, 20))
+        # Theme category tabs
+        self.theme_tabview = ctk.CTkTabview(left_column, corner_radius=10)
+        self.theme_tabview.pack(fill="both", expand=True, padx=15, pady=(0, 15))
 
-        # Built-in themes
-        themes = [
-            ("Serif", "Classic serif font theme with traditional book styling"),
-            ("Sans-serif", "Modern sans-serif theme for clean readability"),
-            ("Print-like", "Newspaper-style theme optimized for print"),
+        # Add theme category tabs
+        self.theme_tabview.add("📚 General")
+        self.theme_tabview.add("🏰 Fiction")
+        self.theme_tabview.add("📖 Non-Fiction")
+        self.theme_tabview.add("♿ Accessibility")
+        self.theme_tabview.add("💫 Custom")
+
+        # Setup theme categories
+        self.setup_general_themes()
+        self.setup_fiction_themes()
+        self.setup_nonfiction_themes()
+        self.setup_accessibility_themes()
+        self.setup_custom_themes()
+
+        # Right Column Content - Theme Editor
+        editor_header = ctk.CTkLabel(right_column, text="✨ Theme Customization",
+                                   font=ctk.CTkFont(size=18, weight="bold"))
+        editor_header.pack(pady=(15, 10))
+
+        # Theme editor tabview
+        self.editor_tabview = ctk.CTkTabview(right_column, corner_radius=10)
+        self.editor_tabview.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+        self.editor_tabview.add("🎨 Editor")
+        self.editor_tabview.add("🔤 Fonts")
+        self.editor_tabview.add("💾 Manager")
+
+        # Setup editor tabs
+        self.setup_theme_editor()
+        self.setup_font_manager()
+        self.setup_theme_manager()
+
+    def setup_general_themes(self):
+        \"\"\"Setup general purpose themes.\"\"\"
+        general_frame = self.theme_tabview.tab(\"\ud83d\udcda General\")
+        scrollable_general = ctk.CTkScrollableFrame(general_frame)
+        scrollable_general.pack(fill=\"both\", expand=True, padx=5, pady=5)
+
+        general_themes = [
+            (\"serif\", \"Classic Serif\", \"Traditional serif fonts for timeless readability\", \"\ud83d\udcd6\"),
+            (\"sans\", \"Modern Sans\", \"Clean sans-serif fonts for contemporary works\", \"\ud83d\uddfa\"),
+            (\"printlike\", \"Print-like\", \"Newspaper-style theme optimized for print\", \"\ud83d\udcf0\"),
         ]
 
-        for theme_name, description in themes:
-            theme_row = ctk.CTkFrame(theme_content)
-            theme_row.pack(fill="x", pady=5)
+        for theme_id, name, desc, emoji in general_themes:
+            self.create_theme_card(scrollable_general, theme_id, name, desc, emoji)
 
-            # Theme info
-            info_frame = ctk.CTkFrame(theme_row, fg_color="transparent")
-            info_frame.pack(side="left", fill="x", expand=True, padx=15, pady=10)
+    def setup_fiction_themes(self):
+        \"\"\"Setup fiction genre themes.\"\"\"
+        fiction_frame = self.theme_tabview.tab(\"\ud83c\udff0 Fiction\")
+        scrollable_fiction = ctk.CTkScrollableFrame(fiction_frame)
+        scrollable_fiction.pack(fill=\"both\", expand=True, padx=5, pady=5)
 
-            name_label = ctk.CTkLabel(info_frame, text=theme_name,
-                                    font=ctk.CTkFont(size=14, weight="bold"))
-            name_label.pack(anchor="w")
+        fiction_themes = [
+            (\"fantasy\", \"Fantasy Epic\", \"Magical styling with elegant serif fonts\", \"\ud83c\udff0\"),
+            (\"romance\", \"Romance\", \"Warm, inviting theme perfect for love stories\", \"\ud83d\udc96\"),
+            (\"mystery\", \"Mystery & Crime\", \"Dark, atmospheric styling for suspense\", \"\ud83d\udd75\ufe0f\"),
+            (\"scifi\", \"Science Fiction\", \"Futuristic theme with clean modern fonts\", \"\ud83d\ude80\"),
+            (\"thriller\", \"Thriller\", \"High-contrast theme for edge-of-seat tension\", \"\u26a1\"),
+            (\"contemporary\", \"Contemporary Fiction\", \"Modern, clean styling for literary works\", \"\ud83c\udfe2\"),
+        ]
 
-            desc_label = ctk.CTkLabel(info_frame, text=description,
-                                    font=ctk.CTkFont(size=11),
-                                    wraplength=300)
-            desc_label.pack(anchor="w")
+        for theme_id, name, desc, emoji in fiction_themes:
+            self.create_theme_card(scrollable_fiction, theme_id, name, desc, emoji)
 
-            # Theme actions
-            action_frame = ctk.CTkFrame(theme_row, fg_color="transparent")
-            action_frame.pack(side="right", padx=15, pady=10)
+    def setup_nonfiction_themes(self):
+        \"\"\"Setup non-fiction themes.\"\"\"
+        nonfiction_frame = self.theme_tabview.tab(\"\ud83d\udcd6 Non-Fiction\")
+        scrollable_nonfiction = ctk.CTkScrollableFrame(nonfiction_frame)
+        scrollable_nonfiction.pack(fill=\"both\", expand=True, padx=5, pady=5)
 
-            preview_btn = ctk.CTkButton(action_frame, text="👁️ Preview",
-                                      command=lambda t=theme_name: self.preview_theme(t),
-                                      width=80, height=30, corner_radius=15)
-            preview_btn.pack(side="left", padx=(0, 5))
+        nonfiction_themes = [
+            (\"academic\", \"Academic\", \"Professional styling for scholarly works\", \"\ud83c\udf93\"),
+            (\"business\", \"Business\", \"Corporate-friendly theme for professional content\", \"\ud83d\udcbc\"),
+            (\"biography\", \"Biography\", \"Classic styling perfect for life stories\", \"\ud83d\udcdc\"),
+            (\"childrens\", \"Children's Books\", \"Playful, readable theme for young readers\", \"\ud83d\udcda\"),
+        ]
 
-            apply_btn = ctk.CTkButton(action_frame, text="✓ Apply",
-                                    command=lambda t=theme_name: self.apply_theme(t),
-                                    width=70, height=30, corner_radius=15)
-            apply_btn.pack(side="right")
+        for theme_id, name, desc, emoji in nonfiction_themes:
+            self.create_theme_card(scrollable_nonfiction, theme_id, name, desc, emoji)
+
+    def setup_accessibility_themes(self):
+        \"\"\"Setup accessibility-focused themes.\"\"\"
+        access_frame = self.theme_tabview.tab(\"\u267f Accessibility\")
+        scrollable_access = ctk.CTkScrollableFrame(access_frame)
+        scrollable_access.pack(fill=\"both\", expand=True, padx=5, pady=5)
+
+        access_themes = [
+            (\"dyslexic\", \"Dyslexia-Friendly\", \"OpenDyslexic font with optimized spacing\", \"\ud83d\udde3\ufe0f\"),
+            (\"night\", \"Night Reading\", \"Dark theme with reduced eye strain\", \"\ud83c\udf19\"),
+        ]
+
+        for theme_id, name, desc, emoji in access_themes:
+            self.create_theme_card(scrollable_access, theme_id, name, desc, emoji)
+
+    def setup_custom_themes(self):
+        \"\"\"Setup custom theme management.\"\"\"
+        custom_frame = self.theme_tabview.tab(\"\ud83d\udcab Custom\")
+
+        # Header
+        header_label = ctk.CTkLabel(custom_frame, text="Your Custom Themes",
+                                  font=ctk.CTkFont(size=14, weight="bold"))
+        header_label.pack(pady=(10, 15))
+
+        # Scrollable list of custom themes
+        self.custom_themes_frame = ctk.CTkScrollableFrame(custom_frame)
+        self.custom_themes_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
+        # Create new theme button
+        create_btn = ctk.CTkButton(custom_frame, text="+ Create New Theme",
+                                 command=self.create_new_theme,
+                                 height=35, corner_radius=17)
+        create_btn.pack(pady=10)
+
+        # Load existing custom themes
+        self.load_custom_themes()
+
+    def create_theme_card(self, parent, theme_id, name, description, emoji):
+        \"\"\"Create a theme card with preview and apply buttons.\"\"\"
+        card = ctk.CTkFrame(parent, corner_radius=10)
+        card.pack(fill=\"x\", padx=5, pady=5)
+
+        # Theme info
+        info_frame = ctk.CTkFrame(card, fg_color=\"transparent\")
+        info_frame.pack(side=\"left\", fill=\"x\", expand=True, padx=15, pady=10)
+
+        # Title with emoji
+        title_frame = ctk.CTkFrame(info_frame, fg_color=\"transparent\")
+        title_frame.pack(fill=\"x\")
+
+        emoji_label = ctk.CTkLabel(title_frame, text=emoji, font=ctk.CTkFont(size=16))
+        emoji_label.pack(side=\"left\")
+
+        name_label = ctk.CTkLabel(title_frame, text=name,
+                                font=ctk.CTkFont(size=13, weight=\"bold\"))
+        name_label.pack(side=\"left\", padx=(5, 0))
+
+        desc_label = ctk.CTkLabel(info_frame, text=description,
+                                font=ctk.CTkFont(size=10),
+                                wraplength=200, anchor=\"w\")
+        desc_label.pack(anchor=\"w\", pady=(2, 0))
+
+        # Action buttons
+        action_frame = ctk.CTkFrame(card, fg_color=\"transparent\")
+        action_frame.pack(side=\"right\", padx=10, pady=10)
+
+        preview_btn = ctk.CTkButton(action_frame, text=\"\ud83d\udc41\ufe0f Preview\",
+                                  command=lambda: self.preview_theme(theme_id),
+                                  width=70, height=25, corner_radius=12,
+                                  font=ctk.CTkFont(size=10))
+        preview_btn.pack(side=\"left\", padx=(0, 5))
+
+        apply_btn = ctk.CTkButton(action_frame, text=\"\u2713 Apply\",
+                                command=lambda: self.apply_theme(theme_id),
+                                width=60, height=25, corner_radius=12,
+                                font=ctk.CTkFont(size=10))
+        apply_btn.pack(side=\"right\")
+
+    def setup_theme_editor(self):
+        \"\"\"Setup the theme editor interface.\"\"\"
+        editor_frame = self.editor_tabview.tab(\"\ud83c\udfa8 Editor\")
+
+        # Theme editor scrollable frame
+        editor_scroll = ctk.CTkScrollableFrame(editor_frame)
+        editor_scroll.pack(fill=\"both\", expand=True, padx=5, pady=5)
+
+        # Current theme display
+        current_section = ctk.CTkFrame(editor_scroll, corner_radius=10)
+        current_section.pack(fill=\"x\", padx=5, pady=5)
+
+        current_label = ctk.CTkLabel(current_section, text=\"Current Theme: Classic Serif\",
+                                   font=ctk.CTkFont(size=14, weight=\"bold\"))
+        current_label.pack(pady=10)
+
+        # Theme properties
+        props_frame = ctk.CTkFrame(editor_scroll, corner_radius=10)
+        props_frame.pack(fill=\"x\", padx=5, pady=5)
+
+        props_label = ctk.CTkLabel(props_frame, text=\"\u2699\ufe0f Theme Properties\",
+                                 font=ctk.CTkFont(size=13, weight=\"bold\"))
+        props_label.pack(pady=(10, 5))
+
+        # Font family selection
+        font_frame = ctk.CTkFrame(props_frame, fg_color=\"transparent\")
+        font_frame.pack(fill=\"x\", padx=10, pady=5)
+
+        ctk.CTkLabel(font_frame, text=\"Font Family:\").pack(side=\"left\")
+        self.font_family_var = ctk.StringVar(value=\"serif\")
+        font_menu = ctk.CTkOptionMenu(font_frame, variable=self.font_family_var,
+                                    values=[\"serif\", \"sans-serif\", \"monospace\"])
+        font_menu.pack(side=\"right\", padx=10)
+
+        # Font size
+        size_frame = ctk.CTkFrame(props_frame, fg_color=\"transparent\")
+        size_frame.pack(fill=\"x\", padx=10, pady=5)
+
+        ctk.CTkLabel(size_frame, text=\"Base Font Size:\").pack(side=\"left\")
+        self.font_size_var = ctk.StringVar(value=\"16px\")
+        size_entry = ctk.CTkEntry(size_frame, textvariable=self.font_size_var, width=60)
+        size_entry.pack(side=\"right\", padx=10)
+
+        # Line height
+        lh_frame = ctk.CTkFrame(props_frame, fg_color=\"transparent\")
+        lh_frame.pack(fill=\"x\", padx=10, pady=5)
+
+        ctk.CTkLabel(lh_frame, text=\"Line Height:\").pack(side=\"left\")
+        self.line_height_var = ctk.StringVar(value=\"1.5\")
+        lh_entry = ctk.CTkEntry(lh_frame, textvariable=self.line_height_var, width=60)
+        lh_entry.pack(side=\"right\", padx=10)
+
+        # Margins
+        margin_frame = ctk.CTkFrame(props_frame, fg_color=\"transparent\")
+        margin_frame.pack(fill=\"x\", padx=10, pady=5)
+
+        ctk.CTkLabel(margin_frame, text=\"Page Margins:\").pack(side=\"left\")
+        self.margin_var = ctk.StringVar(value=\"2em\")
+        margin_entry = ctk.CTkEntry(margin_frame, textvariable=self.margin_var, width=60)
+        margin_entry.pack(side=\"right\", padx=10)
+
+        # Action buttons
+        btn_frame = ctk.CTkFrame(props_frame, fg_color=\"transparent\")
+        btn_frame.pack(fill=\"x\", padx=10, pady=10)
+
+        preview_btn = ctk.CTkButton(btn_frame, text=\"\ud83d\udc41\ufe0f Preview Changes\",
+                                  command=self.preview_theme_changes)
+        preview_btn.pack(side=\"left\", padx=5)
+
+        save_btn = ctk.CTkButton(btn_frame, text=\"\ud83d\udcbe Save as New Theme\",
+                               command=self.save_custom_theme)
+        save_btn.pack(side=\"right\", padx=5)
+
+    def setup_font_manager(self):
+        \"\"\"Setup the font embedding interface.\"\"\"
+        font_frame = self.editor_tabview.tab(\"\ud83d\udd24 Fonts\")
+
+        font_scroll = ctk.CTkScrollableFrame(font_frame)
+        font_scroll.pack(fill=\"both\", expand=True, padx=5, pady=5)
+
+        # Font embedding section
+        embed_section = ctk.CTkFrame(font_scroll, corner_radius=10)
+        embed_section.pack(fill=\"x\", padx=5, pady=5)
+
+        embed_label = ctk.CTkLabel(embed_section, text=\"\ud83d\udd24 Font Embedding\",
+                                 font=ctk.CTkFont(size=14, weight=\"bold\"))
+        embed_label.pack(pady=(10, 5))
+
+        # Font file selector
+        file_frame = ctk.CTkFrame(embed_section, fg_color=\"transparent\")
+        file_frame.pack(fill=\"x\", padx=10, pady=5)
+
+        self.font_file_entry = ctk.CTkEntry(file_frame, placeholder_text=\"Select font file (.ttf, .otf, .woff)\")
+        self.font_file_entry.pack(side=\"left\", fill=\"x\", expand=True, padx=(0, 5))
+
+        browse_font_btn = ctk.CTkButton(file_frame, text=\"\ud83d\udcc1 Browse\",
+                                      command=self.browse_font_file, width=80)
+        browse_font_btn.pack(side=\"right\")
+
+        # Font name
+        name_frame = ctk.CTkFrame(embed_section, fg_color=\"transparent\")
+        name_frame.pack(fill=\"x\", padx=10, pady=5)
+
+        ctk.CTkLabel(name_frame, text=\"Font Name:\").pack(side=\"left\")
+        self.font_name_var = ctk.StringVar()
+        name_entry = ctk.CTkEntry(name_frame, textvariable=self.font_name_var)
+        name_entry.pack(side=\"right\", fill=\"x\", expand=True, padx=(10, 0))
+
+        # Subset options
+        subset_frame = ctk.CTkFrame(embed_section, fg_color=\"transparent\")
+        subset_frame.pack(fill=\"x\", padx=10, pady=5)
+
+        self.subset_var = ctk.BooleanVar(value=True)
+        subset_cb = ctk.CTkCheckBox(subset_frame, text=\"Subset font (recommended for smaller file size)\",
+                                  variable=self.subset_var)
+        subset_cb.pack()
+
+        # Add font button
+        add_font_btn = ctk.CTkButton(embed_section, text=\"+ Add Font to Collection\",
+                                   command=self.add_custom_font, height=35)
+        add_font_btn.pack(pady=10)
+
+        # Current fonts section
+        current_section = ctk.CTkFrame(font_scroll, corner_radius=10)
+        current_section.pack(fill=\"x\", padx=5, pady=5)
+
+        current_label = ctk.CTkLabel(current_section, text=\"\ud83d\udcda Embedded Fonts\",
+                                   font=ctk.CTkFont(size=14, weight=\"bold\"))
+        current_label.pack(pady=(10, 5))
+
+        # Fonts list
+        self.fonts_list_frame = ctk.CTkFrame(current_section, fg_color=\"transparent\")
+        self.fonts_list_frame.pack(fill=\"x\", padx=10, pady=(0, 10))
+
+        self.refresh_fonts_list()
+
+    def setup_theme_manager(self):
+        \"\"\"Setup the theme management interface.\"\"\"
+        manager_frame = self.editor_tabview.tab(\"\ud83d\udcbe Manager\")
+
+        manager_scroll = ctk.CTkScrollableFrame(manager_frame)
+        manager_scroll.pack(fill=\"both\", expand=True, padx=5, pady=5)
+
+        # Import/Export section
+        io_section = ctk.CTkFrame(manager_scroll, corner_radius=10)
+        io_section.pack(fill=\"x\", padx=5, pady=5)
+
+        io_label = ctk.CTkLabel(io_section, text=\"\ud83d\udce6 Import/Export\",
+                              font=ctk.CTkFont(size=14, weight=\"bold\"))
+        io_label.pack(pady=(10, 5))
+
+        btn_frame = ctk.CTkFrame(io_section, fg_color=\"transparent\")
+        btn_frame.pack(fill=\"x\", padx=10, pady=10)
+
+        import_btn = ctk.CTkButton(btn_frame, text=\"\ud83d\udce5 Import Theme\",
+                                 command=self.import_theme)
+        import_btn.pack(side=\"left\", padx=5)
+
+        export_btn = ctk.CTkButton(btn_frame, text=\"\ud83d\udce4 Export Theme\",
+                                 command=self.export_theme)
+        export_btn.pack(side=\"right\", padx=5)
+
+        # Theme backup section
+        backup_section = ctk.CTkFrame(manager_scroll, corner_radius=10)
+        backup_section.pack(fill=\"x\", padx=5, pady=5)
+
+        backup_label = ctk.CTkLabel(backup_section, text=\"\ud83d\udcbe Backup & Restore\",
+                                  font=ctk.CTkFont(size=14, weight=\"bold\"))
+        backup_label.pack(pady=(10, 5))
+
+        backup_btn_frame = ctk.CTkFrame(backup_section, fg_color=\"transparent\")
+        backup_btn_frame.pack(fill=\"x\", padx=10, pady=10)
+
+        backup_btn = ctk.CTkButton(backup_btn_frame, text=\"\ud83d\udcbe Create Backup\",
+                                 command=self.backup_themes)
+        backup_btn.pack(side=\"left\", padx=5)
+
+        restore_btn = ctk.CTkButton(backup_btn_frame, text=\"\ud83d\udd04 Restore Backup\",
+                                  command=self.restore_themes)
+        restore_btn.pack(side=\"right\", padx=5)
 
     def setup_quality_tab(self):
         """Setup the quality analysis tab."""

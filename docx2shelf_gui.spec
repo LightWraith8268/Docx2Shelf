@@ -139,13 +139,13 @@ if sys.platform == "darwin":
         name="Docx2Shelf.app",
         icon=None,  # Disable icon until we have proper icon files
         bundle_identifier="com.docx2shelf.app",
-        version="1.8.9",
+        version="1.9.0",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '1.8.9',
-            'CFBundleShortVersionString': '1.8.9',
+            'CFBundleVersion': '1.9.0',
+            'CFBundleShortVersionString': '1.9.0',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',
