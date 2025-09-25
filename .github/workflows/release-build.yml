@@ -28,7 +28,7 @@ jobs:
         $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=Docx2Shelf Contributors, O=Docx2Shelf, C=US" -KeyAlgorithm RSA -KeyLength 2048 -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" -KeyExportPolicy Exportable -KeyUsage DigitalSignature -CertStoreLocation Cert:\CurrentUser\My
 
         # Export certificate to PFX file (without password for simplicity)
-        $certPwd = ConvertTo-SecureString -String "" -Force -AsPlainText
+        $certPwd = ConvertTo-SecureString -String "TempPassword123!" -Force -AsPlainText
         $cert | Export-PfxCertificate -FilePath "codesign.pfx" -Password $certPwd
 
         echo "Certificate created and exported"
@@ -48,7 +48,7 @@ jobs:
 
         if (Test-Path $signtool) {
           Write-Host "Found signtool at: $signtool"
-          & $signtool sign /f codesign.pfx /p "" /fd SHA256 /t http://timestamp.digicert.com /v "dist\Docx2Shelf\Docx2Shelf.exe"
+          & $signtool sign /f codesign.pfx /p "TempPassword123!" /fd SHA256 /t http://timestamp.digicert.com /v "dist\Docx2Shelf\Docx2Shelf.exe"
           Write-Host "Executable signed successfully"
         } else {
           Write-Host "SignTool not found, skipping code signing"
