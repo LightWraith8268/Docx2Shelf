@@ -21,9 +21,17 @@ jobs:
     - name: Build Windows executable  
       run: pyinstaller docx2shelf_gui.spec --clean --noconfirm
       
-    - name: Upload to release
+    - name: Upload artifacts temporarily
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-executable
+        path: dist/Docx2Shelf/
+
+    - name: Upload to existing release
       uses: softprops/action-gh-release@v1
       with:
         files: dist/Docx2Shelf/*
+        append_body: false
+        make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
