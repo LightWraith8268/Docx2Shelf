@@ -1,0 +1,426 @@
+name: Release Build
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            executable: Docx2Shelf.exe
+            artifact: docx2shelf-windows
+          - os: macos-latest
+            platform: macos
+            executable: Docx2Shelf.app
+            artifact: docx2shelf-macos
+          - os: ubuntu-latest
+            platform: linux
+            executable: Docx2Shelf
+            artifact: docx2shelf-linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        architecture: 'x64'
+
+    - name: Install system dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-tk \
+          python3-pil.imagetk
+
+    - name: Install system dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install python-tk
+        pip install macholib Pillow
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pyinstaller>=6.0
+        pip install pillow
+
+    - name: Create assets directory
+      shell: bash
+      run: |
+        mkdir -p src/docx2shelf/gui/assets
+
+    - name: Create placeholder icons
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          echo "Windows icon placeholder" > src/docx2shelf/gui/assets/icon.ico
+        elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+          echo "macOS icon placeholder" > src/docx2shelf/gui/assets/icon.icns
+        else
+          echo "Linux icon placeholder" > src/docx2shelf/gui/assets/icon.png
+        fi
+
+    - name: Build GUI executable with PyInstaller
+      run: |
+        pyinstaller docx2shelf_gui.spec --clean --noconfirm --log-level=DEBUG
+
+    # Windows-specific code signing (only for Windows)
+    - name: Create self-signed certificate for code signing (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: powershell
+      run: |
+        # Create a self-signed certificate for code signing
+        $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=Docx2Shelf Contributors, O=Docx2Shelf, C=US" -KeyAlgorithm RSA -KeyLength 2048 -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" -KeyExportPolicy Exportable -KeyUsage DigitalSignature -CertStoreLocation Cert:\CurrentUser\My
+
+        # Export certificate to PFX file
+        $certPwd = ConvertTo-SecureString -String "TempPassword123!" -Force -AsPlainText
+        $cert | Export-PfxCertificate -FilePath "codesign.pfx" -Password $certPwd
+
+        echo "Certificate created and exported"
+
+    - name: Sign Windows executable
+      if: matrix.os == 'windows-latest'
+      shell: powershell
+      run: |
+        # Sign the main executable
+        $signtool = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+        if (-not (Test-Path $signtool)) {
+          $signtool = "${env:ProgramFiles}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+        }
+        if (-not (Test-Path $signtool)) {
+          # Try to find signtool in any available SDK version
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+        }
+
+        if (Test-Path $signtool) {
+          Write-Host "Found signtool at: $signtool"
+          & $signtool sign /f codesign.pfx /p "TempPassword123!" /fd SHA256 /t http://timestamp.digicert.com /v "dist\Docx2Shelf\Docx2Shelf.exe"
+          Write-Host "Executable signed successfully"
+        } else {
+          Write-Host "SignTool not found, skipping code signing"
+        }
+
+    - name: Create portable archive (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        7z a docx2shelf-windows-portable.zip ./dist/Docx2Shelf/*
+
+    - name: Create portable archive (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        cd dist
+        zip -r docx2shelf-macos-portable.zip Docx2Shelf.app
+
+    - name: Create portable archive (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        cd dist
+        tar -czf docx2shelf-linux-portable.tar.gz Docx2Shelf/
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact }}
+        path: |
+          dist/
+          *.zip
+          *.tar.gz
+
+  create-installers:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            installer-type: nsis
+            artifact-name: docx2shelf-windows
+          - os: macos-latest
+            installer-type: dmg
+            artifact-name: docx2shelf-macos
+          - os: ubuntu-latest
+            installer-type: appimage
+            artifact-name: docx2shelf-linux
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ matrix.artifact-name }}
+
+    - name: Create Windows installer (NSIS)
+      if: matrix.installer-type == 'nsis'
+      run: |
+        echo "Starting Windows installer creation..."
+        choco install nsis -y
+
+        # Extract version from tag
+        $version = $env:GITHUB_REF_NAME -replace '^v', ''
+        echo "Building installer for version: $version"
+
+        # Create NSIS script
+        $nsis_script = @"
+        !define APP_NAME "Docx2Shelf"
+        !define APP_VERSION "$version"
+        !define APP_DESCRIPTION "Document to EPUB Converter"
+
+        Name "`${APP_NAME}"
+        OutFile "Docx2Shelf-Setup.exe"
+        InstallDir "`$PROGRAMFILES64\Docx2Shelf"
+        RequestExecutionLevel admin
+
+        !include "MUI2.nsh"
+
+        !insertmacro MUI_PAGE_WELCOME
+        !insertmacro MUI_PAGE_COMPONENTS
+        !insertmacro MUI_PAGE_DIRECTORY
+        !insertmacro MUI_PAGE_INSTFILES
+
+        !define MUI_FINISHPAGE_RUN "`$INSTDIR\Docx2Shelf.exe"
+        !define MUI_FINISHPAGE_RUN_TEXT "Launch Docx2Shelf now"
+        !insertmacro MUI_PAGE_FINISH
+
+        !insertmacro MUI_UNPAGE_WELCOME
+        !insertmacro MUI_UNPAGE_CONFIRM
+        !insertmacro MUI_UNPAGE_INSTFILES
+        !insertmacro MUI_UNPAGE_FINISH
+
+        !insertmacro MUI_LANGUAGE "English"
+
+        ComponentText "Choose which features you want to install:"
+
+        Section "!Docx2Shelf Application" SecMain
+            SectionIn RO
+            SetOutPath "`$INSTDIR"
+            File /r "dist\Docx2Shelf\*"
+
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "`${APP_VERSION}"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "Docx2Shelf Contributors"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "UninstallString" "`$INSTDIR\uninstall.exe"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation" "`$INSTDIR"
+            WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
+            WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
+
+            WriteUninstaller "`$INSTDIR\uninstall.exe"
+        SectionEnd
+
+        Section "Desktop Shortcut" SecDesktop
+            CreateShortcut "`$DESKTOP\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe" "" "`$INSTDIR\Docx2Shelf.exe" 0 SW_SHOWNORMAL "" "Launch Docx2Shelf - Document to EPUB Converter"
+        SectionEnd
+
+        Section "Start Menu Shortcuts" SecStartMenu
+            CreateDirectory "`$SMPROGRAMS\Docx2Shelf"
+            CreateShortcut "`$SMPROGRAMS\Docx2Shelf\Docx2Shelf.lnk" "`$INSTDIR\Docx2Shelf.exe" "" "`$INSTDIR\Docx2Shelf.exe" 0 SW_SHOWNORMAL "" "Launch Docx2Shelf"
+            CreateShortcut "`$SMPROGRAMS\Docx2Shelf\Uninstall Docx2Shelf.lnk" "`$INSTDIR\uninstall.exe" "" "`$INSTDIR\uninstall.exe" 0 SW_SHOWNORMAL "" "Uninstall Docx2Shelf"
+        SectionEnd
+
+        !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+            !insertmacro MUI_DESCRIPTION_TEXT `${SecMain} "Core Docx2Shelf application files (required)"
+            !insertmacro MUI_DESCRIPTION_TEXT `${SecDesktop} "Create a desktop shortcut for easy access"
+            !insertmacro MUI_DESCRIPTION_TEXT `${SecStartMenu} "Add Docx2Shelf to the Start Menu"
+        !insertmacro MUI_FUNCTION_DESCRIPTION_END
+
+        Function .onInit
+            SectionSetFlags `${SecStartMenu} `${SF_SELECTED}
+        FunctionEnd
+
+        Section "Uninstall"
+            Delete "`$DESKTOP\Docx2Shelf.lnk"
+            Delete "`$SMPROGRAMS\Docx2Shelf\Docx2Shelf.lnk"
+            Delete "`$SMPROGRAMS\Docx2Shelf\Uninstall Docx2Shelf.lnk"
+            RMDir "`$SMPROGRAMS\Docx2Shelf"
+
+            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
+
+            MessageBox MB_YESNO "Remove application files and settings?" IDNO SkipFiles
+                RMDir /r "`$INSTDIR"
+                MessageBox MB_YESNO "Also remove user settings?" IDNO SkipSettings
+                    RMDir /r "`$APPDATA\Docx2Shelf"
+                    RMDir /r "`$LOCALAPPDATA\Docx2Shelf"
+                SkipSettings:
+            SkipFiles:
+
+            MessageBox MB_OK "Docx2Shelf uninstalled successfully."
+        SectionEnd
+        "@
+        $nsis_script | Out-File -FilePath "installer.nsi" -Encoding ASCII
+
+        # Find and run makensis
+        $env:PATH += ";C:\ProgramData\chocolatey\lib\nsis\tools;C:\Program Files (x86)\NSIS"
+
+        $makensis_paths = @(
+            "C:\Program Files (x86)\NSIS\makensis.exe",
+            "C:\ProgramData\chocolatey\lib\nsis\tools\makensis.exe",
+            "makensis.exe"
+        )
+
+        $makensis_found = $false
+        foreach ($path in $makensis_paths) {
+            if (Test-Path $path -ErrorAction SilentlyContinue) {
+                echo "Found makensis at: $path"
+                & $path installer.nsi
+                $makensis_found = $true
+                break
+            }
+        }
+
+        if (-not $makensis_found) {
+            echo "ERROR: makensis.exe not found"
+            exit 1
+        }
+
+    - name: Create macOS DMG
+      if: matrix.installer-type == 'dmg'
+      run: |
+        echo "Starting macOS DMG creation..."
+        brew install create-dmg
+
+        mkdir -p dmg-staging
+        cp -R dist/Docx2Shelf.app dmg-staging/
+
+        create-dmg \
+          --volname "Docx2Shelf Installer" \
+          --window-pos 200 120 \
+          --window-size 600 400 \
+          --icon-size 100 \
+          --icon "Docx2Shelf.app" 175 120 \
+          --hide-extension "Docx2Shelf.app" \
+          --app-drop-link 425 120 \
+          "Docx2Shelf-Installer.dmg" \
+          "dmg-staging/"
+
+    - name: Create Linux AppImage
+      if: matrix.installer-type == 'appimage'
+      run: |
+        echo "Starting Linux AppImage creation..."
+
+        sudo apt-get update
+        sudo apt-get install -y fuse libfuse2
+
+        wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+        chmod +x appimagetool-x86_64.AppImage
+
+        mkdir -p Docx2Shelf.AppDir/usr/bin
+        mkdir -p Docx2Shelf.AppDir/usr/share/applications
+        mkdir -p Docx2Shelf.AppDir/usr/share/icons/hicolor/256x256/apps
+
+        cp -r dist/Docx2Shelf/* Docx2Shelf.AppDir/usr/bin/
+
+        cat > Docx2Shelf.AppDir/docx2shelf.desktop << EOF
+        [Desktop Entry]
+        Type=Application
+        Name=Docx2Shelf
+        Comment=Document to EPUB Converter
+        Exec=Docx2Shelf
+        Icon=docx2shelf
+        Categories=Office;Publishing;
+        EOF
+
+        cp Docx2Shelf.AppDir/docx2shelf.desktop Docx2Shelf.AppDir/usr/share/applications/
+        cp src/docx2shelf/gui/assets/icon.png Docx2Shelf.AppDir/docx2shelf.png
+        cp src/docx2shelf/gui/assets/icon.png Docx2Shelf.AppDir/usr/share/icons/hicolor/256x256/apps/docx2shelf.png
+
+        cat > Docx2Shelf.AppDir/AppRun << 'EOF'
+        #!/bin/bash
+        HERE="$(dirname "$(readlink -f "${0}")")"
+        exec "${HERE}/usr/bin/Docx2Shelf" "$@"
+        EOF
+        chmod +x Docx2Shelf.AppDir/AppRun
+
+        ./appimagetool-x86_64.AppImage Docx2Shelf.AppDir Docx2Shelf-x86_64.AppImage
+
+    - name: Upload installer artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: installers-${{ matrix.installer-type }}
+        path: |
+          *.exe
+          *.dmg
+          *.AppImage
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, create-installers]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+
+    - name: Organize release files
+      run: |
+        mkdir -p release-assets
+
+        # Copy installers
+        find . -name "Docx2Shelf-Setup.exe" -exec cp {} release-assets/ \;
+        find . -name "Docx2Shelf-Installer.dmg" -exec cp {} release-assets/ \;
+        find . -name "Docx2Shelf-x86_64.AppImage" -exec cp {} release-assets/ \;
+
+        # Copy portable versions
+        find . -name "docx2shelf-*-portable.*" -exec cp {} release-assets/ \;
+
+        cd release-assets
+        VERSION=${GITHUB_REF#refs/tags/v}
+
+        # Rename with version tag
+        if [ -f "Docx2Shelf-Setup.exe" ]; then
+          mv "Docx2Shelf-Setup.exe" "Docx2Shelf-${VERSION}-Windows-Installer.exe"
+        fi
+
+        if [ -f "Docx2Shelf-Installer.dmg" ]; then
+          mv "Docx2Shelf-Installer.dmg" "Docx2Shelf-${VERSION}-macOS-Installer.dmg"
+        fi
+
+        if [ -f "Docx2Shelf-x86_64.AppImage" ]; then
+          mv "Docx2Shelf-x86_64.AppImage" "Docx2Shelf-${VERSION}-Linux-x86_64.AppImage"
+        fi
+
+        # Rename portable files
+        for file in docx2shelf-*-portable.*; do
+          if [ -f "$file" ]; then
+            new_name=$(echo "$file" | sed "s/docx2shelf-/Docx2Shelf-${VERSION}-/")
+            mv "$file" "$new_name"
+          fi
+        done
+
+        ls -la
+
+    - name: Generate checksums
+      run: |
+        cd release-assets
+        sha256sum * > SHA256SUMS.txt
+        md5sum * > MD5SUMS.txt
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          release-assets/*
+        body: |
+          ## Changes
+
+          See [CHANGELOG.md](https://github.com/LightWraith8268/Docx2Shelf/blob/main/CHANGELOG.md) for detailed changes.
+        draft: false
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+        generate_release_notes: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
