@@ -6,7 +6,10 @@
       "Bash(\"docx2shelf-macos/dist/docx2shelf-macos-portable.zip\" )",
       "Bash(\"installers-nsis/Docx2Shelf-Setup.exe\" )",
       "Bash(\"installers-dmg/Docx2Shelf-Installer.dmg\" )",
-      "Bash(\"installers-appimage/Docx2Shelf-x86_64.AppImage\" )"
+      "Bash(\"installers-appimage/Docx2Shelf-x86_64.AppImage\" )",
+      "Bash(gh workflow run:*)",
+      "Bash(gh release download:*)",
+      "Bash(gh run logs:*)"
     ],
     "deny": [],
     "ask": []
