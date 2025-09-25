@@ -74,6 +74,8 @@ jobs:
 
     - name: Build GUI executable with PyInstaller
       run: |
+        # Clean dist directory to prevent macOS symlink conflicts
+        rm -rf dist build
         pyinstaller docx2shelf_gui.spec --clean --noconfirm --log-level=DEBUG
 
     # Windows-specific code signing (only for Windows)

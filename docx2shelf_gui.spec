@@ -184,8 +184,8 @@ if sys.platform == "win32":
 #
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2, 0, 1, 0),
-    prodvers=(2, 0, 1, 0),
+    filevers=(2, 0, 2, 0),
+    prodvers=(2, 0, 2, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -200,12 +200,12 @@ VSVersionInfo(
         u'040904B0',
         [StringStruct(u'CompanyName', u'Docx2Shelf Contributors'),
         StringStruct(u'FileDescription', u'Docx2Shelf - Document to EPUB Converter'),
-        StringStruct(u'FileVersion', u'2.0.1.0'),
+        StringStruct(u'FileVersion', u'2.0.2.0'),
         StringStruct(u'InternalName', u'Docx2Shelf'),
         StringStruct(u'LegalCopyright', u'MIT License'),
         StringStruct(u'OriginalFilename', u'Docx2Shelf.exe'),
         StringStruct(u'ProductName', u'Docx2Shelf'),
-        StringStruct(u'ProductVersion', u'2.0.1')])
+        StringStruct(u'ProductVersion', u'2.0.2')])
       ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]
@@ -259,13 +259,13 @@ if sys.platform == "darwin":
         name="Docx2Shelf.app",
         icon=None,  # Disable icon until we have proper icon files
         bundle_identifier="com.docx2shelf.app",
-        version="2.0.1",
+        version="2.0.2",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '2.0.1',
-            'CFBundleShortVersionString': '2.0.1',
+            'CFBundleVersion': '2.0.2',
+            'CFBundleShortVersionString': '2.0.2',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',
