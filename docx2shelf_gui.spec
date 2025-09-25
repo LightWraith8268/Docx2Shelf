@@ -11,7 +11,14 @@ source_dir = Path(".") / "src"
 a = Analysis(
     ['src/docx2shelf/gui_main.py'],
     pathex=[str(source_dir), str(Path(".").absolute()), str(Path("src").absolute())],
-    binaries=[],
+    binaries=[
+        # Explicitly include Python DLL to fix "Failed to load Python DLL" error
+        # Try multiple possible Python DLL locations
+    ] + [(dll_path, '.') for dll_path in [
+        sys.executable.replace('python.exe', 'python311.dll'),
+        os.path.join(os.path.dirname(sys.executable), 'python311.dll'),
+        os.path.join(os.path.dirname(sys.executable), 'python3.dll'),
+    ] if os.path.exists(dll_path)],
     datas=[
         # Include all data files needed by the application
         ('src/docx2shelf', 'docx2shelf'),  # Include entire docx2shelf package with proper structure
@@ -75,7 +82,7 @@ a = Analysis(
         'docx2shelf.error_handler',
         'docx2shelf.path_utils',
 
-        # Python standard library modules
+        # Python standard library modules - comprehensive list to prevent DLL issues
         'zipfile',
         'tempfile',
         'json',
@@ -105,6 +112,17 @@ a = Analysis(
         'time',
         'math',
         'random',
+
+        # Additional Python runtime modules to prevent DLL loading issues
+        'encodings',
+        'encodings.utf_8',
+        'encodings.cp1252',
+        'locale',
+        'codecs',
+        '_codecs',
+        '_locale',
+        '_thread',
+        'signal',
     ],
     hookspath=[],
     hooksconfig={},
@@ -166,8 +184,8 @@ if sys.platform == "win32":
 #
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 9, 9, 0),
-    prodvers=(1, 9, 9, 0),
+    filevers=(2, 0, 0, 0),
+    prodvers=(2, 0, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -182,12 +200,12 @@ VSVersionInfo(
         u'040904B0',
         [StringStruct(u'CompanyName', u'Docx2Shelf Contributors'),
         StringStruct(u'FileDescription', u'Docx2Shelf - Document to EPUB Converter'),
-        StringStruct(u'FileVersion', u'1.9.9.0'),
+        StringStruct(u'FileVersion', u'2.0.0.0'),
         StringStruct(u'InternalName', u'Docx2Shelf'),
         StringStruct(u'LegalCopyright', u'MIT License'),
         StringStruct(u'OriginalFilename', u'Docx2Shelf.exe'),
         StringStruct(u'ProductName', u'Docx2Shelf'),
-        StringStruct(u'ProductVersion', u'1.9.9')])
+        StringStruct(u'ProductVersion', u'2.0.0')])
       ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]
@@ -241,13 +259,13 @@ if sys.platform == "darwin":
         name="Docx2Shelf.app",
         icon=None,  # Disable icon until we have proper icon files
         bundle_identifier="com.docx2shelf.app",
-        version="1.9.9",
+        version="2.0.0",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '1.9.9',
-            'CFBundleShortVersionString': '1.9.9',
+            'CFBundleVersion': '2.0.0',
+            'CFBundleShortVersionString': '2.0.0',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',

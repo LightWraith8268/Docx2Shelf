@@ -162,10 +162,14 @@ jobs:
         # Install NSIS
         choco install nsis -y
 
-        # Create NSIS script (using single quote to avoid PowerShell variable expansion)
-        $nsis_script = @'
+        # Extract version from tag
+        $version = $env:GITHUB_REF_NAME -replace '^v', ''
+        echo "Building installer for version: $version"
+
+        # Create NSIS script
+        $nsis_script = @"
         !define APP_NAME "Docx2Shelf"
-        !define APP_VERSION "1.9.2"
+        !define APP_VERSION "$version"
         !define APP_DESCRIPTION "Document to EPUB Converter"
 
         Name "${APP_NAME}"
@@ -283,8 +287,7 @@ jobs:
             # Final cleanup message
             MessageBox MB_OK "Docx2Shelf uninstalled successfully."
         SectionEnd
-        '@
-
+        "@
         $nsis_script | Out-File -FilePath "installer.nsi" -Encoding ASCII
 
         # Add chocolatey tools to PATH and run makensis
@@ -684,7 +687,6 @@ See [CHANGELOG.md](https://github.com/LightWraith8268/Docx2Shelf/blob/main/CHANG
         prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
         generate_release_notes: false
         discussion_category_name: Releases
-        make_latest: true
         fail_on_unmatched_files: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

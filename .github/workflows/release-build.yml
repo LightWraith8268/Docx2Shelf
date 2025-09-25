@@ -67,7 +67,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: dist/Docx2Shelf/*
+        body: "Windows build with code signing for enhanced security."
         append_body: false
-        make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
