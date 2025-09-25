@@ -1,0 +1,29 @@
+name: Release Build
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pyinstaller>=6.0
+        
+    - name: Build Windows executable  
+      run: pyinstaller docx2shelf_gui.spec --clean --noconfirm
+      
+    - name: Upload to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/Docx2Shelf/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
