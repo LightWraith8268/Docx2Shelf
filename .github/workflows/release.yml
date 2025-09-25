@@ -95,28 +95,29 @@ jobs:
             shutil.rmtree('dist', ignore_errors=True)
         "
 
-    - name: Build GUI executable with PyInstaller
+    - name: Build GUI executable with PyInstaller (macOS)
+      if: matrix.os == 'macos-latest'
       run: |
-        # Use different approach for macOS to avoid symlink conflicts
-        if [ "${{ matrix.os }}" = "macos-latest" ]; then
-          # Clean PyInstaller cache completely on macOS
-          rm -rf ~/.pyinstaller_cache 2>/dev/null || true
-          rm -rf /tmp/_MEI* 2>/dev/null || true
-          rm -rf dist build *.spec~ 2>/dev/null || true
-          # Use onefile for macOS to avoid _internal directory symlink issues
-          pyinstaller --onefile src/docx2shelf/gui_main.py --name=Docx2Shelf --clean --noconfirm --log-level=DEBUG \
-            --add-data="src/docx2shelf:docx2shelf" \
-            --hidden-import=customtkinter \
-            --hidden-import=tkinter \
-            --hidden-import=PIL \
-            --hidden-import=ebooklib \
-            --hidden-import=bs4 \
-            --hidden-import=platformdirs \
-            --hidden-import=darkdetect \
-            --hidden-import=packaging
-        else
-          pyinstaller docx2shelf_gui.spec --clean --noconfirm --log-level=DEBUG
-        fi
+        # Clean PyInstaller cache completely on macOS
+        rm -rf ~/.pyinstaller_cache 2>/dev/null || true
+        rm -rf /tmp/_MEI* 2>/dev/null || true
+        rm -rf dist build *.spec~ 2>/dev/null || true
+        # Use onefile for macOS to avoid _internal directory symlink issues
+        pyinstaller --onefile src/docx2shelf/gui_main.py --name=Docx2Shelf --clean --noconfirm --log-level=DEBUG \
+          --add-data="src/docx2shelf:docx2shelf" \
+          --hidden-import=customtkinter \
+          --hidden-import=tkinter \
+          --hidden-import=PIL \
+          --hidden-import=ebooklib \
+          --hidden-import=bs4 \
+          --hidden-import=platformdirs \
+          --hidden-import=darkdetect \
+          --hidden-import=packaging
+
+    - name: Build GUI executable with PyInstaller (Windows/Linux)
+      if: matrix.os != 'macos-latest'
+      run: |
+        pyinstaller docx2shelf_gui.spec --clean --noconfirm --log-level=DEBUG
 
     # Windows-specific code signing (only for Windows)
     - name: Create self-signed certificate for code signing (Windows)
