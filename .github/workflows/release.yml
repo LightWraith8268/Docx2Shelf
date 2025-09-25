@@ -74,11 +74,49 @@ jobs:
 
     - name: Clean directories before build
       run: |
-        python -c "import shutil, os; [shutil.rmtree(d, ignore_errors=True) for d in ['dist', 'build']]"
+        python -c "
+        import shutil, os, glob
+        # Remove dist and build directories
+        for d in ['dist', 'build']:
+            if os.path.exists(d):
+                shutil.rmtree(d, ignore_errors=True)
+        # Clean PyInstaller cache and temp files
+        for pattern in ['*.spec~', '__pycache__', '*.pyc', '.DS_Store']:
+            for f in glob.glob(pattern, recursive=True):
+                try:
+                    if os.path.isfile(f):
+                        os.remove(f)
+                    elif os.path.isdir(f):
+                        shutil.rmtree(f, ignore_errors=True)
+                except:
+                    pass
+        # Force remove any existing symlinks on macOS
+        if os.path.exists('dist'):
+            shutil.rmtree('dist', ignore_errors=True)
+        "
 
     - name: Build GUI executable with PyInstaller
       run: |
-        pyinstaller docx2shelf_gui.spec --clean --noconfirm --log-level=DEBUG
+        # Use different approach for macOS to avoid symlink conflicts
+        if [ "${{ matrix.os }}" = "macos-latest" ]; then
+          # Clean PyInstaller cache completely on macOS
+          rm -rf ~/.pyinstaller_cache 2>/dev/null || true
+          rm -rf /tmp/_MEI* 2>/dev/null || true
+          rm -rf dist build *.spec~ 2>/dev/null || true
+          # Use onefile for macOS to avoid _internal directory symlink issues
+          pyinstaller --onefile src/docx2shelf/gui_main.py --name=Docx2Shelf --clean --noconfirm --log-level=DEBUG \
+            --add-data="src/docx2shelf:docx2shelf" \
+            --hidden-import=customtkinter \
+            --hidden-import=tkinter \
+            --hidden-import=PIL \
+            --hidden-import=ebooklib \
+            --hidden-import=bs4 \
+            --hidden-import=platformdirs \
+            --hidden-import=darkdetect \
+            --hidden-import=packaging
+        else
+          pyinstaller docx2shelf_gui.spec --clean --noconfirm --log-level=DEBUG
+        fi
 
     # Windows-specific code signing (only for Windows)
     - name: Create self-signed certificate for code signing (Windows)
@@ -124,7 +162,14 @@ jobs:
     - name: Create portable archive (macOS)
       if: matrix.os == 'macos-latest'
       run: |
+        # For onefile build, the executable is in dist/
         cd dist
+        if [ -f "Docx2Shelf" ]; then
+          # Single file executable
+          mkdir -p Docx2Shelf.app/Contents/MacOS
+          cp Docx2Shelf Docx2Shelf.app/Contents/MacOS/
+          chmod +x Docx2Shelf.app/Contents/MacOS/Docx2Shelf
+        fi
         zip -r docx2shelf-macos-portable.zip Docx2Shelf.app
 
     - name: Create portable archive (Linux)
