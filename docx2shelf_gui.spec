@@ -135,12 +135,19 @@ a = Analysis(
         'jupyter',
         'IPython',
         'notebook',
-        # Additional excludes to reduce suspicious imports
+        # Exclude suspicious system access modules to reduce false positives
         'win32api',
         'win32con',
         'win32gui',
         'win32process',
+        'win32service',
+        'win32security',
+        'win32net',
+        'win32file',
         'ctypes.wintypes',
+        'ctypes.windll',
+        'msvcrt',
+        # Exclude development/debugging tools
         'distutils',
         'setuptools',
         'pkg_resources',
@@ -151,6 +158,28 @@ a = Analysis(
         'profile',
         'pstats',
         'cProfile',
+        'py_compile',
+        'compileall',
+        # Exclude network/remote modules that trigger security scanners
+        'urllib3',
+        'http.server',
+        'xmlrpc',
+        'ftplib',
+        'telnetlib',
+        'smtplib',
+        'poplib',
+        'imaplib',
+        'nntplib',
+        # Exclude cryptography modules that trigger scanners (keep hashlib - needed)
+        'cryptography',
+        'Crypto',
+        'hmac',
+        # Exclude multiprocessing modules that trigger scanners
+        'multiprocessing',
+        'concurrent',
+        # Exclude advanced file system modules
+        'filecmp',
+        'statvfs',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -184,8 +213,8 @@ if sys.platform == "win32":
 #
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2, 0, 5, 0),
-    prodvers=(2, 0, 5, 0),
+    filevers=(2, 0, 6, 0),
+    prodvers=(2, 0, 6, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -198,14 +227,16 @@ VSVersionInfo(
       [
       StringTable(
         u'040904B0',
-        [StringStruct(u'CompanyName', u'Docx2Shelf Contributors'),
-        StringStruct(u'FileDescription', u'Docx2Shelf - Document to EPUB Converter'),
-        StringStruct(u'FileVersion', u'2.0.5.0'),
+        [StringStruct(u'CompanyName', u'Docx2Shelf Open Source Project'),
+        StringStruct(u'FileDescription', u'Docx2Shelf - Document to EPUB Converter Application'),
+        StringStruct(u'FileVersion', u'2.0.6.0'),
         StringStruct(u'InternalName', u'Docx2Shelf'),
-        StringStruct(u'LegalCopyright', u'MIT License'),
+        StringStruct(u'LegalCopyright', u'Copyright (c) 2024 Docx2Shelf Contributors. Licensed under MIT License.'),
+        StringStruct(u'LegalTrademarks', u'Docx2Shelf is an open source document converter'),
         StringStruct(u'OriginalFilename', u'Docx2Shelf.exe'),
-        StringStruct(u'ProductName', u'Docx2Shelf'),
-        StringStruct(u'ProductVersion', u'2.0.5')])
+        StringStruct(u'ProductName', u'Docx2Shelf Document Converter'),
+        StringStruct(u'ProductVersion', u'2.0.6'),
+        StringStruct(u'Comments', u'Open source DOCX to EPUB converter. Visit: https://github.com/LightWraith8268/Docx2Shelf')])
       ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]
@@ -269,13 +300,13 @@ if sys.platform == "darwin":
         name="Docx2Shelf.app",
         icon=None,  # Disable icon until we have proper icon files
         bundle_identifier="com.docx2shelf.app",
-        version="2.0.5",
+        version="2.0.6",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '2.0.5',
-            'CFBundleShortVersionString': '2.0.5',
+            'CFBundleVersion': '2.0.6',
+            'CFBundleShortVersionString': '2.0.6',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',
