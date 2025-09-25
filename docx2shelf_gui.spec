@@ -117,6 +117,22 @@ a = Analysis(
         'jupyter',
         'IPython',
         'notebook',
+        # Additional excludes to reduce suspicious imports
+        'win32api',
+        'win32con',
+        'win32gui',
+        'win32process',
+        'ctypes.wintypes',
+        'distutils',
+        'setuptools',
+        'pkg_resources',
+        'test',
+        'tests',
+        'unittest',
+        'pdb',
+        'profile',
+        'pstats',
+        'cProfile',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -150,8 +166,8 @@ if sys.platform == "win32":
 #
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 9, 5, 0),
-    prodvers=(1, 9, 5, 0),
+    filevers=(1, 9, 6, 0),
+    prodvers=(1, 9, 6, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -166,12 +182,12 @@ VSVersionInfo(
         u'040904B0',
         [StringStruct(u'CompanyName', u'Docx2Shelf Contributors'),
         StringStruct(u'FileDescription', u'Docx2Shelf - Document to EPUB Converter'),
-        StringStruct(u'FileVersion', u'1.9.5.0'),
+        StringStruct(u'FileVersion', u'1.9.6.0'),
         StringStruct(u'InternalName', u'Docx2Shelf'),
         StringStruct(u'LegalCopyright', u'MIT License'),
         StringStruct(u'OriginalFilename', u'Docx2Shelf.exe'),
         StringStruct(u'ProductName', u'Docx2Shelf'),
-        StringStruct(u'ProductVersion', u'1.9.5')])
+        StringStruct(u'ProductVersion', u'1.9.6')])
       ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]
@@ -201,6 +217,12 @@ exe = EXE(
     entitlements_file=None,
     icon=None,  # Disable icon until we have proper icon files
     version=version_info,  # Add version metadata for Windows
+    # Additional anti-virus friendly options
+    bootloader_ignore_signals=False,
+    strip=False,  # Don't strip symbols - helps with false positives
+    manifest="docx2shelf.manifest",  # Use custom manifest for legitimacy
+    uac_admin=False,  # Don't request admin privileges
+    uac_uiaccess=False  # Don't request UI access
 )
 
 # Create distribution
@@ -222,13 +244,13 @@ if sys.platform == "darwin":
         name="Docx2Shelf.app",
         icon=None,  # Disable icon until we have proper icon files
         bundle_identifier="com.docx2shelf.app",
-        version="1.9.5",
+        version="1.9.6",
         info_plist={
             'CFBundleName': 'Docx2Shelf',
             'CFBundleDisplayName': 'Docx2Shelf',
             'CFBundleIdentifier': 'com.docx2shelf.app',
-            'CFBundleVersion': '1.9.5',
-            'CFBundleShortVersionString': '1.9.5',
+            'CFBundleVersion': '1.9.6',
+            'CFBundleShortVersionString': '1.9.6',
             'CFBundleExecutable': 'Docx2Shelf',
             'CFBundlePackageType': 'APPL',
             'CFBundleSignature': 'D2S!',

@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.9.6] - 2025-01-24
+### Security - Enhanced Anti-Malware Mitigations
+
+#### Added
+- **Custom Windows manifest**: Added legitimate application manifest to reduce false positives
+- **Enhanced version metadata**: Comprehensive version info and application descriptions
+- **Additional import excludes**: Removed suspicious modules that trigger antivirus detection
+- **Anti-virus friendly PyInstaller settings**: Optimized for minimal false positive triggers
+
+#### Technical Details
+- Added docx2shelf.manifest with proper Windows compatibility declarations
+- Excluded win32api, distutils, setuptools and other commonly flagged imports
+- Enhanced version info with company, description, and copyright metadata
+- Configured PyInstaller with strip=False and no UAC elevation requests
+- Added DPI awareness and Windows version compatibility declarations
+
 ## [1.9.5] - 2025-01-24
 ### Bug Fixes - Rebuilt Binaries with Syntax Fix
 
