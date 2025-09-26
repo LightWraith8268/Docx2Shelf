@@ -41,7 +41,7 @@ def build_with_nuitka():
 
         # Windows-specific options
         "--disable-console" if sys.platform == "win32" else "",
-        "--windows-icon=src/docx2shelf/gui/assets/icon.ico" if sys.platform == "win32" and Path("src/docx2shelf/gui/assets/icon.ico").exists() else "",
+        "--windows-icon-from-ico=src/docx2shelf/gui/assets/icon.ico" if sys.platform == "win32" and Path("src/docx2shelf/gui/assets/icon.ico").exists() else "",
 
         # Anti-malware optimizations
         "--assume-yes-for-downloads",
