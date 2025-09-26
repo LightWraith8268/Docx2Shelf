@@ -17,8 +17,11 @@ def main():
     try:
         # Add the source directory to path if running from development
         if hasattr(sys, '_MEIPASS'):
-            # Running as PyInstaller bundle
+            # Running as PyInstaller bundle (legacy support)
             base_path = Path(sys._MEIPASS)
+        elif getattr(sys, 'frozen', False):
+            # Running as Nuitka compiled executable
+            base_path = Path(sys.executable).parent
         else:
             # Running from source
             base_path = Path(__file__).parent
