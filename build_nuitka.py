@@ -45,8 +45,8 @@ def build_with_nuitka():
 
         # Anti-malware optimizations
         "--assume-yes-for-downloads",
-        "--warn-unusual-code=no",
-        "--warn-implicit-exceptions=no",
+        "--no-warn-unusual-code",
+        "--no-warn-implicit-exceptions",
 
         # Performance optimizations
         "--enable-plugin=tk-inter",
