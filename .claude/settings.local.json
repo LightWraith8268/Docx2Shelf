@@ -9,7 +9,17 @@
       "Bash(\"installers-appimage/Docx2Shelf-x86_64.AppImage\" )",
       "Bash(gh workflow run:*)",
       "Bash(gh release download:*)",
-      "Bash(gh run logs:*)"
+      "Bash(gh run logs:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(git tag:*)",
+      "Bash(gh run download:*)",
+      "Bash(gh release create:*)",
+      "Bash(gh release view:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
