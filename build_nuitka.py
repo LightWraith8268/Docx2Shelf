@@ -61,17 +61,17 @@ def build_with_nuitka():
     # Remove empty strings from command
     nuitka_cmd = [arg for arg in nuitka_cmd if arg]
 
-    print("🚀 Building with Nuitka for better antivirus compatibility...")
+    print("Building with Nuitka for better antivirus compatibility...")
     print(f"Command: {' '.join(nuitka_cmd)}")
 
     try:
         # Run Nuitka build
         result = subprocess.run(nuitka_cmd, check=True, capture_output=True, text=True)
-        print("✅ Nuitka build successful!")
+        print("Nuitka build successful!")
         print(result.stdout)
         return True
     except subprocess.CalledProcessError as e:
-        print("❌ Nuitka build failed!")
+        print("Nuitka build failed!")
         print(f"Error: {e}")
         print(f"Stdout: {e.stdout}")
         print(f"Stderr: {e.stderr}")
