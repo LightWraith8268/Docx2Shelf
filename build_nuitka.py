@@ -12,7 +12,7 @@ from pathlib import Path
 def build_with_nuitka():
     """Build Docx2Shelf using Nuitka for better antivirus compatibility."""
 
-    # Base Nuitka command
+    # Simplified Nuitka command - let Nuitka auto-discover dependencies
     nuitka_cmd = [
         sys.executable, "-m", "nuitka",
         "--standalone",  # Create standalone executable
@@ -25,37 +25,19 @@ def build_with_nuitka():
         "--output-filename=Docx2Shelf.exe" if sys.platform == "win32" else "--output-filename=Docx2Shelf",
         "--output-dir=dist",
 
-        # Include data files and modules
-        "--include-package=docx2shelf",
-        "--include-package=customtkinter",
-        "--include-package=tkinter",
-        "--include-package=PIL",
-        "--include-package=ebooklib",
-        "--include-package=bs4",
-        "--include-package=platformdirs",
-        "--include-package=darkdetect",
-        "--include-package=packaging",
+        # Follow imports automatically
+        "--follow-imports",
 
-        # Include data directories
-        "--include-data-dir=src/docx2shelf=docx2shelf",
+        # Essential plugins
+        "--enable-plugin=tk-inter",
 
         # Windows-specific options
         "--disable-console" if sys.platform == "win32" else "",
         "--windows-icon-from-ico=src/docx2shelf/gui/assets/icon.ico" if sys.platform == "win32" and Path("src/docx2shelf/gui/assets/icon.ico").exists() else "",
 
-        # Anti-malware optimizations
+        # Basic optimizations
         "--assume-yes-for-downloads",
-
-        # Performance optimizations
-        "--enable-plugin=tk-inter",
-        "--enable-plugin=multiprocessing" if sys.platform != "win32" else "",
-
-        # Version information for Windows
-        f"--windows-company-name=Docx2Shelf Open Source Project" if sys.platform == "win32" else "",
-        f"--windows-product-name=Docx2Shelf Document Converter" if sys.platform == "win32" else "",
-        f"--windows-file-version=2.0.9.0" if sys.platform == "win32" else "",
-        f"--windows-product-version=2.0.9" if sys.platform == "win32" else "",
-        f"--windows-file-description=Legitimate Document to EPUB Converter - Native Compilation" if sys.platform == "win32" else "",
+        "--jobs=1",  # Use single job to reduce memory usage
     ]
 
     # Remove empty strings from command
@@ -65,16 +47,34 @@ def build_with_nuitka():
     print(f"Command: {' '.join(nuitka_cmd)}")
 
     try:
-        # Run Nuitka build
-        result = subprocess.run(nuitka_cmd, check=True, capture_output=True, text=True)
-        print("Nuitka build successful!")
-        print(result.stdout)
-        return True
-    except subprocess.CalledProcessError as e:
-        print("Nuitka build failed!")
-        print(f"Error: {e}")
-        print(f"Stdout: {e.stdout}")
-        print(f"Stderr: {e.stderr}")
+        # Run Nuitka build with streaming output
+        process = subprocess.Popen(
+            nuitka_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+
+        # Stream output in real-time
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                print(output.strip())
+
+        rc = process.poll()
+        if rc == 0:
+            print("Nuitka build successful!")
+            return True
+        else:
+            print(f"Nuitka build failed with exit code {rc}")
+            return False
+
+    except Exception as e:
+        print(f"Nuitka build failed with exception: {e}")
         return False
 
 if __name__ == "__main__":
