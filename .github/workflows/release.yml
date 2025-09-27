@@ -260,6 +260,16 @@ jobs:
         Section "!Docx2Shelf Application" SecMain
             SectionIn RO
             SetOutPath "`$INSTDIR"
+
+            ; Set overwrite mode to always overwrite files (for upgrades)
+            SetOverwrite on
+
+            ; Stop any running instances before overwriting files
+            FindWindow `$R2 "" "Docx2Shelf"
+            StrCmp `$R2 0 +3
+                SendMessage `$R2 16 0 0  ; WM_CLOSE
+                Sleep 1000
+
             File "dist\gui_main.dist\Docx2Shelf.exe"
 
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf - Document Converter (LEGITIMATE SOFTWARE)"
@@ -275,6 +285,13 @@ jobs:
             WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
 
             WriteUninstaller "`$INSTDIR\uninstall.exe"
+
+            ; Restore user settings if this was an upgrade
+            IfFileExists "`$TEMP\Docx2ShelfBackup\*.*" 0 +4
+                CreateDirectory "`$APPDATA\Docx2Shelf"
+                CreateDirectory "`$LOCALAPPDATA\Docx2Shelf"
+                CopyFiles /SILENT "`$TEMP\Docx2ShelfBackup\*.*" "`$APPDATA\Docx2Shelf\"
+                RMDir /r "`$TEMP\Docx2ShelfBackup"
         SectionEnd
 
         Section "Desktop Shortcut" SecDesktop
@@ -294,6 +311,40 @@ jobs:
         !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
         Function .onInit
+            ; Check for existing installation
+            ReadRegStr `$R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation"
+            StrCmp `$R0 "" NewInstall
+
+            ; Found existing installation
+            MessageBox MB_YESNOCANCEL|MB_ICONQUESTION "Docx2Shelf is already installed in `$R0.`$\r`$\n`$\r`$\nDo you want to upgrade to version `${APP_VERSION}?`$\r`$\n`$\r`$\nYes = Upgrade (preserves settings)`$\r`$\nNo = Install to different location`$\r`$\nCancel = Exit installer" \
+                IDYES UpgradeInstall IDNO NewInstall
+            Abort
+
+            UpgradeInstall:
+                ; Check if application is running and close it
+                FindWindow `$R1 "" "Docx2Shelf"
+                StrCmp `$R1 0 NoRunning
+                MessageBox MB_YESNO|MB_ICONEXCLAMATION "Docx2Shelf is currently running.`$\r`$\n`$\r`$\nPlease close the application before continuing.`$\r`$\n`$\r`$\nDo you want the installer to close it for you?" IDNO CloseManually
+                    SendMessage `$R1 16 0 0  ; WM_CLOSE
+                    Sleep 2000
+                    FindWindow `$R1 "" "Docx2Shelf"
+                    StrCmp `$R1 0 NoRunning
+                    MessageBox MB_OK|MB_ICONSTOP "Unable to close Docx2Shelf automatically.`$\r`$\nPlease close it manually and restart the installer."
+                    Abort
+                CloseManually:
+                    MessageBox MB_OK|MB_ICONSTOP "Please close Docx2Shelf and restart the installer."
+                    Abort
+                NoRunning:
+
+                ; Use existing installation directory
+                StrCpy `$INSTDIR `$R0
+
+                ; Create backup of user settings before upgrade
+                CreateDirectory "`$TEMP\Docx2ShelfBackup"
+                CopyFiles /SILENT "`$APPDATA\Docx2Shelf\*.*" "`$TEMP\Docx2ShelfBackup\"
+                CopyFiles /SILENT "`$LOCALAPPDATA\Docx2Shelf\*.*" "`$TEMP\Docx2ShelfBackup\"
+
+            NewInstall:
             SectionSetFlags `${SecStartMenu} `${SF_SELECTED}
         FunctionEnd
 

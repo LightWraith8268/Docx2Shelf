@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.1.0] - 2025-09-27
+### Installer Experience - Enhanced Windows Installer with Upgrade Support
+
+#### Added
+- **Smart upgrade detection**: Automatically detects existing installations and offers upgrade option
+- **Running process handling**: Safely closes running application instances before upgrade
+- **Settings preservation**: Backs up and restores user settings during upgrades
+- **File overwrite management**: Properly handles file replacement during installations
+- **User-friendly upgrade prompts**: Clear options for upgrade, new install, or cancel
+
+#### Technical Details
+- Added comprehensive upgrade detection in NSIS installer using registry checks
+- Implemented running process detection and graceful shutdown (SendMessage WM_CLOSE)
+- Settings backup to temp directory before upgrade, restored after installation
+- SetOverwrite on for proper file replacement during upgrades
+- Enhanced user experience with clear upgrade vs new install options
+
+#### Fixed
+- **"Error opening file for writing"**: Resolved installer conflicts with existing installations
+- **Settings loss during upgrades**: User preferences now preserved across versions
+- **Running application conflicts**: Installer now handles active application instances
+
 ## [1.9.6] - 2025-01-24
 ### Security - Enhanced Anti-Malware Mitigations
 
