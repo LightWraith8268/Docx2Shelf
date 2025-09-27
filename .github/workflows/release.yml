@@ -56,20 +56,16 @@ jobs:
         pip install nuitka>=1.8.0
         pip install pillow
 
-    - name: Create assets directory
+    - name: Verify icon files exist
       shell: bash
       run: |
-        mkdir -p src/docx2shelf/gui/assets
-
-    - name: Create placeholder icons
-      shell: bash
-      run: |
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          echo "Windows icon placeholder" > src/docx2shelf/gui/assets/icon.ico
-        elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-          echo "macOS icon placeholder" > src/docx2shelf/gui/assets/icon.icns
-        else
-          echo "Linux icon placeholder" > src/docx2shelf/gui/assets/icon.png
+        echo "Checking for existing icon files..."
+        ls -la src/docx2shelf/gui/assets/
+        if [ -f "src/docx2shelf/gui/assets/icon.ico" ]; then
+          echo "Windows icon.ico exists"
+        fi
+        if [ -f "src/docx2shelf/gui/assets/icon.png" ]; then
+          echo "Linux icon.png exists"
         fi
 
     - name: Clean directories before build
