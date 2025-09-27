@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.1.1] - 2025-09-27
+### Installer Permissions - Fixed Windows Installation Permission Issues
+
+#### Added
+- **Administrator privilege detection**: Checks UAC status and admin rights before installation
+- **User folder fallback**: Offers local AppData installation when admin rights unavailable
+- **Dual registry support**: Handles both HKLM (system) and HKCU (user) registry installations
+- **Permission error guidance**: Clear user instructions for elevation requirements
+
+#### Technical Details
+- Added UserInfo::GetAccountType checks for privilege detection
+- Implemented Program Files write test to verify permissions
+- Created fallback installation to $LOCALAPPDATA\Docx2Shelf for non-admin users
+- Added dual registry writing logic based on installation type
+- Enhanced uninstaller to clean both HKLM and HKCU registry entries
+
+#### Fixed
+- **"Cannot write to Program Files"**: Resolved permission errors during installation
+- **Failed installations without admin**: Added graceful fallback to user directory
+- **Registry conflicts**: Proper handling of system vs user installations
+- **Installation guidance**: Clear instructions for admin privilege requirements
+
 ## [2.1.0] - 2025-09-27
 ### Installer Experience - Enhanced Windows Installer with Upgrade Support
 

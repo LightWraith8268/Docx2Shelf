@@ -221,6 +221,11 @@ jobs:
         InstallDir "`$PROGRAMFILES64\Docx2Shelf"
         RequestExecutionLevel admin
 
+        ; Force UAC elevation and embed manifest
+        !ifdef UAC_PLUGIN
+            !include UAC.nsh
+        !endif
+
         ; Enhanced version information to prevent false positives
         VIAddVersionKey "ProductName" "`${APP_NAME}"
         VIAddVersionKey "CompanyName" "`${APP_PUBLISHER}"
@@ -272,6 +277,27 @@ jobs:
 
             File "dist\gui_main.dist\Docx2Shelf.exe"
 
+            ; Determine registry root based on installation type
+            UserInfo::GetAccountType
+            Pop `$R8
+            StrCmp `$R8 "Admin" WriteSystemReg
+
+            ; User installation - write to HKCU
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf - Document Converter (LEGITIMATE SOFTWARE)"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "`${APP_VERSION}"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "`${APP_PUBLISHER}"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "UninstallString" "`$INSTDIR\uninstall.exe"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation" "`$INSTDIR"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "URLInfoAbout" "`${APP_URL}"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "URLUpdateInfo" "`${APP_URL}/releases"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "HelpLink" "`${APP_URL}/wiki"
+            WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Comments" "Open source document converter - NOT MALWARE"
+            WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
+            WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
+            Goto RegWriteDone
+
+            WriteSystemReg:
+            ; System installation - write to HKLM
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf - Document Converter (LEGITIMATE SOFTWARE)"
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "`${APP_VERSION}"
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Publisher" "`${APP_PUBLISHER}"
@@ -283,6 +309,8 @@ jobs:
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "Comments" "Open source document converter - NOT MALWARE"
             WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoModify" 1
             WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "NoRepair" 1
+
+            RegWriteDone:
 
             WriteUninstaller "`$INSTDIR\uninstall.exe"
 
@@ -311,9 +339,41 @@ jobs:
         !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
         Function .onInit
+            ; Check if running as administrator
+            UserInfo::GetAccountType
+            Pop `$R9
+            StrCmp `$R9 "Admin" AdminOK
+
+            ; Not running as admin, check if we can write to Program Files
+            ClearErrors
+            CreateDirectory "`$PROGRAMFILES64\TempWriteTest"
+            IfErrors NotAdmin
+            RMDir "`$PROGRAMFILES64\TempWriteTest"
+            Goto AdminOK
+
+            NotAdmin:
+                MessageBox MB_YESNO|MB_ICONEXCLAMATION "Administrator privileges are required to install to Program Files.`$\r`$\n`$\r`$\nWould you like to install to your user folder instead?`$\r`$\n`$\r`$\nYes = Install to User folder (no admin required)`$\r`$\nNo = Exit (run as administrator)" IDYES UserInstall
+                MessageBox MB_OK|MB_ICONINFORMATION "Please run the installer as Administrator to install to Program Files.`$\r`$\n`$\r`$\nRight-click the installer and select 'Run as administrator'."
+                Abort
+
+            UserInstall:
+                StrCpy `$INSTDIR "`$LOCALAPPDATA\Docx2Shelf"
+
+            AdminOK:
+
             ; Check for existing installation
             ReadRegStr `$R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation"
+            StrCmp `$R0 "" CheckUserInstall
+
+            ; Found system installation, continue with upgrade logic
+            Goto ExistingInstallFound
+
+            CheckUserInstall:
+            ; Check for user installation
+            ReadRegStr `$R0 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "InstallLocation"
             StrCmp `$R0 "" NewInstall
+
+            ExistingInstallFound:
 
             ; Found existing installation
             MessageBox MB_YESNOCANCEL|MB_ICONQUESTION "Docx2Shelf is already installed in `$R0.`$\r`$\n`$\r`$\nDo you want to upgrade to version `${APP_VERSION}?`$\r`$\n`$\r`$\nYes = Upgrade (preserves settings)`$\r`$\nNo = Install to different location`$\r`$\nCancel = Exit installer" \
@@ -354,7 +414,9 @@ jobs:
             Delete "`$SMPROGRAMS\Docx2Shelf\Uninstall Docx2Shelf.lnk"
             RMDir "`$SMPROGRAMS\Docx2Shelf"
 
-            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
+            ; Remove registry entries from both possible locations
+            DeleteRegKey /ifempty HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
+            DeleteRegKey /ifempty HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf"
 
             MessageBox MB_YESNO "Remove application files and settings?" IDNO SkipFiles
                 RMDir /r "`$INSTDIR"
