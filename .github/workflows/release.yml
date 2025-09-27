@@ -129,12 +129,14 @@ jobs:
 
         if (Test-Path $signtool) {
           Write-Host "Found signtool at: $signtool"
-          # Sign the Nuitka executable
-          if (Test-Path "dist\Docx2Shelf.exe") {
-            & $signtool sign /f codesign.pfx /p "TempPassword123!" /fd SHA256 /t http://timestamp.digicert.com /d "Docx2Shelf - Native Compiled Document Converter" /du "https://github.com/LightWraith8268/Docx2Shelf" /v "dist\Docx2Shelf.exe"
+          # Sign the Nuitka executable (correct path)
+          if (Test-Path "dist\gui_main.dist\Docx2Shelf.exe") {
+            & $signtool sign /f codesign.pfx /p "TempPassword123!" /fd SHA256 /t http://timestamp.digicert.com /d "Docx2Shelf - Native Compiled Document Converter" /du "https://github.com/LightWraith8268/Docx2Shelf" /v "dist\gui_main.dist\Docx2Shelf.exe"
             Write-Host "Nuitka executable signed successfully"
           } else {
-            Write-Host "Nuitka executable not found at dist\Docx2Shelf.exe"
+            Write-Host "Nuitka executable not found at dist\gui_main.dist\Docx2Shelf.exe"
+            Write-Host "Listing dist directory contents:"
+            Get-ChildItem -Path "dist" -Recurse
           }
         } else {
           Write-Host "SignTool not found, skipping code signing"
@@ -144,14 +146,14 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         mkdir portable
-        copy dist\Docx2Shelf.exe portable\
+        copy dist\gui_main.dist\Docx2Shelf.exe portable\
         7z a docx2shelf-windows-portable.zip portable\*
 
     - name: Create portable archive (macOS)
       if: matrix.os == 'macos-latest'
       run: |
         mkdir -p portable/Docx2Shelf.app/Contents/MacOS
-        cp dist/Docx2Shelf portable/Docx2Shelf.app/Contents/MacOS/
+        cp dist/gui_main.dist/Docx2Shelf portable/Docx2Shelf.app/Contents/MacOS/
         chmod +x portable/Docx2Shelf.app/Contents/MacOS/Docx2Shelf
         cd portable
         zip -r ../docx2shelf-macos-portable.zip Docx2Shelf.app
@@ -160,7 +162,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         mkdir portable
-        cp dist/Docx2Shelf portable/
+        cp dist/gui_main.dist/Docx2Shelf portable/
         chmod +x portable/Docx2Shelf
         tar -czf docx2shelf-linux-portable.tar.gz -C portable Docx2Shelf
 
@@ -262,7 +264,7 @@ jobs:
         Section "!Docx2Shelf Application" SecMain
             SectionIn RO
             SetOutPath "`$INSTDIR"
-            File "dist\Docx2Shelf.exe"
+            File "dist\gui_main.dist\Docx2Shelf.exe"
 
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayName" "Docx2Shelf - Document Converter (LEGITIMATE SOFTWARE)"
             WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Docx2Shelf" "DisplayVersion" "`${APP_VERSION}"
@@ -372,7 +374,10 @@ jobs:
         brew install create-dmg
 
         mkdir -p dmg-staging
-        cp -R dist/Docx2Shelf.app dmg-staging/
+        cp -R dist/gui_main.dist/Docx2Shelf dmg-staging/
+        # Create proper .app structure for macOS
+        mkdir -p dmg-staging/Docx2Shelf.app/Contents/MacOS
+        mv dmg-staging/Docx2Shelf dmg-staging/Docx2Shelf.app/Contents/MacOS/
 
         create-dmg \
           --volname "Docx2Shelf Installer" \
@@ -400,7 +405,7 @@ jobs:
         mkdir -p Docx2Shelf.AppDir/usr/share/applications
         mkdir -p Docx2Shelf.AppDir/usr/share/icons/hicolor/256x256/apps
 
-        cp dist/Docx2Shelf Docx2Shelf.AppDir/usr/bin/
+        cp dist/gui_main.dist/Docx2Shelf Docx2Shelf.AppDir/usr/bin/
         chmod +x Docx2Shelf.AppDir/usr/bin/Docx2Shelf
 
         cat > Docx2Shelf.AppDir/docx2shelf.desktop << EOF
