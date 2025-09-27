@@ -12,11 +12,10 @@ from pathlib import Path
 def build_with_nuitka():
     """Build Docx2Shelf using Nuitka for better antivirus compatibility."""
 
-    # Simplified Nuitka command - let Nuitka auto-discover dependencies
+    # Ultra-conservative Nuitka command to prevent hangs
     nuitka_cmd = [
         sys.executable, "-m", "nuitka",
         "--standalone",  # Create standalone executable
-        "--onefile",     # Single executable file
 
         # Entry point
         "src/docx2shelf/gui_main.py",
@@ -25,19 +24,23 @@ def build_with_nuitka():
         "--output-filename=Docx2Shelf.exe" if sys.platform == "win32" else "--output-filename=Docx2Shelf",
         "--output-dir=dist",
 
-        # Follow imports automatically
+        # Conservative import handling
         "--follow-imports",
+        "--nofollow-import-to=pytest",
+        "--nofollow-import-to=setuptools",
+        "--nofollow-import-to=distutils",
 
-        # Essential plugins
+        # Essential plugins only
         "--enable-plugin=tk-inter",
 
         # Windows-specific options
         "--disable-console" if sys.platform == "win32" else "",
         "--windows-icon-from-ico=src/docx2shelf/gui/assets/icon.ico" if sys.platform == "win32" and Path("src/docx2shelf/gui/assets/icon.ico").exists() else "",
 
-        # Basic optimizations
+        # Conservative settings to prevent hangs
         "--assume-yes-for-downloads",
-        "--jobs=1",  # Use single job to reduce memory usage
+        "--jobs=1",  # Single job
+        "--low-memory",  # Reduce memory usage
     ]
 
     # Remove empty strings from command
