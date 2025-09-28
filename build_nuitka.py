@@ -30,6 +30,12 @@ def build_with_nuitka():
         "--nofollow-import-to=setuptools",
         "--nofollow-import-to=distutils",
 
+        # Explicitly include standard library modules that might be missed
+        "--include-module=concurrent.futures",
+        "--include-module=concurrent",
+        "--include-module=threading",
+        "--include-module=multiprocessing",
+
         # Essential plugins only
         "--enable-plugin=tk-inter",
 
