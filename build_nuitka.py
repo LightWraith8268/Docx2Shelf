@@ -71,7 +71,6 @@ def build_with_nuitka():
         # Date/time and collections
         "--include-module=datetime",
         "--include-module=collections",
-        "--include-module=collections.defaultdict",
 
         # Math and random
         "--include-module=math",
