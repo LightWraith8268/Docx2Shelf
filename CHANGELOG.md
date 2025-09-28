@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.1.3] - 2025-09-27
+### Critical Runtime and Installation Fixes
+
+#### Fixed
+- **CRITICAL**: Resolved "No module named concurrent" runtime error preventing GUI startup
+- **Enhanced Windows installer**: Fixed Program Files installation failures even with admin privileges
+- **Nuitka packaging**: Added explicit stdlib module includes for concurrent.futures and threading modules
+- **Installation reliability**: 5-attempt retry logic with comprehensive antivirus interference mitigation
+
+#### Added
+- **Advanced admin privilege verification**: Windows API fallback detection beyond UserInfo
+- **Program Files write permission testing**: Actual write capability verification before installation
+- **SetShellVarContext all**: Proper system-wide installation context for admin installations
+- **Graceful user folder fallback**: Offers user installation when Program Files access fails
+- **Enhanced installation error reporting**: Detailed guidance for common installation failures
+
+#### Technical Details
+- Explicit Nuitka module includes: concurrent.futures, concurrent, threading, multiprocessing
+- Comprehensive UAC and Group Policy compatibility improvements
+- Application process termination handling during upgrades
+- User settings backup and restoration system during upgrades
+- Registry handling improvements (HKLM vs HKCU) based on installation context
+
 ## [2.1.2] - 2025-09-28
 ### SmartScreen & Installation - Enhanced Code Signing and Error Recovery
 
