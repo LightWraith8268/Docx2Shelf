@@ -221,9 +221,6 @@ jobs:
         InstallDir "`$PROGRAMFILES64\Docx2Shelf"
         RequestExecutionLevel admin
 
-        ; Force system-wide context for admin installations
-        SetShellVarContext all
-
         ; Enhanced UAC and privilege handling
         AutoCloseWindow true
         ShowInstDetails show

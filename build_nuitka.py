@@ -36,6 +36,47 @@ def build_with_nuitka():
         "--include-module=threading",
         "--include-module=multiprocessing",
 
+        # Core Python standard library modules used throughout the codebase
+        "--include-module=json",
+        "--include-module=re",
+        "--include-module=sys",
+        "--include-module=os",
+        "--include-module=tempfile",
+        "--include-module=uuid",
+        "--include-module=hashlib",
+        "--include-module=subprocess",
+        "--include-module=time",
+        "--include-module=logging",
+        "--include-module=sqlite3",
+        "--include-module=shutil",
+        "--include-module=platform",
+        "--include-module=zipfile",
+        "--include-module=webbrowser",
+        "--include-module=io",
+        "--include-module=pathlib",
+
+        # XML and web-related modules
+        "--include-module=xml",
+        "--include-module=xml.etree",
+        "--include-module=xml.etree.ElementTree",
+        "--include-module=xml.dom",
+        "--include-module=xml.dom.minidom",
+        "--include-module=urllib",
+        "--include-module=urllib.request",
+        "--include-module=urllib.parse",
+        "--include-module=http",
+        "--include-module=http.server",
+        "--include-module=socketserver",
+
+        # Date/time and collections
+        "--include-module=datetime",
+        "--include-module=collections",
+        "--include-module=collections.defaultdict",
+
+        # Math and random
+        "--include-module=math",
+        "--include-module=random",
+
         # Essential plugins only
         "--enable-plugin=tk-inter",
 
