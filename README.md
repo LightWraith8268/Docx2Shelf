@@ -52,6 +52,7 @@ Download the latest installer for your platform from the [Releases page](https:/
 **🪟 Windows**
 - Download `Docx2Shelf-Windows-Installer.exe`
 - Double-click to install with desktop shortcuts and file associations
+- **Note**: If Windows SmartScreen appears, click "More info" → "Run anyway" (the app is safe but unsigned)
 
 **🍎 macOS**
 - Download `Docx2Shelf-macOS-Installer.dmg`
@@ -81,6 +82,11 @@ For users who prefer portable applications without installation:
 ### 🔄 Updating
 
 The application includes built-in update checking. When an update is available, you'll see a notification with download links to get the latest version.
+
+**Enhanced Installation Experience (v2.1.2+)**:
+- Automatic upgrade detection preserves your settings during updates
+- Smart permission handling for seamless Windows installation
+- Robust error recovery for reliable installation on all systems
 
 ### 🗑️ Uninstalling
 

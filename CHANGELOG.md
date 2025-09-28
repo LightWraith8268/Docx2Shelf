@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.1.2] - 2025-09-28
+### SmartScreen & Installation - Enhanced Code Signing and Error Recovery
+
+#### Added
+- **Enhanced Microsoft signtool integration**: Improved certificate generation with better SmartScreen compatibility
+- **Robust file installation retry logic**: Multiple retry attempts for Program Files write operations
+- **Smart installation error recovery**: Enhanced fallback mechanisms for installation failures
+- **Comprehensive SmartScreen bypass guidance**: User instructions for overriding Windows security warnings
+- **Enhanced version metadata**: Better Windows manifest information for legitimacy verification
+
+#### Technical Details
+- Improved certificate creation with enhanced subject details and validation
+- Enhanced signtool parameters using SHA256 with Microsoft timestamp servers
+- Added retry logic with 3-second delays for antivirus scan completion
+- Enhanced UAC privilege detection with multiple verification methods
+- Better certificate store management and signing verification
+- Improved installer error reporting and detailed progress feedback
+
+#### Fixed
+- **Windows SmartScreen warnings**: Enhanced code signing reduces "unrecognized app" warnings
+- **Program Files write failures**: Robust retry logic handles file locking and permission issues
+- **Installation robustness**: Better error handling for edge cases and system variations
+- **Code signing reliability**: Improved certificate handling and validation process
+
 ## [2.1.1] - 2025-09-27
 ### Installer Permissions - Fixed Windows Installation Permission Issues
 
