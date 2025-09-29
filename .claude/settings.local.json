@@ -24,7 +24,8 @@
       "Bash(pip install:*)",
       "Bash(python:*)",
       "Bash(gh run cancel:*)",
-      "Bash(gh release list:*)"
+      "Bash(gh release list:*)",
+      "Bash(git show:*)"
     ],
     "deny": [],
     "ask": []

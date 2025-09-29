@@ -343,8 +343,8 @@ jobs:
 
             FinalFailure:
             ; Enhanced error dialog with more specific guidance
-            MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "INSTALLATION FAILURE`$\r`$\n`$\r`$\nFailed to install Docx2Shelf.exe to:`$\r`$\n`$INSTDIR\Docx2Shelf.exe`$\r`$\n`$\r`$\nThis is typically caused by:`$\r`$\n• Real-time antivirus protection blocking the file`$\r`$\n• Windows Defender or other security software interference`$\r`$\n• System permissions or Group Policy restrictions`$\r`$\n• File system corruption or disk errors`$\r`$\n`$\r`$\nTo resolve:`$\r`$\n1. Temporarily disable real-time antivirus protection`$\r`$\n2. Add exclusion for Docx2Shelf folder`$\r`$\n3. Run installer as administrator`$\r`$\n4. Install to user folder instead`$\r`$\n`$\r`$\nRetry installation?" IDRETRY -16
-            MessageBox MB_OK|MB_ICONERROR "Installation cannot continue. Try:`$\r`$\n`$\r`$\n1. Install to user folder (restart installer)`$\r`$\n2. Contact your system administrator`$\r`$\n3. Visit github.com/LightWraith8268/Docx2Shelf for support"
+            MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "INSTALLATION FAILURE`$\r`$\n`$\r`$\nFailed to install Docx2Shelf.exe`$\r`$\n`$\r`$\nThis is typically caused by antivirus software or system permissions.`$\r`$\n`$\r`$\nTo resolve:`$\r`$\n1. Disable antivirus temporarily`$\r`$\n2. Run as administrator`$\r`$\n3. Install to user folder instead`$\r`$\n`$\r`$\nRetry installation?" IDRETRY -16
+            MessageBox MB_OK|MB_ICONERROR "Installation cannot continue.`$\r`$\n`$\r`$\nTry installing to user folder or contact your system administrator."
             Abort
 
             FileInstalled:
@@ -455,8 +455,8 @@ jobs:
                 RMDir "`$PROGRAMFILES64\TempWriteTest_Docx2Shelf_v2"
             WritePermissionFailed:
             NotAdmin:
-                MessageBox MB_YESNO|MB_ICONEXCLAMATION "INSTALLATION PERMISSION ERROR`$\r`$\n`$\r`$\nThe installer cannot write to Program Files even with administrator privileges.`$\r`$\nThis may be caused by:`$\r`$\n- Strict UAC policies`$\r`$\n- Antivirus blocking installation`$\r`$\n- Group Policy restrictions`$\r`$\n`$\r`$\nWould you like to install to your user folder instead?`$\r`$\n`$\r`$\nYes = Install to User folder (recommended)`$\r`$\nNo = Exit and contact system administrator" IDYES UserInstall
-                MessageBox MB_OK|MB_ICONINFORMATION "ADMINISTRATOR INSTALLATION REQUIRED`$\r`$\n`$\r`$\nTo install to Program Files:`$\r`$\n1. Close all antivirus software temporarily`$\r`$\n2. Right-click installer → 'Run as administrator'`$\r`$\n3. Click 'Yes' on all UAC prompts`$\r`$\n4. Ensure no group policies block installation`$\r`$\n`$\r`$\nIf problems persist, contact your system administrator."
+                MessageBox MB_YESNO|MB_ICONEXCLAMATION "Cannot write to Program Files.`$\r`$\n`$\r`$\nThis may be caused by UAC policies, antivirus, or Group Policy restrictions.`$\r`$\n`$\r`$\nWould you like to install to your user folder instead?" IDYES UserInstall
+                MessageBox MB_OK|MB_ICONINFORMATION "Administrator installation required.`$\r`$\n`$\r`$\nTo install to Program Files, close antivirus software and run as administrator."
                 Abort
 
             UserInstall:
