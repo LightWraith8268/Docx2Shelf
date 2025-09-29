@@ -485,8 +485,7 @@ jobs:
             ExistingInstallFound:
 
             ; Found existing installation
-            MessageBox MB_YESNOCANCEL|MB_ICONQUESTION "Docx2Shelf is already installed in `$R0.`$\r`$\n`$\r`$\nDo you want to upgrade to version `${APP_VERSION}?`$\r`$\n`$\r`$\nYes = Upgrade (preserves settings)`$\r`$\nNo = Install to different location`$\r`$\nCancel = Exit installer" \
-                IDYES UpgradeInstall IDNO NewInstall
+            MessageBox MB_YESNOCANCEL|MB_ICONQUESTION "Docx2Shelf is already installed in `$R0.`$\r`$\n`$\r`$\nDo you want to upgrade to version `${APP_VERSION}?`$\r`$\n`$\r`$\nYes = Upgrade (preserves settings)`$\r`$\nNo = Install to different location`$\r`$\nCancel = Exit installer" IDYES UpgradeInstall IDNO NewInstall
             Abort
 
             UpgradeInstall:
