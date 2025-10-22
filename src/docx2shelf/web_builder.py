@@ -145,9 +145,113 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
             self.send_error(500, "Internal server error")
 
     def serve_preview_file(self, file_path: str):
-        """Serve preview files."""
-        # Implementation for serving preview files
-        self.send_error(501, "Preview not yet implemented")
+        """Serve preview files from project preview directories."""
+        try:
+            # Parse the file path to extract project ID and file
+            # Expected format: /preview/<project_id>/<file_path>
+            parts = file_path.strip('/').split('/', 1)
+
+            if len(parts) < 1:
+                self.send_error(400, "Invalid preview path")
+                return
+
+            project_id = parts[0]
+            relative_file = parts[1] if len(parts) > 1 else 'index.html'
+
+            # Check if project exists
+            if project_id not in self.web_builder.projects:
+                self.send_error(404, "Project not found")
+                return
+
+            project = self.web_builder.projects[project_id]
+
+            # Get preview directory from project
+            preview_dir = project.get('preview_dir')
+
+            if not preview_dir:
+                # Try to create preview directory if conversion is complete
+                if project.get('status') == 'completed':
+                    # Generate preview from EPUB output
+                    output_path = project.get('output_path')
+                    if output_path and Path(output_path).exists():
+                        try:
+                            from .preview import create_epub_preview
+                            import zipfile
+
+                            # Extract EPUB to temp directory
+                            epub_path = Path(output_path)
+                            extract_dir = self.web_builder.temp_dir / f"{project_id}_extracted"
+                            extract_dir.mkdir(exist_ok=True)
+
+                            with zipfile.ZipFile(epub_path, 'r') as zip_ref:
+                                zip_ref.extractall(extract_dir)
+
+                            # Create preview
+                            preview_output = self.web_builder.temp_dir / f"{project_id}_preview"
+                            preview_dir = create_epub_preview(
+                                epub_content_dir=extract_dir,
+                                output_dir=preview_output,
+                                title=project.get('name', 'Preview'),
+                                quiet=True
+                            )
+
+                            # Store preview directory in project
+                            project['preview_dir'] = str(preview_dir)
+
+                        except Exception as e:
+                            logger.error(f"Error creating preview for project {project_id}: {e}")
+                            self.send_error(500, "Failed to create preview")
+                            return
+                    else:
+                        self.send_error(404, "Project output not available for preview")
+                        return
+                else:
+                    self.send_error(404, "Preview not available - project not completed")
+                    return
+
+            # Serve the file from preview directory
+            preview_path = Path(preview_dir)
+            file_to_serve = preview_path / relative_file
+
+            if not file_to_serve.exists() or not file_to_serve.is_file():
+                self.send_error(404, "Preview file not found")
+                return
+
+            # Security check: ensure file is within preview directory
+            try:
+                file_to_serve = file_to_serve.resolve()
+                preview_path = preview_path.resolve()
+                if not str(file_to_serve).startswith(str(preview_path)):
+                    self.send_error(403, "Access denied")
+                    return
+            except Exception:
+                self.send_error(403, "Invalid file path")
+                return
+
+            # Determine MIME type
+            mime_type, _ = mimetypes.guess_type(str(file_to_serve))
+            if not mime_type:
+                mime_type = 'application/octet-stream'
+
+            # Read and serve file
+            try:
+                with open(file_to_serve, 'rb') as f:
+                    content = f.read()
+
+                self.send_response(200)
+                self.send_header('Content-type', mime_type)
+                self.send_header('Content-Length', len(content))
+                self.send_header('Cache-Control', 'no-cache')
+                self.end_headers()
+                self.wfile.write(content)
+
+            except Exception as e:
+                logger.error(f"Error reading preview file {file_to_serve}: {e}")
+                self.send_error(500, "Error reading preview file")
+
+        except Exception as e:
+            logger.error(f"Error serving preview file {file_path}: {e}")
+            self.send_error(500, "Internal server error")
 
     def handle_upload(self, post_data: bytes):
         """Handle file upload."""

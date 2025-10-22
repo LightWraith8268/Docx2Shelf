@@ -721,8 +721,63 @@ class InteractiveCLI:
 
             elif choice == "6":
                 print("Testing AI connection...")
-                print("[INFO] Connection test functionality not yet implemented")
-                print("       Please verify configuration manually")
+                print("=" * 50)
+                try:
+                    from .ai_integration import AIManager
+                    ai_manager = AIManager()
+
+                    # Check basic availability
+                    print("\n1. Checking AI availability...")
+                    if ai_manager.is_available():
+                        print("   ✅ AI features are available")
+                    else:
+                        print("   ❌ AI features are not available")
+                        print("   💡 Enable AI in configuration or install required packages")
+
+                    # Check capabilities
+                    print("\n2. Checking AI capabilities...")
+                    capabilities = ai_manager.get_capabilities()
+                    for feature, available in capabilities.items():
+                        status = "✅" if available else "❌"
+                        feature_name = feature.replace('_', ' ').title()
+                        print(f"   {status} {feature_name}")
+
+                    # Test simple AI operation
+                    if ai_manager.is_available():
+                        print("\n3. Testing AI operation...")
+                        try:
+                            # Try a simple metadata enhancement with minimal text
+                            test_content = "This is a test story about adventure."
+                            test_metadata = {"title": "Test", "author": "Test Author"}
+
+                            result = ai_manager.enhance_metadata(test_content, test_metadata)
+
+                            if result.success:
+                                print("   ✅ AI operation successful")
+                                print("   💡 AI is working correctly")
+                            else:
+                                print(f"   ⚠️  AI operation completed with issues: {result.error_message}")
+                        except Exception as e:
+                            print(f"   ❌ AI operation failed: {e}")
+                    else:
+                        print("\n3. Skipping AI operation test (AI not available)")
+
+                    # Summary
+                    print("\n" + "=" * 50)
+                    if ai_manager.is_available():
+                        print("✅ AI connection test completed successfully")
+                        print("   Your AI configuration is working correctly")
+                    else:
+                        print("⚠️  AI features are not fully configured")
+                        print("   Review the capabilities list above for missing features")
+
+                except ImportError as e:
+                    print("❌ AI integration module not available")
+                    print(f"   Error: {e}")
+                    print("   💡 Install AI dependencies with: pip install docx2shelf[ai]")
+                except Exception as e:
+                    print(f"❌ AI connection test failed: {e}")
+                    print("   💡 Check your configuration and try again")
 
             elif choice == "7":
                 print("Saving configuration...")
