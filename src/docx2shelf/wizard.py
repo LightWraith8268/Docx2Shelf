@@ -8,7 +8,9 @@ streamlined EPUB conversion workflows with enhanced user experience.
 from __future__ import annotations
 
 import json
+import os
 import sys
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -47,6 +49,8 @@ class WizardState:
     session_file: Optional[Path] = None
     steps: List[WizardStep] = field(default_factory=list)
     custom_settings: Dict[str, Any] = field(default_factory=dict)
+    preview_dir: Optional[Path] = None
+    preview_port: Optional[int] = None
 
 
 class ConversionWizard:
@@ -468,17 +472,116 @@ class ConversionWizard:
     def _generate_preview(self) -> bool:
         """Generate a preview of the EPUB."""
         try:
-            # This would integrate with the preview mode from cli.py
-            print("Generating preview... (placeholder)")
-            time.sleep(1)  # Simulate processing
+            # Import necessary modules
+            from .assemble import assemble_epub
+            from .convert import docx_to_structured_html
+            from .preview import create_epub_preview, start_preview_server
+
+            # Ensure we have required data
+            if not self.state.input_file or not self.state.metadata:
+                print("⚠️  Cannot generate preview: Missing input file or metadata")
+                return False
+
+            print("🔄 Processing document...")
+
+            # Create temporary directory for preview
+            temp_dir = Path(tempfile.mkdtemp(prefix="wizard_preview_"))
+
+            # Convert DOCX to HTML chunks
+            try:
+                html_result = docx_to_structured_html(self.state.input_file)
+                html_chunks = html_result.get('chunks', [])
+                resources = html_result.get('resources', [])
+            except Exception as e:
+                print(f"⚠️  Document conversion error: {e}")
+                return False
+
+            if not html_chunks:
+                print("⚠️  No content generated from document")
+                return False
+
+            # Create build options
+            if not self.state.build_options:
+                self.state.build_options = BuildOptions(
+                    theme=self.state.custom_settings.get('theme', 'serif'),
+                    toc_depth=self.state.custom_settings.get('toc_depth', 2),
+                    quiet=False,
+                    inspect=True,  # Force inspect mode for preview
+                )
+            else:
+                self.state.build_options.inspect = True
+
+            # Generate output path in temp directory
+            epub_temp = temp_dir / f"{self.state.metadata.title.replace(' ', '_')}.epub"
+
+            print("📚 Assembling EPUB structure...")
+
+            # Assemble EPUB with inspect mode to get content directory
+            assemble_epub(
+                meta=self.state.metadata,
+                opts=self.state.build_options,
+                html_chunks=html_chunks,
+                resources=resources,
+                output_path=epub_temp
+            )
+
+            # Find the inspect directory (contains unzipped EPUB content)
+            inspect_dir = epub_temp.parent / f"{epub_temp.stem}.src"
+
+            if not inspect_dir.exists():
+                print("⚠️  Preview content directory not created")
+                return False
+
+            # Create preview directory for serving
+            output_dir = temp_dir / "preview_output"
+            output_dir.mkdir(exist_ok=True)
+
+            print("🎨 Creating preview interface...")
+
+            # Create preview structure
+            preview_dir = create_epub_preview(
+                epub_content_dir=inspect_dir,
+                output_dir=output_dir,
+                title=f"{self.state.metadata.title} - Preview",
+                quiet=True
+            )
+
+            # Store preview info for opening later
+            self.state.preview_dir = preview_dir
+
             return True
+
         except Exception as e:
-            print(f"Preview generation error: {e}")
+            print(f"❌ Preview generation error: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def _open_preview(self):
         """Open the preview in browser."""
-        print("Opening preview... (placeholder)")
+        try:
+            if not self.state.preview_dir or not self.state.preview_dir.exists():
+                print("⚠️  No preview available to open")
+                return
+
+            from .preview import start_preview_server, open_preview_in_browser
+
+            # Start preview server
+            server_thread, port = start_preview_server(self.state.preview_dir, quiet=True)
+            self.state.preview_port = port
+
+            print(f"🌐 Starting preview server on port {port}...")
+
+            # Open in browser
+            if open_preview_in_browser(port, quiet=True):
+                print(f"✅ Preview opened in browser: http://localhost:{port}")
+                print("💡 You can review your EPUB content before final conversion")
+            else:
+                print(f"⚠️  Could not auto-open browser")
+                print(f"📍 Manual URL: http://localhost:{port}")
+
+        except Exception as e:
+            print(f"❌ Error opening preview: {e}")
 
     def _display_configuration_summary(self):
         """Display a summary of current configuration."""
