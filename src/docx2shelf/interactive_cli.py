@@ -2208,80 +2208,50 @@ class InteractiveCLI:
         input("Press Enter to continue...")
 
     def run_enterprise_config(self):
-        """Configure enterprise license and settings interactively."""
+        """Configure enterprise settings interactively (no licensing required)."""
         from .utils import prompt, prompt_choice, prompt_bool
 
-        print("🏢 Enterprise License Configuration")
+        print("🏢 Enterprise Configuration")
         print("=" * 40)
+        print("\nNote: Docx2Shelf is open source and does not require a license.")
+        print("All enterprise features are freely available to all users.\n")
 
         while True:
-            print("Current License Status:")
-            print("   License Type: Community (Free)")
-            print("   License Key: Not configured")
-            print("   Organization: Not set")
-            print("   User Seats: Unlimited (Community)")
-            print("   Expiry Date: N/A")
-            print()
-
             print("Configuration Options:")
-            print("1. Enter Enterprise License Key")
-            print("2. Set Organization Details")
-            print("3. Configure User Management")
-            print("4. Set API Server Settings")
-            print("5. Configure Batch Processing")
-            print("6. License Validation")
-            print("7. Export Configuration")
-            print("8. Save and Exit")
+            print("1. Set Organization Details")
+            print("2. Configure API Server Settings")
+            print("3. Configure Batch Processing")
+            print("4. Export Configuration")
+            print("5. Save and Exit")
             print()
 
-            choice = prompt("Select option", default="8")
+            choice = prompt("Select option", default="5")
 
             if choice == "1":
-                license_key = prompt("Enter Enterprise License Key", default="", allow_empty=True)
-                if license_key:
-                    print("✓ Enterprise license key configured")
-                    print("  Validating license...")
-                    print("  [INFO] License validation functionality not yet implemented")
-                else:
-                    print("✓ License key cleared - reverting to Community edition")
-
-            elif choice == "2":
                 org_name = prompt("Organization Name", default="")
                 org_contact = prompt("Contact Email", default="")
                 print(f"✓ Organization set to: {org_name}")
                 print(f"✓ Contact email: {org_contact}")
 
-            elif choice == "3":
-                max_users = prompt("Maximum concurrent users", default="unlimited")
-                auth_type = prompt_choice("Authentication type", ["local", "ldap", "saml"], default="local")
-                print(f"✓ Max users: {max_users}")
-                print(f"✓ Authentication: {auth_type}")
-
-            elif choice == "4":
+            elif choice == "2":
                 api_port = prompt("API Server Port", default="8000")
                 api_host = prompt("API Server Host", default="0.0.0.0")
                 ssl_enabled = prompt_bool("Enable SSL/TLS?", default=False)
                 print(f"✓ API server configured: {api_host}:{api_port}")
                 print(f"✓ SSL: {'enabled' if ssl_enabled else 'disabled'}")
 
-            elif choice == "5":
+            elif choice == "3":
                 batch_workers = prompt("Batch processing workers", default="4")
                 batch_queue = prompt("Queue size limit", default="1000")
                 print(f"✓ Batch workers: {batch_workers}")
                 print(f"✓ Queue size: {batch_queue}")
 
-            elif choice == "6":
-                print("Validating enterprise license...")
-                print("[INFO] Contacting license server...")
-                print("[INFO] License validation not yet implemented")
-                print("       Manual verification required")
-
-            elif choice == "7":
+            elif choice == "4":
                 print("Exporting enterprise configuration...")
                 print("✓ Configuration exported to: enterprise_config.json")
                 print("  This file contains non-sensitive settings only")
 
-            elif choice == "8":
+            elif choice == "5":
                 print("Saving enterprise configuration...")
                 print("✓ Enterprise settings saved successfully")
                 break
