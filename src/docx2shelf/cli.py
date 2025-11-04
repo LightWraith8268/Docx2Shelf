@@ -3919,8 +3919,87 @@ def run_enterprise_api(args) -> int:
             return 0
 
         elif args.status:
-            print("API server status checking not implemented yet")
-            return 0
+            print("🔍 Checking API server status...")
+            print("=" * 50)
+
+            # Check if server is running by attempting connection
+            import socket
+            import urllib.request
+            import urllib.error
+
+            host = args.host
+            port = args.port
+
+            # Check 1: Port availability
+            print(f"\n1. Checking port {port} on {host}...")
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(2)
+                result = sock.connect_ex((host, port))
+                sock.close()
+
+                if result == 0:
+                    print(f"   ✅ Port {port} is in use (likely server is running)")
+                    port_open = True
+                else:
+                    print(f"   ❌ Port {port} is not in use (server not running)")
+                    port_open = False
+            except Exception as e:
+                print(f"   ⚠️  Could not check port: {e}")
+                port_open = False
+
+            # Check 2: HTTP health endpoint
+            if port_open:
+                print(f"\n2. Checking API health endpoint...")
+                try:
+                    health_url = f"http://{host}:{port}/health"
+                    req = urllib.request.Request(health_url, method='GET')
+
+                    with urllib.request.urlopen(req, timeout=5) as response:
+                        if response.status == 200:
+                            print(f"   ✅ API server is healthy and responding")
+                            data = response.read().decode('utf-8')
+                            try:
+                                import json
+                                health_data = json.loads(data)
+                                if 'version' in health_data:
+                                    print(f"   📌 Version: {health_data['version']}")
+                                if 'uptime' in health_data:
+                                    print(f"   ⏱️  Uptime: {health_data['uptime']}")
+                            except:
+                                pass
+                        else:
+                            print(f"   ⚠️  Server responded with status: {response.status}")
+                except urllib.error.URLError as e:
+                    print(f"   ⚠️  Could not reach health endpoint: {e.reason}")
+                except Exception as e:
+                    print(f"   ⚠️  Health check failed: {e}")
+
+                # Check 3: API docs availability
+                print(f"\n3. Checking API documentation...")
+                try:
+                    docs_url = f"http://{host}:{port}/docs"
+                    req = urllib.request.Request(docs_url, method='GET')
+
+                    with urllib.request.urlopen(req, timeout=5) as response:
+                        if response.status == 200:
+                            print(f"   ✅ API documentation available at {docs_url}")
+                        else:
+                            print(f"   ⚠️  Documentation returned status: {response.status}")
+                except Exception as e:
+                    print(f"   ⚠️  Could not reach documentation endpoint")
+
+            # Summary
+            print("\n" + "=" * 50)
+            if port_open:
+                print("✅ API server appears to be running")
+                print(f"   🌐 Access at: http://{host}:{port}")
+                print(f"   📚 Documentation: http://{host}:{port}/docs")
+            else:
+                print("❌ API server is not running")
+                print(f"   💡 Start with: docx2shelf enterprise api --start")
+
+            return 0 if port_open else 1
 
         else:
             print("Please specify an action: --start or --status")
@@ -4051,7 +4130,112 @@ def run_enterprise_reports(args) -> int:
             return 0
 
         elif args.usage:
-            print("Usage analytics not implemented yet")
+            print("📊 Enterprise Usage Analytics")
+            print("=" * 60)
+
+            jobs = processor.list_jobs()
+
+            if not jobs:
+                print("\n⚠️  No jobs found in history")
+                print("   Process some files first to see usage analytics")
+                return 0
+
+            # Calculate time-based analytics
+            from collections import defaultdict
+
+            jobs_by_date = defaultdict(int)
+            jobs_by_hour = defaultdict(int)
+            jobs_by_status = defaultdict(int)
+            processing_modes = defaultdict(int)
+            file_types = defaultdict(int)
+            total_files_processed = 0
+            total_files_failed = 0
+
+            for job in jobs:
+                # Count by status
+                jobs_by_status[job.status] += 1
+
+                # Count by processing mode
+                if hasattr(job, 'processing_mode') and job.processing_mode:
+                    processing_modes[job.processing_mode] += 1
+
+                # Count files
+                if hasattr(job, 'processed_items'):
+                    total_files_processed += job.processed_items or 0
+                if hasattr(job, 'failed_items'):
+                    total_files_failed += job.failed_items or 0
+
+                # Parse creation date for time-based analytics
+                try:
+                    if job.created_at:
+                        created = datetime.fromisoformat(job.created_at.replace('Z', '+00:00'))
+                        date_key = created.strftime('%Y-%m-%d')
+                        hour_key = created.strftime('%H:00')
+                        jobs_by_date[date_key] += 1
+                        jobs_by_hour[hour_key] += 1
+                except:
+                    pass
+
+            # Display analytics
+            print(f"\n📈 Overall Usage Statistics:")
+            print(f"   Total Jobs: {len(jobs)}")
+            print(f"   Files Processed: {total_files_processed}")
+            print(f"   Files Failed: {total_files_failed}")
+            if total_files_processed > 0:
+                success_rate = ((total_files_processed - total_files_failed) / total_files_processed * 100)
+                print(f"   File Success Rate: {success_rate:.1f}%")
+
+            # Jobs by status
+            if jobs_by_status:
+                print(f"\n📋 Jobs by Status:")
+                for status, count in sorted(jobs_by_status.items(), key=lambda x: x[1], reverse=True):
+                    print(f"   {status.title()}: {count}")
+
+            # Processing modes
+            if processing_modes:
+                print(f"\n🔧 Processing Modes Used:")
+                for mode, count in sorted(processing_modes.items(), key=lambda x: x[1], reverse=True):
+                    print(f"   {mode}: {count} jobs")
+
+            # Peak usage times (by hour)
+            if jobs_by_hour:
+                print(f"\n⏰ Peak Usage Hours:")
+                top_hours = sorted(jobs_by_hour.items(), key=lambda x: x[1], reverse=True)[:5]
+                for hour, count in top_hours:
+                    print(f"   {hour}: {count} jobs")
+
+            # Recent activity (by date)
+            if jobs_by_date:
+                print(f"\n📅 Recent Activity (Last 7 days):")
+                recent_dates = sorted(jobs_by_date.items(), key=lambda x: x[0], reverse=True)[:7]
+                for date, count in recent_dates:
+                    print(f"   {date}: {count} jobs")
+
+            # Calculate average processing time
+            processing_times = []
+            for job in jobs:
+                if hasattr(job, 'started_at') and hasattr(job, 'completed_at'):
+                    if job.started_at and job.completed_at and job.status == "completed":
+                        try:
+                            started = datetime.fromisoformat(job.started_at.replace('Z', '+00:00'))
+                            completed = datetime.fromisoformat(job.completed_at.replace('Z', '+00:00'))
+                            duration = (completed - started).total_seconds()
+                            processing_times.append(duration)
+                        except:
+                            pass
+
+            if processing_times:
+                avg_time = sum(processing_times) / len(processing_times)
+                min_time = min(processing_times)
+                max_time = max(processing_times)
+                print(f"\n⚡ Processing Performance:")
+                print(f"   Average Time: {avg_time:.1f}s")
+                print(f"   Fastest Job: {min_time:.1f}s")
+                print(f"   Slowest Job: {max_time:.1f}s")
+
+            print("\n" + "=" * 60)
+            print("💡 Tip: Use --export to save detailed reports")
+
             return 0
 
         elif args.export:

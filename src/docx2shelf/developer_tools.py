@@ -677,15 +677,76 @@ class DevelopmentWorkflow:
 
     def _run_development_server(self, port: int):
         """Run the actual development server."""
-        # This would integrate with the web interface or API server
-        # For now, just a simple placeholder
-        print(f"🌐 Development server running on http://localhost:{port}")
-        print("📚 Documentation: http://localhost:{port}/docs")
-        print("🔧 API: http://localhost:{port}/api")
+        try:
+            # Try to import and use the web builder
+            from .web_builder import WebBuilder
 
-        # Keep server running
-        while True:
-            time.sleep(1)
+            print(f"🌐 Starting web builder development server...")
+            print(f"   URL: http://localhost:{port}")
+            print(f"   Mode: Development (with hot-reload)")
+            print("\n📝 Available Features:")
+            print("   • Document Upload & Conversion")
+            print("   • Live EPUB Preview")
+            print("   • Theme Customization")
+            print("   • Anthology Builder")
+            print("\n💡 Press Ctrl+C to stop the server\n")
+
+            # Create and run web builder
+            builder = WebBuilder(port=port)
+            builder.run()
+
+        except ImportError:
+            # Fallback to simple HTTP server if web_builder not available
+            print(f"⚠️  Web builder not available, using simple development server")
+            print(f"🌐 Development server running on http://localhost:{port}")
+            print("📚 Documentation: http://localhost:{port}/docs")
+            print("🔧 API: http://localhost:{port}/api")
+            print("\n💡 Install full dependencies for web interface:")
+            print("   pip install docx2shelf[web]")
+            print("\n💡 Press Ctrl+C to stop the server\n")
+
+            # Simple HTTP server for development
+            import http.server
+            import socketserver
+
+            class DevHandler(http.server.SimpleHTTPRequestHandler):
+                def log_message(self, format, *args):
+                    # Log with timestamp
+                    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+                    print(f"[{timestamp}] {format % args}")
+
+                def do_GET(self):
+                    if self.path == '/':
+                        self.send_response(200)
+                        self.send_header('Content-type', 'text/html')
+                        self.end_headers()
+                        html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Docx2Shelf Development Server</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #007bff; }
+        .info { background: #f8f9fa; padding: 20px; border-radius: 8px; }
+        code { background: #e9ecef; padding: 2px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Docx2Shelf Development Server</h1>
+    <div class="info">
+        <p>Development server is running!</p>
+        <p>This is a minimal development server for testing purposes.</p>
+        <p>For full web interface features, install:</p>
+        <code>pip install docx2shelf[web]</code>
+    </div>
+</body>
+</html>"""
+                        self.wfile.write(html.encode('utf-8'))
+                    else:
+                        super().do_GET()
+
+            with socketserver.TCPServer(("", port), DevHandler) as httpd:
+                httpd.serve_forever()
 
     def run_tests(self):
         """Run tests with coverage."""

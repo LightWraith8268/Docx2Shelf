@@ -1124,7 +1124,115 @@ class WebBuilder {
     }
 
     newAnthology() {
-        alert('Anthology creation coming soon!');
+        // Create anthology creation modal
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+
+        modal.innerHTML = `
+            <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+                <h2 style="margin-top: 0;">📚 Create New Anthology</h2>
+                <p style="color: #666;">Combine multiple stories into a single EPUB collection</p>
+
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Anthology Title:</label>
+                    <input id="anthology-title" type="text" placeholder="e.g., Short Story Collection"
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Editor/Compiler:</label>
+                    <input id="anthology-author" type="text" placeholder="e.g., John Smith (Editor)"
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Description:</label>
+                    <textarea id="anthology-desc" placeholder="Brief description of the anthology"
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px;"></textarea>
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">
+                        <input id="anthology-toc" type="checkbox" checked> Include table of contents
+                    </label>
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">
+                        <input id="anthology-separator" type="checkbox" checked> Add separators between stories
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                    <button id="anthology-cancel" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    <button id="anthology-create" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Create Anthology</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Focus first input
+        document.getElementById('anthology-title').focus();
+
+        // Handle cancel
+        document.getElementById('anthology-cancel').onclick = () => {
+            document.body.removeChild(modal);
+        };
+
+        // Handle create
+        document.getElementById('anthology-create').onclick = async () => {
+            const title = document.getElementById('anthology-title').value.trim();
+            const author = document.getElementById('anthology-author').value.trim();
+            const description = document.getElementById('anthology-desc').value.trim();
+            const includeToc = document.getElementById('anthology-toc').checked;
+            const addSeparator = document.getElementById('anthology-separator').checked;
+
+            if (!title) {
+                alert('Please enter an anthology title');
+                return;
+            }
+
+            if (!author) {
+                alert('Please enter an editor/compiler name');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/anthology/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        author: author,
+                        description: description,
+                        config: {
+                            include_toc: includeToc,
+                            add_separator: addSeparator
+                        }
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.body.removeChild(modal);
+                    this.loadProject(result.project_id);
+                    this.loadProjects();
+
+                    // Show success message
+                    alert(`Anthology "${title}" created successfully!\n\nYou can now add stories to your anthology.`);
+                } else {
+                    alert('Failed to create anthology: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error creating anthology: ' + error.message);
+            }
+        };
+
+        // Close on background click
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        };
     }
 }
 
