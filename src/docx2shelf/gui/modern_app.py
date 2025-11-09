@@ -101,10 +101,10 @@ class ModernDocx2ShelfApp:
             # Try to use a system font, fallback to default
             try:
                 font = ImageFont.truetype("arial.ttf", 14)
-            except:
+            except OSError:
                 try:
                     font = ImageFont.truetype("calibri.ttf", 14)
-                except:
+                except OSError:
                     font = ImageFont.load_default()
 
             # Draw feather quill symbol in white
@@ -117,7 +117,7 @@ class ModernDocx2ShelfApp:
                 x = (size[0] - text_width) // 2
                 y = (size[1] - text_height) // 2
                 draw.text((x, y), text, fill=(255, 255, 255, 255), font=font)
-            except:
+            except (ValueError, TypeError):
                 # Fallback to simple "Q" for Quill
                 text = "Q"
                 bbox = draw.textbbox((0, 0), text, font=font)

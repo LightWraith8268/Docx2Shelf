@@ -3,10 +3,9 @@ from __future__ import annotations
 import json
 import re
 import sys
-import tempfile
 from pathlib import Path
 
-from .path_utils import normalize_path, ensure_unicode_path, get_safe_temp_path
+from .path_utils import get_safe_temp_path
 
 IMG_NS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -133,7 +132,7 @@ def split_html_by_pagebreak(html: str) -> list[str]:
     return [f"<section>{c}</section>" for c in chunks]
 
 
-def convert_file_to_html(input_path: Path, context: dict = None) -> tuple[list[str], list[Path], str]:
+def convert_file_to_html(input_path: Path, context: dict | None = None) -> tuple[list[str], list[Path], str]:
     """Convert input file to HTML chunks and gather any extracted resources.
 
     Strategy:
@@ -379,7 +378,8 @@ def _rasterize_complex_element(element, element_type: str, tempdir: Path) -> str
                 for text_elem in element.element.xpath('.//w:t', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}):
                     if text_elem.text:
                         text_content += text_elem.text
-            except:
+            except (AttributeError, IndexError):
+                # Fallback if text extraction fails
                 pass
 
         # Create semantic markup based on element type

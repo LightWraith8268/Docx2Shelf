@@ -585,7 +585,7 @@ class MathProcessor:
                 root = ET.fromstring(omml)
                 text_content = ''.join(root.itertext()).strip()
                 return self._latex_to_mathml(text_content) if text_content else '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>?</mi></math>'
-            except:
+            except ET.ParseError:
                 return '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>?</mi></math>'
 
     def _escape_xml(self, text: str) -> str:
@@ -598,7 +598,7 @@ class MathProcessor:
             # Parse and reformat to ensure well-formed XML
             root = ET.fromstring(mathml)
             return ET.tostring(root, encoding='unicode')
-        except:
+        except ET.ParseError:
             # If parsing fails, return a basic fallback
             return '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>?</mi></math>'
 
@@ -618,7 +618,7 @@ class MathProcessor:
             root = ET.fromstring(mathml)
             text_content = ''.join(root.itertext())
             return self._latex_to_svg(text_content)
-        except:
+        except ET.ParseError:
             return self._latex_to_svg(mathml)
 
     def _mathml_to_png(self, mathml: str) -> str:
@@ -627,7 +627,7 @@ class MathProcessor:
             root = ET.fromstring(mathml)
             text_content = ''.join(root.itertext())
             return self._latex_to_png(text_content)
-        except:
+        except ET.ParseError:
             return self._latex_to_png(mathml)
 
     def _create_non_mathml_element(self, soup, content: str, format_type: MathFormat, alt_text: str):
@@ -640,7 +640,7 @@ class MathProcessor:
                 if alt_text:
                     svg_elem['aria-label'] = alt_text
                 return svg_elem
-            except:
+            except (ValueError, TypeError, AttributeError):
                 # Fallback to text
                 span = soup.new_tag('span', **{'class': 'math-svg'})
                 span.string = content

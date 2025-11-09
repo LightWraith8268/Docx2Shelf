@@ -550,7 +550,7 @@ class EnterpriseAPIManager:
         )
 
     def generate_api_key(self, name: str, user_id: str,
-                        permissions: List[str] = None) -> str:
+                        permissions: List[str] | None = None) -> str:
         """Generate new API key."""
         key_id = str(uuid.uuid4())[:8]
         key_secret = str(uuid.uuid4()).replace('-', '')

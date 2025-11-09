@@ -81,9 +81,10 @@ def main():
                     f"Please check that all dependencies are installed."
                 )
                 root.destroy()
-            except:
+            except Exception as e_dialog:
                 # Last resort - print to console
                 print(f"Error starting Docx2Shelf: {e}")
+                print(f"Failed to show error dialog: {e_dialog}")
 
             return 1
 
@@ -113,8 +114,9 @@ def main():
                 )
 
             root.destroy()
-        except:
+        except Exception as e_dialog:
             print(f"Import error: {e}")
+            print(f"Failed to show error dialog: {e_dialog}")
             print("Please ensure all dependencies are installed.")
 
         return 1

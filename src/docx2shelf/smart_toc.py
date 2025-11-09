@@ -122,7 +122,7 @@ class SmartTocGenerator:
             "estimated_reading_time": 0
         }
 
-    def generate_toc(self, html_chunks: List[str], titles: List[str] = None) -> List[TocEntry]:
+    def generate_toc(self, html_chunks: List[str], titles: List[str] | None = None) -> List[TocEntry]:
         """Generate smart table of contents from HTML content."""
 
         # Extract headings from content

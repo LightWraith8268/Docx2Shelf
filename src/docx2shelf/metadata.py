@@ -31,7 +31,7 @@ class EpubMetadata:
     narrator: Optional[str] = None
     designer: Optional[str] = None
     contributor: Optional[str] = None
-    bisac_codes: List[str] = None
+    bisac_codes: List[str] | None = None
     age_range: Optional[str] = None
     reading_level: Optional[str] = None
     copyright_holder: Optional[str] = None
@@ -45,7 +45,7 @@ class EpubMetadata:
     series_position: Optional[str] = None  # e.g., "1 of 5", "standalone"
     publication_type: Optional[str] = None  # e.g., "novel", "anthology", "memoir"
     target_audience: Optional[str] = None  # e.g., "adult", "young adult", "children"
-    content_warnings: List[str] = None
+    content_warnings: List[str] | None = None
 
     def __post_init__(self):
         # Initialize list fields if None

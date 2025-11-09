@@ -4041,7 +4041,8 @@ def run_enterprise_reports(args) -> int:
                         completed = datetime.fromisoformat(job.completed_at.replace('Z', '+00:00'))
                         duration = (completed - started).total_seconds()
                         processing_times.append(duration)
-                    except:
+                    except (ValueError, AttributeError):
+                        # Skip jobs with invalid timestamp formats
                         pass
 
             if processing_times:

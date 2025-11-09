@@ -232,7 +232,7 @@ def _load_css(theme: str, extra_css: Path | None, opts: BuildOptions, styles_css
     return css.encode("utf-8")
 
 
-def _html_item(title: str, file_name: str, content: str, lang: str):
+def _html_item(title: str, file_name: str, content: str, lang: str) -> object:
     try:
         from ebooklib import epub  # type: ignore
     except Exception as e:
@@ -787,7 +787,7 @@ def assemble_epub(
     list_items = []
     depth = max(1, min(6, opts.toc_depth))
 
-    def build_nested_toc(chap_link, sub_links, current_depth=2):
+    def build_nested_toc(chap_link, sub_links, current_depth=2) -> object | tuple:
         """Build nested ToC structure supporting arbitrary depth."""
         if current_depth > depth or not sub_links:
             return chap_link

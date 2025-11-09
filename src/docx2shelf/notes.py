@@ -143,7 +143,7 @@ class NotesProcessor:
             "back_refs_generated": 0
         }
 
-    def process_content(self, html_chunks: List[str], chunk_files: List[str], chapter_titles: List[str] = None) -> Tuple[List[str], Optional[str]]:
+    def process_content(self, html_chunks: List[str], chunk_files: List[str], chapter_titles: List[str] | None = None) -> Tuple[List[str], Optional[str]]:
         """
         Process HTML content to handle notes and generate back-references.
 

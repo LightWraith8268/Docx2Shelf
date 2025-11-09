@@ -219,7 +219,7 @@ class PluginMarketplace:
         with open(self.cache_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
 
-    def search_plugins(self, query: str = "", tags: List[str] = None) -> List[PluginInfo]:
+    def search_plugins(self, query: str = "", tags: List[str] | None = None) -> List[PluginInfo]:
         """Search for plugins in marketplace.
 
         Args:
@@ -360,8 +360,8 @@ class PluginMarketplace:
             if 'temp_file' in locals():
                 try:
                     Path(temp_file).unlink()
-                except:
-                    pass
+                except OSError as e:
+                    print(f"Warning: Failed to delete temporary file {temp_file}: {e}")
 
     def _verify_checksum(self, file_path: str, expected_checksum: str) -> bool:
         """Verify file checksum."""

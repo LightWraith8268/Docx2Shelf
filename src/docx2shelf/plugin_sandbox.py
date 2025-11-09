@@ -433,8 +433,9 @@ class AdvancedPluginManager:
             try:
                 import shutil
                 shutil.rmtree(temp_dir, ignore_errors=True)
-            except:
-                pass
+            except Exception as e_cleanup:
+                # Temp directory cleanup failed, but don't fail the entire operation
+                print(f"Warning: Failed to cleanup temp directory {temp_dir}: {e_cleanup}")
 
         return result
 
