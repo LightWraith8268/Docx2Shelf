@@ -467,18 +467,71 @@ class ConversionWizard:
 
     def _generate_preview(self) -> bool:
         """Generate a preview of the EPUB."""
+        import argparse
+        import tempfile
+        import webbrowser
+
+        from .cli import run_build
+
         try:
-            # This would integrate with the preview mode from cli.py
-            print("Generating preview... (placeholder)")
-            time.sleep(1)  # Simulate processing
-            return True
+            if not self.state.input_file or not self.state.metadata:
+                print("❌ Cannot generate preview: input file or metadata missing")
+                return False
+
+            print("\n🔄 Generating preview...")
+
+            # Create temporary output directory for preview
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
+
+                # Create args namespace for preview conversion
+                args = argparse.Namespace()
+                args.input = str(self.state.input_file)
+                args.title = self.state.metadata.title
+                args.author = self.state.metadata.author
+                args.language = self.state.metadata.language
+                args.theme = self.state.custom_settings.get('theme', 'serif')
+                args.toc_depth = self.state.custom_settings.get('toc_depth', 2)
+                args.output = str(temp_path)
+                args.no_prompt = True
+                args.quiet = False
+                args.preview = True  # Enable preview mode
+                args.preview_port = 8000
+                args.inspect = False  # Don't need inspect mode in preview
+
+                # Run conversion with preview enabled
+                result = run_build(args)
+
+                if result != 0:
+                    print("❌ Preview generation failed")
+                    return False
+
+                print("✅ Preview generated successfully")
+                return True
+
         except Exception as e:
-            print(f"Preview generation error: {e}")
+            print(f"❌ Preview generation error: {e}")
             return False
 
     def _open_preview(self):
-        """Open the preview in browser."""
-        print("Opening preview... (placeholder)")
+        """Open the preview in browser.
+
+        Note: Preview is automatically opened when preview mode is enabled.
+        This method is included for explicit user-triggered preview opening.
+        """
+        import webbrowser
+
+        try:
+            port = self.state.custom_settings.get('preview_port', 8000)
+            url = f"http://localhost:{port}"
+
+            if webbrowser.open(url):
+                print(f"✅ Opened preview in browser: {url}")
+            else:
+                print(f"⚠️  Could not open browser. Visit manually: {url}")
+
+        except Exception as e:
+            print(f"❌ Could not open preview: {e}")
 
     def _display_configuration_summary(self):
         """Display a summary of current configuration."""

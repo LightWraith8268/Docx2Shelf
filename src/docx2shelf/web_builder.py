@@ -150,34 +150,114 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
         self.send_error(501, "Preview not yet implemented")
 
     def handle_upload(self, post_data: bytes):
-        """Handle file upload."""
+        """Handle file upload and create project."""
         try:
-            # Parse multipart form data (simplified)
-            # In a production implementation, use a proper multipart parser
-            boundary = self.headers.get('Content-Type', '').split('boundary=')[-1]
-
-            if not boundary:
-                self.send_error(400, "Invalid multipart data")
+            # Parse multipart form data
+            content_type_header = self.headers.get('Content-Type', '')
+            if 'boundary=' not in content_type_header:
+                self.send_error(400, "Invalid multipart data: missing boundary")
                 return
 
-            # For now, create a dummy project
+            boundary = content_type_header.split('boundary=')[-1]
+            boundary_bytes = f'--{boundary}'.encode()
+
+            # Split the post data by boundary
+            parts = post_data.split(boundary_bytes)
+
+            # Create a new project
             project_id = str(uuid.uuid4())
+            uploaded_files = []
+
+            # Create temporary directory for this project
+            temp_dir = Path(tempfile.gettempdir()) / "docx2shelf" / project_id
+            temp_dir.mkdir(parents=True, exist_ok=True)
+
+            # Parse each part
+            for part in parts[1:-1]:  # Skip first empty part and last closing boundary
+                if not part.strip():
+                    continue
+
+                try:
+                    # Split headers from content
+                    header_end = part.find(b'\r\n\r\n')
+                    if header_end == -1:
+                        header_end = part.find(b'\n\n')
+                        content_start = header_end + 2
+                    else:
+                        content_start = header_end + 4
+
+                    headers_section = part[:header_end].decode('utf-8', errors='ignore')
+                    content = part[content_start:]
+
+                    # Remove trailing boundary marker and whitespace
+                    content = content.rstrip(b'\r\n').rstrip(b'\n')
+
+                    # Extract filename and content type from headers
+                    filename = None
+                    content_type = 'application/octet-stream'
+
+                    for line in headers_section.split('\n'):
+                        if 'filename=' in line:
+                            # Extract filename from Content-Disposition
+                            filename_start = line.find('filename=')
+                            if filename_start != -1:
+                                filename = line[filename_start + 10:].strip('"\r\n')
+                        elif 'Content-Type:' in line:
+                            content_type = line.split(':', 1)[1].strip()
+
+                    if not filename:
+                        continue
+
+                    # Save file to temporary directory
+                    file_path = temp_dir / filename
+                    with open(file_path, 'wb') as f:
+                        f.write(content)
+
+                    # Record file info
+                    file_size = len(content)
+                    uploaded_files.append({
+                        'name': filename,
+                        'path': str(file_path),
+                        'size': file_size,
+                        'type': content_type,
+                        'uploaded': datetime.now().isoformat()
+                    })
+
+                    logger.info(f"Uploaded file: {filename} ({file_size} bytes)")
+
+                except Exception as part_error:
+                    logger.warning(f"Error parsing part: {part_error}")
+                    continue
+
+            if not uploaded_files:
+                self.send_error(400, "No files were uploaded")
+                return
+
+            # Create project with uploaded files
             project = {
                 "id": project_id,
-                "name": "Uploaded Document",
-                "type": "single",
+                "name": uploaded_files[0]['name'],
+                "type": "single" if len(uploaded_files) == 1 else "batch",
                 "created": datetime.now().isoformat(),
                 "status": "uploaded",
-                "files": []
+                "files": uploaded_files,
+                "temp_dir": str(temp_dir)
             }
 
             self.web_builder.projects[project_id] = project
 
-            self.send_json_response({"project_id": project_id, "status": "uploaded"})
+            response = {
+                "project_id": project_id,
+                "status": "uploaded",
+                "files": uploaded_files,
+                "file_count": len(uploaded_files)
+            }
+
+            self.send_json_response(response)
 
         except Exception as e:
             logger.error(f"Upload error: {e}")
-            self.send_error(500, f"Upload failed: {e}")
+            self.send_error(500, f"Upload failed: {str(e)}")
 
     def handle_convert(self, post_data: bytes):
         """Handle conversion request."""

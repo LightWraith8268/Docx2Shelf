@@ -3919,8 +3919,81 @@ def run_enterprise_api(args) -> int:
             return 0
 
         elif args.status:
-            print("API server status checking not implemented yet")
-            return 0
+            from .enterprise_api import get_api_manager
+            import socket
+
+            try:
+                # Get the API manager to access database
+                api_manager = get_api_manager()
+
+                # Try to connect to the API server
+                host = args.host if hasattr(args, 'host') else 'localhost'
+                port = args.port if hasattr(args, 'port') else 8000
+
+                server_running = False
+                try:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.settimeout(2)
+                    result = sock.connect_ex((host, port))
+                    server_running = result == 0
+                    sock.close()
+                except Exception:
+                    server_running = False
+
+                # Display status
+                print("\n📊 Docx2Shelf API Server Status")
+                print("=" * 40)
+
+                if server_running:
+                    print(f"✅ Status: Running")
+                    print(f"   Host: {host}:{port}")
+                    print(f"   URL: http://{host}:{port}")
+                    print(f"   Docs: http://{host}:{port}/docs")
+                else:
+                    print(f"⛔ Status: Not Running")
+                    print(f"   Expected at: {host}:{port}")
+                    print(f"   Start with: docx2shelf enterprise api --start")
+
+                # Display database info
+                print("\n📁 Database Information")
+                print("=" * 40)
+                db_path = api_manager.db_path
+                if db_path.exists():
+                    db_size = db_path.stat().st_size / (1024 * 1024)  # Convert to MB
+                    print(f"✓ Database exists")
+                    print(f"  Path: {db_path}")
+                    print(f"  Size: {db_size:.2f} MB")
+                else:
+                    print(f"⚠ Database not found")
+                    print(f"  Path: {db_path}")
+
+                # Display queue status
+                print("\n📋 Job Queue Status")
+                print("=" * 40)
+                queue_status = api_manager.get_job_queue_status()
+                print(f"Pending jobs: {queue_status.get('pending_jobs', 0)}")
+                print(f"Running jobs: {queue_status.get('running_jobs', 0)}")
+                print(f"Total queue: {queue_status.get('queue_size', 0)}")
+
+                # Display user count
+                print("\n👥 User Accounts")
+                print("=" * 40)
+                try:
+                    users = api_manager.db_manager.list_users()
+                    print(f"Total users: {len(users) if users else 0}")
+                except Exception:
+                    print("Could not retrieve user count")
+
+                print("\n")
+                return 0
+
+            except ImportError:
+                print("❌ Error: Enterprise API requires additional dependencies")
+                print("   Install with: pip install fastapi uvicorn")
+                return 1
+            except Exception as e:
+                print(f"❌ Error checking API status: {e}")
+                return 1
 
         else:
             print("Please specify an action: --start or --status")
@@ -4052,8 +4125,71 @@ def run_enterprise_reports(args) -> int:
             return 0
 
         elif args.usage:
-            print("Usage analytics not implemented yet")
-            return 0
+            # Display usage analytics by user and API key
+            print("\n📊 Usage Analytics")
+            print("=" * 50)
+
+            try:
+                users = api_manager.db_manager.list_users()
+                if not users:
+                    print("No users found in the system.")
+                    return 0
+
+                total_conversions = 0
+                total_api_calls = 0
+
+                print(f"\n👥 User Statistics (Total Users: {len(users)})")
+                print("-" * 50)
+
+                for user in users:
+                    user_id = user.get('id') if isinstance(user, dict) else user.user_id
+                    username = user.get('username', 'Unknown') if isinstance(user, dict) else user.username
+
+                    # Get user's jobs
+                    user_jobs = api_manager.db_manager.list_conversion_jobs(user_id=user_id)
+                    completed = len([j for j in user_jobs if j.status == 'completed']) if user_jobs else 0
+                    failed = len([j for j in user_jobs if j.status == 'failed']) if user_jobs else 0
+                    total_jobs = len(user_jobs) if user_jobs else 0
+
+                    # Get API keys for this user
+                    api_keys = api_manager.db_manager.list_api_keys(user_id=user_id) if hasattr(api_manager.db_manager, 'list_api_keys') else []
+
+                    print(f"\nUser: {username}")
+                    print(f"  Conversions: {completed} completed, {failed} failed (Total: {total_jobs})")
+                    if api_keys:
+                        print(f"  API Keys: {len(api_keys) if isinstance(api_keys, list) else len(api_keys)}")
+
+                    total_conversions += completed
+                    if api_keys:
+                        total_api_calls += len(api_keys) if isinstance(api_keys, list) else len(api_keys)
+
+                # Display overall statistics
+                print("\n" + "=" * 50)
+                print("📈 Overall Usage")
+                print("-" * 50)
+                print(f"Total Conversions: {total_conversions}")
+                print(f"Total API Keys: {total_api_calls}")
+
+                # Display rate limit statistics if available
+                print("\n🔐 Rate Limiting Status")
+                print("-" * 50)
+                rate_limited_keys = 0
+                for user in users:
+                    user_id = user.get('id') if isinstance(user, dict) else user.user_id
+                    if hasattr(api_manager.db_manager, 'list_api_keys'):
+                        api_keys = api_manager.db_manager.list_api_keys(user_id=user_id)
+                        for key in (api_keys if isinstance(api_keys, list) else []):
+                            if hasattr(key, 'rate_limit_per_minute'):
+                                rate_limited_keys += 1
+
+                print(f"API Keys with Rate Limiting: {rate_limited_keys}")
+                print(f"Total API Keys Tracked: {total_api_calls}")
+
+                return 0
+
+            except Exception as e:
+                print(f"Error generating usage analytics: {e}")
+                return 1
 
         elif args.export:
             jobs = processor.list_jobs()

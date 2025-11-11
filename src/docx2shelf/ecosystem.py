@@ -366,32 +366,268 @@ class NotionIntegration(WritingToolIntegration):
 
 
 class GoogleDocsIntegration(WritingToolIntegration):
-    """Integration with Google Docs."""
+    """Integration with Google Docs and Google Drive."""
 
     def __init__(self):
+        self.access_token = None
         self.authenticated = False
-        self.service = None
+        self.base_url = "https://www.googleapis.com/drive/v3"
+        self.docs_url = "https://docs.googleapis.com/v1"
+        self.user_email = None
 
     def authenticate(self, credentials: Dict[str, str]) -> bool:
-        """Authenticate with Google Docs API."""
-        # This would require Google API credentials setup
-        # For now, return a placeholder implementation
-        self.authenticated = False
-        return False
+        """Authenticate with Google Docs API.
+
+        Credentials can contain:
+        - 'access_token': OAuth access token from Google authentication
+        - 'client_id': OAuth client ID (for future token refresh)
+        - 'client_secret': OAuth client secret (for future token refresh)
+        """
+        self.access_token = credentials.get('access_token', '').strip()
+        if not self.access_token:
+            return False
+
+        # Test authentication with Google Drive API
+        headers = {
+            'Authorization': f'Bearer {self.access_token}',
+            'Accept': 'application/json'
+        }
+
+        try:
+            # Verify token by getting current user info
+            response = requests.get(
+                f"{self.base_url}/about?fields=user",
+                headers=headers,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                user = data.get('user', {})
+                self.user_email = user.get('emailAddress', 'Unknown User')
+                self.authenticated = True
+                return True
+            else:
+                return False
+
+        except Exception:
+            return False
 
     def list_documents(self) -> List[ExternalDocument]:
-        """List Google Docs documents."""
-        # Placeholder implementation
-        return []
+        """List Google Docs documents from Google Drive."""
+        if not self.authenticated or not self.access_token:
+            return []
+
+        headers = {
+            'Authorization': f'Bearer {self.access_token}',
+            'Accept': 'application/json'
+        }
+
+        try:
+            # Search for Google Docs documents
+            # mimeType: application/vnd.google-apps.document
+            query = "mimeType='application/vnd.google-apps.document'"
+            params = {
+                'q': query,
+                'fields': 'files(id,name,mimeType,modifiedTime,owners,webViewLink)',
+                'pageSize': 50,
+                'orderBy': 'modifiedTime desc'
+            }
+
+            response = requests.get(
+                f"{self.base_url}/files",
+                headers=headers,
+                params=params,
+                timeout=30
+            )
+
+            documents = []
+            if response.status_code == 200:
+                data = response.json()
+                for file_item in data.get('files', []):
+                    owner = file_item.get('owners', [{}])[0]
+                    doc = ExternalDocument(
+                        document_id=file_item['id'],
+                        title=file_item['name'],
+                        content="",  # Will be loaded on download
+                        format="gdoc",
+                        author=owner.get('displayName', 'Unknown'),
+                        last_modified=file_item.get('modifiedTime', ''),
+                        source_service="google_docs",
+                        metadata={
+                            'webViewLink': file_item.get('webViewLink', ''),
+                            'mimeType': file_item.get('mimeType', '')
+                        }
+                    )
+                    documents.append(doc)
+
+            return documents
+
+        except Exception:
+            return []
 
     def download_document(self, document_id: str) -> Optional[ExternalDocument]:
-        """Download Google Docs document."""
-        # Placeholder implementation
-        return None
+        """Download Google Docs document content.
+
+        Google Docs are downloaded as plain text or HTML extracted
+        from the document structure. For full fidelity, export as DOCX.
+        """
+        if not self.authenticated or not self.access_token:
+            return None
+
+        headers = {
+            'Authorization': f'Bearer {self.access_token}',
+            'Accept': 'application/json'
+        }
+
+        try:
+            # Get document metadata
+            response = requests.get(
+                f"{self.docs_url}/documents/{document_id}",
+                headers=headers,
+                timeout=30
+            )
+
+            if response.status_code != 200:
+                return None
+
+            doc_data = response.json()
+            title = doc_data.get('title', 'Untitled')
+
+            # Extract content from document structure
+            content = self._extract_content_from_gdoc(doc_data)
+
+            # Get file metadata from Drive API
+            drive_response = requests.get(
+                f"{self.base_url}/files/{document_id}",
+                headers=headers,
+                params={'fields': 'modifiedTime,owners'},
+                timeout=30
+            )
+
+            drive_data = drive_response.json() if drive_response.status_code == 200 else {}
+            owner = drive_data.get('owners', [{}])[0]
+
+            return ExternalDocument(
+                document_id=document_id,
+                title=title,
+                content=content,
+                format="markdown",
+                author=owner.get('displayName', 'Unknown'),
+                last_modified=drive_data.get('modifiedTime', ''),
+                source_service="google_docs",
+                metadata={
+                    'revisionId': doc_data.get('revisionId', ''),
+                    'suggestionsEnabled': doc_data.get('suggestionsEnabled', False)
+                }
+            )
+
+        except Exception:
+            return None
 
     def get_document_metadata(self, document_id: str) -> Dict[str, Any]:
-        """Get Google Docs metadata."""
+        """Get Google Docs document metadata."""
+        if not self.authenticated or not self.access_token:
+            return {}
+
+        headers = {
+            'Authorization': f'Bearer {self.access_token}',
+            'Accept': 'application/json'
+        }
+
+        try:
+            response = requests.get(
+                f"{self.docs_url}/documents/{document_id}",
+                headers=headers,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                doc = response.json()
+                return {
+                    'title': doc.get('title', ''),
+                    'revision_id': doc.get('revisionId', ''),
+                    'suggestions_enabled': doc.get('suggestionsEnabled', False),
+                    'body': len(doc.get('body', {}).get('content', [])) > 0
+                }
+
+        except Exception:
+            pass
+
         return {}
+
+    def _extract_content_from_gdoc(self, doc_data: Dict[str, Any]) -> str:
+        """Extract content from Google Docs document structure.
+
+        Converts document elements into markdown-like format.
+        """
+        try:
+            content_parts = []
+            body = doc_data.get('body', {})
+            content = body.get('content', [])
+
+            for element in content:
+                if 'paragraph' in element:
+                    paragraph = element['paragraph']
+                    text = self._extract_text_from_paragraph(paragraph)
+                    if text.strip():
+                        # Check for heading style
+                        style = paragraph.get('paragraphStyle', {})
+                        named_style = style.get('namedStyleType', 'NORMAL_TEXT')
+
+                        if named_style.startswith('HEADING_'):
+                            level = int(named_style.split('_')[1])
+                            content_parts.append(f"{'#' * level} {text}")
+                        else:
+                            content_parts.append(text)
+
+                elif 'table' in element:
+                    table_text = self._extract_text_from_table(element['table'])
+                    if table_text.strip():
+                        content_parts.append(table_text)
+
+            return '\n\n'.join(content_parts)
+
+        except Exception:
+            return ""
+
+    def _extract_text_from_paragraph(self, paragraph: Dict[str, Any]) -> str:
+        """Extract text from a paragraph element."""
+        try:
+            text_parts = []
+            elements = paragraph.get('elements', [])
+
+            for elem in elements:
+                if 'textRun' in elem:
+                    text_parts.append(elem['textRun'].get('content', ''))
+
+            return ''.join(text_parts).strip()
+
+        except Exception:
+            return ""
+
+    def _extract_text_from_table(self, table: Dict[str, Any]) -> str:
+        """Extract text from a table element (simplified)."""
+        try:
+            rows = []
+            for row in table.get('tableRows', []):
+                cells = []
+                for cell in row.get('tableCells', []):
+                    cell_text = []
+                    for content in cell.get('content', []):
+                        if 'paragraph' in content:
+                            text = self._extract_text_from_paragraph(
+                                content['paragraph']
+                            )
+                            if text:
+                                cell_text.append(text)
+                    cells.append(' | '.join(cell_text))
+                rows.append(' | '.join(cells))
+
+            return '\n'.join(rows)
+
+        except Exception:
+            return ""
 
 
 class PublishingPlatformConnector:

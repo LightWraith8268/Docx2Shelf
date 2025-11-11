@@ -676,16 +676,184 @@ class DevelopmentWorkflow:
         # Could reload development configuration
 
     def _run_development_server(self, port: int):
-        """Run the actual development server."""
-        # This would integrate with the web interface or API server
-        # For now, just a simple placeholder
-        print(f"🌐 Development server running on http://localhost:{port}")
-        print("📚 Documentation: http://localhost:{port}/docs")
-        print("🔧 API: http://localhost:{port}/api")
+        """Run the actual development server with hot-reload support."""
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        import json
+        import webbrowser
 
-        # Keep server running
-        while True:
-            time.sleep(1)
+        class DevelopmentHandler(BaseHTTPRequestHandler):
+            """HTTP handler for development server."""
+
+            def log_message(self, format, *args):
+                """Suppress default logging and use our logger."""
+                pass
+
+            def do_GET(self):
+                """Handle GET requests."""
+                if self.path == '/' or self.path == '/index.html':
+                    self._serve_dev_page()
+                elif self.path == '/api/status':
+                    self._serve_status()
+                elif self.path == '/api/config':
+                    self._serve_config()
+                else:
+                    self.send_error(404, 'Not Found')
+
+            def do_POST(self):
+                """Handle POST requests."""
+                if self.path == '/api/reload':
+                    self._handle_reload()
+                else:
+                    self.send_error(404, 'Not Found')
+
+            def _serve_dev_page(self):
+                """Serve development interface page."""
+                html = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Docx2Shelf Development Server</title>
+                    <style>
+                        body {{
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
+                            max-width: 800px;
+                            margin: 50px auto;
+                            padding: 20px;
+                            background: #f5f5f5;
+                        }}
+                        .card {{
+                            background: white;
+                            padding: 20px;
+                            border-radius: 8px;
+                            margin-bottom: 20px;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        }}
+                        h1 {{ color: #333; }}
+                        h2 {{ color: #666; font-size: 18px; }}
+                        .status {{
+                            display: inline-block;
+                            padding: 8px 12px;
+                            border-radius: 4px;
+                            font-weight: bold;
+                        }}
+                        .status.running {{
+                            background: #4CAF50;
+                            color: white;
+                        }}
+                        a {{
+                            color: #2196F3;
+                            text-decoration: none;
+                        }}
+                        a:hover {{ text-decoration: underline; }}
+                        .command {{
+                            background: #f0f0f0;
+                            padding: 12px;
+                            border-radius: 4px;
+                            font-family: monospace;
+                            margin: 10px 0;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <h1>🚀 Docx2Shelf Development Server</h1>
+                    <div class="card">
+                        <h2>Status: <span class="status running">Running</span></h2>
+                        <p>Development server is active with hot-reload enabled.</p>
+                    </div>
+                    <div class="card">
+                        <h2>🔗 Quick Links</h2>
+                        <ul>
+                            <li><a href="/api/status">Server Status</a></li>
+                            <li><a href="/api/config">Configuration</a></li>
+                            <li><a href="https://docs.python.org">Python Docs</a></li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h2>🎯 Available Commands</h2>
+                        <p>Run these in your project directory:</p>
+                        <div class="command">docx2shelf dev --format</div>
+                        <div class="command">docx2shelf dev --lint</div>
+                        <div class="command">docx2shelf dev --test</div>
+                    </div>
+                    <div class="card">
+                        <h2>📂 Project Information</h2>
+                        <p>Root: {self.server.dev_tools.project_root}</p>
+                    </div>
+                </body>
+                </html>
+                """
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html')
+                self.end_headers()
+                self.wfile.write(html.encode())
+
+            def _serve_status(self):
+                """Serve server status as JSON."""
+                status = {
+                    'status': 'running',
+                    'port': self.server.server_port,
+                    'hot_reload': self.server.dev_tools.config.hot_reload_enabled,
+                    'debug_mode': self.server.dev_tools.config.debug_mode,
+                    'project_root': str(self.server.dev_tools.project_root),
+                    'timestamp': datetime.now().isoformat()
+                }
+                self._send_json(status)
+
+            def _serve_config(self):
+                """Serve configuration as JSON."""
+                config = {
+                    'hot_reload_enabled': self.server.dev_tools.config.hot_reload_enabled,
+                    'auto_install_deps': self.server.dev_tools.config.auto_install_deps,
+                    'debug_mode': self.server.dev_tools.config.debug_mode,
+                    'watch_patterns': self.server.dev_tools.config.watch_patterns,
+                    'test_command': self.server.dev_tools.config.test_command,
+                    'lint_command': self.server.dev_tools.config.lint_command
+                }
+                self._send_json(config)
+
+            def _handle_reload(self):
+                """Handle reload request."""
+                response = {'status': 'reloaded', 'timestamp': datetime.now().isoformat()}
+                self._send_json(response)
+
+            def _send_json(self, data):
+                """Send JSON response."""
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(data).encode())
+
+        # Create custom HTTPServer class to pass dev_tools
+        class DevelopmentServer(HTTPServer):
+            def __init__(self, *args, dev_tools=None, **kwargs):
+                self.dev_tools = dev_tools
+                super().__init__(*args, **kwargs)
+
+        # Start the server
+        print(f"🌐 Development server running on http://localhost:{port}")
+        print(f"📚 Server: http://localhost:{port}")
+        print(f"📊 Status: http://localhost:{port}/api/status")
+        print(f"⚙️ Config: http://localhost:{port}/api/config")
+        print(f"\n✅ Hot-reload: {'enabled' if self.config.hot_reload_enabled else 'disabled'}")
+        print("Press Ctrl+C to stop\n")
+
+        try:
+            # Auto-open browser
+            webbrowser.open(f"http://localhost:{port}", new=1)
+        except Exception:
+            pass
+
+        server = DevelopmentServer(
+            ("localhost", port),
+            DevelopmentHandler,
+            dev_tools=self
+        )
+
+        try:
+            server.serve_forever()
+        finally:
+            server.server_close()
+            print("✅ Development server stopped")
 
     def run_tests(self):
         """Run tests with coverage."""

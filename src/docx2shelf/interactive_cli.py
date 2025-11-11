@@ -931,7 +931,7 @@ class InteractiveCLI:
                 elif self.current_menu == "ai":
                     self.show_ai_menu()
                 elif self.current_menu == "batch":
-                    self.execute_batch_command()
+                    self.show_batch_menu()
                 elif self.current_menu == "plugins":
                     self.show_plugins_menu()
                 elif self.current_menu == "connectors":
@@ -939,7 +939,7 @@ class InteractiveCLI:
                 elif self.current_menu == "checklist":
                     self.show_checklist_menu()
                 elif self.current_menu == "enterprise":
-                    self.execute_enterprise_command()
+                    self.show_enterprise_menu()
                 elif self.current_menu == "update":
                     self.execute_update_command()
                 elif self.current_menu == "settings":

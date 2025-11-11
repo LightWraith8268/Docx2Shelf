@@ -289,8 +289,7 @@ def load_core_builtin_plugins() -> None:
     cleanup_plugin = ExampleCleanupPlugin()
     plugin_manager.register_plugin(cleanup_plugin)
 
-    # Register placeholder plugins for core functionality
-    # These would normally be imported from their respective modules
+    # Load actual core plugins from their modules
     core_plugins = PluginClassification.get_core_plugins()
 
     for plugin_id in core_plugins:
@@ -299,29 +298,102 @@ def load_core_builtin_plugins() -> None:
 
         plugin_info = PluginClassification.get_plugin_info(plugin_id)
 
-        # Create placeholder plugin for demonstration
-        # In a real implementation, these would be imported from their modules
-        placeholder_plugin = CoreBuiltinPlugin(
-            plugin_id,
-            plugin_info['name'],
-            plugin_info['description'],
-            plugin_info.get('essential', False)
-        )
-        plugin_manager.register_plugin(placeholder_plugin)
+        # Dynamically import the plugin class
+        plugin = _load_plugin_from_info(plugin_id, plugin_info)
+        if plugin:
+            plugin_manager.register_plugin(plugin)
+        else:
+            # Fallback: register a stub plugin if import fails
+            logger.warning(f"Failed to load plugin {plugin_id}, registering as stub")
+            stub_plugin = _create_stub_plugin(
+                plugin_id,
+                plugin_info['name'],
+                plugin_info['description'],
+                plugin_info.get('essential', False)
+            )
+            plugin_manager.register_plugin(stub_plugin)
 
 
-class CoreBuiltinPlugin(BasePlugin):
-    """Placeholder for core built-in plugins."""
+def _load_plugin_from_info(plugin_id: str, plugin_info: Dict[str, Any]) -> Optional[BasePlugin]:
+    """Dynamically load a plugin from module information."""
+    try:
+        module_name = plugin_info.get('module')
+        class_name = plugin_info.get('class')
 
-    def __init__(self, plugin_id: str, name: str, description: str, essential: bool = False):
-        super().__init__(plugin_id, "1.0.0")
-        self.display_name = name
-        self.description = description
-        self.essential = essential
+        if not module_name or not class_name:
+            logger.warning(f"Plugin {plugin_id} missing module or class information")
+            return None
 
-    def get_hooks(self) -> Dict[str, List[PluginHook]]:
-        """Core plugins would return their actual hooks here."""
-        return {}
+        # Dynamically import the module
+        module = importlib.import_module(module_name)
+        plugin_class = getattr(module, class_name, None)
+
+        if not plugin_class:
+            logger.warning(f"Class {class_name} not found in module {module_name}")
+            return None
+
+        # Instantiate the plugin
+        # Most plugins accept config or context in __init__, but if they don't, try no args
+        try:
+            plugin = plugin_class()
+        except TypeError:
+            # Try with a default config parameter
+            logger.debug(f"Plugin {class_name} constructor requires arguments, using stub")
+            return None
+
+        # If the instantiated plugin is not a BasePlugin subclass, wrap it
+        if not isinstance(plugin, BasePlugin):
+            logger.debug(f"Plugin {plugin_id} is not a BasePlugin subclass, wrapping")
+            plugin = _wrap_plugin(plugin, plugin_id, plugin_info)
+
+        return plugin
+
+    except ImportError as e:
+        logger.warning(f"Failed to import plugin {plugin_id}: {e}")
+        return None
+    except Exception as e:
+        logger.warning(f"Error loading plugin {plugin_id}: {e}")
+        return None
+
+
+def _wrap_plugin(plugin: Any, plugin_id: str, plugin_info: Dict[str, Any]) -> BasePlugin:
+    """Wrap a non-BasePlugin class to work as a plugin."""
+
+    class WrappedPlugin(BasePlugin):
+        def __init__(self, wrapped_obj, wrapped_id, wrapped_info):
+            super().__init__(wrapped_id, "1.0.0")
+            self.wrapped = wrapped_obj
+            self.display_name = wrapped_info.get('name', wrapped_id)
+            self.description = wrapped_info.get('description', '')
+            self.essential = wrapped_info.get('essential', False)
+
+        def get_hooks(self) -> Dict[str, List[PluginHook]]:
+            """Return hooks from wrapped plugin or empty dict."""
+            if hasattr(self.wrapped, 'get_hooks') and callable(self.wrapped.get_hooks):
+                try:
+                    return self.wrapped.get_hooks()
+                except Exception as e:
+                    logger.warning(f"Error getting hooks from wrapped plugin: {e}")
+            return {}
+
+    return WrappedPlugin(plugin, plugin_id, plugin_info)
+
+
+def _create_stub_plugin(plugin_id: str, name: str, description: str, essential: bool = False) -> BasePlugin:
+    """Create a stub plugin when actual plugin cannot be loaded."""
+
+    class StubPlugin(BasePlugin):
+        def __init__(self, stub_id, stub_name, stub_desc, stub_essential):
+            super().__init__(stub_id, "1.0.0")
+            self.display_name = stub_name
+            self.description = stub_desc
+            self.essential = stub_essential
+
+        def get_hooks(self) -> Dict[str, List[PluginHook]]:
+            """Stub plugins return no hooks."""
+            return {}
+
+    return StubPlugin(plugin_id, name, description, essential)
 
 
 def discover_available_plugins() -> List[Dict[str, Any]]:
