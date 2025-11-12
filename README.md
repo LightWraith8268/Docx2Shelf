@@ -67,9 +67,13 @@ Download the latest installer for your platform from the [Releases page](https:/
 
 For users who prefer portable applications without installation:
 
-**🪟 Windows Portable**
-- Download `Docx2Shelf-windows-portable.zip`
-- Extract and run `Docx2Shelf.exe`
+**🪟 Windows Portable** (v2.1.8+)
+- Download `Docx2Shelf-Portable-2.1.8.zip` from [Releases](https://github.com/LightWraith8268/Docx2Shelf/releases/)
+- Extract the ZIP file to any location (USB drive, local folder, network drive)
+- Run `Docx2Shelf.exe` - no installation required
+- Settings are saved alongside the executable for true portability
+- Works on Windows 7, 8, 10, and 11
+- Perfect for USB drives and portable workflows
 
 **🍎 macOS Portable**
 - Download `Docx2Shelf-macos-portable.zip`
