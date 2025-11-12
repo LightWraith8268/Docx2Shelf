@@ -112,6 +112,7 @@ a = Analysis(
         'time',
         'math',
         'random',
+        'keyword',
 
         # Additional Python runtime modules to prevent DLL loading issues
         'encodings',
@@ -379,9 +380,6 @@ exe = EXE(
     manifest="docx2shelf.manifest",  # Use custom manifest for legitimacy
     uac_admin=False,  # Don't request admin privileges
     uac_uiaccess=False,  # Don't request UI access
-    # Additional Avira HEUR/APC mitigation options
-    contents_directory=None,  # Use default to avoid suspicious directory structures
-    name_suffix=None,  # Avoid suffix patterns that trigger heuristics
 )
 
 # Create distribution
