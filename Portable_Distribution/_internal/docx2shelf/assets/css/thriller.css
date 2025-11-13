@@ -1,0 +1,557 @@
+/*
+ * Theme Name: Thriller
+ * Description: Bold, dramatic styling for thrillers, suspense, and crime fiction
+ * Genre: Fiction - Thriller, Suspense, Crime, Detective Fiction
+ * Features: High contrast, dramatic typography, tension-building design
+ */
+
+/* Base Typography */
+body {
+    font-family: "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: #f8f8f8;
+    margin: 1.5em;
+    text-align: left;
+    font-weight: 400;
+}
+
+/* Chapter Titles */
+h1 {
+    font-family: "Oswald", "Impact", "Arial Black", Arial, sans-serif;
+    font-size: 2.4em;
+    font-weight: 700;
+    color: #000000;
+    text-align: center;
+    margin: 2em 0 1.5em 0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Section Headings */
+h2 {
+    font-family: "Oswald", "Impact", Arial, sans-serif;
+    font-size: 1.6em;
+    font-weight: 600;
+    color: #222222;
+    margin: 2em 0 1em 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #cc0000;
+    padding-bottom: 0.3em;
+}
+
+h3 {
+    font-family: "Roboto Condensed", Arial, sans-serif;
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #333333;
+    margin: 1.8em 0 1em 0;
+    text-transform: uppercase;
+}
+
+/* Paragraphs */
+p {
+    margin: 0 0 1em 0;
+    text-indent: 0;
+    orphans: 2;
+    widows: 2;
+}
+
+/* Character Formatting */
+em {
+    font-style: italic;
+    color: #cc0000;
+    font-weight: 500;
+}
+
+strong {
+    font-weight: 700;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* Dialogue */
+.dialogue {
+    font-style: italic;
+    margin: 0.5em 0;
+    padding-left: 1em;
+    border-left: 3px solid #cc0000;
+}
+
+/* Thoughts and Internal Monologue */
+.thought {
+    font-style: italic;
+    color: #666666;
+    font-weight: 300;
+}
+
+/* Tension Moments */
+.tension {
+    font-weight: 600;
+    color: #cc0000;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* Action Sequences */
+.action {
+    font-weight: 500;
+    line-height: 1.4;
+    margin: 0.3em 0;
+}
+
+/* Scene Breaks */
+.scene-break {
+    text-align: center;
+    margin: 2em 0;
+    font-size: 1.5em;
+    color: #cc0000;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.scene-break::before {
+    content: "■ ■ ■";
+}
+
+/* Chapter Breaks */
+.chapter-break {
+    page-break-before: always;
+    margin-top: 2em;
+    background: linear-gradient(to bottom, transparent 0%, #f0f0f0 50%, transparent 100%);
+    height: 1px;
+    margin: 3em 0;
+}
+
+/* Time Stamps */
+.timestamp {
+    font-family: "Courier New", monospace;
+    font-weight: 700;
+    color: #cc0000;
+    text-transform: uppercase;
+    text-align: center;
+    margin: 1.5em 0;
+    letter-spacing: 0.1em;
+    border: 2px solid #cc0000;
+    padding: 0.5em;
+    background: #ffffff;
+}
+
+/* Location Headers */
+.location {
+    font-family: "Oswald", Arial, sans-serif;
+    font-weight: 600;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+    margin: 1.5em 0 1em 0;
+    border-bottom: 1px solid #cccccc;
+    padding-bottom: 0.3em;
+}
+
+/* Evidence/Clues */
+.evidence {
+    background: #fff9c4;
+    border: 1px solid #e6cc00;
+    border-left: 4px solid #cc0000;
+    padding: 1em;
+    margin: 1.5em 0;
+    font-family: "Courier New", monospace;
+    font-size: 0.9em;
+}
+
+/* Flashbacks */
+.flashback {
+    font-style: italic;
+    color: #666666;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 1em;
+    margin: 1.5em 0;
+    border-left: 4px solid #999999;
+}
+
+/* Phone/Text Messages */
+.message {
+    background: #e8f4f8;
+    border: 1px solid #b8d4da;
+    border-radius: 8px;
+    padding: 0.8em;
+    margin: 1em 0;
+    font-family: "Roboto", Arial, sans-serif;
+    font-size: 0.9em;
+}
+
+/* Quotes and Citations */
+blockquote {
+    font-weight: 500;
+    margin: 1.5em 1em;
+    padding: 1em;
+    border-left: 4px solid #cc0000;
+    background: #f5f5f5;
+    color: #222222;
+    position: relative;
+}
+
+blockquote::before {
+    content: """;
+    font-size: 3em;
+    color: #cc0000;
+    position: absolute;
+    left: 0.2em;
+    top: -0.2em;
+    font-weight: 700;
+}
+
+blockquote p {
+    text-indent: 0;
+    margin-left: 1em;
+}
+
+/* Links */
+a {
+    color: #cc0000;
+    text-decoration: none;
+    border-bottom: 1px solid #cc0000;
+    font-weight: 500;
+}
+
+a:hover {
+    color: #990000;
+    border-bottom-color: #990000;
+}
+
+/* Lists */
+ul, ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+li {
+    margin: 0.3em 0;
+    line-height: 1.5;
+}
+
+/* Table of Contents */
+.toc {
+    background: #f0f0f0;
+    border: 2px solid #cc0000;
+    padding: 1.5em;
+    margin: 2em 0;
+}
+
+.toc h2 {
+    color: #cc0000;
+    text-align: center;
+    margin-top: 0;
+    border-bottom: 2px solid #cc0000;
+}
+
+.toc ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.toc li {
+    margin: 0.5em 0;
+    font-weight: 500;
+}
+
+.toc a {
+    color: #222222;
+    text-decoration: none;
+    border-bottom: none;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.toc a:hover {
+    color: #cc0000;
+}
+
+/* Part Dividers */
+.part-title {
+    font-family: "Oswald", "Impact", Arial, sans-serif;
+    font-size: 3em;
+    font-weight: 700;
+    text-align: center;
+    color: #cc0000;
+    margin: 3em 0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+    border: 3px solid #cc0000;
+    padding: 1em;
+    background: #ffffff;
+}
+
+/* Mobile Responsiveness */
+@media screen and (max-width: 768px) {
+    body {
+        font-size: 15px;
+        margin: 1em;
+        line-height: 1.5;
+    }
+
+    h1 {
+        font-size: 2em;
+        margin: 1.5em 0 1.2em 0;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    h2 {
+        font-size: 1.4em;
+        margin: 1.5em 0 0.8em 0;
+    }
+
+    h3 {
+        font-size: 1.2em;
+        margin: 1.3em 0 0.8em 0;
+    }
+
+    .dialogue {
+        padding-left: 0.5em;
+        border-left-width: 2px;
+    }
+
+    .evidence, .flashback, .message {
+        padding: 0.8em;
+        margin: 1em 0;
+    }
+
+    .timestamp {
+        padding: 0.3em;
+        margin: 1em 0;
+    }
+
+    .part-title {
+        font-size: 2.2em;
+        margin: 2em 0;
+        padding: 0.8em;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    blockquote {
+        margin: 1em 0.5em;
+        padding: 0.8em;
+    }
+
+    blockquote::before {
+        font-size: 2.5em;
+        left: 0.1em;
+        top: -0.1em;
+    }
+}
+
+/* Small Mobile */
+@media screen and (max-width: 480px) {
+    body {
+        font-size: 14px;
+        margin: 0.8em;
+    }
+
+    h1 {
+        font-size: 1.8em;
+        margin: 1.2em 0 1em 0;
+    }
+
+    .part-title {
+        font-size: 2em;
+        margin: 1.5em 0;
+        padding: 0.6em;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1a1a1a;
+        color: #e6e6e6;
+    }
+
+    h1 {
+        color: #ffffff;
+        text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3);
+    }
+
+    h2 {
+        color: #ffffff;
+        border-bottom-color: #ff3333;
+    }
+
+    h3 {
+        color: #e6e6e6;
+    }
+
+    em {
+        color: #ff6666;
+    }
+
+    strong {
+        color: #ffffff;
+    }
+
+    .dialogue {
+        border-left-color: #ff3333;
+    }
+
+    .thought {
+        color: #bbbbbb;
+    }
+
+    .tension {
+        color: #ff6666;
+    }
+
+    .scene-break {
+        color: #ff3333;
+    }
+
+    .timestamp {
+        color: #ff3333;
+        border-color: #ff3333;
+        background: #2a2a2a;
+    }
+
+    .location {
+        color: #cccccc;
+        border-bottom-color: #666666;
+    }
+
+    .evidence {
+        background: #3a3300;
+        border-color: #cc9900;
+        border-left-color: #ff3333;
+    }
+
+    .flashback {
+        background: rgba(255, 255, 255, 0.1);
+        border-left-color: #999999;
+        color: #cccccc;
+    }
+
+    .message {
+        background: #2a3a40;
+        border-color: #4a6a70;
+    }
+
+    blockquote {
+        background: #2a2a2a;
+        border-left-color: #ff3333;
+        color: #e6e6e6;
+    }
+
+    blockquote::before {
+        color: #ff3333;
+    }
+
+    .toc {
+        background: #2a2a2a;
+        border-color: #ff3333;
+    }
+
+    .toc h2 {
+        color: #ff3333;
+        border-bottom-color: #ff3333;
+    }
+
+    .toc a {
+        color: #e6e6e6;
+    }
+
+    .toc a:hover {
+        color: #ff6666;
+    }
+
+    .part-title {
+        color: #ff3333;
+        border-color: #ff3333;
+        background: #2a2a2a;
+        text-shadow: 3px 3px 6px rgba(255, 255, 255, 0.5);
+    }
+
+    a {
+        color: #ff6666;
+        border-bottom-color: #ff3333;
+    }
+
+    a:hover {
+        color: #ff3333;
+        border-bottom-color: #ff6666;
+    }
+}
+
+/* Print Styles */
+@media print {
+    body {
+        font-size: 11pt;
+        line-height: 1.3;
+        color: #000000;
+        background: #ffffff;
+        margin: 0.8in;
+    }
+
+    h1 {
+        font-size: 16pt;
+        color: #000000;
+        text-shadow: none;
+        page-break-after: avoid;
+    }
+
+    h2, h3 {
+        color: #000000;
+        page-break-after: avoid;
+        border-bottom-color: #666666;
+    }
+
+    .scene-break {
+        color: #666666;
+    }
+
+    .timestamp {
+        color: #000000;
+        border-color: #666666;
+        background: #ffffff;
+    }
+
+    .evidence {
+        background: #f5f5f5;
+        border-color: #666666;
+        border-left-color: #666666;
+    }
+
+    blockquote {
+        background: #f8f8f8;
+        border-left-color: #666666;
+        color: #000000;
+        page-break-inside: avoid;
+    }
+
+    blockquote::before {
+        color: #666666;
+    }
+
+    .toc {
+        background: #f8f8f8;
+        border-color: #666666;
+    }
+
+    .part-title {
+        color: #000000;
+        border-color: #666666;
+        background: #ffffff;
+        text-shadow: none;
+        page-break-before: always;
+        page-break-after: always;
+    }
+
+    a {
+        color: #000000;
+        border-bottom-color: #666666;
+    }
+}

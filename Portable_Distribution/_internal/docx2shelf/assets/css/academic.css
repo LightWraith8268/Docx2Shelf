@@ -1,0 +1,104 @@
+/* Academic/Non-fiction theme */
+html {
+    font-family: "Crimson Text", "Times New Roman", serif;
+    line-height: 1.8;
+    color: #333;
+    background-color: #ffffff;
+    font-size: 1rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Source Sans Pro", "Arial", sans-serif;
+    page-break-after: avoid;
+    color: #2c3e50;
+    font-weight: 600;
+    margin-top: 2em;
+    margin-bottom: 1em;
+}
+
+h1 {
+    font-size: 2em;
+    text-align: center;
+    margin-bottom: 1.5em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid #bdc3c7;
+}
+
+h2 { font-size: 1.6em; }
+h3 { font-size: 1.3em; }
+h4 { font-size: 1.1em; }
+h5 { font-size: 1em; font-weight: bold; }
+h6 { font-size: 1em; font-weight: normal; font-style: italic; }
+
+p {
+    text-indent: 0;
+    margin: 0 0 1em 0;
+    text-align: justify;
+}
+
+blockquote {
+    margin: 1.5em 3em;
+    padding: 1em 1.5em;
+    border-left: 4px solid #3498db;
+    background-color: #ecf0f1;
+    font-style: italic;
+}
+
+code, .equation {
+    font-family: "Fira Code", "Consolas", monospace;
+    background-color: #f8f9fa;
+    padding: 0.1em 0.3em;
+    border: 1px solid #e9ecef;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+pre {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 1em;
+    overflow-x: auto;
+    font-family: "Fira Code", "Consolas", monospace;
+    font-size: 0.9em;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+table td, table th {
+    border: 1px solid #bdc3c7;
+    padding: 0.5em;
+    text-align: left;
+}
+
+table th {
+    background-color: #ecf0f1;
+    font-weight: bold;
+}
+
+.footnotes {
+    border-top: 1px solid #bdc3c7;
+    margin-top: 2em;
+    padding-top: 1em;
+    font-size: 0.9em;
+}
+
+.footnotes ol {
+    padding-left: 1.5em;
+}
+
+.footnotes li {
+    margin-bottom: 0.5em;
+}
+
+figcaption {
+    font-size: 0.9em;
+    font-style: italic;
+    text-align: center;
+    margin-top: 0.5em;
+    color: #555;
+}

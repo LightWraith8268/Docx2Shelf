@@ -1,0 +1,824 @@
+/*
+ * Theme Name: Biography
+ * Description: Elegant, narrative styling for biographies, memoirs, and autobiographies
+ * Genre: Non-Fiction - Biography, Memoir, Autobiography, Personal Narrative
+ * Features: Elegant typography, timeline elements, quote highlights, photo-friendly
+ */
+
+/* Base Typography */
+body {
+    font-family: "Crimson Text", "Georgia", "Times New Roman", serif;
+    font-size: 17px;
+    line-height: 1.7;
+    color: #2c2c2c;
+    background: #fefefe;
+    margin: 2em 1.8em;
+    text-align: left;
+    font-weight: 400;
+}
+
+/* Chapter Titles */
+h1 {
+    font-family: "Playfair Display", "Georgia", serif;
+    font-size: 2.4em;
+    font-weight: 400;
+    color: #1a1a1a;
+    text-align: center;
+    margin: 2.5em 0 2em 0;
+    font-style: italic;
+    letter-spacing: 0.02em;
+}
+
+/* Section Headings */
+h2 {
+    font-family: "Playfair Display", "Georgia", serif;
+    font-size: 1.8em;
+    font-weight: 600;
+    color: #2c2c2c;
+    margin: 2.2em 0 1.5em 0;
+    text-align: center;
+    font-style: italic;
+}
+
+h3 {
+    font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #444444;
+    margin: 2em 0 1.2em 0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+}
+
+h4 {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #666666;
+    margin: 1.8em 0 1em 0;
+    font-style: italic;
+}
+
+/* Paragraphs */
+p {
+    margin: 0 0 1.3em 0;
+    text-indent: 1.5em;
+    orphans: 2;
+    widows: 2;
+}
+
+p:first-child,
+p.no-indent,
+.chapter p:first-of-type {
+    text-indent: 0;
+}
+
+/* Character Formatting */
+em {
+    font-style: italic;
+    color: #1a1a1a;
+}
+
+strong {
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+/* Timeline Elements */
+.timeline-year {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #8b4513;
+    text-align: center;
+    margin: 2.5em 0 1.5em 0;
+    background: #f8f5f0;
+    padding: 0.8em;
+    border: 2px solid #d2b48c;
+    border-radius: 8px;
+    position: relative;
+}
+
+.timeline-year::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: -10px;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #8b4513;
+}
+
+.timeline-event {
+    margin: 1.5em 0;
+    padding: 1.2em;
+    border-left: 4px solid #d2b48c;
+    background: #faf8f5;
+    position: relative;
+}
+
+.timeline-event .date {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #8b4513;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5em;
+}
+
+.timeline-event::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 1.5em;
+    width: 12px;
+    height: 12px;
+    background: #8b4513;
+    border-radius: 50%;
+    border: 3px solid #fefefe;
+}
+
+/* Age Markers */
+.age-marker {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 0.85em;
+    color: #8b4513;
+    font-weight: 600;
+    background: #f0e6d2;
+    padding: 0.3em 0.8em;
+    border-radius: 15px;
+    display: inline-block;
+    margin: 0 0.5em 0.5em 0;
+}
+
+/* Quotes and Memories */
+.memory {
+    font-style: italic;
+    background: #f8f5f0;
+    padding: 1.5em;
+    margin: 2em 0;
+    border-left: 4px solid #d2b48c;
+    border-radius: 0 8px 8px 0;
+    color: #444444;
+}
+
+.memory p {
+    text-indent: 0;
+    margin-bottom: 1em;
+}
+
+.memory p:last-child {
+    margin-bottom: 0;
+}
+
+.memory::before {
+    content: """;
+    font-size: 3em;
+    color: #d2b48c;
+    position: absolute;
+    margin-left: -0.5em;
+    margin-top: -0.3em;
+    font-family: "Georgia", serif;
+}
+
+/* Personal Letters/Documents */
+.letter {
+    background: #fffef7;
+    border: 1px solid #e6dcc6;
+    padding: 2em;
+    margin: 2em 0;
+    font-family: "Courier New", monospace;
+    font-size: 0.95em;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.letter::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: repeating-linear-gradient(
+        90deg,
+        #d2b48c 0px,
+        #d2b48c 10px,
+        transparent 10px,
+        transparent 20px
+    );
+}
+
+.letter .date {
+    text-align: right;
+    color: #8b4513;
+    font-weight: 600;
+    margin-bottom: 1.5em;
+}
+
+.letter .signature {
+    text-align: right;
+    margin-top: 2em;
+    font-style: italic;
+    color: #5d4e37;
+}
+
+.letter p {
+    text-indent: 0;
+    margin-bottom: 1.2em;
+    line-height: 1.6;
+}
+
+/* Photo Captions */
+.photo-caption {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 0.9em;
+    color: #666666;
+    font-style: italic;
+    text-align: center;
+    margin: 0.8em 0 2em 0;
+    padding: 0.8em;
+    background: #f8f5f0;
+    border-radius: 4px;
+}
+
+/* Location Headers */
+.location {
+    font-family: "Playfair Display", "Georgia", serif;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #8b4513;
+    text-align: center;
+    margin: 2em 0 1.5em 0;
+    font-style: italic;
+    border-top: 1px solid #d2b48c;
+    border-bottom: 1px solid #d2b48c;
+    padding: 1em 0;
+}
+
+/* Family Tree/Relationships */
+.family-member {
+    background: #f5f2ed;
+    border: 1px solid #d2b48c;
+    border-radius: 6px;
+    padding: 1em;
+    margin: 1em 0;
+    display: inline-block;
+    min-width: 200px;
+    text-align: center;
+}
+
+.family-member .name {
+    font-weight: 600;
+    color: #5d4e37;
+    font-size: 1.1em;
+}
+
+.family-member .relationship {
+    font-size: 0.9em;
+    color: #8b4513;
+    font-style: italic;
+}
+
+.family-member .dates {
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 0.85em;
+    color: #999999;
+}
+
+/* Historical Context */
+.historical-context {
+    background: #e8e3d8;
+    border: 1px solid #c9b896;
+    border-radius: 6px;
+    padding: 1.5em;
+    margin: 2em 0;
+    font-size: 0.95em;
+    color: #4a4034;
+}
+
+.historical-context h4 {
+    color: #5d4e37;
+    margin-top: 0;
+    margin-bottom: 1em;
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+}
+
+.historical-context p {
+    text-indent: 0;
+    margin-bottom: 1em;
+}
+
+/* Reflections */
+.reflection {
+    font-style: italic;
+    color: #5d4e37;
+    background: #faf8f5;
+    padding: 1.5em;
+    margin: 2em 0;
+    border-radius: 8px;
+    border: 1px solid #e6dcc6;
+    position: relative;
+}
+
+.reflection::before {
+    content: "Reflection";
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: #8b4513;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    position: absolute;
+    top: -0.5em;
+    left: 1em;
+    background: #fefefe;
+    padding: 0 0.5em;
+}
+
+.reflection p {
+    text-indent: 0;
+    margin-bottom: 1em;
+}
+
+/* Pull Quotes */
+blockquote {
+    font-family: "Playfair Display", "Georgia", serif;
+    font-size: 1.3em;
+    font-style: italic;
+    color: #4a4034;
+    text-align: center;
+    margin: 2.5em 0;
+    padding: 2em;
+    background: #f8f5f0;
+    border: none;
+    border-radius: 8px;
+    position: relative;
+}
+
+blockquote::before {
+    content: """;
+    font-size: 4em;
+    color: #d2b48c;
+    position: absolute;
+    left: 0.5em;
+    top: 0.2em;
+    font-weight: 400;
+}
+
+blockquote::after {
+    content: """;
+    font-size: 4em;
+    color: #d2b48c;
+    position: absolute;
+    right: 0.5em;
+    bottom: 0.2em;
+    font-weight: 400;
+}
+
+blockquote p {
+    text-indent: 0;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+
+blockquote cite {
+    display: block;
+    font-size: 0.7em;
+    color: #8b4513;
+    font-style: normal;
+    font-weight: 600;
+    margin-top: 1.5em;
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Lists */
+ul, ol {
+    margin: 1.3em 0;
+    padding-left: 2.5em;
+}
+
+li {
+    margin: 0.8em 0;
+    line-height: 1.6;
+}
+
+/* Links */
+a {
+    color: #8b4513;
+    text-decoration: underline;
+    text-decoration-color: #d2b48c;
+}
+
+a:hover {
+    color: #5d4e37;
+    text-decoration-color: #8b4513;
+}
+
+/* Table of Contents */
+.toc {
+    background: #f8f5f0;
+    border: 2px solid #d2b48c;
+    border-radius: 8px;
+    padding: 2em;
+    margin: 2em 0;
+}
+
+.toc h2 {
+    color: #5d4e37;
+    margin-top: 0;
+    border-bottom: 2px solid #d2b48c;
+    padding-bottom: 0.8em;
+    margin-bottom: 1.5em;
+}
+
+.toc ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.toc li {
+    margin: 1em 0;
+    font-weight: 500;
+}
+
+.toc a {
+    color: #5d4e37;
+    text-decoration: none;
+    border-bottom: 1px dotted #d2b48c;
+    display: block;
+    padding: 0.5em 0;
+}
+
+.toc a:hover {
+    color: #8b4513;
+    border-bottom-style: solid;
+}
+
+/* Part Dividers */
+.part-title {
+    font-family: "Playfair Display", "Georgia", serif;
+    font-size: 2.8em;
+    font-weight: 400;
+    font-style: italic;
+    text-align: center;
+    color: #5d4e37;
+    margin: 3em 0;
+    padding: 1.5em;
+    background: #f8f5f0;
+    border: 3px solid #d2b48c;
+    border-radius: 12px;
+}
+
+/* Mobile Responsiveness */
+@media screen and (max-width: 768px) {
+    body {
+        font-size: 16px;
+        margin: 1.5em 1em;
+        line-height: 1.6;
+    }
+
+    h1 {
+        font-size: 2em;
+        margin: 2em 0 1.5em 0;
+    }
+
+    h2 {
+        font-size: 1.5em;
+        margin: 1.8em 0 1.2em 0;
+    }
+
+    h3 {
+        font-size: 1.2em;
+        margin: 1.5em 0 1em 0;
+    }
+
+    .timeline-year {
+        margin: 2em 0 1.2em 0;
+        padding: 0.6em;
+    }
+
+    .timeline-event {
+        padding: 1em;
+        margin: 1.2em 0;
+    }
+
+    .memory {
+        padding: 1.2em;
+        margin: 1.5em 0;
+    }
+
+    .letter {
+        padding: 1.5em;
+        margin: 1.5em 0;
+        font-size: 0.9em;
+    }
+
+    .historical-context {
+        padding: 1.2em;
+        margin: 1.5em 0;
+    }
+
+    .reflection {
+        padding: 1.2em;
+        margin: 1.5em 0;
+    }
+
+    blockquote {
+        font-size: 1.1em;
+        padding: 1.5em;
+        margin: 2em 0;
+    }
+
+    blockquote::before,
+    blockquote::after {
+        font-size: 3em;
+    }
+
+    .part-title {
+        font-size: 2.2em;
+        margin: 2em 0;
+        padding: 1.2em;
+    }
+
+    .family-member {
+        min-width: auto;
+        width: 100%;
+        margin: 0.8em 0;
+    }
+}
+
+/* Small Mobile */
+@media screen and (max-width: 480px) {
+    body {
+        font-size: 15px;
+        margin: 1.2em 0.8em;
+    }
+
+    h1 {
+        font-size: 1.8em;
+        margin: 1.5em 0 1.2em 0;
+    }
+
+    p {
+        text-indent: 1.2em;
+    }
+
+    .part-title {
+        font-size: 2em;
+        margin: 1.5em 0;
+        padding: 1em;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1a1a1a;
+        color: #e6e6e6;
+    }
+
+    h1, h2, h3, h4 {
+        color: #ffffff;
+    }
+
+    .timeline-year {
+        background: #2d2d2d;
+        border-color: #8b7355;
+        color: #d4a574;
+    }
+
+    .timeline-year::before {
+        border-bottom-color: #d4a574;
+    }
+
+    .timeline-event {
+        background: #2a2a2a;
+        border-left-color: #8b7355;
+    }
+
+    .timeline-event .date {
+        color: #d4a574;
+    }
+
+    .timeline-event::before {
+        background: #d4a574;
+        border-color: #1a1a1a;
+    }
+
+    .age-marker {
+        background: #3d3d3d;
+        color: #d4a574;
+    }
+
+    .memory {
+        background: #2d2d2d;
+        border-left-color: #8b7355;
+        color: #cccccc;
+    }
+
+    .memory::before {
+        color: #8b7355;
+    }
+
+    .letter {
+        background: #2a2a2a;
+        border-color: #555555;
+        color: #e6e6e6;
+    }
+
+    .letter .date {
+        color: #d4a574;
+    }
+
+    .letter .signature {
+        color: #b8a082;
+    }
+
+    .photo-caption {
+        background: #2d2d2d;
+        color: #cccccc;
+    }
+
+    .location {
+        color: #d4a574;
+        border-color: #8b7355;
+    }
+
+    .family-member {
+        background: #2a2a2a;
+        border-color: #8b7355;
+    }
+
+    .family-member .name {
+        color: #b8a082;
+    }
+
+    .family-member .relationship {
+        color: #d4a574;
+    }
+
+    .historical-context {
+        background: #2d2d2d;
+        border-color: #555555;
+        color: #cccccc;
+    }
+
+    .historical-context h4 {
+        color: #b8a082;
+    }
+
+    .reflection {
+        background: #2a2a2a;
+        border-color: #555555;
+        color: #b8a082;
+    }
+
+    .reflection::before {
+        color: #d4a574;
+        background: #1a1a1a;
+    }
+
+    blockquote {
+        background: #2d2d2d;
+        color: #cccccc;
+    }
+
+    blockquote::before,
+    blockquote::after {
+        color: #8b7355;
+    }
+
+    blockquote cite {
+        color: #d4a574;
+    }
+
+    .toc {
+        background: #2d2d2d;
+        border-color: #8b7355;
+    }
+
+    .toc h2 {
+        color: #b8a082;
+        border-bottom-color: #8b7355;
+    }
+
+    .toc a {
+        color: #b8a082;
+        border-bottom-color: #8b7355;
+    }
+
+    .toc a:hover {
+        color: #d4a574;
+    }
+
+    .part-title {
+        color: #b8a082;
+        background: #2d2d2d;
+        border-color: #8b7355;
+    }
+
+    a {
+        color: #d4a574;
+        text-decoration-color: #8b7355;
+    }
+
+    a:hover {
+        color: #b8a082;
+        text-decoration-color: #d4a574;
+    }
+}
+
+/* Print Styles */
+@media print {
+    body {
+        font-size: 11pt;
+        line-height: 1.4;
+        color: #000000;
+        background: #ffffff;
+        margin: 0.8in;
+    }
+
+    h1, h2, h3, h4 {
+        color: #000000;
+        page-break-after: avoid;
+    }
+
+    .timeline-year {
+        background: #f8f8f8;
+        border-color: #cccccc;
+        color: #666666;
+        page-break-after: avoid;
+    }
+
+    .timeline-event {
+        background: #f8f8f8;
+        border-left-color: #cccccc;
+        page-break-inside: avoid;
+    }
+
+    .timeline-event::before {
+        background: #666666;
+        border-color: #ffffff;
+    }
+
+    .memory {
+        background: #f8f8f8;
+        border-left-color: #cccccc;
+        color: #333333;
+        page-break-inside: avoid;
+    }
+
+    .letter {
+        background: #ffffff;
+        border-color: #cccccc;
+        page-break-inside: avoid;
+    }
+
+    .historical-context {
+        background: #f5f5f5;
+        border-color: #cccccc;
+        page-break-inside: avoid;
+    }
+
+    .reflection {
+        background: #f8f8f8;
+        border-color: #cccccc;
+        page-break-inside: avoid;
+    }
+
+    blockquote {
+        background: #f8f8f8;
+        color: #000000;
+        page-break-inside: avoid;
+    }
+
+    blockquote::before,
+    blockquote::after {
+        color: #cccccc;
+    }
+
+    .part-title {
+        color: #000000;
+        background: #f8f8f8;
+        border-color: #cccccc;
+        page-break-before: always;
+        page-break-after: always;
+    }
+
+    a {
+        color: #000000;
+        text-decoration-color: #666666;
+    }
+}

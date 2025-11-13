@@ -1,0 +1,64 @@
+/* Romance genre theme */
+html {
+    font-family: "Playfair Display", "Crimson Text", serif;
+    line-height: 1.7;
+    color: #3c2415;
+    background-color: #fff9f7;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Dancing Script", "Brush Script MT", cursive;
+    page-break-after: avoid;
+    color: #b85450;
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+}
+
+h1 {
+    font-size: 2.5em;
+    text-align: center;
+    margin-bottom: 1em;
+}
+
+h2 { font-size: 2em; }
+h3 { font-size: 1.6em; }
+
+p {
+    text-indent: 1.2em;
+    margin: 0;
+    margin-bottom: 0.5em;
+}
+
+blockquote {
+    font-style: italic;
+    margin: 1em 2.5em;
+    padding: 0.8em 1.2em;
+    border-left: 4px solid #b85450;
+    background-color: #fdf5f4;
+    position: relative;
+}
+
+blockquote::before {
+    content: """;
+    font-size: 3em;
+    color: #b85450;
+    position: absolute;
+    left: -0.2em;
+    top: -0.5em;
+}
+
+.epigraph {
+    text-align: center;
+    font-style: italic;
+    color: #b85450;
+    margin: 2em auto;
+    max-width: 80%;
+}
+
+.dedication {
+    text-align: center;
+    font-style: italic;
+    color: #b85450;
+    font-size: 1.2em;
+    margin: 3em auto;
+}

@@ -1,0 +1,55 @@
+/* Fantasy genre theme */
+html {
+    font-family: "Times New Roman", "Crimson Text", serif;
+    line-height: 1.6;
+    color: #2c1810;
+    background-color: #faf8f5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Cinzel", "Trajan Pro", serif;
+    page-break-after: avoid;
+    color: #8b4513;
+    letter-spacing: 0.05em;
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+}
+
+h1 {
+    font-size: 2.2em;
+    text-align: center;
+    border-bottom: 2px solid #8b4513;
+    padding-bottom: 0.3em;
+}
+
+h2 { font-size: 1.8em; }
+h3 { font-size: 1.4em; }
+
+p {
+    text-indent: 1.5em;
+    margin: 0;
+    margin-bottom: 0.8em;
+}
+
+blockquote {
+    font-style: italic;
+    margin: 1em 2em;
+    padding: 0.5em 1em;
+    border-left: 3px solid #8b4513;
+    background-color: #f5f2ed;
+}
+
+.epigraph {
+    text-align: center;
+    font-style: italic;
+    font-size: 0.9em;
+    margin: 2em auto;
+    max-width: 70%;
+}
+
+.dedication {
+    text-align: center;
+    font-style: italic;
+    font-size: 1.1em;
+    margin: 3em auto;
+}

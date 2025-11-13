@@ -1,0 +1,90 @@
+{
+    "paragraph_styles": {
+        "Heading 1": "h1",
+        "Heading 2": "h2",
+        "Heading 3": "h3",
+        "Heading 4": "h4",
+        "Heading 5": "h5",
+        "Heading 6": "h6",
+        "Normal": "p",
+        "Body Text": "p",
+        "List Paragraph": "li",
+        "Quote": "blockquote",
+        "Block Text": "blockquote",
+        "Caption": "figcaption",
+        "Title": "h1",
+        "Subtitle": "h2",
+        "Intense Quote": "blockquote",
+        "List Bullet": "li",
+        "List Number": "li",
+        "List Continue": "p",
+        "Code": "pre",
+        "Preformatted": "pre",
+        "Book Title": "h1",
+        "Chapter": "h1",
+        "Chapter Title": "h1",
+        "Section": "h2",
+        "Subsection": "h3",
+        "Author": "p class=\"author\"",
+        "Date": "p class=\"date\"",
+        "Epigraph": "blockquote class=\"epigraph\"",
+        "Dedication": "p class=\"dedication\"",
+        "Acknowledgments": "p class=\"acknowledgments\""
+    },
+    "run_styles": {
+        "Strong": "strong",
+        "Emphasis": "em",
+        "Italic": "em",
+        "Bold": "strong",
+        "Underline": "u",
+        "Strikethrough": "del",
+        "Superscript": "sup",
+        "Subscript": "sub",
+        "Code": "code",
+        "Hyperlink": "a",
+        "Subtle Emphasis": "em class=\"subtle\"",
+        "Intense Emphasis": "strong",
+        "Book Title": "cite"
+    },
+    "character_styles": {
+        "Emphasis": "em",
+        "Strong": "strong",
+        "Book Title": "cite",
+        "Hyperlink": "a",
+        "FollowedHyperlink": "a class=\"visited\"",
+        "Subtle Reference": "span class=\"subtle\"",
+        "Intense Reference": "span class=\"intense\""
+    },
+    "css_classes": {
+        "comment": {
+            "css": ".comment { background-color: #fff3cd; border-left: 3px solid #ffc107; padding: 2px 4px; margin: 0 2px; font-size: 0.8em; }"
+        },
+        "text-box": {
+            "css": ".text-box { border: 1px solid #ccc; padding: 1rem; margin: 1rem 0; background-color: #f8f9fa; }"
+        },
+        "shape": {
+            "css": ".shape { border: 1px dashed #6c757d; padding: 0.5rem; margin: 0.5rem 0; color: #6c757d; font-style: italic; }"
+        },
+        "equation": {
+            "css": ".equation { font-family: 'Times New Roman', serif; font-style: italic; }"
+        },
+        "author": {
+            "css": ".author { text-align: center; font-weight: bold; margin: 1rem 0; }"
+        },
+        "date": {
+            "css": ".date { text-align: center; font-style: italic; margin: 0.5rem 0; }"
+        },
+        "epigraph": {
+            "css": ".epigraph { font-style: italic; text-align: right; margin: 2rem 0; padding-left: 2rem; }"
+        },
+        "dedication": {
+            "css": ".dedication { text-align: center; font-style: italic; margin: 2rem 0; }"
+        },
+        "acknowledgments": {
+            "css": ".acknowledgments { margin: 1rem 0; }"
+        },
+        "rasterized-element": {
+            "css": ".rasterized-element { border: 2px dashed #007bff; padding: 1rem; margin: 1rem 0; background-color: #f0f8ff; color: #007bff; text-align: center; font-style: italic; border-radius: 4px; }"
+        }
+    }
+}

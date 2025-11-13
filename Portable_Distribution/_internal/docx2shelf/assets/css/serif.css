@@ -1,0 +1,83 @@
+/*
+ * Theme Name: Classic Serif
+ * Description: Traditional serif fonts for classic literature and formal documents
+ * Genre: General
+ * Features: serif typography, traditional layout, high readability
+ */
+
+/* Base Typography */
+body {
+    font-family: Georgia, "Times New Roman", Times, serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333333;
+    background: #ffffff;
+    margin: 1.5em;
+    text-align: left;
+    font-weight: 400;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    font-family: Georgia, "Times New Roman", Times, serif;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.75em;
+    margin-top: 1.5em;
+    page-break-after: avoid;
+}
+
+h1 {
+    font-size: 2.2em;
+    text-align: center;
+    margin: 2em 0 1.5em 0;
+}
+
+h2 {
+    font-size: 1.6em;
+    margin: 1.8em 0 1em 0;
+}
+
+h3 {
+    font-size: 1.3em;
+    margin: 1.5em 0 0.8em 0;
+}
+
+/* Paragraphs */
+p {
+    margin: 0 0 1.2em 0;
+    text-indent: 1.5em;
+    orphans: 2;
+    widows: 2;
+}
+
+p:first-child,
+h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p {
+    text-indent: 0;
+}
+
+/* Character Formatting */
+em { font-style: italic; }
+strong { font-weight: 700; }
+
+/* Links */
+a {
+    color: #0066cc;
+    text-decoration: underline;
+}
+
+/* Lists */
+ul, ol {
+    margin: 1em 0;
+    padding-left: 2.5em;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        font-size: 12pt;
+        line-height: 1.4;
+        margin: 0.8in;
+    }
+}
+

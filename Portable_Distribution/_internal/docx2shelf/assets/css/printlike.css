@@ -1,0 +1,149 @@
+/*
+ * Theme Name: Print-like
+ * Description: Traditional book layout mimicking printed page design
+ * Genre: Academic, Reference, Classic Literature
+ * Features: traditional printing, justified text, formal typography
+ */
+
+/* Base Typography */
+body {
+    font-family: "Times New Roman", Times, Georgia, serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #1a1a1a;
+    background: #ffffff;
+    margin: 0 8%;
+    text-align: justify;
+    font-weight: 400;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    -ms-hyphens: auto;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Times New Roman", Times, Georgia, serif;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.5em;
+    margin-top: 1.8em;
+    page-break-after: avoid;
+    text-align: left;
+}
+
+h1 {
+    font-size: 2em;
+    text-align: center;
+    margin: 3em 0 2em 0;
+    font-variant: small-caps;
+    letter-spacing: 0.05em;
+}
+
+h2 {
+    font-size: 1.4em;
+    margin: 2.5em 0 1em 0;
+    font-variant: small-caps;
+}
+
+h3 {
+    font-size: 1.2em;
+    margin: 2em 0 0.8em 0;
+    font-style: italic;
+}
+
+h4 {
+    font-size: 1.1em;
+    margin: 1.5em 0 0.5em 0;
+    font-weight: 600;
+}
+
+/* Paragraphs */
+p {
+    margin: 0;
+    text-indent: 1.5em;
+    orphans: 3;
+    widows: 3;
+}
+
+p:first-child,
+h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p {
+    text-indent: 0;
+}
+
+/* Chapter openings */
+.chapter-start p:first-of-type {
+    text-indent: 0;
+}
+
+.chapter-start p:first-of-type:first-letter {
+    font-size: 3em;
+    line-height: 0.8;
+    float: left;
+    margin: 0.1em 0.1em 0 0;
+    font-weight: 700;
+}
+
+/* Character Formatting */
+em { font-style: italic; }
+strong { font-weight: 700; }
+
+/* Links */
+a {
+    color: #000000;
+    text-decoration: none;
+    border-bottom: 1px dotted #666666;
+}
+
+/* Lists */
+ul, ol {
+    margin: 1em 0;
+    padding-left: 2.5em;
+    text-align: left;
+}
+
+/* Blockquotes */
+blockquote {
+    margin: 1.5em 2em;
+    font-style: italic;
+    text-align: left;
+    border-left: 3px solid #cccccc;
+    padding-left: 1em;
+}
+
+/* Footnotes */
+.footnote {
+    font-size: 0.85em;
+    margin-top: 2em;
+    border-top: 1px solid #cccccc;
+    padding-top: 1em;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        font-size: 11pt;
+        line-height: 1.4;
+        margin: 1in;
+        text-align: justify;
+    }
+
+    h1 {
+        font-size: 16pt;
+        page-break-before: always;
+    }
+
+    h2 { font-size: 14pt; }
+    h3 { font-size: 12pt; }
+
+    a {
+        color: #000000;
+        text-decoration: none;
+        border-bottom: none;
+    }
+
+    .chapter-start p:first-of-type:first-letter {
+        font-size: 2.5em;
+    }
+}
+
