@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.1.9] - 2025-11-17
+### Major Code Refactoring - Modular EPUB Assembly Architecture
+
+#### Refactored
+- **assemble.py**: Reduced from 1153 lines (complexity 238) to 300 lines by extracting functionality into 6 focused modules (74% reduction)
+- **EPUB assembly architecture**: Transformed monolithic assemble_epub() function into clean, testable module architecture
+
+#### Added
+- **epub_metadata.py** (82 lines): Dedicated module for EPUB metadata and cover setup
+- **epub_css.py** (226 lines): CSS theme processing and language-specific styling
+- **epub_pages.py** (262 lines): Static page generation (title, copyright, landmarks, front/back matter)
+- **epub_resources.py** (178 lines): Image and font resource processing with security validation
+- **epub_chapters.py** (338 lines): Chapter processing, heading ID injection, and navigation data
+- **epub_navigation.py** (311 lines): ToC, spine, NCX, and navigation document generation
+
+#### Technical Details
+- Improved code organization following Single Responsibility Principle
+- Enhanced maintainability with focused modules (no function >100 lines)
+- Better testability through isolated, well-defined interfaces
+- Preserved all existing functionality with no breaking changes
+- All modules include comprehensive docstrings and type hints
+- Maintained performance monitoring integration across all phases
+
 ## [2.1.8] - 2025-11-11
 ### Implementation Completion - All Placeholder Code Resolved
 
