@@ -25,7 +25,9 @@
       "Bash(python:*)",
       "Bash(gh run cancel:*)",
       "Bash(gh release list:*)",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "WebFetch(domain:portableapps.com)",
+      "WebFetch(domain:docs.portableapps.com)"
     ],
     "deny": [],
     "ask": []

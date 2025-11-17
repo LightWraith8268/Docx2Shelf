@@ -19,13 +19,15 @@ logger = logging.getLogger(__name__)
 
 class A11yLevel(Enum):
     """Accessibility conformance levels."""
-    A = "A"        # WCAG Level A
-    AA = "AA"      # WCAG Level AA
-    AAA = "AAA"    # WCAG Level AAA
+
+    A = "A"  # WCAG Level A
+    AA = "AA"  # WCAG Level AA
+    AAA = "AAA"  # WCAG Level AAA
 
 
 class IssueType(Enum):
     """Types of accessibility issues."""
+
     MISSING_ALT_TEXT = "missing_alt_text"
     HEADING_STRUCTURE = "heading_structure"
     COLOR_CONTRAST = "color_contrast"
@@ -42,15 +44,17 @@ class IssueType(Enum):
 
 class IssueSeverity(Enum):
     """Severity levels for accessibility issues."""
+
     CRITICAL = "critical"  # WCAG failure, blocks access
-    MAJOR = "major"        # Significant barrier
-    MINOR = "minor"        # Minor improvement
-    INFO = "info"          # Best practice recommendation
+    MAJOR = "major"  # Significant barrier
+    MINOR = "minor"  # Minor improvement
+    INFO = "info"  # Best practice recommendation
 
 
 @dataclass
 class A11yIssue:
     """Accessibility issue found during audit."""
+
     id: str
     issue_type: IssueType
     severity: IssueSeverity
@@ -68,6 +72,7 @@ class A11yIssue:
 @dataclass
 class A11yConfig:
     """Configuration for accessibility audit."""
+
     target_level: A11yLevel = A11yLevel.AA
     check_color_contrast: bool = True
     check_heading_structure: bool = True
@@ -82,6 +87,7 @@ class A11yConfig:
 @dataclass
 class A11yAuditResult:
     """Results of accessibility audit."""
+
     total_issues: int
     critical_issues: int
     major_issues: int
@@ -110,12 +116,13 @@ class AccessibilityAuditor:
 
         try:
             from zipfile import ZipFile
-            with ZipFile(epub_path, 'r') as epub_zip:
+
+            with ZipFile(epub_path, "r") as epub_zip:
                 # Get all content files
-                content_files = [f for f in epub_zip.namelist() if f.endswith('.xhtml')]
+                content_files = [f for f in epub_zip.namelist() if f.endswith(".xhtml")]
 
                 for file_path in content_files:
-                    content = epub_zip.read(file_path).decode('utf-8')
+                    content = epub_zip.read(file_path).decode("utf-8")
                     file_issues = self._audit_content_file(content, file_path)
                     issues.extend(file_issues)
 
@@ -125,15 +132,17 @@ class AccessibilityAuditor:
 
         except Exception as e:
             logger.error(f"Accessibility audit failed: {e}")
-            issues.append(A11yIssue(
-                id="audit_error",
-                issue_type=IssueType.SEMANTIC_MARKUP,
-                severity=IssueSeverity.CRITICAL,
-                wcag_level=A11yLevel.A,
-                title="Audit Error",
-                description=f"Failed to perform accessibility audit: {str(e)}",
-                recommendation="Fix file structure and try again"
-            ))
+            issues.append(
+                A11yIssue(
+                    id="audit_error",
+                    issue_type=IssueType.SEMANTIC_MARKUP,
+                    severity=IssueSeverity.CRITICAL,
+                    wcag_level=A11yLevel.A,
+                    title="Audit Error",
+                    description=f"Failed to perform accessibility audit: {str(e)}",
+                    recommendation="Fix file structure and try again",
+                )
+            )
 
         return self._compile_audit_result(issues)
 
@@ -150,17 +159,19 @@ class AccessibilityAuditor:
             try:
                 root = ET.fromstring(content_wrapped)
             except ET.ParseError:
-                issues.append(A11yIssue(
-                    id="invalid_html",
-                    issue_type=IssueType.SEMANTIC_MARKUP,
-                    severity=IssueSeverity.CRITICAL,
-                    wcag_level=A11yLevel.A,
-                    title="Invalid HTML Structure",
-                    description="Content file contains invalid HTML/XHTML",
-                    location=file_path,
-                    recommendation="Fix HTML syntax errors",
-                    wcag_criteria=["4.1.1"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id="invalid_html",
+                        issue_type=IssueType.SEMANTIC_MARKUP,
+                        severity=IssueSeverity.CRITICAL,
+                        wcag_level=A11yLevel.A,
+                        title="Invalid HTML Structure",
+                        description="Content file contains invalid HTML/XHTML",
+                        location=file_path,
+                        recommendation="Fix HTML syntax errors",
+                        wcag_criteria=["4.1.1"],
+                    )
+                )
                 return issues
 
         # Run specific checks
@@ -192,55 +203,63 @@ class AccessibilityAuditor:
         issues = []
 
         # Find all image elements
-        images = root.findall('.//img') + root.findall('.//{http://www.w3.org/1999/xhtml}img')
+        images = root.findall(".//img") + root.findall(".//{http://www.w3.org/1999/xhtml}img")
 
         for img in images:
-            alt_text = img.get('alt', '')
-            src = img.get('src', '')
+            alt_text = img.get("alt", "")
+            src = img.get("src", "")
 
             if alt_text is None:
-                issues.append(A11yIssue(
-                    id=f"missing_alt_{hash(src)}",
-                    issue_type=IssueType.MISSING_ALT_TEXT,
-                    severity=IssueSeverity.CRITICAL,
-                    wcag_level=A11yLevel.A,
-                    title="Missing Alt Text",
-                    description=f"Image '{src}' missing alt attribute",
-                    location=file_path,
-                    element=ET.tostring(img, encoding='unicode'),
-                    recommendation="Add descriptive alt text for all images",
-                    auto_fixable=False,
-                    wcag_criteria=["1.1.1"]
-                ))
-            elif alt_text.strip() == '':
+                issues.append(
+                    A11yIssue(
+                        id=f"missing_alt_{hash(src)}",
+                        issue_type=IssueType.MISSING_ALT_TEXT,
+                        severity=IssueSeverity.CRITICAL,
+                        wcag_level=A11yLevel.A,
+                        title="Missing Alt Text",
+                        description=f"Image '{src}' missing alt attribute",
+                        location=file_path,
+                        element=ET.tostring(img, encoding="unicode"),
+                        recommendation="Add descriptive alt text for all images",
+                        auto_fixable=False,
+                        wcag_criteria=["1.1.1"],
+                    )
+                )
+            elif alt_text.strip() == "":
                 # Empty alt text is acceptable for decorative images
                 # Check if this might be meaningful content
-                if any(keyword in src.lower() for keyword in ['chart', 'graph', 'diagram', 'figure']):
-                    issues.append(A11yIssue(
-                        id=f"empty_alt_{hash(src)}",
-                        issue_type=IssueType.MISSING_ALT_TEXT,
-                        severity=IssueSeverity.MAJOR,
-                        wcag_level=A11yLevel.A,
-                        title="Empty Alt Text on Informative Image",
-                        description=f"Image '{src}' appears informative but has empty alt text",
-                        location=file_path,
-                        element=ET.tostring(img, encoding='unicode'),
-                        recommendation="Add descriptive alt text or confirm image is decorative",
-                        wcag_criteria=["1.1.1"]
-                    ))
+                if any(
+                    keyword in src.lower() for keyword in ["chart", "graph", "diagram", "figure"]
+                ):
+                    issues.append(
+                        A11yIssue(
+                            id=f"empty_alt_{hash(src)}",
+                            issue_type=IssueType.MISSING_ALT_TEXT,
+                            severity=IssueSeverity.MAJOR,
+                            wcag_level=A11yLevel.A,
+                            title="Empty Alt Text on Informative Image",
+                            description=f"Image '{src}' appears informative but has empty alt text",
+                            location=file_path,
+                            element=ET.tostring(img, encoding="unicode"),
+                            recommendation="Add descriptive alt text or confirm image is decorative",
+                            wcag_criteria=["1.1.1"],
+                        )
+                    )
             elif len(alt_text) < 5:
-                issues.append(A11yIssue(
-                    id=f"short_alt_{hash(src)}",
-                    issue_type=IssueType.MISSING_ALT_TEXT,
-                    severity=IssueSeverity.MINOR,
-                    wcag_level=A11yLevel.A,
-                    title="Very Short Alt Text",
-                    description=f"Alt text '{alt_text}' may be too brief",
-                    location=file_path,
-                    element=ET.tostring(img, encoding='unicode'),
-                    recommendation="Consider more descriptive alt text",
-                    wcag_criteria=["1.1.1"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id=f"short_alt_{hash(src)}",
+                        issue_type=IssueType.MISSING_ALT_TEXT,
+                        severity=IssueSeverity.MINOR,
+                        wcag_level=A11yLevel.A,
+                        title="Very Short Alt Text",
+                        description=f"Alt text '{alt_text}' may be too brief",
+                        location=file_path,
+                        element=ET.tostring(img, encoding="unicode"),
+                        recommendation="Consider more descriptive alt text",
+                        wcag_criteria=["1.1.1"],
+                    )
+                )
 
         return issues
 
@@ -253,34 +272,42 @@ class AccessibilityAuditor:
         # Find all elements and filter for headings to preserve document order
         for elem in root.iter():
             tag = elem.tag.lower()
-            if tag.startswith('h') and len(tag) == 2 and tag[1:].isdigit():
+            if tag.startswith("h") and len(tag) == 2 and tag[1:].isdigit():
                 headings.append(elem)
-            elif tag.endswith('}h1') or tag.endswith('}h2') or tag.endswith('}h3') or \
-                 tag.endswith('}h4') or tag.endswith('}h5') or tag.endswith('}h6'):
+            elif (
+                tag.endswith("}h1")
+                or tag.endswith("}h2")
+                or tag.endswith("}h3")
+                or tag.endswith("}h4")
+                or tag.endswith("}h5")
+                or tag.endswith("}h6")
+            ):
                 headings.append(elem)
 
         if not headings:
-            issues.append(A11yIssue(
-                id="no_headings",
-                issue_type=IssueType.HEADING_STRUCTURE,
-                severity=IssueSeverity.MAJOR,
-                wcag_level=A11yLevel.AA,
-                title="No Headings Found",
-                description="Document lacks heading structure",
-                location=file_path,
-                recommendation="Add headings to create logical document structure",
-                wcag_criteria=["2.4.6", "1.3.1"]
-            ))
+            issues.append(
+                A11yIssue(
+                    id="no_headings",
+                    issue_type=IssueType.HEADING_STRUCTURE,
+                    severity=IssueSeverity.MAJOR,
+                    wcag_level=A11yLevel.AA,
+                    title="No Headings Found",
+                    description="Document lacks heading structure",
+                    location=file_path,
+                    recommendation="Add headings to create logical document structure",
+                    wcag_criteria=["2.4.6", "1.3.1"],
+                )
+            )
             return issues
 
         # Extract heading levels
         heading_levels = []
         for heading in headings:
             tag = heading.tag.lower()
-            if tag.startswith('h') and tag[1:].isdigit():
+            if tag.startswith("h") and tag[1:].isdigit():
                 level = int(tag[1:])
-            elif '}h' in tag:
-                level = int(tag.split('}h')[1])
+            elif "}h" in tag:
+                level = int(tag.split("}h")[1])
             else:
                 continue
             heading_levels.append((level, heading))
@@ -289,34 +316,38 @@ class AccessibilityAuditor:
         prev_level = 0
         for level, heading in heading_levels:
             if level - prev_level > 1:
-                issues.append(A11yIssue(
-                    id=f"skipped_heading_{hash(ET.tostring(heading))}",
-                    issue_type=IssueType.HEADING_STRUCTURE,
-                    severity=IssueSeverity.MAJOR,
-                    wcag_level=A11yLevel.AA,
-                    title="Skipped Heading Level",
-                    description=f"Heading jumps from h{prev_level} to h{level}",
-                    location=file_path,
-                    element=ET.tostring(heading, encoding='unicode'),
-                    recommendation="Use sequential heading levels",
-                    wcag_criteria=["1.3.1", "2.4.6"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id=f"skipped_heading_{hash(ET.tostring(heading))}",
+                        issue_type=IssueType.HEADING_STRUCTURE,
+                        severity=IssueSeverity.MAJOR,
+                        wcag_level=A11yLevel.AA,
+                        title="Skipped Heading Level",
+                        description=f"Heading jumps from h{prev_level} to h{level}",
+                        location=file_path,
+                        element=ET.tostring(heading, encoding="unicode"),
+                        recommendation="Use sequential heading levels",
+                        wcag_criteria=["1.3.1", "2.4.6"],
+                    )
+                )
 
             # Check for empty headings
-            text_content = heading.text or ''
+            text_content = heading.text or ""
             if len(text_content.strip()) == 0:
-                issues.append(A11yIssue(
-                    id=f"empty_heading_{hash(ET.tostring(heading))}",
-                    issue_type=IssueType.HEADING_STRUCTURE,
-                    severity=IssueSeverity.MAJOR,
-                    wcag_level=A11yLevel.A,
-                    title="Empty Heading",
-                    description=f"Heading h{level} is empty",
-                    location=file_path,
-                    element=ET.tostring(heading, encoding='unicode'),
-                    recommendation="Add descriptive text to heading or remove if unnecessary",
-                    wcag_criteria=["2.4.6"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id=f"empty_heading_{hash(ET.tostring(heading))}",
+                        issue_type=IssueType.HEADING_STRUCTURE,
+                        severity=IssueSeverity.MAJOR,
+                        wcag_level=A11yLevel.A,
+                        title="Empty Heading",
+                        description=f"Heading h{level} is empty",
+                        location=file_path,
+                        element=ET.tostring(heading, encoding="unicode"),
+                        recommendation="Add descriptive text to heading or remove if unnecessary",
+                        wcag_criteria=["2.4.6"],
+                    )
+                )
 
             prev_level = level
 
@@ -327,12 +358,12 @@ class AccessibilityAuditor:
         issues = []
 
         # Check for proper use of semantic elements
-        semantic_elements = ['main', 'nav', 'article', 'section', 'aside', 'header', 'footer']
+        semantic_elements = ["main", "nav", "article", "section", "aside", "header", "footer"]
         found_semantic = False
 
         for element in semantic_elements:
-            ns = '{http://www.w3.org/1999/xhtml}'
-            if root.findall(f'.//{element}') or root.findall(f'.//{ns}{element}'):
+            ns = "{http://www.w3.org/1999/xhtml}"
+            if root.findall(f".//{element}") or root.findall(f".//{ns}{element}"):
                 found_semantic = True
                 break
 
@@ -340,38 +371,42 @@ class AccessibilityAuditor:
             # Check if content is substantial enough to warrant semantic markup
             text_content = self._extract_text_content(root)
             if len(text_content.split()) > 100:  # Substantial content
-                issues.append(A11yIssue(
-                    id="no_semantic_markup",
-                    issue_type=IssueType.SEMANTIC_MARKUP,
-                    severity=IssueSeverity.MINOR,
-                    wcag_level=A11yLevel.AA,
-                    title="No Semantic Markup",
-                    description="Document lacks semantic HTML5 elements",
-                    location=file_path,
-                    recommendation="Use semantic elements like <main>, <nav>, <article> for better structure",
-                    wcag_criteria=["1.3.1"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id="no_semantic_markup",
+                        issue_type=IssueType.SEMANTIC_MARKUP,
+                        severity=IssueSeverity.MINOR,
+                        wcag_level=A11yLevel.AA,
+                        title="No Semantic Markup",
+                        description="Document lacks semantic HTML5 elements",
+                        location=file_path,
+                        recommendation="Use semantic elements like <main>, <nav>, <article> for better structure",
+                        wcag_criteria=["1.3.1"],
+                    )
+                )
 
         # Check for improper use of formatting tags for semantic meaning
-        bold_tags = root.findall('.//b') + root.findall('.//{http://www.w3.org/1999/xhtml}b')
-        italic_tags = root.findall('.//i') + root.findall('.//{http://www.w3.org/1999/xhtml}i')
+        bold_tags = root.findall(".//b") + root.findall(".//{http://www.w3.org/1999/xhtml}b")
+        italic_tags = root.findall(".//i") + root.findall(".//{http://www.w3.org/1999/xhtml}i")
 
         for tag in bold_tags + italic_tags:
-            text = tag.text or ''
+            text = tag.text or ""
             if len(text.split()) > 5:  # Likely semantic, not just formatting
-                tag_name = tag.tag.split('}')[-1] if '}' in tag.tag else tag.tag
-                issues.append(A11yIssue(
-                    id=f"semantic_formatting_{hash(ET.tostring(tag))}",
-                    issue_type=IssueType.SEMANTIC_MARKUP,
-                    severity=IssueSeverity.MINOR,
-                    wcag_level=A11yLevel.AA,
-                    title="Formatting Tag Used for Semantic Meaning",
-                    description=f"<{tag_name}> tag used for what appears to be semantic emphasis",
-                    location=file_path,
-                    element=ET.tostring(tag, encoding='unicode'),
-                    recommendation=f"Consider using <strong> or <em> instead of <{tag_name}> for semantic emphasis",
-                    wcag_criteria=["1.3.1"]
-                ))
+                tag_name = tag.tag.split("}")[-1] if "}" in tag.tag else tag.tag
+                issues.append(
+                    A11yIssue(
+                        id=f"semantic_formatting_{hash(ET.tostring(tag))}",
+                        issue_type=IssueType.SEMANTIC_MARKUP,
+                        severity=IssueSeverity.MINOR,
+                        wcag_level=A11yLevel.AA,
+                        title="Formatting Tag Used for Semantic Meaning",
+                        description=f"<{tag_name}> tag used for what appears to be semantic emphasis",
+                        location=file_path,
+                        element=ET.tostring(tag, encoding="unicode"),
+                        recommendation=f"Consider using <strong> or <em> instead of <{tag_name}> for semantic emphasis",
+                        wcag_criteria=["1.3.1"],
+                    )
+                )
 
         return issues
 
@@ -380,33 +415,37 @@ class AccessibilityAuditor:
         issues = []
 
         # Check for lang attribute on root element
-        lang_attr = root.get('lang') or root.get('{http://www.w3.org/XML/1998/namespace}lang')
+        lang_attr = root.get("lang") or root.get("{http://www.w3.org/XML/1998/namespace}lang")
 
         if not lang_attr:
-            issues.append(A11yIssue(
-                id="missing_lang",
-                issue_type=IssueType.LANGUAGE_ATTRIBUTES,
-                severity=IssueSeverity.MAJOR,
-                wcag_level=A11yLevel.A,
-                title="Missing Language Attribute",
-                description="Document lacks lang attribute",
-                location=file_path,
-                recommendation="Add lang attribute to identify document language",
-                auto_fixable=True,
-                wcag_criteria=["3.1.1"]
-            ))
+            issues.append(
+                A11yIssue(
+                    id="missing_lang",
+                    issue_type=IssueType.LANGUAGE_ATTRIBUTES,
+                    severity=IssueSeverity.MAJOR,
+                    wcag_level=A11yLevel.A,
+                    title="Missing Language Attribute",
+                    description="Document lacks lang attribute",
+                    location=file_path,
+                    recommendation="Add lang attribute to identify document language",
+                    auto_fixable=True,
+                    wcag_criteria=["3.1.1"],
+                )
+            )
         elif len(lang_attr) < 2:
-            issues.append(A11yIssue(
-                id="invalid_lang",
-                issue_type=IssueType.LANGUAGE_ATTRIBUTES,
-                severity=IssueSeverity.MAJOR,
-                wcag_level=A11yLevel.A,
-                title="Invalid Language Code",
-                description=f"Language attribute '{lang_attr}' is invalid",
-                location=file_path,
-                recommendation="Use valid ISO 639-1 language code",
-                wcag_criteria=["3.1.1"]
-            ))
+            issues.append(
+                A11yIssue(
+                    id="invalid_lang",
+                    issue_type=IssueType.LANGUAGE_ATTRIBUTES,
+                    severity=IssueSeverity.MAJOR,
+                    wcag_level=A11yLevel.A,
+                    title="Invalid Language Code",
+                    description=f"Language attribute '{lang_attr}' is invalid",
+                    location=file_path,
+                    recommendation="Use valid ISO 639-1 language code",
+                    wcag_criteria=["3.1.1"],
+                )
+            )
 
         return issues
 
@@ -415,26 +454,32 @@ class AccessibilityAuditor:
         issues = []
 
         # Check for interactive elements with tabindex
-        interactive_elements = root.findall('.//a') + root.findall('.//button') + \
-                             root.findall('.//input') + root.findall('.//select') + \
-                             root.findall('.//{http://www.w3.org/1999/xhtml}a') + \
-                             root.findall('.//{http://www.w3.org/1999/xhtml}button')
+        interactive_elements = (
+            root.findall(".//a")
+            + root.findall(".//button")
+            + root.findall(".//input")
+            + root.findall(".//select")
+            + root.findall(".//{http://www.w3.org/1999/xhtml}a")
+            + root.findall(".//{http://www.w3.org/1999/xhtml}button")
+        )
 
         for element in interactive_elements:
-            tabindex = element.get('tabindex')
+            tabindex = element.get("tabindex")
             if tabindex and int(tabindex) > 0:
-                issues.append(A11yIssue(
-                    id=f"positive_tabindex_{hash(ET.tostring(element))}",
-                    issue_type=IssueType.KEYBOARD_NAVIGATION,
-                    severity=IssueSeverity.MAJOR,
-                    wcag_level=A11yLevel.A,
-                    title="Positive Tabindex",
-                    description=f"Element has positive tabindex ({tabindex})",
-                    location=file_path,
-                    element=ET.tostring(element, encoding='unicode'),
-                    recommendation="Avoid positive tabindex values; use 0 or -1",
-                    wcag_criteria=["2.4.3"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id=f"positive_tabindex_{hash(ET.tostring(element))}",
+                        issue_type=IssueType.KEYBOARD_NAVIGATION,
+                        severity=IssueSeverity.MAJOR,
+                        wcag_level=A11yLevel.A,
+                        title="Positive Tabindex",
+                        description=f"Element has positive tabindex ({tabindex})",
+                        location=file_path,
+                        element=ET.tostring(element, encoding="unicode"),
+                        recommendation="Avoid positive tabindex values; use 0 or -1",
+                        wcag_criteria=["2.4.3"],
+                    )
+                )
 
         return issues
 
@@ -442,51 +487,57 @@ class AccessibilityAuditor:
         """Check link accessibility."""
         issues = []
 
-        links = root.findall('.//a') + root.findall('.//{http://www.w3.org/1999/xhtml}a')
+        links = root.findall(".//a") + root.findall(".//{http://www.w3.org/1999/xhtml}a")
 
         for link in links:
-            href = link.get('href', '')
+            href = link.get("href", "")
             text_content = self._extract_text_content(link).strip()
 
             if not text_content:
-                issues.append(A11yIssue(
-                    id=f"empty_link_{hash(ET.tostring(link))}",
-                    issue_type=IssueType.LINK_ACCESSIBILITY,
-                    severity=IssueSeverity.CRITICAL,
-                    wcag_level=A11yLevel.A,
-                    title="Empty Link",
-                    description="Link has no accessible text",
-                    location=file_path,
-                    element=ET.tostring(link, encoding='unicode'),
-                    recommendation="Add descriptive link text or aria-label",
-                    wcag_criteria=["2.4.4", "4.1.2"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id=f"empty_link_{hash(ET.tostring(link))}",
+                        issue_type=IssueType.LINK_ACCESSIBILITY,
+                        severity=IssueSeverity.CRITICAL,
+                        wcag_level=A11yLevel.A,
+                        title="Empty Link",
+                        description="Link has no accessible text",
+                        location=file_path,
+                        element=ET.tostring(link, encoding="unicode"),
+                        recommendation="Add descriptive link text or aria-label",
+                        wcag_criteria=["2.4.4", "4.1.2"],
+                    )
+                )
             elif len(text_content) < 3:
-                issues.append(A11yIssue(
-                    id=f"short_link_{hash(ET.tostring(link))}",
-                    issue_type=IssueType.LINK_ACCESSIBILITY,
-                    severity=IssueSeverity.MINOR,
-                    wcag_level=A11yLevel.AA,
-                    title="Very Short Link Text",
-                    description=f"Link text '{text_content}' may be too brief",
-                    location=file_path,
-                    element=ET.tostring(link, encoding='unicode'),
-                    recommendation="Use more descriptive link text",
-                    wcag_criteria=["2.4.4"]
-                ))
-            elif text_content.lower() in ['click here', 'read more', 'more', 'here', 'link']:
-                issues.append(A11yIssue(
-                    id=f"generic_link_{hash(ET.tostring(link))}",
-                    issue_type=IssueType.LINK_ACCESSIBILITY,
-                    severity=IssueSeverity.MAJOR,
-                    wcag_level=A11yLevel.AA,
-                    title="Generic Link Text",
-                    description=f"Link text '{text_content}' is not descriptive",
-                    location=file_path,
-                    element=ET.tostring(link, encoding='unicode'),
-                    recommendation="Use descriptive link text that explains the destination",
-                    wcag_criteria=["2.4.4"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id=f"short_link_{hash(ET.tostring(link))}",
+                        issue_type=IssueType.LINK_ACCESSIBILITY,
+                        severity=IssueSeverity.MINOR,
+                        wcag_level=A11yLevel.AA,
+                        title="Very Short Link Text",
+                        description=f"Link text '{text_content}' may be too brief",
+                        location=file_path,
+                        element=ET.tostring(link, encoding="unicode"),
+                        recommendation="Use more descriptive link text",
+                        wcag_criteria=["2.4.4"],
+                    )
+                )
+            elif text_content.lower() in ["click here", "read more", "more", "here", "link"]:
+                issues.append(
+                    A11yIssue(
+                        id=f"generic_link_{hash(ET.tostring(link))}",
+                        issue_type=IssueType.LINK_ACCESSIBILITY,
+                        severity=IssueSeverity.MAJOR,
+                        wcag_level=A11yLevel.AA,
+                        title="Generic Link Text",
+                        description=f"Link text '{text_content}' is not descriptive",
+                        location=file_path,
+                        element=ET.tostring(link, encoding="unicode"),
+                        recommendation="Use descriptive link text that explains the destination",
+                        wcag_criteria=["2.4.4"],
+                    )
+                )
 
         return issues
 
@@ -494,43 +545,49 @@ class AccessibilityAuditor:
         """Check table accessibility."""
         issues = []
 
-        tables = root.findall('.//table') + root.findall('.//{http://www.w3.org/1999/xhtml}table')
+        tables = root.findall(".//table") + root.findall(".//{http://www.w3.org/1999/xhtml}table")
 
         for table in tables:
             # Check for table headers
-            headers = table.findall('.//th') + table.findall('.//{http://www.w3.org/1999/xhtml}th')
+            headers = table.findall(".//th") + table.findall(".//{http://www.w3.org/1999/xhtml}th")
             if not headers:
-                issues.append(A11yIssue(
-                    id=f"table_no_headers_{hash(ET.tostring(table))}",
-                    issue_type=IssueType.TABLE_ACCESSIBILITY,
-                    severity=IssueSeverity.MAJOR,
-                    wcag_level=A11yLevel.A,
-                    title="Table Missing Headers",
-                    description="Data table lacks header cells",
-                    location=file_path,
-                    element=ET.tostring(table, encoding='unicode')[:200],
-                    recommendation="Add <th> elements for table headers",
-                    wcag_criteria=["1.3.1"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id=f"table_no_headers_{hash(ET.tostring(table))}",
+                        issue_type=IssueType.TABLE_ACCESSIBILITY,
+                        severity=IssueSeverity.MAJOR,
+                        wcag_level=A11yLevel.A,
+                        title="Table Missing Headers",
+                        description="Data table lacks header cells",
+                        location=file_path,
+                        element=ET.tostring(table, encoding="unicode")[:200],
+                        recommendation="Add <th> elements for table headers",
+                        wcag_criteria=["1.3.1"],
+                    )
+                )
 
             # Check for table caption
-            caption = table.find('.//caption') or table.find('.//{http://www.w3.org/1999/xhtml}caption')
+            caption = table.find(".//caption") or table.find(
+                ".//{http://www.w3.org/1999/xhtml}caption"
+            )
             if not caption:
                 # Check if table is complex (more than simple 2x2)
-                rows = table.findall('.//tr') + table.findall('.//{http://www.w3.org/1999/xhtml}tr')
+                rows = table.findall(".//tr") + table.findall(".//{http://www.w3.org/1999/xhtml}tr")
                 if len(rows) > 2:
-                    issues.append(A11yIssue(
-                        id=f"table_no_caption_{hash(ET.tostring(table))}",
-                        issue_type=IssueType.TABLE_ACCESSIBILITY,
-                        severity=IssueSeverity.MINOR,
-                        wcag_level=A11yLevel.AA,
-                        title="Table Missing Caption",
-                        description="Complex table lacks descriptive caption",
-                        location=file_path,
-                        element=ET.tostring(table, encoding='unicode')[:200],
-                        recommendation="Add <caption> to describe table purpose",
-                        wcag_criteria=["1.3.1"]
-                    ))
+                    issues.append(
+                        A11yIssue(
+                            id=f"table_no_caption_{hash(ET.tostring(table))}",
+                            issue_type=IssueType.TABLE_ACCESSIBILITY,
+                            severity=IssueSeverity.MINOR,
+                            wcag_level=A11yLevel.AA,
+                            title="Table Missing Caption",
+                            description="Complex table lacks descriptive caption",
+                            location=file_path,
+                            element=ET.tostring(table, encoding="unicode")[:200],
+                            recommendation="Add <caption> to describe table purpose",
+                            wcag_criteria=["1.3.1"],
+                        )
+                    )
 
         return issues
 
@@ -539,18 +596,21 @@ class AccessibilityAuditor:
         issues = []
 
         # Find form inputs
-        inputs = root.findall('.//input') + root.findall('.//select') + \
-                root.findall('.//textarea') + \
-                root.findall('.//{http://www.w3.org/1999/xhtml}input') + \
-                root.findall('.//{http://www.w3.org/1999/xhtml}select') + \
-                root.findall('.//{http://www.w3.org/1999/xhtml}textarea')
+        inputs = (
+            root.findall(".//input")
+            + root.findall(".//select")
+            + root.findall(".//textarea")
+            + root.findall(".//{http://www.w3.org/1999/xhtml}input")
+            + root.findall(".//{http://www.w3.org/1999/xhtml}select")
+            + root.findall(".//{http://www.w3.org/1999/xhtml}textarea")
+        )
 
         for input_elem in inputs:
-            input_id = input_elem.get('id', '')
-            input_type = input_elem.get('type', 'text')
+            input_id = input_elem.get("id", "")
+            input_type = input_elem.get("type", "text")
 
             # Skip submit buttons and hidden inputs
-            if input_type in ['submit', 'button', 'hidden']:
+            if input_type in ["submit", "button", "hidden"]:
                 continue
 
             # Check for associated label
@@ -558,30 +618,33 @@ class AccessibilityAuditor:
 
             # Look for label by for attribute
             if input_id:
-                ns = '{http://www.w3.org/1999/xhtml}'
-                labels = root.findall(f'.//label[@for="{input_id}"]') + \
-                        root.findall(f'.//{ns}label[@for="{input_id}"]')
+                ns = "{http://www.w3.org/1999/xhtml}"
+                labels = root.findall(f'.//label[@for="{input_id}"]') + root.findall(
+                    f'.//{ns}label[@for="{input_id}"]'
+                )
                 if labels:
                     has_label = True
 
             # Check for aria-label or aria-labelledby
             if not has_label:
-                if input_elem.get('aria-label') or input_elem.get('aria-labelledby'):
+                if input_elem.get("aria-label") or input_elem.get("aria-labelledby"):
                     has_label = True
 
             if not has_label:
-                issues.append(A11yIssue(
-                    id=f"input_no_label_{hash(ET.tostring(input_elem))}",
-                    issue_type=IssueType.FORM_ACCESSIBILITY,
-                    severity=IssueSeverity.CRITICAL,
-                    wcag_level=A11yLevel.A,
-                    title="Form Input Missing Label",
-                    description=f"Input of type '{input_type}' lacks accessible label",
-                    location=file_path,
-                    element=ET.tostring(input_elem, encoding='unicode'),
-                    recommendation="Add <label>, aria-label, or aria-labelledby",
-                    wcag_criteria=["1.3.1", "4.1.2"]
-                ))
+                issues.append(
+                    A11yIssue(
+                        id=f"input_no_label_{hash(ET.tostring(input_elem))}",
+                        issue_type=IssueType.FORM_ACCESSIBILITY,
+                        severity=IssueSeverity.CRITICAL,
+                        wcag_level=A11yLevel.A,
+                        title="Form Input Missing Label",
+                        description=f"Input of type '{input_type}' lacks accessible label",
+                        location=file_path,
+                        element=ET.tostring(input_elem, encoding="unicode"),
+                        recommendation="Add <label>, aria-label, or aria-labelledby",
+                        wcag_criteria=["1.3.1", "4.1.2"],
+                    )
+                )
 
         return issues
 
@@ -590,46 +653,55 @@ class AccessibilityAuditor:
         issues = []
 
         # Check for audio/video elements
-        media_elements = root.findall('.//audio') + root.findall('.//video') + \
-                       root.findall('.//{http://www.w3.org/1999/xhtml}audio') + \
-                       root.findall('.//{http://www.w3.org/1999/xhtml}video')
+        media_elements = (
+            root.findall(".//audio")
+            + root.findall(".//video")
+            + root.findall(".//{http://www.w3.org/1999/xhtml}audio")
+            + root.findall(".//{http://www.w3.org/1999/xhtml}video")
+        )
 
         for media in media_elements:
-            media_type = media.tag.split('}')[-1] if '}' in media.tag else media.tag
+            media_type = media.tag.split("}")[-1] if "}" in media.tag else media.tag
 
             # Check for controls
-            if not media.get('controls'):
-                issues.append(A11yIssue(
-                    id=f"media_no_controls_{hash(ET.tostring(media))}",
-                    issue_type=IssueType.MEDIA_ACCESSIBILITY,
-                    severity=IssueSeverity.MAJOR,
-                    wcag_level=A11yLevel.A,
-                    title="Media Missing Controls",
-                    description=f"{media_type} element lacks user controls",
-                    location=file_path,
-                    element=ET.tostring(media, encoding='unicode'),
-                    recommendation="Add controls attribute to media elements",
-                    wcag_criteria=["2.1.1"]
-                ))
+            if not media.get("controls"):
+                issues.append(
+                    A11yIssue(
+                        id=f"media_no_controls_{hash(ET.tostring(media))}",
+                        issue_type=IssueType.MEDIA_ACCESSIBILITY,
+                        severity=IssueSeverity.MAJOR,
+                        wcag_level=A11yLevel.A,
+                        title="Media Missing Controls",
+                        description=f"{media_type} element lacks user controls",
+                        location=file_path,
+                        element=ET.tostring(media, encoding="unicode"),
+                        recommendation="Add controls attribute to media elements",
+                        wcag_criteria=["2.1.1"],
+                    )
+                )
 
             # Check for captions/transcripts (video)
-            if media_type == 'video':
-                tracks = media.findall('.//track') + media.findall('.//{http://www.w3.org/1999/xhtml}track')
-                has_captions = any(track.get('kind') == 'captions' for track in tracks)
+            if media_type == "video":
+                tracks = media.findall(".//track") + media.findall(
+                    ".//{http://www.w3.org/1999/xhtml}track"
+                )
+                has_captions = any(track.get("kind") == "captions" for track in tracks)
 
                 if not has_captions:
-                    issues.append(A11yIssue(
-                        id=f"video_no_captions_{hash(ET.tostring(media))}",
-                        issue_type=IssueType.MEDIA_ACCESSIBILITY,
-                        severity=IssueSeverity.CRITICAL,
-                        wcag_level=A11yLevel.A,
-                        title="Video Missing Captions",
-                        description="Video content lacks captions",
-                        location=file_path,
-                        element=ET.tostring(media, encoding='unicode'),
-                        recommendation="Add caption track or provide transcript",
-                        wcag_criteria=["1.2.2"]
-                    ))
+                    issues.append(
+                        A11yIssue(
+                            id=f"video_no_captions_{hash(ET.tostring(media))}",
+                            issue_type=IssueType.MEDIA_ACCESSIBILITY,
+                            severity=IssueSeverity.CRITICAL,
+                            wcag_level=A11yLevel.A,
+                            title="Video Missing Captions",
+                            description="Video content lacks captions",
+                            location=file_path,
+                            element=ET.tostring(media, encoding="unicode"),
+                            recommendation="Add caption track or provide transcript",
+                            wcag_criteria=["1.2.2"],
+                        )
+                    )
 
         return issues
 
@@ -643,38 +715,42 @@ class AccessibilityAuditor:
         elements_with_position = []
 
         for elem in root.iter():
-            style = elem.get('style', '')
-            if 'float:' in style or 'position:' in style:
-                if 'float:' in style:
+            style = elem.get("style", "")
+            if "float:" in style or "position:" in style:
+                if "float:" in style:
                     elements_with_float.append(elem)
-                if 'position:' in style:
+                if "position:" in style:
                     elements_with_position.append(elem)
 
         if elements_with_float:
-            issues.append(A11yIssue(
-                id="float_elements",
-                issue_type=IssueType.READING_ORDER,
-                severity=IssueSeverity.MINOR,
-                wcag_level=A11yLevel.AA,
-                title="Floated Elements May Affect Reading Order",
-                description=f"Found {len(elements_with_float)} elements with float positioning",
-                location=file_path,
-                recommendation="Ensure floated elements don't disrupt logical reading order",
-                wcag_criteria=["1.3.2"]
-            ))
+            issues.append(
+                A11yIssue(
+                    id="float_elements",
+                    issue_type=IssueType.READING_ORDER,
+                    severity=IssueSeverity.MINOR,
+                    wcag_level=A11yLevel.AA,
+                    title="Floated Elements May Affect Reading Order",
+                    description=f"Found {len(elements_with_float)} elements with float positioning",
+                    location=file_path,
+                    recommendation="Ensure floated elements don't disrupt logical reading order",
+                    wcag_criteria=["1.3.2"],
+                )
+            )
 
         if elements_with_position:
-            issues.append(A11yIssue(
-                id="positioned_elements",
-                issue_type=IssueType.READING_ORDER,
-                severity=IssueSeverity.MINOR,
-                wcag_level=A11yLevel.AA,
-                title="Positioned Elements May Affect Reading Order",
-                description=f"Found {len(elements_with_position)} elements with absolute/relative positioning",
-                location=file_path,
-                recommendation="Ensure positioned elements maintain logical reading order",
-                wcag_criteria=["1.3.2"]
-            ))
+            issues.append(
+                A11yIssue(
+                    id="positioned_elements",
+                    issue_type=IssueType.READING_ORDER,
+                    severity=IssueSeverity.MINOR,
+                    wcag_level=A11yLevel.AA,
+                    title="Positioned Elements May Affect Reading Order",
+                    description=f"Found {len(elements_with_position)} elements with absolute/relative positioning",
+                    location=file_path,
+                    recommendation="Ensure positioned elements maintain logical reading order",
+                    wcag_criteria=["1.3.2"],
+                )
+            )
 
         return issues
 
@@ -683,29 +759,33 @@ class AccessibilityAuditor:
         issues = []
 
         # Check for accessibility metadata in OPF
-        opf_files = [f for f in epub_zip.namelist() if f.endswith('.opf')]
+        opf_files = [f for f in epub_zip.namelist() if f.endswith(".opf")]
         if opf_files:
             try:
-                opf_content = epub_zip.read(opf_files[0]).decode('utf-8')
+                opf_content = epub_zip.read(opf_files[0]).decode("utf-8")
                 root = ET.fromstring(opf_content)
 
                 # Check for accessibility metadata
-                metadata = root.find('.//{http://www.idpf.org/2007/opf}metadata')
+                metadata = root.find(".//{http://www.idpf.org/2007/opf}metadata")
                 if metadata is not None:
                     # Look for a11y metadata
-                    a11y_meta = metadata.findall('.//{http://www.idpf.org/2007/opf}meta[@property="schema:accessibilityFeature"]')
+                    a11y_meta = metadata.findall(
+                        './/{http://www.idpf.org/2007/opf}meta[@property="schema:accessibilityFeature"]'
+                    )
                     if not a11y_meta:
-                        issues.append(A11yIssue(
-                            id="missing_a11y_metadata",
-                            issue_type=IssueType.SEMANTIC_MARKUP,
-                            severity=IssueSeverity.MINOR,
-                            wcag_level=A11yLevel.AA,
-                            title="Missing Accessibility Metadata",
-                            description="EPUB lacks accessibility metadata",
-                            location=opf_files[0],
-                            recommendation="Add accessibility metadata to OPF file",
-                            wcag_criteria=["4.1.2"]
-                        ))
+                        issues.append(
+                            A11yIssue(
+                                id="missing_a11y_metadata",
+                                issue_type=IssueType.SEMANTIC_MARKUP,
+                                severity=IssueSeverity.MINOR,
+                                wcag_level=A11yLevel.AA,
+                                title="Missing Accessibility Metadata",
+                                description="EPUB lacks accessibility metadata",
+                                location=opf_files[0],
+                                recommendation="Add accessibility metadata to OPF file",
+                                wcag_criteria=["4.1.2"],
+                            )
+                        )
             except Exception:
                 pass
 
@@ -713,7 +793,7 @@ class AccessibilityAuditor:
 
     def _extract_text_content(self, element: ET.Element) -> str:
         """Extract text content from XML element."""
-        text = element.text or ''
+        text = element.text or ""
         for child in element:
             text += self._extract_text_content(child)
             if child.tail:
@@ -743,8 +823,11 @@ class AccessibilityAuditor:
                     conformance_level = A11yLevel.AA
             else:
                 # Check if major issues are AA level
-                aa_major_issues = [i for i in issues
-                                 if i.severity == IssueSeverity.MAJOR and i.wcag_level == A11yLevel.AA]
+                aa_major_issues = [
+                    i
+                    for i in issues
+                    if i.severity == IssueSeverity.MAJOR and i.wcag_level == A11yLevel.AA
+                ]
                 if len(aa_major_issues) == 0:
                     conformance_level = A11yLevel.A
 
@@ -754,7 +837,9 @@ class AccessibilityAuditor:
             overall_score = 100.0
         else:
             # Weight by severity: Critical=20, Major=10, Minor=5, Info=1
-            weighted_score = (critical_count * 20) + (major_count * 10) + (minor_count * 5) + (info_count * 1)
+            weighted_score = (
+                (critical_count * 20) + (major_count * 10) + (minor_count * 5) + (info_count * 1)
+            )
             max_possible_score = total_issues * 20  # If all were critical
             overall_score = max(0, 100 - (weighted_score / max_possible_score * 100))
 
@@ -771,19 +856,25 @@ class AccessibilityAuditor:
             conformance_level=conformance_level,
             overall_score=overall_score,
             issues=issues,
-            recommendations=recommendations
+            recommendations=recommendations,
         )
 
-    def _generate_recommendations(self, issues: List[A11yIssue], conformance_level: Optional[A11yLevel]) -> List[str]:
+    def _generate_recommendations(
+        self, issues: List[A11yIssue], conformance_level: Optional[A11yLevel]
+    ) -> List[str]:
         """Generate prioritized recommendations."""
         recommendations = []
 
         if conformance_level is None:
-            recommendations.append("🚨 Critical accessibility issues found. Address immediately for basic compliance.")
+            recommendations.append(
+                "🚨 Critical accessibility issues found. Address immediately for basic compliance."
+            )
         elif conformance_level == A11yLevel.A:
             recommendations.append("✅ Meets WCAG Level A. Work on major issues for AA compliance.")
         elif conformance_level == A11yLevel.AA:
-            recommendations.append("✅ Meets WCAG Level AA. Consider minor improvements for excellence.")
+            recommendations.append(
+                "✅ Meets WCAG Level AA. Consider minor improvements for excellence."
+            )
         elif conformance_level == A11yLevel.AAA:
             recommendations.append("🌟 Excellent accessibility! Meets WCAG Level AAA.")
 
@@ -827,7 +918,9 @@ class AccessibilityAuditor:
         }
 
 
-def audit_epub_accessibility(epub_path: Path, config: Optional[A11yConfig] = None) -> A11yAuditResult:
+def audit_epub_accessibility(
+    epub_path: Path, config: Optional[A11yConfig] = None
+) -> A11yAuditResult:
     """Convenience function to audit EPUB accessibility."""
     auditor = AccessibilityAuditor(config)
     return auditor.audit_epub(epub_path)

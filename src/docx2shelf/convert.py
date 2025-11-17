@@ -132,7 +132,9 @@ def split_html_by_pagebreak(html: str) -> list[str]:
     return [f"<section>{c}</section>" for c in chunks]
 
 
-def convert_file_to_html(input_path: Path, context: dict | None = None) -> tuple[list[str], list[Path], str]:
+def convert_file_to_html(
+    input_path: Path, context: dict | None = None
+) -> tuple[list[str], list[Path], str]:
     """Convert input file to HTML chunks and gather any extracted resources.
 
     Strategy:
@@ -140,8 +142,8 @@ def convert_file_to_html(input_path: Path, context: dict | None = None) -> tuple
     - For .docx, try Pandoc first, then fall back to python-docx.
     - Uses performance optimizations for large files.
     """
-    from .plugins import plugin_manager, load_default_plugins
-    from .performance import PerformanceMonitor, BuildCache, ParallelImageProcessor
+    from .performance import BuildCache, ParallelImageProcessor, PerformanceMonitor
+    from .plugins import load_default_plugins, plugin_manager
 
     # Initialize context if not provided
     if context is None:
@@ -208,7 +210,7 @@ def convert_file_to_html(input_path: Path, context: dict | None = None) -> tuple
             error_msg += "- Unsupported content in the input file\n"
             error_msg += "- Pandoc version compatibility issues\n"
             error_msg += "- File encoding problems\n"
-            error_msg += f"Run 'docx2shelf doctor' to check your Pandoc installation"
+            error_msg += "Run 'docx2shelf doctor' to check your Pandoc installation"
             raise RuntimeError(error_msg)
 
     elif suffix == ".docx":
@@ -252,24 +254,37 @@ def _process_tracked_changes(run_element) -> tuple[str, bool]:
         tuple: (processed_text, should_include)
     """
     # Handle insertions (w:ins)
-    insertions = run_element.findall('.//w:ins', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'})
+    insertions = run_element.findall(
+        ".//w:ins", namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    )
     if insertions:
         # Extract text from insertions and mark as accepted
         text_parts = []
         for ins in insertions:
-            for t_elem in ins.findall('.//w:t', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}):
+            for t_elem in ins.findall(
+                ".//w:t",
+                namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+            ):
                 if t_elem.text:
                     text_parts.append(t_elem.text)
-        return ' '.join(text_parts), True
+        return " ".join(text_parts), True
 
     # Handle deletions (w:del) - skip by default but could be made configurable
-    deletions = run_element.findall('.//w:del', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'})
+    deletions = run_element.findall(
+        ".//w:del", namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    )
     if deletions:
         return "", False
 
     # Handle move operations (w:moveFrom, w:moveTo)
-    move_from = run_element.findall('.//w:moveFrom', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'})
-    move_to = run_element.findall('.//w:moveTo', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'})
+    move_from = run_element.findall(
+        ".//w:moveFrom",
+        namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+    )
+    move_to = run_element.findall(
+        ".//w:moveTo",
+        namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+    )
 
     if move_from:
         return "", False  # Skip move source
@@ -277,10 +292,13 @@ def _process_tracked_changes(run_element) -> tuple[str, bool]:
         # Extract text from move destination
         text_parts = []
         for move in move_to:
-            for t_elem in move.findall('.//w:t', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}):
+            for t_elem in move.findall(
+                ".//w:t",
+                namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+            ):
                 if t_elem.text:
                     text_parts.append(t_elem.text)
-        return ' '.join(text_parts), True
+        return " ".join(text_parts), True
 
     return "", True  # No tracked changes found
 
@@ -291,31 +309,43 @@ def _process_comments(run_element, document) -> str:
     Returns:
         HTML string with comment markers
     """
-    comment_refs = run_element.findall('.//w:commentRangeStart', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'})
-    comment_refs.extend(run_element.findall('.//w:commentReference', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}))
+    comment_refs = run_element.findall(
+        ".//w:commentRangeStart",
+        namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+    )
+    comment_refs.extend(
+        run_element.findall(
+            ".//w:commentReference",
+            namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+        )
+    )
 
     if not comment_refs:
         return ""
 
     comment_html = []
     for ref in comment_refs:
-        comment_id = ref.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id')
+        comment_id = ref.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id")
         if comment_id:
             try:
                 # Try to extract comment text if comments part exists
-                if hasattr(document.part, 'comments_part') and document.part.comments_part:
+                if hasattr(document.part, "comments_part") and document.part.comments_part:
                     comment_nodes = document.part.comments_part._element.xpath(
                         f'.//w:comment[@w:id="{comment_id}"]//w:t',
-                        namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+                        namespaces={
+                            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                        },
                     )
-                    comment_text = ' '.join(node.text or '' for node in comment_nodes).strip()
+                    comment_text = " ".join(node.text or "" for node in comment_nodes).strip()
                     if comment_text:
-                        comment_html.append(f'<span class="comment" title="{comment_text}">💬</span>')
+                        comment_html.append(
+                            f'<span class="comment" title="{comment_text}">💬</span>'
+                        )
             except Exception:
                 # Fallback to just marking comment presence
-                comment_html.append(f'<span class="comment">💬</span>')
+                comment_html.append('<span class="comment">💬</span>')
 
-    return ''.join(comment_html)
+    return "".join(comment_html)
 
 
 def _process_table(table_element) -> str:
@@ -326,33 +356,32 @@ def _process_table(table_element) -> str:
     """
     try:
         from docx.table import Table
-        from docx.text.paragraph import Paragraph
 
         # Create a temporary table object to work with
         table = Table(table_element, None)
 
-        html_parts = ['<table>']
+        html_parts = ["<table>"]
 
         for row in table.rows:
-            html_parts.append('<tr>')
+            html_parts.append("<tr>")
             for cell in row.cells:
                 # Process cell content
                 cell_content = []
                 for paragraph in cell.paragraphs:
                     p_text = paragraph.text.strip()
                     if p_text:
-                        cell_content.append(f'<p>{p_text}</p>')
+                        cell_content.append(f"<p>{p_text}</p>")
 
-                cell_html = ''.join(cell_content) if cell_content else '<p></p>'
-                html_parts.append(f'<td>{cell_html}</td>')
-            html_parts.append('</tr>')
+                cell_html = "".join(cell_content) if cell_content else "<p></p>"
+                html_parts.append(f"<td>{cell_html}</td>")
+            html_parts.append("</tr>")
 
-        html_parts.append('</table>')
-        return ''.join(html_parts)
+        html_parts.append("</table>")
+        return "".join(html_parts)
 
     except Exception as e:
         # Fallback to simple text representation
-        return f'<p><em>[Table content - processing error: {str(e)}]</em></p>'
+        return f"<p><em>[Table content - processing error: {str(e)}]</em></p>"
 
 
 def _rasterize_complex_element(element, element_type: str, tempdir: Path) -> str:
@@ -362,7 +391,6 @@ def _rasterize_complex_element(element, element_type: str, tempdir: Path) -> str
     of layout elements to preserve author intention.
     """
     try:
-        from xml.etree import ElementTree as ET
         import hashlib
 
         # Extract basic properties from the element
@@ -370,12 +398,17 @@ def _rasterize_complex_element(element, element_type: str, tempdir: Path) -> str
 
         # Try to extract text content if available
         text_content = ""
-        if hasattr(element, 'text') and element.text:
+        if hasattr(element, "text") and element.text:
             text_content = element.text.strip()
-        elif hasattr(element, 'element'):
+        elif hasattr(element, "element"):
             # Try to extract text from Word XML
             try:
-                for text_elem in element.element.xpath('.//w:t', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}):
+                for text_elem in element.element.xpath(
+                    ".//w:t",
+                    namespaces={
+                        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                    },
+                ):
                     if text_elem.text:
                         text_content += text_elem.text
             except (AttributeError, IndexError):
@@ -383,14 +416,14 @@ def _rasterize_complex_element(element, element_type: str, tempdir: Path) -> str
                 pass
 
         # Create semantic markup based on element type
-        if element_type.lower() == 'textbox':
+        if element_type.lower() == "textbox":
             css_class = "text-box"
             if text_content:
                 return f'<aside class="{css_class}" data-id="{element_id}"><p>{text_content}</p></aside>'
             else:
                 return f'<aside class="{css_class}" data-id="{element_id}"><p>[Text Box Content]</p></aside>'
 
-        elif element_type.lower() in ('shape', 'drawing'):
+        elif element_type.lower() in ("shape", "drawing"):
             css_class = "drawing-element"
             if text_content:
                 return f'<figure class="{css_class}" data-id="{element_id}"><figcaption>{text_content}</figcaption></figure>'
@@ -415,15 +448,18 @@ def _process_text_box_or_shape(element, tempdir: Path, rasterize_fallback: bool 
     """
     try:
         # Extract text from text boxes and shapes
-        text_elements = element.findall('.//w:t', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'})
-        text_content = ' '.join(elem.text or '' for elem in text_elements).strip()
+        text_elements = element.findall(
+            ".//w:t",
+            namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+        )
+        text_content = " ".join(elem.text or "" for elem in text_elements).strip()
 
         # Check for complex layout properties that might require rasterization
         has_complex_layout = False
         try:
             # Check for positioning, rotation, 3D effects, etc.
-            drawing_elements = element.findall('.//wp:anchor', namespaces=IMG_NS)
-            drawing_elements.extend(element.findall('.//wp:inline', namespaces=IMG_NS))
+            drawing_elements = element.findall(".//wp:anchor", namespaces=IMG_NS)
+            drawing_elements.extend(element.findall(".//wp:inline", namespaces=IMG_NS))
             if drawing_elements:
                 has_complex_layout = True
         except Exception:
@@ -461,7 +497,7 @@ def _load_style_mapping(docx_path: Path) -> dict:
 
     if default_styles_path.exists():
         try:
-            with open(default_styles_path, 'r', encoding='utf-8') as f:
+            with open(default_styles_path, "r", encoding="utf-8") as f:
                 styles_data = json.load(f)
         except Exception as e:
             print(f"Warning: Could not load default styles.json: {e}", file=sys.stderr)
@@ -470,10 +506,15 @@ def _load_style_mapping(docx_path: Path) -> dict:
     user_styles_path = docx_path.parent / "styles.json"
     if user_styles_path.exists():
         try:
-            with open(user_styles_path, 'r', encoding='utf-8') as f:
+            with open(user_styles_path, "r", encoding="utf-8") as f:
                 user_styles = json.load(f)
                 # Merge user styles with defaults
-                for category in ["paragraph_styles", "run_styles", "character_styles", "css_classes"]:
+                for category in [
+                    "paragraph_styles",
+                    "run_styles",
+                    "character_styles",
+                    "css_classes",
+                ]:
                     if category in user_styles:
                         if category not in styles_data:
                             styles_data[category] = {}
@@ -486,10 +527,15 @@ def _load_style_mapping(docx_path: Path) -> dict:
     cwd_styles_path = Path.cwd() / "styles.json"
     if cwd_styles_path.exists() and cwd_styles_path != user_styles_path:
         try:
-            with open(cwd_styles_path, 'r', encoding='utf-8') as f:
+            with open(cwd_styles_path, "r", encoding="utf-8") as f:
                 cwd_styles = json.load(f)
                 # Merge with existing styles
-                for category in ["paragraph_styles", "run_styles", "character_styles", "css_classes"]:
+                for category in [
+                    "paragraph_styles",
+                    "run_styles",
+                    "character_styles",
+                    "css_classes",
+                ]:
                     if category in cwd_styles:
                         if category not in styles_data:
                             styles_data[category] = {}
@@ -521,11 +567,16 @@ def _process_equation(element) -> str:
     """
     try:
         # Try to extract equation text content
-        text_elements = element.findall('.//m:t', namespaces={'m': 'http://schemas.openxmlformats.org/officeDocument/2006/math'})
+        text_elements = element.findall(
+            ".//m:t", namespaces={"m": "http://schemas.openxmlformats.org/officeDocument/2006/math"}
+        )
         if not text_elements:
-            text_elements = element.findall('.//w:t', namespaces={'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'})
+            text_elements = element.findall(
+                ".//w:t",
+                namespaces={"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"},
+            )
 
-        equation_text = ' '.join(elem.text or '' for elem in text_elements).strip()
+        equation_text = " ".join(elem.text or "" for elem in text_elements).strip()
 
         if equation_text:
             return f'<span class="equation">{equation_text}</span>'
@@ -535,12 +586,14 @@ def _process_equation(element) -> str:
         return '<span class="equation">[Equation]</span>'
 
 
-def docx_to_html_optimized(docx_path: Path, cache, image_processor, monitor) -> tuple[list[str], list[Path], str]:
+def docx_to_html_optimized(
+    docx_path: Path, cache, image_processor, monitor
+) -> tuple[list[str], list[Path], str]:
     """Convert DOCX to HTML chunks with performance optimizations.
 
     Uses streaming reading, parallel image processing, and performance monitoring.
     """
-    from .performance import StreamingDocxReader, MemoryOptimizer
+    from .performance import MemoryOptimizer
 
     # Initialize memory optimizer
     optimizer = MemoryOptimizer()
@@ -551,12 +604,16 @@ def docx_to_html_optimized(docx_path: Path, cache, image_processor, monitor) -> 
         with monitor.phase_timer("pandoc_conversion"):
             # Check Pandoc availability
             from .tools import get_pandoc_status
+
             status = get_pandoc_status()
 
             if status["overall_available"]:
                 try:
                     import pypandoc  # type: ignore
-                    html = pypandoc.convert_file(str(docx_path), to="html", extra_args=["--wrap=none"])
+
+                    html = pypandoc.convert_file(
+                        str(docx_path), to="html", extra_args=["--wrap=none"]
+                    )
                     chunks = split_html_by_heading(html, level="h1")
 
                     # Extract and process images in parallel
@@ -574,10 +631,16 @@ def docx_to_html_optimized(docx_path: Path, cache, image_processor, monitor) -> 
             else:
                 # Pandoc not available, log the reason
                 if not status["pandoc_binary"]["available"]:
-                    monitor.add_warning(f"Pandoc binary unavailable: {status['pandoc_binary']['message']}")
+                    monitor.add_warning(
+                        f"Pandoc binary unavailable: {status['pandoc_binary']['message']}"
+                    )
                 if not status["pypandoc_library"]["available"]:
-                    monitor.add_warning(f"pypandoc library unavailable: {status['pypandoc_library']['message']}")
-                monitor.add_warning("Using fallback DOCX conversion - install Pandoc for better results")
+                    monitor.add_warning(
+                        f"pypandoc library unavailable: {status['pypandoc_library']['message']}"
+                    )
+                monitor.add_warning(
+                    "Using fallback DOCX conversion - install Pandoc for better results"
+                )
 
         # Fallback to streaming python-docx reader for large files
         with monitor.phase_timer("streaming_conversion"):
@@ -587,10 +650,12 @@ def docx_to_html_optimized(docx_path: Path, cache, image_processor, monitor) -> 
         optimizer.cleanup()
 
 
-def _docx_to_html_streaming(docx_path: Path, image_processor, monitor, optimizer) -> tuple[list[str], list[Path], str]:
+def _docx_to_html_streaming(
+    docx_path: Path, image_processor, monitor, optimizer
+) -> tuple[list[str], list[Path], str]:
     """Convert DOCX to HTML using streaming approach for large documents."""
+
     from .performance import StreamingDocxReader
-    import xml.etree.ElementTree as ET
 
     # Use streaming reader to minimize memory usage
     with StreamingDocxReader(docx_path, chunk_size=512 * 1024) as reader:  # 512KB chunks
@@ -630,7 +695,9 @@ def _docx_to_html_streaming(docx_path: Path, image_processor, monitor, optimizer
         return chunks, resources, styles
 
 
-def _parse_docx_xml_optimized(xml_content: str, docx_path: Path, monitor) -> tuple[list[str], list[Path], str]:
+def _parse_docx_xml_optimized(
+    xml_content: str, docx_path: Path, monitor
+) -> tuple[list[str], list[Path], str]:
     """Parse DOCX XML with memory and performance optimizations."""
     import xml.etree.ElementTree as ET
     from xml.etree.ElementTree import ParseError
@@ -656,7 +723,6 @@ def _fallback_docx_conversion(docx_path: Path) -> tuple[list[str], list[Path], s
     # Use the existing docx_to_html function logic as fallback
     try:
         from docx import Document  # type: ignore
-        from docx.oxml.ns import qn  # type: ignore
 
         doc = Document(docx_path)
         chunks = []
@@ -665,11 +731,11 @@ def _fallback_docx_conversion(docx_path: Path) -> tuple[list[str], list[Path], s
 
         # Simple paragraph-by-paragraph conversion
         for para in doc.paragraphs:
-            if para.style.name.startswith('Heading'):
+            if para.style.name.startswith("Heading"):
                 if current_chunk:
                     chunks.append(f"<section>{''.join(current_chunk)}</section>")
                     current_chunk = []
-                level = 1 if 'Heading 1' in para.style.name else 2
+                level = 1 if "Heading 1" in para.style.name else 2
                 current_chunk.append(f"<h{level}>{para.text}</h{level}>")
             else:
                 current_chunk.append(f"<p>{para.text}</p>")
@@ -686,7 +752,7 @@ def _fallback_docx_conversion(docx_path: Path) -> tuple[list[str], list[Path], s
 
         return chunks, resources, styles_css
 
-    except Exception as e:
+    except Exception:
         return ["<section><p>Error processing document</p></section>"], [], ""
 
 
@@ -705,6 +771,7 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
     css_classes = styles_data.get("css_classes", {})
     # Check Pandoc availability first
     from .tools import get_pandoc_status
+
     status = get_pandoc_status()
 
     if status["overall_available"]:
@@ -750,15 +817,15 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
     # Process document elements including tables
     document_elements = []
     for element in document.element.body:
-        if element.tag.endswith('}p'):  # Paragraph
-            document_elements.append(('paragraph', element))
-        elif element.tag.endswith('}tbl'):  # Table
-            document_elements.append(('table', element))
-        elif element.tag.endswith('}sectPr'):  # Section properties
+        if element.tag.endswith("}p"):  # Paragraph
+            document_elements.append(("paragraph", element))
+        elif element.tag.endswith("}tbl"):  # Table
+            document_elements.append(("table", element))
+        elif element.tag.endswith("}sectPr"):  # Section properties
             continue
         else:
             # Handle other elements like text boxes, shapes, etc.
-            document_elements.append(('other', element))
+            document_elements.append(("other", element))
 
     def flush_section(buf: list[str], footnotes: list[str] | None = None):
         if not buf:
@@ -799,34 +866,34 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
         # Enhanced run style mapping
         try:
             # Check for underline
-            if hasattr(run, 'underline') and run.underline:
+            if hasattr(run, "underline") and run.underline:
                 txt = f"<u>{txt}</u>"
 
             # Check for strike-through
-            if hasattr(run, 'font') and hasattr(run.font, 'strike') and run.font.strike:
+            if hasattr(run, "font") and hasattr(run.font, "strike") and run.font.strike:
                 txt = f"<s>{txt}</s>"
 
             # Check for superscript/subscript
-            if hasattr(run, 'font') and hasattr(run.font, 'superscript') and run.font.superscript:
+            if hasattr(run, "font") and hasattr(run.font, "superscript") and run.font.superscript:
                 txt = f"<sup>{txt}</sup>"
-            elif hasattr(run, 'font') and hasattr(run.font, 'subscript') and run.font.subscript:
+            elif hasattr(run, "font") and hasattr(run.font, "subscript") and run.font.subscript:
                 txt = f"<sub>{txt}</sub>"
 
             # Check for small caps
-            if hasattr(run, 'font') and hasattr(run.font, 'small_caps') and run.font.small_caps:
+            if hasattr(run, "font") and hasattr(run.font, "small_caps") and run.font.small_caps:
                 txt = f'<span class="small-caps">{txt}</span>'
 
             # Check for custom styles via run style
-            if hasattr(run, 'style') and run.style and hasattr(run.style, 'name'):
-                style_name = run.style.name.lower().replace(' ', '-')
+            if hasattr(run, "style") and run.style and hasattr(run.style, "name"):
+                style_name = run.style.name.lower().replace(" ", "-")
                 # Map common Word styles to semantic HTML
-                if 'code' in style_name or 'monospace' in style_name:
+                if "code" in style_name or "monospace" in style_name:
                     txt = f"<code>{txt}</code>"
-                elif 'emphasis' in style_name or 'stress' in style_name:
+                elif "emphasis" in style_name or "stress" in style_name:
                     txt = f"<em>{txt}</em>"
-                elif 'strong' in style_name or 'intense' in style_name:
+                elif "strong" in style_name or "intense" in style_name:
                     txt = f"<strong>{txt}</strong>"
-                elif style_name not in ('normal', 'default'):
+                elif style_name not in ("normal", "default"):
                     # Apply as CSS class for custom styles
                     txt = f'<span class="style-{style_name}">{txt}</span>'
 
@@ -837,30 +904,31 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
         return txt
 
     for element_type, element in document_elements:
-        if element_type == 'table':
+        if element_type == "table":
             # Process table
             flush_list()
             table_html = _process_table(element)
             buf.append(table_html)
             continue
-        elif element_type == 'other':
+        elif element_type == "other":
             # Process other elements (text boxes, shapes, equations)
             flush_list()
-            if 'textbox' in element.tag.lower() or 'shape' in element.tag.lower():
+            if "textbox" in element.tag.lower() or "shape" in element.tag.lower():
                 other_html = _process_text_box_or_shape(element, tempdir)
-            elif 'math' in element.tag.lower() or 'equation' in element.tag.lower():
+            elif "math" in element.tag.lower() or "equation" in element.tag.lower():
                 other_html = _process_equation(element)
             else:
                 # Skip unknown elements or add generic handling
                 continue
             buf.append(other_html)
             continue
-        elif element_type != 'paragraph':
+        elif element_type != "paragraph":
             continue
 
         # Process paragraph
         try:
             from docx.text.paragraph import Paragraph
+
             p = Paragraph(element, document)
         except Exception:
             continue
@@ -1074,10 +1142,10 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
         # Build the opening and closing tags
         if css_class:
             opening_tag = f'<{base_tag} class="{css_class}">'
-            closing_tag = f'</{base_tag}>'
+            closing_tag = f"</{base_tag}>"
         else:
-            opening_tag = f'<{base_tag}>'
-            closing_tag = f'</{base_tag}>'
+            opening_tag = f"<{base_tag}>"
+            closing_tag = f"</{base_tag}>"
 
         if base_tag == "h1":
             flush_list()
@@ -1108,7 +1176,7 @@ def docx_to_html(docx_path: Path) -> tuple[list[str], list[Path], str]:
         elif base_tag == "pre":
             flush_list()
             buf.append(f"{opening_tag}{content}{closing_tag}")
-        else: # Default to paragraph or specified tag
+        else:  # Default to paragraph or specified tag
             flush_list()
             buf.append(f"{opening_tag}{content}{closing_tag}")
 

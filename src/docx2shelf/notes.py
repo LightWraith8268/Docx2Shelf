@@ -24,6 +24,7 @@ from typing import Dict, List, Optional, Tuple
 
 class NoteType(Enum):
     """Types of notes supported."""
+
     FOOTNOTE = "footnote"
     ENDNOTE = "endnote"
     SIDENOTE = "sidenote"
@@ -32,10 +33,11 @@ class NoteType(Enum):
 
 class NoteStyle(Enum):
     """Note presentation styles."""
-    INLINE = "inline"          # Notes appear at bottom of page/chapter
+
+    INLINE = "inline"  # Notes appear at bottom of page/chapter
     CONSOLIDATED = "consolidated"  # All notes on separate pages
-    POPUP = "popup"           # Notes appear in popups (EPUB 3)
-    LINKED = "linked"         # Simple hyperlinks to notes
+    POPUP = "popup"  # Notes appear in popups (EPUB 3)
+    LINKED = "linked"  # Simple hyperlinks to notes
 
 
 @dataclass
@@ -140,10 +142,15 @@ class NotesProcessor:
             "footnotes_found": 0,
             "endnotes_found": 0,
             "calls_found": 0,
-            "back_refs_generated": 0
+            "back_refs_generated": 0,
         }
 
-    def process_content(self, html_chunks: List[str], chunk_files: List[str], chapter_titles: List[str] | None = None) -> Tuple[List[str], Optional[str]]:
+    def process_content(
+        self,
+        html_chunks: List[str],
+        chunk_files: List[str],
+        chapter_titles: List[str] | None = None,
+    ) -> Tuple[List[str], Optional[str]]:
         """
         Process HTML content to handle notes and generate back-references.
 
@@ -174,27 +181,31 @@ class NotesProcessor:
 
         return updated_chunks, consolidated_notes
 
-    def _extract_notes_and_calls(self, html_chunks: List[str], chunk_files: List[str], chapter_titles: List[str]) -> None:
+    def _extract_notes_and_calls(
+        self, html_chunks: List[str], chunk_files: List[str], chapter_titles: List[str]
+    ) -> None:
         """Extract footnotes, endnotes, and their call sites."""
 
         # Patterns for note calls
         call_patterns = [
             r'<a[^>]*href\s*=\s*["\']#(footnote|endnote)[-_]?(\d+)["\'][^>]*class\s*=\s*["\'][^"\']*note-?call[^"\']*["\'][^>]*>(.*?)</a>',
             r'<sup[^>]*class\s*=\s*["\'][^"\']*note-?call[^"\']*["\'][^>]*><a[^>]*href\s*=\s*["\']#([^"\']+)["\'][^>]*>(.*?)</a></sup>',
-            r'<span[^>]*class\s*=\s*["\'][^"\']*footnote-?ref[^"\']*["\'][^>]*><a[^>]*href\s*=\s*["\']#([^"\']+)["\'][^>]*>(.*?)</a></span>'
+            r'<span[^>]*class\s*=\s*["\'][^"\']*footnote-?ref[^"\']*["\'][^>]*><a[^>]*href\s*=\s*["\']#([^"\']+)["\'][^>]*>(.*?)</a></span>',
         ]
 
         # Patterns for notes themselves
         note_patterns = [
             r'<div[^>]*class\s*=\s*["\'][^"\']*footnote[^"\']*["\'][^>]*id\s*=\s*["\']([^"\']+)["\'][^>]*>(.*?)</div>',
             r'<li[^>]*id\s*=\s*["\'](footnote|endnote)[-_]?(\d+)["\'][^>]*>(.*?)</li>',
-            r'<aside[^>]*epub:type\s*=\s*["\']footnote["\'][^>]*id\s*=\s*["\']([^"\']+)["\'][^>]*>(.*?)</aside>'
+            r'<aside[^>]*epub:type\s*=\s*["\']footnote["\'][^>]*id\s*=\s*["\']([^"\']+)["\'][^>]*>(.*?)</aside>',
         ]
 
         note_id_counter = 1
         call_id_counter = 1
 
-        for chunk_idx, (chunk, filename, chapter_title) in enumerate(zip(html_chunks, chunk_files, chapter_titles)):
+        for chunk_idx, (chunk, filename, chapter_title) in enumerate(
+            zip(html_chunks, chunk_files, chapter_titles)
+        ):
             # Extract note calls
             for pattern in call_patterns:
                 for match in re.finditer(pattern, chunk, re.IGNORECASE | re.DOTALL):
@@ -207,14 +218,14 @@ class NotesProcessor:
                         note_ref = match.group(1)
                         call_text = match.group(2)
 
-                    call_text = re.sub(r'<[^>]+>', '', call_text).strip()
+                    call_text = re.sub(r"<[^>]+>", "", call_text).strip()
 
                     # Extract surrounding context
                     start_pos = max(0, match.start() - 100)
                     end_pos = min(len(chunk), match.end() + 100)
                     context = chunk[start_pos:end_pos]
-                    context = re.sub(r'<[^>]+>', ' ', context)
-                    context = ' '.join(context.split())
+                    context = re.sub(r"<[^>]+>", " ", context)
+                    context = " ".join(context.split())
 
                     call = NoteCall(
                         id=f"call_{call_id_counter}",
@@ -223,7 +234,7 @@ class NotesProcessor:
                         position=match.start(),
                         chapter_title=chapter_title,
                         call_text=call_text,
-                        surrounding_context=context
+                        surrounding_context=context,
                     )
 
                     self.calls[call.id] = call
@@ -232,7 +243,7 @@ class NotesProcessor:
             # Extract notes
             for pattern in note_patterns:
                 for match in re.finditer(pattern, chunk, re.IGNORECASE | re.DOTALL):
-                    if 'footnote' in pattern or 'footnote' in match.group(0).lower():
+                    if "footnote" in pattern or "footnote" in match.group(0).lower():
                         note_type = NoteType.FOOTNOTE
                     else:
                         note_type = NoteType.ENDNOTE
@@ -245,8 +256,8 @@ class NotesProcessor:
                         content = match.group(2) if len(match.groups()) >= 2 else match.group(1)
 
                     # Clean content
-                    plain_text = re.sub(r'<[^>]+>', ' ', content)
-                    plain_text = ' '.join(plain_text.split())
+                    plain_text = re.sub(r"<[^>]+>", " ", content)
+                    plain_text = " ".join(plain_text.split())
 
                     note = Note(
                         id=note_id,
@@ -254,7 +265,7 @@ class NotesProcessor:
                         number=note_id_counter,
                         content=content,
                         plain_text=plain_text,
-                        original_file=filename
+                        original_file=filename,
                     )
 
                     self.notes[note_id] = note
@@ -265,8 +276,12 @@ class NotesProcessor:
             if call.note_id in self.notes:
                 self.notes[call.note_id].calls.append(call)
 
-        self._stats["footnotes_found"] = len([n for n in self.notes.values() if n.type == NoteType.FOOTNOTE])
-        self._stats["endnotes_found"] = len([n for n in self.notes.values() if n.type == NoteType.ENDNOTE])
+        self._stats["footnotes_found"] = len(
+            [n for n in self.notes.values() if n.type == NoteType.FOOTNOTE]
+        )
+        self._stats["endnotes_found"] = len(
+            [n for n in self.notes.values() if n.type == NoteType.ENDNOTE]
+        )
         self._stats["calls_found"] = len(self.calls)
 
     def _organize_notes_by_chapter(self, chunk_files: List[str], chapter_titles: List[str]) -> None:
@@ -274,10 +289,7 @@ class NotesProcessor:
 
         # Create chapter structures
         for filename, title in zip(chunk_files, chapter_titles):
-            chapter_notes = ChapterNotes(
-                chapter_title=title,
-                chapter_file=filename
-            )
+            chapter_notes = ChapterNotes(chapter_title=title, chapter_file=filename)
 
             # Assign notes to chapters based on their calls
             for note in self.notes.values():
@@ -318,7 +330,9 @@ class NotesProcessor:
 
             # Add back-references to note content
             if back_ref_links:
-                back_ref_section = f' <span class="note-back-refs">{" ".join(back_ref_links)}</span>'
+                back_ref_section = (
+                    f' <span class="note-back-refs">{" ".join(back_ref_links)}</span>'
+                )
                 note.content = note.content.rstrip() + back_ref_section
                 back_refs_generated += 1
 
@@ -358,12 +372,12 @@ class NotesProcessor:
             def add_call_id(match):
                 tag = match.group(1)
                 content = match.group(2)
-                attrs = match.group(0)[len(f'<{tag}'):match.group(0).find('>')]
+                attrs = match.group(0)[len(f"<{tag}") : match.group(0).find(">")]
 
-                if 'id=' not in attrs:
+                if "id=" not in attrs:
                     attrs += f' id="{call.id}"'
 
-                return f'<{tag}{attrs}>{content}</{tag}>'
+                return f"<{tag}{attrs}>{content}</{tag}>"
 
             chunk = re.sub(pattern, add_call_id, chunk, flags=re.IGNORECASE)
 
@@ -373,21 +387,23 @@ class NotesProcessor:
         """Enhance note markup with proper semantic elements."""
 
         # Convert footnotes to proper aside elements
-        footnote_pattern = r'<div([^>]*class\s*=\s*["\'][^"\']*footnote[^"\']*["\'][^>]*?)>(.*?)</div>'
+        footnote_pattern = (
+            r'<div([^>]*class\s*=\s*["\'][^"\']*footnote[^"\']*["\'][^>]*?)>(.*?)</div>'
+        )
 
         def enhance_footnote(match):
             attrs = match.group(1)
             content = match.group(2)
 
             # Add EPUB type if not present
-            if 'epub:type=' not in attrs:
+            if "epub:type=" not in attrs:
                 attrs += ' epub:type="footnote"'
 
             # Add role if not present
-            if 'role=' not in attrs:
+            if "role=" not in attrs:
                 attrs += ' role="doc-footnote"'
 
-            return f'<aside{attrs}>{content}</aside>'
+            return f"<aside{attrs}>{content}</aside>"
 
         chunk = re.sub(footnote_pattern, enhance_footnote, chunk, flags=re.IGNORECASE | re.DOTALL)
 
@@ -405,22 +421,28 @@ class NotesProcessor:
 
             def extract_footnote(match):
                 footnotes.append(match.group(0))
-                return ''  # Remove from original position
+                return ""  # Remove from original position
 
-            chunk = re.sub(footnote_pattern, extract_footnote, chunk, flags=re.IGNORECASE | re.DOTALL)
+            chunk = re.sub(
+                footnote_pattern, extract_footnote, chunk, flags=re.IGNORECASE | re.DOTALL
+            )
 
             # Add footnotes section at end if any found
             if footnotes:
-                footnotes_section = '''
+                footnotes_section = (
+                    """
         <section class="footnotes" epub:type="footnotes">
             <h2>Notes</h2>
             <div class="footnotes-list">
-                ''' + '\n                '.join(footnotes) + '''
+                """
+                    + "\n                ".join(footnotes)
+                    + """
             </div>
-        </section>'''
+        </section>"""
+                )
 
                 # Insert before closing body tag
-                chunk = chunk.replace('</body>', footnotes_section + '\n</body>')
+                chunk = chunk.replace("</body>", footnotes_section + "\n</body>")
 
         return chunk
 
@@ -431,11 +453,11 @@ class NotesProcessor:
         note_patterns = [
             r'<aside[^>]*epub:type\s*=\s*["\']footnote["\'][^>]*>.*?</aside>',
             r'<div[^>]*class\s*=\s*["\'][^"\']*footnote[^"\']*["\'][^>]*>.*?</div>',
-            r'<section[^>]*class\s*=\s*["\'][^"\']*footnotes[^"\']*["\'][^>]*>.*?</section>'
+            r'<section[^>]*class\s*=\s*["\'][^"\']*footnotes[^"\']*["\'][^>]*>.*?</section>',
         ]
 
         for pattern in note_patterns:
-            chunk = re.sub(pattern, '', chunk, flags=re.IGNORECASE | re.DOTALL)
+            chunk = re.sub(pattern, "", chunk, flags=re.IGNORECASE | re.DOTALL)
 
         return chunk
 
@@ -445,7 +467,8 @@ class NotesProcessor:
         html_parts = []
 
         # HTML header
-        html_parts.append(f'''<?xml version="1.0" encoding="UTF-8"?>
+        html_parts.append(
+            f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
@@ -455,59 +478,70 @@ class NotesProcessor:
 </head>
 <body>
     <div class="{self.config.notes_css_class}">
-        <h1 class="notes-title">{self.config.notes_page_title}</h1>''')
+        <h1 class="notes-title">{self.config.notes_page_title}</h1>"""
+        )
 
         # Generate notes by chapter
         for chapter in self.chapters:
             if chapter.footnotes or chapter.endnotes:
-                html_parts.append(f'''
-        <section class="chapter-notes" id="notes-{self._slugify(chapter.chapter_title)}">''')
+                html_parts.append(
+                    f"""
+        <section class="chapter-notes" id="notes-{self._slugify(chapter.chapter_title)}">"""
+                )
 
                 if self.config.include_chapter_headings:
-                    html_parts.append(f'            <h2 class="chapter-notes-title">{chapter.chapter_title}</h2>')
+                    html_parts.append(
+                        f'            <h2 class="chapter-notes-title">{chapter.chapter_title}</h2>'
+                    )
 
                 # Footnotes
                 if chapter.footnotes:
                     html_parts.append('            <div class="footnotes-section">')
-                    html_parts.append('                <h3>Footnotes</h3>')
+                    html_parts.append("                <h3>Footnotes</h3>")
                     html_parts.append('                <ol class="footnotes-list">')
 
                     for note in chapter.footnotes:
-                        html_parts.append(f'                    <li id="{note.id}" class="footnote">')
-                        html_parts.append(f'                        {note.content}')
-                        html_parts.append('                    </li>')
+                        html_parts.append(
+                            f'                    <li id="{note.id}" class="footnote">'
+                        )
+                        html_parts.append(f"                        {note.content}")
+                        html_parts.append("                    </li>")
 
-                    html_parts.append('                </ol>')
-                    html_parts.append('            </div>')
+                    html_parts.append("                </ol>")
+                    html_parts.append("            </div>")
 
                 # Endnotes
                 if chapter.endnotes:
                     html_parts.append('            <div class="endnotes-section">')
-                    html_parts.append('                <h3>Endnotes</h3>')
+                    html_parts.append("                <h3>Endnotes</h3>")
                     html_parts.append('                <ol class="endnotes-list">')
 
                     for note in chapter.endnotes:
-                        html_parts.append(f'                    <li id="{note.id}" class="endnote">')
-                        html_parts.append(f'                        {note.content}')
-                        html_parts.append('                    </li>')
+                        html_parts.append(
+                            f'                    <li id="{note.id}" class="endnote">'
+                        )
+                        html_parts.append(f"                        {note.content}")
+                        html_parts.append("                    </li>")
 
-                    html_parts.append('                </ol>')
-                    html_parts.append('            </div>')
+                    html_parts.append("                </ol>")
+                    html_parts.append("            </div>")
 
-                html_parts.append('        </section>')
+                html_parts.append("        </section>")
 
         # HTML footer
-        html_parts.append('''
+        html_parts.append(
+            """
     </div>
 </body>
-</html>''')
+</html>"""
+        )
 
-        return '\n'.join(html_parts)
+        return "\n".join(html_parts)
 
     def _slugify(self, text: str) -> str:
         """Convert text to URL-safe slug."""
-        slug = re.sub(r'[^\w\s-]', '', text)
-        slug = re.sub(r'\s+', '-', slug)
+        slug = re.sub(r"[^\w\s-]", "", text)
+        slug = re.sub(r"\s+", "-", slug)
         return slug.lower()
 
     def get_statistics(self) -> Dict[str, int]:
@@ -547,5 +581,5 @@ def create_scholarly_notes_config() -> NotesConfig:
         generate_back_refs=True,
         group_by_chapter=True,
         include_chapter_headings=True,
-        preserve_note_formatting=True
+        preserve_note_formatting=True,
     )

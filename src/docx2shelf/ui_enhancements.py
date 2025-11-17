@@ -6,13 +6,11 @@ accessibility enhancements, and visual feedback mechanisms.
 
 from __future__ import annotations
 
-import math
 import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
-from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 try:
     import customtkinter as ctk
@@ -28,6 +26,7 @@ except ImportError:
 @dataclass
 class ColorScheme:
     """Modern color scheme with semantic tokens."""
+
     # Primary colors
     primary: str
     primary_hover: str
@@ -63,6 +62,7 @@ class ColorScheme:
 
 class ThemeMode(Enum):
     """Available theme modes."""
+
     LIGHT = "light"
     DARK = "dark"
 
@@ -133,6 +133,7 @@ LIGHT_THEME = ColorScheme(
 @dataclass
 class Typography:
     """Typography system with font scales."""
+
     # Font families
     family_display: str = "Segoe UI, -apple-system, BlinkMacSystemFont"
     family_body: str = "Segoe UI, -apple-system, BlinkMacSystemFont"
@@ -170,6 +171,7 @@ TYPOGRAPHY = Typography()
 
 class EasingFunction(Enum):
     """Easing functions for smooth animations."""
+
     LINEAR = "linear"
     EASE_IN = "ease_in"
     EASE_OUT = "ease_out"
@@ -396,6 +398,7 @@ class HoverEffect:
 
 class FeedbackType(Enum):
     """Types of visual feedback."""
+
     SUCCESS = "success"
     ERROR = "error"
     WARNING = "warning"

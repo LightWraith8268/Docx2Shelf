@@ -28,6 +28,7 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 
 class WritingDirection(Enum):
     """Text writing direction."""
+
     LTR = "ltr"  # Left-to-right
     RTL = "rtl"  # Right-to-left
     TTB = "ttb"  # Top-to-bottom (for vertical writing)
@@ -35,6 +36,7 @@ class WritingDirection(Enum):
 
 class ScriptType(Enum):
     """Script/writing system types."""
+
     LATIN = "latin"
     ARABIC = "arabic"
     HEBREW = "hebrew"
@@ -76,7 +78,7 @@ class LanguageConfig:
     normalization_form: str = "NFC"  # NFC, NFD, NFKC, NFKD
 
     # Quotation marks
-    primary_quotes: Tuple[str, str] = (""", """)
+    primary_quotes: Tuple[str, str] = """, """
     secondary_quotes: Tuple[str, str] = ("'", "'")
 
     # Number formatting
@@ -98,7 +100,7 @@ LANGUAGE_CONFIGS = {
         script=ScriptType.LATIN,
         primary_fonts=["Georgia", "Times New Roman", "serif"],
         primary_quotes=(""", """),
-        secondary_quotes=("'", "'")
+        secondary_quotes=("'", "'"),
     ),
     "ar": LanguageConfig(
         code="ar",
@@ -112,7 +114,7 @@ LANGUAGE_CONFIGS = {
         primary_quotes=("«", "»"),
         secondary_quotes=("‹", "›"),
         decimal_separator="٫",
-        thousands_separator="٬"
+        thousands_separator="٬",
     ),
     "he": LanguageConfig(
         code="he",
@@ -123,7 +125,7 @@ LANGUAGE_CONFIGS = {
         primary_fonts=["SBL Hebrew", "Noto Serif Hebrew", "David", "serif"],
         fallback_fonts=["Arial Unicode MS", "Tahoma"],
         primary_quotes=("״", "״"),
-        secondary_quotes=("׳", "׳")
+        secondary_quotes=("׳", "׳"),
     ),
     "zh": LanguageConfig(
         code="zh",
@@ -136,7 +138,7 @@ LANGUAGE_CONFIGS = {
         hyphenation_enabled=False,
         line_break_rules="strict",
         primary_quotes=("「", "」"),
-        secondary_quotes=("『", "』")
+        secondary_quotes=("『", "』"),
     ),
     "ja": LanguageConfig(
         code="ja",
@@ -149,7 +151,7 @@ LANGUAGE_CONFIGS = {
         hyphenation_enabled=False,
         line_break_rules="strict",
         primary_quotes=("「", "」"),
-        secondary_quotes=("『", "』")
+        secondary_quotes=("『", "』"),
     ),
     "ko": LanguageConfig(
         code="ko",
@@ -162,7 +164,7 @@ LANGUAGE_CONFIGS = {
         hyphenation_enabled=False,
         line_break_rules="strict",
         primary_quotes=("「", "」"),
-        secondary_quotes=("『", "』")
+        secondary_quotes=("『", "』"),
     ),
     "fa": LanguageConfig(
         code="fa",
@@ -172,7 +174,7 @@ LANGUAGE_CONFIGS = {
         script=ScriptType.ARABIC,
         primary_fonts=["Noto Naskh Arabic", "Persian", "Tahoma"],
         primary_quotes=("«", "»"),
-        secondary_quotes=("‹", "›")
+        secondary_quotes=("‹", "›"),
     ),
     "ru": LanguageConfig(
         code="ru",
@@ -182,7 +184,9 @@ LANGUAGE_CONFIGS = {
         script=ScriptType.CYRILLIC,
         primary_fonts=["Times New Roman", "serif"],
         primary_quotes=("«", "»"),
-        secondary_quotes=("„", """)
+        secondary_quotes=(
+            "„",
+            """)
     ),
     "de": LanguageConfig(
         code="de",
@@ -191,8 +195,9 @@ LANGUAGE_CONFIGS = {
         direction=WritingDirection.LTR,
         script=ScriptType.LATIN,
         primary_fonts=["Georgia", "Times New Roman", "serif"],
-        primary_quotes=("„", """),
-        secondary_quotes=("‚", "'")
+        primary_quotes=("„", """,
+        ),
+        secondary_quotes=("‚", "'"),
     ),
     "fr": LanguageConfig(
         code="fr",
@@ -202,7 +207,7 @@ LANGUAGE_CONFIGS = {
         script=ScriptType.LATIN,
         primary_fonts=["Georgia", "Times New Roman", "serif"],
         primary_quotes=("«", "»"),
-        secondary_quotes=("‹", "›")
+        secondary_quotes=("‹", "›"),
     ),
     "es": LanguageConfig(
         code="es",
@@ -212,7 +217,7 @@ LANGUAGE_CONFIGS = {
         script=ScriptType.LATIN,
         primary_fonts=["Georgia", "Times New Roman", "serif"],
         primary_quotes=("«", "»"),
-        secondary_quotes=("‹", "›")
+        secondary_quotes=("‹", "›"),
     ),
     "th": LanguageConfig(
         code="th",
@@ -222,8 +227,8 @@ LANGUAGE_CONFIGS = {
         script=ScriptType.THAI,
         primary_fonts=["Noto Serif Thai", "Cordia New", "serif"],
         hyphenation_enabled=False,
-        word_spacing="0.25em"
-    )
+        word_spacing="0.25em",
+    ),
 }
 
 
@@ -233,7 +238,7 @@ def detect_language_from_content(content: str) -> Optional[str]:
         return None
 
     # Remove HTML tags for analysis
-    text = re.sub(r'<[^>]+>', '', content)
+    text = re.sub(r"<[^>]+>", "", content)
     text = text.strip()[:1000]  # Analyze first 1000 chars
 
     if not text:
@@ -247,7 +252,7 @@ def detect_language_from_content(content: str) -> Optional[str]:
         ScriptType.CJK: 0,
         ScriptType.CYRILLIC: 0,
         ScriptType.THAI: 0,
-        ScriptType.HANGUL: 0
+        ScriptType.HANGUL: 0,
     }
 
     for char in text:
@@ -256,20 +261,20 @@ def detect_language_from_content(content: str) -> Optional[str]:
 
         # Get Unicode category and script
         category = unicodedata.category(char)
-        if category.startswith('L'):  # Letter categories
-            name = unicodedata.name(char, '')
+        if category.startswith("L"):  # Letter categories
+            name = unicodedata.name(char, "")
 
-            if 'ARABIC' in name:
+            if "ARABIC" in name:
                 script_counts[ScriptType.ARABIC] += 1
-            elif 'HEBREW' in name:
+            elif "HEBREW" in name:
                 script_counts[ScriptType.HEBREW] += 1
-            elif 'CJK' in name or 'IDEOGRAPHIC' in name:
+            elif "CJK" in name or "IDEOGRAPHIC" in name:
                 script_counts[ScriptType.CJK] += 1
-            elif 'CYRILLIC' in name:
+            elif "CYRILLIC" in name:
                 script_counts[ScriptType.CYRILLIC] += 1
-            elif 'THAI' in name:
+            elif "THAI" in name:
                 script_counts[ScriptType.THAI] += 1
-            elif 'HANGUL' in name:
+            elif "HANGUL" in name:
                 script_counts[ScriptType.HANGUL] += 1
             elif ord(char) < 128:  # Basic Latin
                 script_counts[ScriptType.LATIN] += 1
@@ -285,7 +290,7 @@ def detect_language_from_content(content: str) -> Optional[str]:
         ScriptType.CYRILLIC: "ru",
         ScriptType.THAI: "th",
         ScriptType.HANGUL: "ko",
-        ScriptType.LATIN: "en"  # Default to English for Latin script
+        ScriptType.LATIN: "en",  # Default to English for Latin script
     }
 
     return script_to_language.get(dominant_script)
@@ -320,30 +325,32 @@ def apply_language_specific_formatting(content: str, config: LanguageConfig) -> 
 def add_language_attributes(content: str, config: LanguageConfig) -> str:
     """Add lang and dir attributes to HTML elements."""
     # Add to html element
-    html_pattern = r'<html([^>]*?)>'
+    html_pattern = r"<html([^>]*?)>"
+
     def add_html_attrs(match):
         attrs = match.group(1)
 
         # Add lang if not present
-        if 'lang=' not in attrs:
+        if "lang=" not in attrs:
             attrs += f' lang="{config.code}"'
 
         # Add dir if RTL and not present
-        if config.direction == WritingDirection.RTL and 'dir=' not in attrs:
+        if config.direction == WritingDirection.RTL and "dir=" not in attrs:
             attrs += ' dir="rtl"'
 
-        return f'<html{attrs}>'
+        return f"<html{attrs}>"
 
     content = re.sub(html_pattern, add_html_attrs, content, flags=re.IGNORECASE)
 
     # Add to body element for RTL languages
     if config.direction == WritingDirection.RTL:
-        body_pattern = r'<body([^>]*?)>'
+        body_pattern = r"<body([^>]*?)>"
+
         def add_body_dir(match):
             attrs = match.group(1)
-            if 'dir=' not in attrs:
+            if "dir=" not in attrs:
                 attrs += ' dir="rtl"'
-            return f'<body{attrs}>'
+            return f"<body{attrs}>"
 
         content = re.sub(body_pattern, add_body_dir, content, flags=re.IGNORECASE)
 
@@ -355,9 +362,9 @@ def apply_text_direction(content: str, config: LanguageConfig) -> str:
     if config.direction == WritingDirection.RTL:
         # Add RTL class to paragraphs and text elements
         replacements = [
-            (r'<p([^>]*?)>', r'<p\1 dir="rtl">'),
-            (r'<div([^>]*?)>', r'<div\1 dir="rtl">'),
-            (r'<span([^>]*?)>', r'<span\1 dir="rtl">'),
+            (r"<p([^>]*?)>", r'<p\1 dir="rtl">'),
+            (r"<div([^>]*?)>", r'<div\1 dir="rtl">'),
+            (r"<span([^>]*?)>", r'<span\1 dir="rtl">'),
         ]
 
         for pattern, replacement in replacements:
@@ -384,16 +391,20 @@ def generate_language_css(config: LanguageConfig) -> str:
     css_parts = []
 
     # Font stack
-    font_stack = ", ".join([
-        f'"{font}"' if ' ' in font else font
-        for font in config.primary_fonts + config.fallback_fonts
-    ])
+    font_stack = ", ".join(
+        [
+            f'"{font}"' if " " in font else font
+            for font in config.primary_fonts + config.fallback_fonts
+        ]
+    )
 
-    css_parts.append(f"""
+    css_parts.append(
+        f"""
 /* Language-specific typography for {config.name} ({config.code}) */
 :lang({config.code}) {{
     font-family: {font_stack};
-""")
+"""
+    )
 
     # Text direction
     if config.direction == WritingDirection.RTL:
@@ -426,7 +437,8 @@ def generate_language_css(config: LanguageConfig) -> str:
 
     # RTL-specific adjustments
     if config.direction == WritingDirection.RTL:
-        css_parts.append(f"""
+        css_parts.append(
+            f"""
 
 /* RTL-specific adjustments for {config.name} */
 :lang({config.code}) .toc {{
@@ -446,11 +458,13 @@ def generate_language_css(config: LanguageConfig) -> str:
 :lang({config.code}) ul, :lang({config.code}) ol {{
     padding-right: 2em;
     padding-left: 0;
-}}""")
+}}"""
+        )
 
     # CJK-specific adjustments
     if config.script == ScriptType.CJK:
-        css_parts.append(f"""
+        css_parts.append(
+            f"""
 
 /* CJK-specific adjustments for {config.name} */
 :lang({config.code}) {{
@@ -464,7 +478,8 @@ def generate_language_css(config: LanguageConfig) -> str:
 
 :lang({config.code}) .punctuation {{
     font-feature-settings: "halt" 1;
-}}""")
+}}"""
+        )
 
     return "\n".join(css_parts)
 
@@ -472,23 +487,20 @@ def generate_language_css(config: LanguageConfig) -> str:
 def get_language_config(language_code: str) -> LanguageConfig:
     """Get language configuration for a given language code."""
     # Normalize language code
-    lang_code = language_code.lower().split('-')[0]  # Remove region codes
+    lang_code = language_code.lower().split("-")[0]  # Remove region codes
 
     return LANGUAGE_CONFIGS.get(lang_code, LANGUAGE_CONFIGS["en"])
 
 
 def validate_language_code(language_code: str) -> bool:
     """Validate if a language code is supported."""
-    lang_code = language_code.lower().split('-')[0]
+    lang_code = language_code.lower().split("-")[0]
     return lang_code in LANGUAGE_CONFIGS
 
 
 def get_supported_languages() -> List[Tuple[str, str, str]]:
     """Get list of supported languages as (code, name, native_name) tuples."""
-    return [
-        (config.code, config.name, config.native_name)
-        for config in LANGUAGE_CONFIGS.values()
-    ]
+    return [(config.code, config.name, config.native_name) for config in LANGUAGE_CONFIGS.values()]
 
 
 def detect_mixed_languages(content: str) -> List[str]:
@@ -499,13 +511,13 @@ def detect_mixed_languages(content: str) -> List[str]:
 
     # Look for common language patterns
     patterns = {
-        "ar": r'[\u0600-\u06FF\u0750-\u077F]+',  # Arabic
-        "he": r'[\u0590-\u05FF]+',               # Hebrew
-        "zh": r'[\u4E00-\u9FFF]+',               # CJK Unified Ideographs
-        "ja": r'[\u3040-\u309F\u30A0-\u30FF]+', # Hiragana + Katakana
-        "ko": r'[\uAC00-\uD7AF]+',               # Hangul
-        "th": r'[\u0E00-\u0E7F]+',               # Thai
-        "ru": r'[\u0400-\u04FF]+',               # Cyrillic
+        "ar": r"[\u0600-\u06FF\u0750-\u077F]+",  # Arabic
+        "he": r"[\u0590-\u05FF]+",  # Hebrew
+        "zh": r"[\u4E00-\u9FFF]+",  # CJK Unified Ideographs
+        "ja": r"[\u3040-\u309F\u30A0-\u30FF]+",  # Hiragana + Katakana
+        "ko": r"[\uAC00-\uD7AF]+",  # Hangul
+        "th": r"[\u0E00-\u0E7F]+",  # Thai
+        "ru": r"[\u0400-\u04FF]+",  # Cyrillic
     }
 
     for lang, pattern in patterns.items():
@@ -526,7 +538,8 @@ def create_polyglot_css(languages: List[str]) -> str:
         css_parts.append(generate_language_css(config))
 
     # Add general polyglot styles
-    css_parts.append("""
+    css_parts.append(
+        """
 /* General polyglot support */
 .lang-switch {
     font-size: 0.9em;
@@ -546,6 +559,7 @@ def create_polyglot_css(languages: List[str]) -> str:
 .ltr-embed {
     direction: ltr;
     unicode-bidi: embed;
-}""")
+}"""
+    )
 
     return "\n".join(css_parts)

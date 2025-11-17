@@ -20,6 +20,7 @@ from .ai_integration import get_ai_manager
 @dataclass
 class GenreScore:
     """Score for a detected genre."""
+
     genre: str
     confidence: float
     evidence: List[str] = field(default_factory=list)
@@ -30,6 +31,7 @@ class GenreScore:
 @dataclass
 class KeywordResult:
     """Result of keyword extraction."""
+
     keyword: str
     frequency: int
     relevance_score: float
@@ -40,6 +42,7 @@ class KeywordResult:
 @dataclass
 class GenreDetectionResult:
     """Complete genre detection result."""
+
     primary_genre: str
     confidence: float
     secondary_genres: List[GenreScore] = field(default_factory=list)
@@ -59,82 +62,175 @@ class AdvancedGenreDetector:
     def _load_genre_models(self):
         """Load genre detection models and data."""
         self.genre_keywords = {
-            'Fantasy': {
-                'primary': ['magic', 'wizard', 'dragon', 'spell', 'enchanted', 'quest', 'sword', 'kingdom'],
-                'secondary': ['fairy', 'elf', 'dwarf', 'mystical', 'potion', 'crystal', 'prophecy', 'ancient'],
-                'indicators': ['magical', 'mythical', 'legendary', 'supernatural', 'otherworldly'],
-                'settings': ['castle', 'forest', 'mountain', 'tower', 'realm', 'dimension'],
-                'characters': ['prince', 'princess', 'knight', 'sorcerer', 'oracle', 'warlock']
+            "Fantasy": {
+                "primary": [
+                    "magic",
+                    "wizard",
+                    "dragon",
+                    "spell",
+                    "enchanted",
+                    "quest",
+                    "sword",
+                    "kingdom",
+                ],
+                "secondary": [
+                    "fairy",
+                    "elf",
+                    "dwarf",
+                    "mystical",
+                    "potion",
+                    "crystal",
+                    "prophecy",
+                    "ancient",
+                ],
+                "indicators": ["magical", "mythical", "legendary", "supernatural", "otherworldly"],
+                "settings": ["castle", "forest", "mountain", "tower", "realm", "dimension"],
+                "characters": ["prince", "princess", "knight", "sorcerer", "oracle", "warlock"],
             },
-            'Romance': {
-                'primary': ['love', 'heart', 'kiss', 'passion', 'romance', 'relationship', 'wedding'],
-                'secondary': ['desire', 'attraction', 'intimate', 'affection', 'devoted', 'beloved'],
-                'indicators': ['romantic', 'tender', 'gentle', 'warm', 'emotional'],
-                'settings': ['home', 'garden', 'beach', 'cafe', 'restaurant', 'bedroom'],
-                'characters': ['lover', 'husband', 'wife', 'boyfriend', 'girlfriend', 'partner']
+            "Romance": {
+                "primary": [
+                    "love",
+                    "heart",
+                    "kiss",
+                    "passion",
+                    "romance",
+                    "relationship",
+                    "wedding",
+                ],
+                "secondary": [
+                    "desire",
+                    "attraction",
+                    "intimate",
+                    "affection",
+                    "devoted",
+                    "beloved",
+                ],
+                "indicators": ["romantic", "tender", "gentle", "warm", "emotional"],
+                "settings": ["home", "garden", "beach", "cafe", "restaurant", "bedroom"],
+                "characters": ["lover", "husband", "wife", "boyfriend", "girlfriend", "partner"],
             },
-            'Mystery': {
-                'primary': ['detective', 'murder', 'crime', 'investigation', 'suspect', 'clue', 'evidence'],
-                'secondary': ['mystery', 'police', 'criminal', 'victim', 'witness', 'alibi', 'motive'],
-                'indicators': ['suspicious', 'hidden', 'secret', 'puzzling', 'mysterious'],
-                'settings': ['office', 'library', 'alley', 'warehouse', 'station', 'courthouse'],
-                'characters': ['inspector', 'sergeant', 'officer', 'lawyer', 'judge', 'criminal']
+            "Mystery": {
+                "primary": [
+                    "detective",
+                    "murder",
+                    "crime",
+                    "investigation",
+                    "suspect",
+                    "clue",
+                    "evidence",
+                ],
+                "secondary": [
+                    "mystery",
+                    "police",
+                    "criminal",
+                    "victim",
+                    "witness",
+                    "alibi",
+                    "motive",
+                ],
+                "indicators": ["suspicious", "hidden", "secret", "puzzling", "mysterious"],
+                "settings": ["office", "library", "alley", "warehouse", "station", "courthouse"],
+                "characters": ["inspector", "sergeant", "officer", "lawyer", "judge", "criminal"],
             },
-            'Science Fiction': {
-                'primary': ['space', 'alien', 'robot', 'technology', 'future', 'planet', 'spaceship'],
-                'secondary': ['galaxy', 'laser', 'android', 'cyber', 'quantum', 'temporal', 'dimension'],
-                'indicators': ['futuristic', 'advanced', 'technological', 'artificial', 'digital'],
-                'settings': ['laboratory', 'station', 'colony', 'vessel', 'facility', 'base'],
-                'characters': ['scientist', 'engineer', 'pilot', 'commander', 'researcher', 'android']
+            "Science Fiction": {
+                "primary": [
+                    "space",
+                    "alien",
+                    "robot",
+                    "technology",
+                    "future",
+                    "planet",
+                    "spaceship",
+                ],
+                "secondary": [
+                    "galaxy",
+                    "laser",
+                    "android",
+                    "cyber",
+                    "quantum",
+                    "temporal",
+                    "dimension",
+                ],
+                "indicators": ["futuristic", "advanced", "technological", "artificial", "digital"],
+                "settings": ["laboratory", "station", "colony", "vessel", "facility", "base"],
+                "characters": [
+                    "scientist",
+                    "engineer",
+                    "pilot",
+                    "commander",
+                    "researcher",
+                    "android",
+                ],
             },
-            'Thriller': {
-                'primary': ['danger', 'chase', 'escape', 'suspense', 'threat', 'victim', 'terror'],
-                'secondary': ['conspiracy', 'hunt', 'survival', 'pursuit', 'betrayal', 'revenge'],
-                'indicators': ['dangerous', 'intense', 'urgent', 'desperate', 'deadly'],
-                'settings': ['building', 'street', 'airport', 'hotel', 'tunnel', 'bridge'],
-                'characters': ['agent', 'assassin', 'target', 'operative', 'mercenary', 'spy']
+            "Thriller": {
+                "primary": ["danger", "chase", "escape", "suspense", "threat", "victim", "terror"],
+                "secondary": ["conspiracy", "hunt", "survival", "pursuit", "betrayal", "revenge"],
+                "indicators": ["dangerous", "intense", "urgent", "desperate", "deadly"],
+                "settings": ["building", "street", "airport", "hotel", "tunnel", "bridge"],
+                "characters": ["agent", "assassin", "target", "operative", "mercenary", "spy"],
             },
-            'Horror': {
-                'primary': ['ghost', 'monster', 'vampire', 'demon', 'haunted', 'nightmare', 'death'],
-                'secondary': ['evil', 'darkness', 'shadow', 'scream', 'blood', 'terror', 'undead'],
-                'indicators': ['terrifying', 'frightening', 'sinister', 'macabre', 'grotesque'],
-                'settings': ['cemetery', 'mansion', 'basement', 'attic', 'woods', 'church'],
-                'characters': ['witch', 'zombie', 'spirit', 'creature', 'beast', 'phantom']
+            "Horror": {
+                "primary": [
+                    "ghost",
+                    "monster",
+                    "vampire",
+                    "demon",
+                    "haunted",
+                    "nightmare",
+                    "death",
+                ],
+                "secondary": ["evil", "darkness", "shadow", "scream", "blood", "terror", "undead"],
+                "indicators": ["terrifying", "frightening", "sinister", "macabre", "grotesque"],
+                "settings": ["cemetery", "mansion", "basement", "attic", "woods", "church"],
+                "characters": ["witch", "zombie", "spirit", "creature", "beast", "phantom"],
             },
-            'Historical Fiction': {
-                'primary': ['war', 'century', 'historical', 'period', 'ancient', 'medieval'],
-                'secondary': ['revolution', 'empire', 'colonial', 'dynasty', 'era', 'epoch'],
-                'indicators': ['traditional', 'classical', 'vintage', 'old-fashioned', 'period'],
-                'settings': ['palace', 'village', 'battlefield', 'monastery', 'court', 'estate'],
-                'characters': ['king', 'queen', 'lord', 'lady', 'peasant', 'soldier']
+            "Historical Fiction": {
+                "primary": ["war", "century", "historical", "period", "ancient", "medieval"],
+                "secondary": ["revolution", "empire", "colonial", "dynasty", "era", "epoch"],
+                "indicators": ["traditional", "classical", "vintage", "old-fashioned", "period"],
+                "settings": ["palace", "village", "battlefield", "monastery", "court", "estate"],
+                "characters": ["king", "queen", "lord", "lady", "peasant", "soldier"],
             },
-            'Literary Fiction': {
-                'primary': ['life', 'character', 'society', 'human', 'emotion', 'relationship'],
-                'secondary': ['experience', 'memory', 'family', 'culture', 'identity', 'meaning'],
-                'indicators': ['profound', 'thoughtful', 'introspective', 'contemplative', 'philosophical'],
-                'settings': ['house', 'city', 'town', 'neighborhood', 'school', 'workplace'],
-                'characters': ['father', 'mother', 'child', 'friend', 'neighbor', 'teacher']
+            "Literary Fiction": {
+                "primary": ["life", "character", "society", "human", "emotion", "relationship"],
+                "secondary": ["experience", "memory", "family", "culture", "identity", "meaning"],
+                "indicators": [
+                    "profound",
+                    "thoughtful",
+                    "introspective",
+                    "contemplative",
+                    "philosophical",
+                ],
+                "settings": ["house", "city", "town", "neighborhood", "school", "workplace"],
+                "characters": ["father", "mother", "child", "friend", "neighbor", "teacher"],
             },
-            'Young Adult': {
-                'primary': ['teen', 'teenager', 'school', 'college', 'friend', 'friendship'],
-                'secondary': ['adolescent', 'youth', 'student', 'graduation', 'crush', 'identity'],
-                'indicators': ['young', 'rebellious', 'confused', 'growing', 'discovering'],
-                'settings': ['classroom', 'cafeteria', 'hallway', 'dormitory', 'campus', 'party'],
-                'characters': ['student', 'teacher', 'parent', 'classmate', 'boyfriend', 'girlfriend']
-            }
+            "Young Adult": {
+                "primary": ["teen", "teenager", "school", "college", "friend", "friendship"],
+                "secondary": ["adolescent", "youth", "student", "graduation", "crush", "identity"],
+                "indicators": ["young", "rebellious", "confused", "growing", "discovering"],
+                "settings": ["classroom", "cafeteria", "hallway", "dormitory", "campus", "party"],
+                "characters": [
+                    "student",
+                    "teacher",
+                    "parent",
+                    "classmate",
+                    "boyfriend",
+                    "girlfriend",
+                ],
+            },
         }
 
         # BISAC code mappings
         self.bisac_codes = {
-            'Fantasy': ['FIC009000', 'FIC009010', 'FIC009020', 'FIC009030'],
-            'Romance': ['FIC027000', 'FIC027010', 'FIC027020', 'FIC027030'],
-            'Mystery': ['FIC022000', 'FIC022010', 'FIC022020', 'FIC022030'],
-            'Science Fiction': ['FIC028000', 'FIC028010', 'FIC028020', 'FIC028030'],
-            'Thriller': ['FIC031000', 'FIC031010', 'FIC031020', 'FIC031030'],
-            'Horror': ['FIC015000', 'FIC015010', 'FIC015020'],
-            'Historical Fiction': ['FIC014000', 'FIC014010', 'FIC014020'],
-            'Literary Fiction': ['FIC019000', 'FIC045000'],
-            'Young Adult': ['YAF000000', 'YAF001000', 'YAF002000']
+            "Fantasy": ["FIC009000", "FIC009010", "FIC009020", "FIC009030"],
+            "Romance": ["FIC027000", "FIC027010", "FIC027020", "FIC027030"],
+            "Mystery": ["FIC022000", "FIC022010", "FIC022020", "FIC022030"],
+            "Science Fiction": ["FIC028000", "FIC028010", "FIC028020", "FIC028030"],
+            "Thriller": ["FIC031000", "FIC031010", "FIC031020", "FIC031030"],
+            "Horror": ["FIC015000", "FIC015010", "FIC015020"],
+            "Historical Fiction": ["FIC014000", "FIC014010", "FIC014020"],
+            "Literary Fiction": ["FIC019000", "FIC045000"],
+            "Young Adult": ["YAF000000", "YAF001000", "YAF002000"],
         }
 
     def detect_genre(self, content: str, metadata: Dict[str, Any]) -> GenreDetectionResult:
@@ -156,25 +252,27 @@ class AdvancedGenreDetector:
         if self.ai_manager.is_available():
             ai_result = self._detect_with_ai(content, metadata)
             if ai_result:
-                results.append(('ai', ai_result))
+                results.append(("ai", ai_result))
 
         # 2. Advanced keyword analysis
         keyword_result = self._detect_with_advanced_keywords(content)
-        results.append(('keywords', keyword_result))
+        results.append(("keywords", keyword_result))
 
         # 3. Structural analysis
         structure_result = self._detect_with_structure_analysis(content)
-        results.append(('structure', structure_result))
+        results.append(("structure", structure_result))
 
         # 4. Metadata analysis
         metadata_result = self._detect_with_metadata(metadata)
         if metadata_result:
-            results.append(('metadata', metadata_result))
+            results.append(("metadata", metadata_result))
 
         # Combine results
         final_result = self._combine_detection_results(results, content)
 
-        print(f"✅ Genre detection complete. Primary: {final_result.primary_genre} ({final_result.confidence:.1%})")
+        print(
+            f"✅ Genre detection complete. Primary: {final_result.primary_genre} ({final_result.confidence:.1%})"
+        )
 
         return final_result
 
@@ -199,11 +297,11 @@ class AdvancedGenreDetector:
 
             # Score different keyword categories with different weights
             weights = {
-                'primary': 3.0,
-                'secondary': 2.0,
-                'indicators': 1.5,
-                'settings': 1.0,
-                'characters': 1.0
+                "primary": 3.0,
+                "secondary": 2.0,
+                "indicators": 1.5,
+                "settings": 1.0,
+                "characters": 1.0,
             }
 
             sub_scores = {}
@@ -228,9 +326,9 @@ class AdvancedGenreDetector:
                 # Normalize by content length
                 normalized_score = total_score / math.log(len(content.split()) + 1)
                 genre_scores[genre] = {
-                    'score': normalized_score,
-                    'evidence': evidence[:10],  # Top 10 overall
-                    'sub_scores': sub_scores
+                    "score": normalized_score,
+                    "evidence": evidence[:10],  # Top 10 overall
+                    "sub_scores": sub_scores,
                 }
 
         return genre_scores
@@ -240,8 +338,8 @@ class AdvancedGenreDetector:
         structure_scores = {}
 
         # Analyze sentence and paragraph structure
-        sentences = re.split(r'[.!?]+', content)
-        paragraphs = content.split('\n\n')
+        sentences = re.split(r"[.!?]+", content)
+        paragraphs = content.split("\n\n")
 
         avg_sentence_length = sum(len(s.split()) for s in sentences) / max(1, len(sentences))
         avg_paragraph_length = sum(len(p.split()) for p in paragraphs) / max(1, len(paragraphs))
@@ -251,28 +349,28 @@ class AdvancedGenreDetector:
         dialogue_ratio = dialogue_count / max(1, len(sentences))
 
         # Action vs description ratio
-        action_words = ['ran', 'jumped', 'fought', 'chased', 'escaped', 'attacked', 'struck']
-        description_words = ['beautiful', 'elegant', 'peaceful', 'serene', 'gentle', 'quiet']
+        action_words = ["ran", "jumped", "fought", "chased", "escaped", "attacked", "struck"]
+        description_words = ["beautiful", "elegant", "peaceful", "serene", "gentle", "quiet"]
 
         action_count = sum(content.lower().count(word) for word in action_words)
         description_count = sum(content.lower().count(word) for word in description_words)
 
         # Genre scoring based on structure
         if dialogue_ratio > 0.3:  # High dialogue
-            structure_scores['Romance'] = 0.6
-            structure_scores['Young Adult'] = 0.5
+            structure_scores["Romance"] = 0.6
+            structure_scores["Young Adult"] = 0.5
 
         if avg_sentence_length < 15:  # Short sentences
-            structure_scores['Thriller'] = 0.7
-            structure_scores['Young Adult'] = 0.6
+            structure_scores["Thriller"] = 0.7
+            structure_scores["Young Adult"] = 0.6
 
         if action_count > description_count * 2:  # Action-heavy
-            structure_scores['Thriller'] = 0.8
-            structure_scores['Science Fiction'] = 0.6
+            structure_scores["Thriller"] = 0.8
+            structure_scores["Science Fiction"] = 0.6
 
         if avg_paragraph_length > 100:  # Long, descriptive paragraphs
-            structure_scores['Literary Fiction'] = 0.7
-            structure_scores['Historical Fiction'] = 0.6
+            structure_scores["Literary Fiction"] = 0.7
+            structure_scores["Historical Fiction"] = 0.6
 
         return structure_scores
 
@@ -281,9 +379,9 @@ class AdvancedGenreDetector:
         metadata_scores = {}
 
         # Check title for genre indicators
-        title = metadata.get('title', '').lower()
-        description = metadata.get('description', '').lower()
-        existing_genre = metadata.get('genre', '').lower()
+        title = metadata.get("title", "").lower()
+        description = metadata.get("description", "").lower()
+        existing_genre = metadata.get("genre", "").lower()
 
         combined_text = f"{title} {description}".lower()
 
@@ -305,63 +403,62 @@ class AdvancedGenreDetector:
 
         return metadata_scores if metadata_scores else None
 
-    def _combine_detection_results(self, results: List[Tuple[str, Dict]], content: str) -> GenreDetectionResult:
+    def _combine_detection_results(
+        self, results: List[Tuple[str, Dict]], content: str
+    ) -> GenreDetectionResult:
         """Combine results from different detection methods."""
-        combined_scores = defaultdict(lambda: {'total': 0, 'methods': [], 'evidence': []})
+        combined_scores = defaultdict(lambda: {"total": 0, "methods": [], "evidence": []})
 
         # Weights for different methods
-        method_weights = {
-            'ai': 0.4,
-            'keywords': 0.3,
-            'structure': 0.2,
-            'metadata': 0.1
-        }
+        method_weights = {"ai": 0.4, "keywords": 0.3, "structure": 0.2, "metadata": 0.1}
 
         # Combine scores
         for method, result in results:
             weight = method_weights.get(method, 0.1)
 
-            if method == 'ai':
+            if method == "ai":
                 # AI results have different format
-                primary = result.get('primary_genre', '')
-                confidence = result.get('confidence', 0.5)
+                primary = result.get("primary_genre", "")
+                confidence = result.get("confidence", 0.5)
                 if primary:
-                    combined_scores[primary]['total'] += confidence * weight
-                    combined_scores[primary]['methods'].append(method)
+                    combined_scores[primary]["total"] += confidence * weight
+                    combined_scores[primary]["methods"].append(method)
 
-                for secondary in result.get('secondary_genres', []):
-                    combined_scores[secondary]['total'] += 0.3 * weight
-                    combined_scores[secondary]['methods'].append(method)
+                for secondary in result.get("secondary_genres", []):
+                    combined_scores[secondary]["total"] += 0.3 * weight
+                    combined_scores[secondary]["methods"].append(method)
 
-            elif method == 'keywords':
+            elif method == "keywords":
                 # Keyword results
                 for genre, data in result.items():
-                    score = data['score']
-                    combined_scores[genre]['total'] += score * weight
-                    combined_scores[genre]['methods'].append(method)
-                    combined_scores[genre]['evidence'].extend(data['evidence'])
+                    score = data["score"]
+                    combined_scores[genre]["total"] += score * weight
+                    combined_scores[genre]["methods"].append(method)
+                    combined_scores[genre]["evidence"].extend(data["evidence"])
 
             else:
                 # Structure and metadata results
                 for genre, score in result.items():
-                    combined_scores[genre]['total'] += score * weight
-                    combined_scores[genre]['methods'].append(method)
+                    combined_scores[genre]["total"] += score * weight
+                    combined_scores[genre]["methods"].append(method)
 
         # Convert to genre scores and sort
         genre_scores = []
         for genre, data in combined_scores.items():
-            if data['total'] > 0:
-                genre_scores.append(GenreScore(
-                    genre=genre,
-                    confidence=min(0.95, data['total']),
-                    evidence=data['evidence'][:5],
-                    method='+'.join(set(data['methods']))
-                ))
+            if data["total"] > 0:
+                genre_scores.append(
+                    GenreScore(
+                        genre=genre,
+                        confidence=min(0.95, data["total"]),
+                        evidence=data["evidence"][:5],
+                        method="+".join(set(data["methods"])),
+                    )
+                )
 
         genre_scores.sort(key=lambda x: x.confidence, reverse=True)
 
         # Determine primary genre
-        primary_genre = genre_scores[0].genre if genre_scores else 'Literary Fiction'
+        primary_genre = genre_scores[0].genre if genre_scores else "Literary Fiction"
         primary_confidence = genre_scores[0].confidence if genre_scores else 0.3
 
         # Extract keywords
@@ -377,16 +474,16 @@ class AdvancedGenreDetector:
             keywords=keywords,
             bisac_suggestions=bisac_suggestions,
             content_analysis={
-                'word_count': len(content.split()),
-                'methods_used': [method for method, _ in results],
-                'total_genres_detected': len(genre_scores)
-            }
+                "word_count": len(content.split()),
+                "methods_used": [method for method, _ in results],
+                "total_genres_detected": len(genre_scores),
+            },
         )
 
     def _extract_genre_keywords(self, content: str, primary_genre: str) -> List[KeywordResult]:
         """Extract relevant keywords for the detected genre."""
         content_lower = content.lower()
-        words = re.findall(r'\b[a-zA-Z]{3,}\b', content_lower)
+        words = re.findall(r"\b[a-zA-Z]{3,}\b", content_lower)
         word_counts = Counter(words)
 
         # Get genre-specific keywords
@@ -399,35 +496,41 @@ class AdvancedGenreDetector:
                         count = word_counts.get(keyword, 0)
                         if count > 0:
                             # Calculate relevance score
-                            relevance = self._calculate_keyword_relevance(keyword, count, len(words), category)
+                            relevance = self._calculate_keyword_relevance(
+                                keyword, count, len(words), category
+                            )
 
                             # Find context examples
                             context_examples = self._find_keyword_contexts(content, keyword)
 
-                            genre_keywords.append(KeywordResult(
-                                keyword=keyword,
-                                frequency=count,
-                                relevance_score=relevance,
-                                context_examples=context_examples[:2],
-                                category=category
-                            ))
+                            genre_keywords.append(
+                                KeywordResult(
+                                    keyword=keyword,
+                                    frequency=count,
+                                    relevance_score=relevance,
+                                    context_examples=context_examples[:2],
+                                    category=category,
+                                )
+                            )
 
         # Sort by relevance and return top keywords
         genre_keywords.sort(key=lambda x: x.relevance_score, reverse=True)
         return genre_keywords[:15]
 
-    def _calculate_keyword_relevance(self, keyword: str, count: int, total_words: int, category: str) -> float:
+    def _calculate_keyword_relevance(
+        self, keyword: str, count: int, total_words: int, category: str
+    ) -> float:
         """Calculate relevance score for a keyword."""
         # Base score from frequency
         frequency_score = math.log(count + 1) / math.log(total_words + 1)
 
         # Category weight
         category_weights = {
-            'primary': 3.0,
-            'secondary': 2.0,
-            'indicators': 1.5,
-            'settings': 1.2,
-            'characters': 1.0
+            "primary": 3.0,
+            "secondary": 2.0,
+            "indicators": 1.5,
+            "settings": 1.2,
+            "characters": 1.0,
         }
 
         category_weight = category_weights.get(category, 1.0)
@@ -437,7 +540,9 @@ class AdvancedGenreDetector:
 
         return frequency_score * category_weight * length_bonus
 
-    def _find_keyword_contexts(self, content: str, keyword: str, context_length: int = 50) -> List[str]:
+    def _find_keyword_contexts(
+        self, content: str, keyword: str, context_length: int = 50
+    ) -> List[str]:
         """Find context examples for a keyword."""
         contexts = []
         content_lower = content.lower()
@@ -455,7 +560,7 @@ class AdvancedGenreDetector:
             context = content[context_start:context_end].strip()
 
             # Clean up context
-            context = re.sub(r'\s+', ' ', context)
+            context = re.sub(r"\s+", " ", context)
             if len(context) > 10:
                 contexts.append(f"...{context}...")
 
@@ -513,15 +618,70 @@ class IntelligentKeywordExtractor:
 
     def _extract_frequency_keywords(self, content: str) -> List[KeywordResult]:
         """Extract keywords based on frequency analysis."""
-        words = re.findall(r'\b[a-zA-Z]{3,}\b', content.lower())
+        words = re.findall(r"\b[a-zA-Z]{3,}\b", content.lower())
 
         # Filter stop words
         stop_words = {
-            'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one',
-            'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see',
-            'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use', 'with',
-            'have', 'this', 'will', 'your', 'they', 'said', 'each', 'which', 'their', 'time', 'would',
-            'there', 'could', 'other', 'after', 'first', 'never', 'these', 'think', 'where', 'being'
+            "the",
+            "and",
+            "for",
+            "are",
+            "but",
+            "not",
+            "you",
+            "all",
+            "can",
+            "had",
+            "her",
+            "was",
+            "one",
+            "our",
+            "out",
+            "day",
+            "get",
+            "has",
+            "him",
+            "his",
+            "how",
+            "man",
+            "new",
+            "now",
+            "old",
+            "see",
+            "two",
+            "way",
+            "who",
+            "boy",
+            "did",
+            "its",
+            "let",
+            "put",
+            "say",
+            "she",
+            "too",
+            "use",
+            "with",
+            "have",
+            "this",
+            "will",
+            "your",
+            "they",
+            "said",
+            "each",
+            "which",
+            "their",
+            "time",
+            "would",
+            "there",
+            "could",
+            "other",
+            "after",
+            "first",
+            "never",
+            "these",
+            "think",
+            "where",
+            "being",
         }
 
         filtered_words = [w for w in words if w not in stop_words and len(w) > 3]
@@ -531,20 +691,22 @@ class IntelligentKeywordExtractor:
         for word, count in word_counts.most_common(50):
             if count >= 2:  # Minimum frequency
                 relevance = math.log(count + 1) / math.log(len(filtered_words) + 1)
-                keywords.append(KeywordResult(
-                    keyword=word,
-                    frequency=count,
-                    relevance_score=relevance,
-                    category='frequency'
-                ))
+                keywords.append(
+                    KeywordResult(
+                        keyword=word,
+                        frequency=count,
+                        relevance_score=relevance,
+                        category="frequency",
+                    )
+                )
 
         return keywords
 
     def _extract_tfidf_keywords(self, content: str) -> List[KeywordResult]:
         """Extract keywords using TF-IDF-like scoring."""
         # Simple TF-IDF implementation
-        sentences = re.split(r'[.!?]+', content)
-        words = re.findall(r'\b[a-zA-Z]{4,}\b', content.lower())
+        sentences = re.split(r"[.!?]+", content)
+        words = re.findall(r"\b[a-zA-Z]{4,}\b", content.lower())
 
         if not sentences or not words:
             return []
@@ -566,12 +728,11 @@ class IntelligentKeywordExtractor:
                 idf_score = math.log(len(sentences) / (df[word] + 1))
                 tfidf_score = tf_score * idf_score
 
-                keywords.append(KeywordResult(
-                    keyword=word,
-                    frequency=freq,
-                    relevance_score=tfidf_score,
-                    category='tfidf'
-                ))
+                keywords.append(
+                    KeywordResult(
+                        keyword=word, frequency=freq, relevance_score=tfidf_score, category="tfidf"
+                    )
+                )
 
         return sorted(keywords, key=lambda x: x.relevance_score, reverse=True)[:20]
 
@@ -581,41 +742,45 @@ class IntelligentKeywordExtractor:
         entities = []
 
         # Proper nouns (capitalized words not at sentence start)
-        proper_nouns = re.findall(r'(?<!\.)\s+([A-Z][a-z]{2,})', content)
+        proper_nouns = re.findall(r"(?<!\.)\s+([A-Z][a-z]{2,})", content)
         proper_noun_counts = Counter(proper_nouns)
 
         for noun, count in proper_noun_counts.items():
             if count >= 2:
-                entities.append(KeywordResult(
-                    keyword=noun,
-                    frequency=count,
-                    relevance_score=count * 1.5,  # Boost for proper nouns
-                    category='entity'
-                ))
+                entities.append(
+                    KeywordResult(
+                        keyword=noun,
+                        frequency=count,
+                        relevance_score=count * 1.5,  # Boost for proper nouns
+                        category="entity",
+                    )
+                )
 
         # Place names (patterns like "in X", "at X", "from X")
-        places = re.findall(r'\b(?:in|at|from|to)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)', content)
+        places = re.findall(r"\b(?:in|at|from|to)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", content)
         place_counts = Counter(places)
 
         for place, count in place_counts.items():
             if count >= 2:
-                entities.append(KeywordResult(
-                    keyword=place,
-                    frequency=count,
-                    relevance_score=count * 1.3,
-                    category='place'
-                ))
+                entities.append(
+                    KeywordResult(
+                        keyword=place,
+                        frequency=count,
+                        relevance_score=count * 1.3,
+                        category="place",
+                    )
+                )
 
         return entities
 
     def _extract_cluster_keywords(self, content: str) -> List[KeywordResult]:
         """Extract keywords using semantic clustering."""
         # Simple clustering based on co-occurrence
-        sentences = re.split(r'[.!?]+', content)
+        sentences = re.split(r"[.!?]+", content)
         words = []
 
         for sentence in sentences:
-            sentence_words = re.findall(r'\b[a-zA-Z]{4,}\b', sentence.lower())
+            sentence_words = re.findall(r"\b[a-zA-Z]{4,}\b", sentence.lower())
             words.extend(sentence_words)
 
         if len(words) < 10:
@@ -626,9 +791,9 @@ class IntelligentKeywordExtractor:
         word_counts = Counter(words)
 
         for sentence in sentences:
-            sentence_words = list(set(re.findall(r'\b[a-zA-Z]{4,}\b', sentence.lower())))
+            sentence_words = list(set(re.findall(r"\b[a-zA-Z]{4,}\b", sentence.lower())))
             for i, word1 in enumerate(sentence_words):
-                for word2 in sentence_words[i+1:]:
+                for word2 in sentence_words[i + 1 :]:
                     cooccurrence[word1][word2] += 1
                     cooccurrence[word2][word1] += 1
 
@@ -647,16 +812,20 @@ class IntelligentKeywordExtractor:
         # Convert to keyword results
         keywords = []
         for word, score in sorted(cluster_scores.items(), key=lambda x: x[1], reverse=True)[:15]:
-            keywords.append(KeywordResult(
-                keyword=word,
-                frequency=word_counts[word],
-                relevance_score=score,
-                category='cluster'
-            ))
+            keywords.append(
+                KeywordResult(
+                    keyword=word,
+                    frequency=word_counts[word],
+                    relevance_score=score,
+                    category="cluster",
+                )
+            )
 
         return keywords
 
-    def _combine_keyword_results(self, all_results: List[KeywordResult], max_keywords: int) -> List[KeywordResult]:
+    def _combine_keyword_results(
+        self, all_results: List[KeywordResult], max_keywords: int
+    ) -> List[KeywordResult]:
         """Combine and deduplicate keyword results."""
         # Group by keyword
         keyword_groups = defaultdict(list)
@@ -670,12 +839,7 @@ class IntelligentKeywordExtractor:
                 continue
 
             # Combine scores with method weighting
-            method_weights = {
-                'frequency': 0.3,
-                'tfidf': 0.4,
-                'entity': 0.2,
-                'cluster': 0.1
-            }
+            method_weights = {"frequency": 0.3, "tfidf": 0.4, "entity": 0.2, "cluster": 0.1}
 
             total_score = 0
             total_frequency = 0
@@ -691,12 +855,14 @@ class IntelligentKeywordExtractor:
             if len(categories) > 1:
                 total_score *= 1.2
 
-            final_keywords.append(KeywordResult(
-                keyword=keyword,
-                frequency=total_frequency,
-                relevance_score=total_score,
-                category='+'.join(sorted(categories))
-            ))
+            final_keywords.append(
+                KeywordResult(
+                    keyword=keyword,
+                    frequency=total_frequency,
+                    relevance_score=total_score,
+                    category="+".join(sorted(categories)),
+                )
+            )
 
         # Sort by relevance and return top keywords
         final_keywords.sort(key=lambda x: x.relevance_score, reverse=True)

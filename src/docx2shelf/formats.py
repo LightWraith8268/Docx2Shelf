@@ -34,6 +34,7 @@ except ImportError:
 @dataclass
 class FormatOptions:
     """Options for format conversion."""
+
     format_type: str
     output_path: Path
     quality: str = "standard"  # standard, high, web
@@ -62,7 +63,7 @@ class FormatConverter:
         self.extracted_epub.mkdir()
 
         # Extract EPUB
-        with zipfile.ZipFile(self.epub_path, 'r') as zip_ref:
+        with zipfile.ZipFile(self.epub_path, "r") as zip_ref:
             zip_ref.extractall(self.extracted_epub)
 
         return self
@@ -117,8 +118,7 @@ class PDFConverter(FormatConverter):
         """Convert using Prince XML (if available)."""
         try:
             # Check if prince is available
-            result = subprocess.run(["prince", "--version"],
-                                 capture_output=True, text=True)
+            result = subprocess.run(["prince", "--version"], capture_output=True, text=True)
             if result.returncode != 0:
                 print("Prince XML not found")
                 return False
@@ -136,9 +136,11 @@ class PDFConverter(FormatConverter):
             # Convert with Prince
             cmd = [
                 "prince",
-                "--style", str(css_file),
-                "--output", str(options.output_path),
-                str(html_file)
+                "--style",
+                str(css_file),
+                "--output",
+                str(options.output_path),
+                str(html_file),
             ]
 
             result = subprocess.run(cmd, capture_output=True, text=True)
@@ -175,27 +177,26 @@ class PDFConverter(FormatConverter):
 
         # Build combined HTML
         html_parts = [
-            '<!DOCTYPE html>',
+            "<!DOCTYPE html>",
             '<html xmlns="http://www.w3.org/1999/xhtml">',
-            '<head>',
+            "<head>",
             '<meta charset="utf-8"/>',
             f'<title>{options.metadata.get("title", "Book") if options.metadata else "Book"}</title>',
         ]
 
         # Add custom CSS if provided
         if options.custom_css:
-            html_parts.append(f'<style>{options.custom_css}</style>')
+            html_parts.append(f"<style>{options.custom_css}</style>")
 
-        html_parts.extend([
-            '</head>',
-            '<body>'
-        ])
+        html_parts.extend(["</head>", "<body>"])
 
         # Add cover if requested
         if options.include_cover:
             cover_files = list(content_dir.glob("**/cover.*"))
             if cover_files:
-                html_parts.append(f'<div class="cover-page"><img src="{cover_files[0].name}" alt="Cover"/></div>')
+                html_parts.append(
+                    f'<div class="cover-page"><img src="{cover_files[0].name}" alt="Cover"/></div>'
+                )
 
         # Add content
         for content_file in content_files:
@@ -210,12 +211,9 @@ class PDFConverter(FormatConverter):
             except Exception as e:
                 print(f"Error reading {content_file}: {e}")
 
-        html_parts.extend([
-            '</body>',
-            '</html>'
-        ])
+        html_parts.extend(["</body>", "</html>"])
 
-        return '\n'.join(html_parts)
+        return "\n".join(html_parts)
 
     def _generate_pdf_css(self, options: FormatOptions) -> str:
         """Generate CSS optimized for PDF output."""
@@ -334,7 +332,8 @@ class MOBIConverter(FormatConverter):
                 "ebook-convert",
                 str(self.epub_path),
                 str(options.output_path),
-                "--output-profile", "kindle",
+                "--output-profile",
+                "kindle",
             ]
 
             if options.compression:
@@ -360,8 +359,9 @@ class MOBIConverter(FormatConverter):
         try:
             cmd = ["kindlegen", str(self.epub_path), "-o", options.output_path.name]
 
-            result = subprocess.run(cmd, capture_output=True, text=True,
-                                 cwd=str(options.output_path.parent))
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, cwd=str(options.output_path.parent)
+            )
 
             # kindlegen returns 1 for warnings, 0 for success
             if result.returncode in [0, 1]:
@@ -389,7 +389,8 @@ class AZW3Converter(FormatConverter):
                 "ebook-convert",
                 str(self.epub_path),
                 str(options.output_path),
-                "--output-profile", "kindle_dx",
+                "--output-profile",
+                "kindle_dx",
             ]
 
             result = subprocess.run(cmd, capture_output=True, text=True)
@@ -450,8 +451,8 @@ class WebConverter(FormatConverter):
         content_files.sort(key=lambda x: x.name)
 
         nav_html = ['<nav class="book-nav">']
-        nav_html.append('<h3>Contents</h3>')
-        nav_html.append('<ul>')
+        nav_html.append("<h3>Contents</h3>")
+        nav_html.append("<ul>")
 
         for i, content_file in enumerate(content_files):
             title = f"Chapter {i + 1}"
@@ -468,11 +469,11 @@ class WebConverter(FormatConverter):
 
             nav_html.append(f'<li><a href="content/{content_file}">{title}</a></li>')
 
-        nav_html.append('</ul>')
-        nav_html.append('</nav>')
+        nav_html.append("</ul>")
+        nav_html.append("</nav>")
 
         # Save navigation
-        (web_dir / "navigation.html").write_text('\n'.join(nav_html), encoding="utf-8")
+        (web_dir / "navigation.html").write_text("\n".join(nav_html), encoding="utf-8")
 
     def _generate_web_index(self, web_dir: Path, options: FormatOptions) -> None:
         """Generate the main index.html file."""
@@ -718,16 +719,17 @@ class TextConverter(FormatConverter):
                     file_content = content_file.read_text(encoding="utf-8")
                     # Simple HTML tag removal (basic)
                     import re
-                    text = re.sub(r'<[^>]+>', '', file_content)
-                    text = re.sub(r'\s+', ' ', text).strip()
+
+                    text = re.sub(r"<[^>]+>", "", file_content)
+                    text = re.sub(r"\s+", " ", text).strip()
                     if text:
                         text_content.append(text)
-                        text_content.append('\n\n' + '='*50 + '\n\n')
+                        text_content.append("\n\n" + "=" * 50 + "\n\n")
                 except Exception as e:
                     print(f"Error processing {content_file}: {e}")
 
             # Save as text file
-            options.output_path.write_text('\n'.join(text_content), encoding="utf-8")
+            options.output_path.write_text("\n".join(text_content), encoding="utf-8")
 
             print(f"Text file created successfully: {options.output_path}")
             return True
@@ -755,20 +757,16 @@ def convert_epub(epub_path: Path, format_type: str, output_path: Path, **kwargs)
         return False
 
     # Create format options
-    options = FormatOptions(
-        format_type=format_type,
-        output_path=output_path,
-        **kwargs
-    )
+    options = FormatOptions(format_type=format_type, output_path=output_path, **kwargs)
 
     # Select converter
     converter_class = {
-        'pdf': PDFConverter,
-        'mobi': MOBIConverter,
-        'azw3': AZW3Converter,
-        'web': WebConverter,
-        'txt': TextConverter,
-        'text': TextConverter,
+        "pdf": PDFConverter,
+        "mobi": MOBIConverter,
+        "azw3": AZW3Converter,
+        "web": WebConverter,
+        "txt": TextConverter,
+        "text": TextConverter,
     }.get(format_type.lower())
 
     if not converter_class:
@@ -782,39 +780,39 @@ def convert_epub(epub_path: Path, format_type: str, output_path: Path, **kwargs)
 
 def get_supported_formats() -> List[str]:
     """Get list of supported output formats."""
-    return ['pdf', 'mobi', 'azw3', 'web', 'txt']
+    return ["pdf", "mobi", "azw3", "web", "txt"]
 
 
 def check_format_dependencies(format_type: str) -> Dict[str, bool]:
     """Check if dependencies for a format are available."""
     deps = {}
 
-    if format_type == 'pdf':
-        deps['weasyprint'] = weasyprint is not None
+    if format_type == "pdf":
+        deps["weasyprint"] = weasyprint is not None
         try:
             subprocess.run(["prince", "--version"], capture_output=True)
-            deps['prince'] = True
+            deps["prince"] = True
         except FileNotFoundError:
-            deps['prince'] = False
+            deps["prince"] = False
 
-    elif format_type in ['mobi', 'azw3']:
+    elif format_type in ["mobi", "azw3"]:
         try:
             subprocess.run(["ebook-convert", "--version"], capture_output=True)
-            deps['calibre'] = True
+            deps["calibre"] = True
         except FileNotFoundError:
-            deps['calibre'] = False
+            deps["calibre"] = False
 
-        if format_type == 'mobi':
+        if format_type == "mobi":
             try:
                 subprocess.run(["kindlegen"], capture_output=True)
-                deps['kindlegen'] = True
+                deps["kindlegen"] = True
             except FileNotFoundError:
-                deps['kindlegen'] = False
+                deps["kindlegen"] = False
 
-    elif format_type == 'web':
-        deps['builtin'] = True  # No external dependencies
+    elif format_type == "web":
+        deps["builtin"] = True  # No external dependencies
 
-    elif format_type == 'txt':
-        deps['builtin'] = True  # No external dependencies
+    elif format_type == "txt":
+        deps["builtin"] = True  # No external dependencies
 
     return deps

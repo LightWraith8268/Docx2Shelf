@@ -14,7 +14,9 @@ def find_docx_files(directory: Path, pattern: str = "*.docx") -> List[Path]:
     return sorted(directory.glob(pattern))
 
 
-def create_batch_args(base_args: argparse.Namespace, input_file: Path, output_file: Optional[Path] = None) -> argparse.Namespace:
+def create_batch_args(
+    base_args: argparse.Namespace, input_file: Path, output_file: Optional[Path] = None
+) -> argparse.Namespace:
     """Create argument namespace for batch processing a single file."""
     # Create a copy of base args
     batch_args = argparse.Namespace(**vars(base_args))
@@ -27,7 +29,7 @@ def create_batch_args(base_args: argparse.Namespace, input_file: Path, output_fi
     else:
         # Generate output filename based on input
         output_name = input_file.stem + ".epub"
-        output_dir = getattr(base_args, 'output_dir', input_file.parent)
+        output_dir = getattr(base_args, "output_dir", input_file.parent)
         batch_args.output = str(Path(output_dir) / output_name)
 
     return batch_args
@@ -43,12 +45,7 @@ def process_single_file(args_dict: Dict[str, Any]) -> Dict[str, Any]:
     input_file = Path(args.input)
     output_file = Path(args.output)
 
-    result = {
-        'input': str(input_file),
-        'output': str(output_file),
-        'success': False,
-        'error': None
-    }
+    result = {"input": str(input_file), "output": str(output_file), "success": False, "error": None}
 
     try:
         # Force quiet mode for batch processing
@@ -57,13 +54,13 @@ def process_single_file(args_dict: Dict[str, Any]) -> Dict[str, Any]:
 
         # Run the build
         exit_code = run_build(args)
-        result['success'] = (exit_code == 0)
+        result["success"] = exit_code == 0
 
         if exit_code != 0:
-            result['error'] = f"Build failed with exit code {exit_code}"
+            result["error"] = f"Build failed with exit code {exit_code}"
 
     except Exception as e:
-        result['error'] = str(e)
+        result["error"] = str(e)
 
     return result
 
@@ -75,7 +72,7 @@ def run_batch_mode(
     parallel: bool = True,
     max_workers: Optional[int] = None,
     base_args: Optional[argparse.Namespace] = None,
-    quiet: bool = False
+    quiet: bool = False,
 ) -> Dict[str, Any]:
     """Run batch processing on multiple DOCX files.
 
@@ -86,11 +83,11 @@ def run_batch_mode(
 
     if not docx_files:
         return {
-            'total_files': 0,
-            'successful': 0,
-            'failed': 0,
-            'results': [],
-            'error': f"No files matching '{pattern}' found in {directory}"
+            "total_files": 0,
+            "successful": 0,
+            "failed": 0,
+            "results": [],
+            "error": f"No files matching '{pattern}' found in {directory}",
         }
 
     if not quiet:
@@ -125,15 +122,14 @@ def run_batch_mode(
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             future_to_file = {
-                executor.submit(process_single_file, args): args['input']
-                for args in file_args
+                executor.submit(process_single_file, args): args["input"] for args in file_args
             }
 
             for future in concurrent.futures.as_completed(future_to_file):
                 result = future.result()
                 results.append(result)
 
-                if result['success']:
+                if result["success"]:
                     successful += 1
                     if not quiet:
                         print(f"✅ {Path(result['input']).name} -> {Path(result['output']).name}")
@@ -154,7 +150,7 @@ def run_batch_mode(
             result = process_single_file(args_dict)
             results.append(result)
 
-            if result['success']:
+            if result["success"]:
                 successful += 1
                 if not quiet:
                     print(f"✅ Completed: {Path(result['output']).name}")
@@ -165,11 +161,11 @@ def run_batch_mode(
 
     # Generate summary
     summary = {
-        'total_files': len(docx_files),
-        'successful': successful,
-        'failed': failed,
-        'results': results,
-        'output_dir': str(output_dir)
+        "total_files": len(docx_files),
+        "successful": successful,
+        "failed": failed,
+        "results": results,
+        "output_dir": str(output_dir),
     }
 
     if not quiet:
@@ -188,22 +184,18 @@ def create_batch_report(summary: Dict[str, Any], output_path: Path) -> None:
     import json
     from datetime import datetime
 
-    report = {
-        'timestamp': datetime.now().isoformat(),
-        'summary': summary,
-        'details': []
-    }
+    report = {"timestamp": datetime.now().isoformat(), "summary": summary, "details": []}
 
-    for result in summary['results']:
+    for result in summary["results"]:
         detail = {
-            'input_file': result['input'],
-            'output_file': result['output'],
-            'success': result['success'],
-            'error': result.get('error')
+            "input_file": result["input"],
+            "output_file": result["output"],
+            "success": result["success"],
+            "error": result.get("error"),
         }
-        report['details'].append(detail)
+        report["details"].append(detail)
 
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
 
 
@@ -211,7 +203,7 @@ def validate_batch_args(args: argparse.Namespace) -> List[str]:
     """Validate arguments for batch mode."""
     errors = []
 
-    if not hasattr(args, 'batch_dir') or not args.batch_dir:
+    if not hasattr(args, "batch_dir") or not args.batch_dir:
         errors.append("Batch directory is required")
         return errors
 
@@ -221,7 +213,7 @@ def validate_batch_args(args: argparse.Namespace) -> List[str]:
     elif not batch_dir.is_dir():
         errors.append(f"Batch directory is not a directory: {batch_dir}")
 
-    pattern = getattr(args, 'batch_pattern', '*.docx')
+    pattern = getattr(args, "batch_pattern", "*.docx")
     if not pattern:
         errors.append("Batch pattern cannot be empty")
 

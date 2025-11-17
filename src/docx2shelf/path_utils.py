@@ -17,6 +17,7 @@ from typing import Union
 
 try:
     import platformdirs
+
     PLATFORMDIRS_AVAILABLE = True
 except ImportError:
     PLATFORMDIRS_AVAILABLE = False
@@ -38,43 +39,43 @@ def normalize_path(path: Union[str, Path], target_platform: str = None) -> Path:
 
     # Determine target platform
     if target_platform is None:
-        target_platform = 'windows' if os.name == 'nt' else 'posix'
+        target_platform = "windows" if os.name == "nt" else "posix"
 
     # Convert to string for normalization
     path_str = str(path)
 
     # Normalize Unicode characters (NFC normalization)
-    path_str = unicodedata.normalize('NFC', path_str)
+    path_str = unicodedata.normalize("NFC", path_str)
 
     # Handle Windows-specific normalization
-    if target_platform == 'windows':
+    if target_platform == "windows":
         # Convert forward slashes to backslashes
-        path_str = path_str.replace('/', '\\')
+        path_str = path_str.replace("/", "\\")
 
         # Handle UNC paths (\\server\share)
-        if path_str.startswith('\\\\'):
+        if path_str.startswith("\\\\"):
             return Path(path_str)
 
         # Handle drive letters - ensure they're uppercase
-        if len(path_str) >= 2 and path_str[1] == ':':
+        if len(path_str) >= 2 and path_str[1] == ":":
             path_str = path_str[0].upper() + path_str[1:]
 
         # Remove redundant separators
-        while '\\\\' in path_str:
-            path_str = path_str.replace('\\\\', '\\')
+        while "\\\\" in path_str:
+            path_str = path_str.replace("\\\\", "\\")
     else:
         # POSIX normalization
-        path_str = path_str.replace('\\', '/')
+        path_str = path_str.replace("\\", "/")
 
         # Remove redundant separators
-        while '//' in path_str:
-            path_str = path_str.replace('//', '/')
+        while "//" in path_str:
+            path_str = path_str.replace("//", "/")
 
     # Convert back to Path
     return Path(path_str).resolve() if path.is_absolute() else Path(path_str)
 
 
-def safe_filename(filename: str, replacement_char: str = '_') -> str:
+def safe_filename(filename: str, replacement_char: str = "_") -> str:
     """
     Create a safe filename by replacing invalid characters.
 
@@ -86,7 +87,7 @@ def safe_filename(filename: str, replacement_char: str = '_') -> str:
         Safe filename string
     """
     # Normalize Unicode
-    filename = unicodedata.normalize('NFC', filename)
+    filename = unicodedata.normalize("NFC", filename)
 
     # Define invalid characters for Windows (most restrictive)
     invalid_chars = r'<>:"/\|?*'
@@ -96,28 +97,47 @@ def safe_filename(filename: str, replacement_char: str = '_') -> str:
         filename = filename.replace(char, replacement_char)
 
     # Remove control characters (0-31)
-    filename = ''.join(char for char in filename if ord(char) >= 32)
+    filename = "".join(char for char in filename if ord(char) >= 32)
 
     # Trim whitespace and dots from ends
-    filename = filename.strip(' .')
+    filename = filename.strip(" .")
 
     # Handle reserved names on Windows
     reserved_names = {
-        'CON', 'PRN', 'AUX', 'NUL',
-        'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
-        'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9",
     }
 
     base_name = filename.upper()
-    if '.' in base_name:
-        base_name = base_name.split('.')[0]
+    if "." in base_name:
+        base_name = base_name.split(".")[0]
 
     if base_name in reserved_names:
         filename = f"{replacement_char}{filename}"
 
     # Ensure filename isn't empty
     if not filename:
-        filename = 'unnamed'
+        filename = "unnamed"
 
     return filename
 
@@ -141,7 +161,7 @@ def safe_path_join(*parts: Union[str, Path]) -> Path:
             part_str = str(part)
 
         # Normalize Unicode
-        part_str = unicodedata.normalize('NFC', part_str)
+        part_str = unicodedata.normalize("NFC", part_str)
         str_parts.append(part_str)
 
     # Join using pathlib
@@ -164,11 +184,11 @@ def ensure_unicode_path(path: Union[str, Path]) -> Path:
     if isinstance(path, str):
         # Decode if it's bytes-like
         if isinstance(path, bytes):
-            path = path.decode('utf-8', errors='replace')
+            path = path.decode("utf-8", errors="replace")
         path = Path(path)
 
     # Normalize Unicode representation
-    path_str = unicodedata.normalize('NFC', str(path))
+    path_str = unicodedata.normalize("NFC", str(path))
 
     return Path(path_str)
 
@@ -215,7 +235,7 @@ def get_user_data_dir(app_name: str = "docx2shelf") -> Path:
         return ensure_unicode_path(Path(platformdirs.user_data_dir(app_name)))
     else:
         # Fallback based on platform
-        if os.name == 'nt':  # Windows
+        if os.name == "nt":  # Windows
             base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
         else:  # Unix-like
             base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
@@ -236,7 +256,7 @@ def get_user_cache_dir(app_name: str = "docx2shelf") -> Path:
         return ensure_unicode_path(Path(platformdirs.user_cache_dir(app_name)))
     else:
         # Fallback based on platform
-        if os.name == 'nt':  # Windows
+        if os.name == "nt":  # Windows
             base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
         else:  # Unix-like
             base = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
@@ -257,7 +277,7 @@ def get_user_config_dir(app_name: str = "docx2shelf") -> Path:
         return ensure_unicode_path(Path(platformdirs.user_config_dir(app_name)))
     else:
         # Fallback based on platform
-        if os.name == 'nt':  # Windows
+        if os.name == "nt":  # Windows
             base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
         else:  # Unix-like
             base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
@@ -278,18 +298,18 @@ def validate_path_encoding(path: Union[str, Path]) -> bool:
         path_str = str(path)
 
         # Test UTF-8 encoding/decoding
-        encoded = path_str.encode('utf-8')
-        decoded = encoded.decode('utf-8')
+        encoded = path_str.encode("utf-8")
+        decoded = encoded.decode("utf-8")
 
         # Test Unicode normalization
-        normalized = unicodedata.normalize('NFC', decoded)
+        normalized = unicodedata.normalize("NFC", decoded)
 
         return path_str == normalized
     except (UnicodeEncodeError, UnicodeDecodeError):
         return False
 
 
-def fix_path_encoding(path: Union[str, Path], fallback_encoding: str = 'latin1') -> Path:
+def fix_path_encoding(path: Union[str, Path], fallback_encoding: str = "latin1") -> Path:
     """
     Attempt to fix path encoding issues.
 
@@ -313,24 +333,24 @@ def fix_path_encoding(path: Union[str, Path], fallback_encoding: str = 'latin1')
     try:
         # If it's bytes-like, decode it
         if isinstance(path_str, bytes):
-            path_str = path_str.decode('utf-8', errors='replace')
+            path_str = path_str.decode("utf-8", errors="replace")
 
         # Try fallback encoding
         try:
             # Encode with fallback, then decode as UTF-8
             if isinstance(path_str, str):
-                encoded = path_str.encode(fallback_encoding, errors='ignore')
-                path_str = encoded.decode('utf-8', errors='replace')
+                encoded = path_str.encode(fallback_encoding, errors="ignore")
+                path_str = encoded.decode("utf-8", errors="replace")
         except (UnicodeEncodeError, UnicodeDecodeError):
             pass
 
         # Normalize Unicode
-        path_str = unicodedata.normalize('NFC', path_str)
+        path_str = unicodedata.normalize("NFC", path_str)
 
         return Path(path_str)
     except Exception:
         # Last resort: create a safe filename
-        safe_name = safe_filename(str(path).replace('/', '_').replace('\\', '_'))
+        safe_name = safe_filename(str(path).replace("/", "_").replace("\\", "_"))
         return Path(safe_name)
 
 
@@ -380,7 +400,7 @@ def is_safe_path(path: Union[str, Path], base_path: Union[str, Path] = None) -> 
             return False
 
         # Check for directory traversal
-        if '..' in path.parts:
+        if ".." in path.parts:
             return False
 
         # If base_path is provided, ensure path is within it
@@ -397,7 +417,7 @@ def is_safe_path(path: Union[str, Path], base_path: Union[str, Path] = None) -> 
 
 
 # Convenience functions for common operations
-def write_text_safe(path: Union[str, Path], content: str, encoding: str = 'utf-8') -> None:
+def write_text_safe(path: Union[str, Path], content: str, encoding: str = "utf-8") -> None:
     """
     Safely write text to a file with proper encoding.
 
@@ -409,11 +429,11 @@ def write_text_safe(path: Union[str, Path], content: str, encoding: str = 'utf-8
     path = ensure_unicode_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(path, 'w', encoding=encoding, errors='replace') as f:
+    with open(path, "w", encoding=encoding, errors="replace") as f:
         f.write(content)
 
 
-def read_text_safe(path: Union[str, Path], encoding: str = 'utf-8') -> str:
+def read_text_safe(path: Union[str, Path], encoding: str = "utf-8") -> str:
     """
     Safely read text from a file with proper encoding.
 
@@ -426,5 +446,5 @@ def read_text_safe(path: Union[str, Path], encoding: str = 'utf-8') -> str:
     """
     path = ensure_unicode_path(path)
 
-    with open(path, 'r', encoding=encoding, errors='replace') as f:
+    with open(path, "r", encoding=encoding, errors="replace") as f:
         return f.read()

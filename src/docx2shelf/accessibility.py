@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple
 
 class AccessibilityFeature(Enum):
     """EPUB 3 accessibility features."""
+
     ARIA_LANDMARKS = "aria-landmarks"
     HEADING_STRUCTURE = "heading-structure"
     PAGE_NAVIGATION = "page-navigation"
@@ -31,14 +32,16 @@ class AccessibilityConfiguration:
     wcag_level: str = "AA"  # A, AA, AAA
 
     # Enabled features
-    enabled_features: List[AccessibilityFeature] = field(default_factory=lambda: [
-        AccessibilityFeature.ARIA_LANDMARKS,
-        AccessibilityFeature.HEADING_STRUCTURE,
-        AccessibilityFeature.TABLE_OF_CONTENTS,
-        AccessibilityFeature.SEMANTIC_MARKUP,
-        AccessibilityFeature.READING_ORDER,
-        AccessibilityFeature.SCREEN_READER
-    ])
+    enabled_features: List[AccessibilityFeature] = field(
+        default_factory=lambda: [
+            AccessibilityFeature.ARIA_LANDMARKS,
+            AccessibilityFeature.HEADING_STRUCTURE,
+            AccessibilityFeature.TABLE_OF_CONTENTS,
+            AccessibilityFeature.SEMANTIC_MARKUP,
+            AccessibilityFeature.READING_ORDER,
+            AccessibilityFeature.SCREEN_READER,
+        ]
+    )
 
     # Language and localization
     primary_language: str = "en"
@@ -81,7 +84,7 @@ def check_image_alt_text(html_chunks: List[str]) -> List[Tuple[str, str]]:
 
     for i, chunk in enumerate(html_chunks):
         # Find all img tags
-        img_pattern = r'<img[^>]*>'
+        img_pattern = r"<img[^>]*>"
         img_tags = re.findall(img_pattern, chunk, re.IGNORECASE)
 
         for img_tag in img_tags:
@@ -118,7 +121,7 @@ def prompt_for_alt_text(missing_alt: List[Tuple[str, str]], quiet: bool = False)
         while True:
             try:
                 alt_text = input("   Enter alt text (or 'skip' to leave empty): ").strip()
-                if alt_text.lower() == 'skip':
+                if alt_text.lower() == "skip":
                     alt_text = ""
                     break
                 elif alt_text:
@@ -148,17 +151,17 @@ def add_alt_text_to_html(html_chunks: List[str], alt_text_map: Dict[str, str]) -
         for img_tag, alt_text in alt_text_map.items():
             if img_tag in updated_chunk:
                 # Add alt attribute to the img tag
-                if 'alt=' in img_tag.lower():
+                if "alt=" in img_tag.lower():
                     # Replace existing empty alt
                     new_img_tag = re.sub(
                         r'alt\s*=\s*["\'][^"\']*["\']',
                         f'alt="{alt_text}"',
                         img_tag,
-                        flags=re.IGNORECASE
+                        flags=re.IGNORECASE,
                     )
                 else:
                     # Add alt attribute before the closing >
-                    new_img_tag = img_tag.replace('>', f' alt="{alt_text}">')
+                    new_img_tag = img_tag.replace(">", f' alt="{alt_text}">')
 
                 updated_chunk = updated_chunk.replace(img_tag, new_img_tag)
 
@@ -170,11 +173,11 @@ def add_alt_text_to_html(html_chunks: List[str], alt_text_map: Dict[str, str]) -
 def generate_accessibility_metadata() -> Dict[str, str]:
     """Generate EPUB accessibility metadata."""
     return {
-        'schema:accessMode': 'textual,visual',
-        'schema:accessModeSufficient': 'textual',
-        'schema:accessibilityFeature': 'structuralNavigation,readingOrder,alternativeText',
-        'schema:accessibilityHazard': 'none',
-        'schema:accessibilitySummary': 'This publication conforms to EPUB Accessibility standards with structured navigation, reading order, and alternative text for images.'
+        "schema:accessMode": "textual,visual",
+        "schema:accessModeSufficient": "textual",
+        "schema:accessibilityFeature": "structuralNavigation,readingOrder,alternativeText",
+        "schema:accessibilityHazard": "none",
+        "schema:accessibilitySummary": "This publication conforms to EPUB Accessibility standards with structured navigation, reading order, and alternative text for images.",
     }
 
 
@@ -189,28 +192,32 @@ def add_aria_landmarks(html_chunks: List[str], metadata) -> List[str]:
         updated_chunk = chunk
 
         # Add main landmark to first content chapter
-        if i == 0 and '<body' in chunk:
+        if i == 0 and "<body" in chunk:
             # Find body tag and add role="main"
-            body_pattern = r'<body([^>]*)>'
+            body_pattern = r"<body([^>]*)>"
+
             def add_main_role(match):
                 attrs = match.group(1)
-                if 'role=' not in attrs.lower():
+                if "role=" not in attrs.lower():
                     attrs += ' role="main"'
-                return f'<body{attrs}>'
+                return f"<body{attrs}>"
 
             updated_chunk = re.sub(body_pattern, add_main_role, updated_chunk, flags=re.IGNORECASE)
 
         # Add navigation landmarks to heading elements
-        heading_pattern = r'<(h[1-6])([^>]*)>(.*?)</\1>'
+        heading_pattern = r"<(h[1-6])([^>]*)>(.*?)</\1>"
+
         def add_heading_nav(match):
             tag, attrs, content = match.groups()
             # Add aria-level if not present
-            if 'aria-level=' not in attrs.lower():
+            if "aria-level=" not in attrs.lower():
                 level = tag[1]  # Extract number from h1, h2, etc.
                 attrs += f' aria-level="{level}"'
-            return f'<{tag}{attrs}>{content}</{tag}>'
+            return f"<{tag}{attrs}>{content}</{tag}>"
 
-        updated_chunk = re.sub(heading_pattern, add_heading_nav, updated_chunk, flags=re.IGNORECASE | re.DOTALL)
+        updated_chunk = re.sub(
+            heading_pattern, add_heading_nav, updated_chunk, flags=re.IGNORECASE | re.DOTALL
+        )
 
         updated_chunks.append(updated_chunk)
 
@@ -220,7 +227,7 @@ def add_aria_landmarks(html_chunks: List[str], metadata) -> List[str]:
 def detect_document_language(html_chunks: List[str], metadata) -> str:
     """Detect document language from content or metadata."""
     # Try to get language from metadata first
-    if hasattr(metadata, 'language') and metadata.language:
+    if hasattr(metadata, "language") and metadata.language:
         return metadata.language
 
     # Look for lang attributes in HTML
@@ -230,7 +237,7 @@ def detect_document_language(html_chunks: List[str], metadata) -> str:
             return lang_match.group(1)
 
     # Default to English
-    return 'en'
+    return "en"
 
 
 def add_language_attributes(html_chunks: List[str], language: str) -> List[str]:
@@ -244,12 +251,13 @@ def add_language_attributes(html_chunks: List[str], language: str) -> List[str]:
         updated_chunk = chunk
 
         # Add lang attribute to html element if not present
-        if '<html' in chunk and 'lang=' not in chunk.lower():
-            html_pattern = r'<html([^>]*)>'
+        if "<html" in chunk and "lang=" not in chunk.lower():
+            html_pattern = r"<html([^>]*)>"
+
             def add_lang(match):
                 attrs = match.group(1)
                 attrs += f' lang="{language}"'
-                return f'<html{attrs}>'
+                return f"<html{attrs}>"
 
             updated_chunk = re.sub(html_pattern, add_lang, updated_chunk, flags=re.IGNORECASE)
 
@@ -264,27 +272,26 @@ def validate_reading_order(html_chunks: List[str]) -> List[str]:
 
     for i, chunk in enumerate(html_chunks):
         # Check for heading hierarchy skips
-        headings = re.findall(r'<h([1-6])', chunk, re.IGNORECASE)
+        headings = re.findall(r"<h([1-6])", chunk, re.IGNORECASE)
 
         if headings:
             heading_levels = [int(h) for h in headings]
 
             for j in range(1, len(heading_levels)):
                 current = heading_levels[j]
-                previous = heading_levels[j-1]
+                previous = heading_levels[j - 1]
 
                 # Check if we skip heading levels (e.g., h1 -> h3)
                 if current > previous + 1:
-                    issues.append(f"Chunk {i}: Heading hierarchy skip from h{previous} to h{current}")
+                    issues.append(
+                        f"Chunk {i}: Heading hierarchy skip from h{previous} to h{current}"
+                    )
 
     return issues
 
 
 def process_accessibility_features(
-    html_chunks: List[str],
-    metadata,
-    interactive: bool = True,
-    quiet: bool = False
+    html_chunks: List[str], metadata, interactive: bool = True, quiet: bool = False
 ) -> Tuple[List[str], Dict[str, str]]:
     """Process all accessibility features for EPUB content.
 
@@ -339,16 +346,17 @@ def process_accessibility_features(
 
 
 def create_accessibility_summary(
-    html_chunks: List[str],
-    accessibility_meta: Dict[str, str],
-    language: str = 'en'
+    html_chunks: List[str], accessibility_meta: Dict[str, str], language: str = "en"
 ) -> str:
     """Create human-readable accessibility summary."""
 
     # Count accessibility features
-    image_count = sum(len(re.findall(r'<img[^>]*>', chunk, re.IGNORECASE)) for chunk in html_chunks)
-    alt_text_count = sum(len(re.findall(r'<img[^>]*alt\s*=\s*["\'][^"\']+["\']', chunk, re.IGNORECASE)) for chunk in html_chunks)
-    heading_count = sum(len(re.findall(r'<h[1-6]', chunk, re.IGNORECASE)) for chunk in html_chunks)
+    image_count = sum(len(re.findall(r"<img[^>]*>", chunk, re.IGNORECASE)) for chunk in html_chunks)
+    alt_text_count = sum(
+        len(re.findall(r'<img[^>]*alt\s*=\s*["\'][^"\']+["\']', chunk, re.IGNORECASE))
+        for chunk in html_chunks
+    )
+    heading_count = sum(len(re.findall(r"<h[1-6]", chunk, re.IGNORECASE)) for chunk in html_chunks)
 
     summary = [
         "EPUB Accessibility Summary",
@@ -372,13 +380,15 @@ def create_accessibility_summary(
     else:
         summary.append("• No alternative text provided ❌")
 
-    summary.extend([
-        "",
-        "Standards Compliance:",
-        "• EPUB Accessibility 1.1",
-        "• WCAG 2.1 AA (partial)",
-        "• Schema.org accessibility metadata"
-    ])
+    summary.extend(
+        [
+            "",
+            "Standards Compliance:",
+            "• EPUB Accessibility 1.1",
+            "• WCAG 2.1 AA (partial)",
+            "• Schema.org accessibility metadata",
+        ]
+    )
 
     return "\n".join(summary)
 
@@ -389,7 +399,8 @@ def generate_accessibility_css(config: AccessibilityConfiguration) -> str:
 
     # Skip links styling
     if config.skip_links:
-        css_parts.append("""
+        css_parts.append(
+            """
 /* Skip Navigation Links */
 .skip-links {
     position: absolute;
@@ -416,11 +427,13 @@ def generate_accessibility_css(config: AccessibilityConfiguration) -> str:
     position: relative;
     top: 40px;
     left: 0;
-}""")
+}"""
+        )
 
     # High contrast mode
     if config.high_contrast_mode:
-        css_parts.append("""
+        css_parts.append(
+            """
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
     body {
@@ -439,11 +452,13 @@ def generate_accessibility_css(config: AccessibilityConfiguration) -> str:
     h1, h2, h3, h4, h5, h6 {
         color: #ffff00 !important;
     }
-}""")
+}"""
+        )
 
     # Large text support
     if config.large_text_mode:
-        css_parts.append(f"""
+        css_parts.append(
+            f"""
 /* Large Text Support */
 @media (min-resolution: 192dpi) and (prefers-reduced-motion: no-preference) {{
     body {{
@@ -454,10 +469,12 @@ def generate_accessibility_css(config: AccessibilityConfiguration) -> str:
 .large-text body {{
     font-size: calc({config.minimum_font_size} * 1.2);
     line-height: 1.8;
-}}""")
+}}"""
+        )
 
     # Focus indicators
-    css_parts.append("""
+    css_parts.append(
+        """
 /* Enhanced Focus Indicators */
 *:focus {
     outline: 2px solid #0066cc;
@@ -471,10 +488,12 @@ def generate_accessibility_css(config: AccessibilityConfiguration) -> str:
 *:focus-visible {
     outline: 2px solid #0066cc;
     outline-offset: 2px;
-}""")
+}"""
+    )
 
     # Screen reader optimizations
-    css_parts.append("""
+    css_parts.append(
+        """
 /* Screen Reader Optimizations */
 .sr-only {
     position: absolute;
@@ -497,10 +516,12 @@ def generate_accessibility_css(config: AccessibilityConfiguration) -> str:
     overflow: visible;
     clip: auto;
     white-space: inherit;
-}""")
+}"""
+    )
 
     # Motion preferences
-    css_parts.append("""
+    css_parts.append(
+        """
 /* Respect Motion Preferences */
 @media (prefers-reduced-motion: reduce) {
     *,
@@ -511,7 +532,8 @@ def generate_accessibility_css(config: AccessibilityConfiguration) -> str:
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
-}""")
+}"""
+    )
 
     return "\n".join(css_parts)
 
@@ -523,7 +545,7 @@ def create_default_accessibility_config() -> AccessibilityConfiguration:
             "structuralNavigation",
             "alternativeText",
             "tableOfContents",
-            "readingOrder"
+            "readingOrder",
         ]
     )
 
@@ -544,7 +566,7 @@ def create_enhanced_accessibility_config() -> AccessibilityConfiguration:
             "highContrast",
             "largeText",
             "keyboardNavigation",
-            "screenReaderOptimized"
+            "screenReaderOptimized",
         ],
-        accessibility_summary="This publication conforms to WCAG 2.1 Level AAA and includes enhanced accessibility features for users with disabilities."
+        accessibility_summary="This publication conforms to WCAG 2.1 Level AAA and includes enhanced accessibility features for users with disabilities.",
     )

@@ -16,6 +16,7 @@ from typing import Dict, List, Tuple
 # Optional dependencies for image processing
 try:
     from PIL import Image, ImageStat
+
     PILLOW_AVAILABLE = True
 except (ImportError, AttributeError):
     PILLOW_AVAILABLE = False
@@ -23,6 +24,7 @@ except (ImportError, AttributeError):
 try:
     import cv2
     import numpy as np
+
     OPENCV_AVAILABLE = True
 except ImportError:
     OPENCV_AVAILABLE = False
@@ -34,6 +36,7 @@ from .utils import prompt, prompt_select
 @dataclass
 class ImageAnalysis:
     """Analysis result for an image."""
+
     path: Path
     width: int
     height: int
@@ -51,6 +54,7 @@ class ImageAnalysis:
 @dataclass
 class AltTextSuggestion:
     """Alt-text suggestion with metadata."""
+
     text: str
     confidence: float
     method: str
@@ -62,6 +66,7 @@ class AltTextSuggestion:
 @dataclass
 class AccessibilityIssue:
     """Accessibility issue found in content."""
+
     issue_type: str
     severity: str  # low, medium, high, critical
     element: str
@@ -73,6 +78,7 @@ class AccessibilityIssue:
 @dataclass
 class AccessibilityReport:
     """Comprehensive accessibility report."""
+
     images_processed: int = 0
     alt_texts_generated: int = 0
     issues_found: List[AccessibilityIssue] = field(default_factory=list)
@@ -103,12 +109,12 @@ class SmartImageAnalyzer:
             with Image.open(image_path) as img:
                 # Basic properties
                 width, height = img.size
-                format_name = img.format or 'unknown'
+                format_name = img.format or "unknown"
                 file_size = image_path.stat().st_size
 
                 # Convert to RGB for analysis
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
 
                 # Color analysis
                 dominant_colors = self._extract_dominant_colors(img)
@@ -135,7 +141,7 @@ class SmartImageAnalyzer:
                     is_decorative=is_decorative,
                     has_text=has_text,
                     complexity=complexity,
-                    image_type=image_type
+                    image_type=image_type,
                 )
 
         except Exception as e:
@@ -146,7 +152,7 @@ class SmartImageAnalyzer:
         """Basic analysis when PIL is not available."""
         try:
             file_size = image_path.stat().st_size
-            format_name = image_path.suffix.lower().replace('.', '')
+            format_name = image_path.suffix.lower().replace(".", "")
 
             return ImageAnalysis(
                 path=image_path,
@@ -155,16 +161,10 @@ class SmartImageAnalyzer:
                 format=format_name,
                 file_size=file_size,
                 complexity="unknown",
-                image_type="unknown"
+                image_type="unknown",
             )
         except Exception:
-            return ImageAnalysis(
-                path=image_path,
-                width=0,
-                height=0,
-                format="unknown",
-                file_size=0
-            )
+            return ImageAnalysis(path=image_path, width=0, height=0, format="unknown", file_size=0)
 
     def _extract_dominant_colors(self, img: Image.Image) -> List[Tuple[int, int, int]]:
         """Extract dominant colors from image."""
@@ -188,7 +188,7 @@ class SmartImageAnalyzer:
         """Calculate average brightness of image."""
         try:
             # Convert to grayscale and calculate mean
-            grayscale = img.convert('L')
+            grayscale = img.convert("L")
             stat = ImageStat.Stat(grayscale)
             return stat.mean[0] / 255.0  # Normalize to 0-1
         except Exception:
@@ -197,7 +197,7 @@ class SmartImageAnalyzer:
     def _calculate_contrast(self, img: Image.Image) -> float:
         """Calculate contrast of image."""
         try:
-            grayscale = img.convert('L')
+            grayscale = img.convert("L")
             stat = ImageStat.Stat(grayscale)
             return stat.stddev[0] / 128.0  # Normalize to 0-1
         except Exception:
@@ -216,7 +216,7 @@ class SmartImageAnalyzer:
             edge_density = 0.0
             if OPENCV_AVAILABLE:
                 try:
-                    img_array = np.array(img_small.convert('L'))
+                    img_array = np.array(img_small.convert("L"))
                     edges = cv2.Canny(img_array, 50, 150)
                     edge_density = np.mean(edges) / 255.0
                 except Exception:
@@ -238,13 +238,13 @@ class SmartImageAnalyzer:
         filename = path.stem.lower()
 
         # Check filename for clues
-        if any(word in filename for word in ['chart', 'graph', 'plot', 'diagram']):
+        if any(word in filename for word in ["chart", "graph", "plot", "diagram"]):
             return "chart"
-        elif any(word in filename for word in ['photo', 'img', 'pic', 'jpeg', 'jpg']):
+        elif any(word in filename for word in ["photo", "img", "pic", "jpeg", "jpg"]):
             return "photo"
-        elif any(word in filename for word in ['icon', 'logo', 'symbol']):
+        elif any(word in filename for word in ["icon", "logo", "symbol"]):
             return "icon"
-        elif any(word in filename for word in ['figure', 'fig', 'illustration']):
+        elif any(word in filename for word in ["figure", "fig", "illustration"]):
             return "illustration"
 
         # Analyze image properties
@@ -274,7 +274,7 @@ class SmartImageAnalyzer:
         # This is a simplified heuristic - real OCR would be more accurate
         try:
             # Convert to grayscale
-            grayscale = img.convert('L')
+            grayscale = img.convert("L")
 
             # Resize for analysis
             small_img = grayscale.resize((200, 200))
@@ -299,8 +299,15 @@ class SmartImageAnalyzer:
 
         # Check filename for decorative indicators
         decorative_keywords = [
-            'border', 'decoration', 'ornament', 'divider', 'spacer',
-            'background', 'texture', 'pattern', 'frame'
+            "border",
+            "decoration",
+            "ornament",
+            "divider",
+            "spacer",
+            "background",
+            "texture",
+            "pattern",
+            "frame",
         ]
 
         if any(keyword in filename for keyword in decorative_keywords):
@@ -334,10 +341,7 @@ class IntelligentAltTextGenerator:
         self.logger = logging.getLogger(__name__)
 
     def generate_alt_text(
-        self,
-        image_path: Path,
-        context: str = "",
-        interactive: bool = False
+        self, image_path: Path, context: str = "", interactive: bool = False
     ) -> List[AltTextSuggestion]:
         """Generate intelligent alt-text suggestions.
 
@@ -383,10 +387,7 @@ class IntelligentAltTextGenerator:
         return final_suggestions
 
     def _generate_ai_alt_text(
-        self,
-        image_path: Path,
-        context: str,
-        analysis: ImageAnalysis
+        self, image_path: Path, context: str, analysis: ImageAnalysis
     ) -> List[AltTextSuggestion]:
         """Generate alt-text using AI vision models."""
         suggestions = []
@@ -395,19 +396,21 @@ class IntelligentAltTextGenerator:
             ai_result = self.ai_manager.generate_alt_text(image_path, context)
 
             if ai_result.success:
-                alt_text = ai_result.data.get('alt_text', '')
-                confidence = ai_result.data.get('confidence', 0.7)
+                alt_text = ai_result.data.get("alt_text", "")
+                confidence = ai_result.data.get("confidence", 0.7)
 
                 if alt_text:
                     accessibility_score = self._calculate_accessibility_score(alt_text, analysis)
 
-                    suggestions.append(AltTextSuggestion(
-                        text=alt_text,
-                        confidence=confidence,
-                        method="ai_vision",
-                        reasoning="Generated using AI vision model analysis",
-                        accessibility_score=accessibility_score
-                    ))
+                    suggestions.append(
+                        AltTextSuggestion(
+                            text=alt_text,
+                            confidence=confidence,
+                            method="ai_vision",
+                            reasoning="Generated using AI vision model analysis",
+                            accessibility_score=accessibility_score,
+                        )
+                    )
 
         except Exception as e:
             self.logger.warning(f"AI alt-text generation failed: {e}")
@@ -415,22 +418,22 @@ class IntelligentAltTextGenerator:
         return suggestions
 
     def _generate_rule_based_alt_text(
-        self,
-        analysis: ImageAnalysis,
-        context: str
+        self, analysis: ImageAnalysis, context: str
     ) -> List[AltTextSuggestion]:
         """Generate alt-text using rule-based analysis."""
         suggestions = []
 
         # Handle decorative images
         if analysis.is_decorative:
-            suggestions.append(AltTextSuggestion(
-                text="",  # Empty alt for decorative images
-                confidence=0.8,
-                method="rule_based",
-                reasoning="Image appears decorative based on analysis",
-                accessibility_score=0.9
-            ))
+            suggestions.append(
+                AltTextSuggestion(
+                    text="",  # Empty alt for decorative images
+                    confidence=0.8,
+                    method="rule_based",
+                    reasoning="Image appears decorative based on analysis",
+                    accessibility_score=0.9,
+                )
+            )
             return suggestions
 
         # Generate based on image type
@@ -458,7 +461,7 @@ class IntelligentAltTextGenerator:
 
         # Enhance with filename information
         filename = analysis.path.stem
-        clean_filename = re.sub(r'[_\-\d]+', ' ', filename).strip()
+        clean_filename = re.sub(r"[_\-\d]+", " ", filename).strip()
 
         if clean_filename and len(clean_filename) > 2:
             enhanced_text = f"{base_text}: {clean_filename}"
@@ -481,20 +484,20 @@ class IntelligentAltTextGenerator:
 
         accessibility_score = self._calculate_accessibility_score(enhanced_text, analysis)
 
-        suggestions.append(AltTextSuggestion(
-            text=enhanced_text,
-            confidence=0.6,
-            method="rule_based",
-            reasoning=reasoning,
-            accessibility_score=accessibility_score
-        ))
+        suggestions.append(
+            AltTextSuggestion(
+                text=enhanced_text,
+                confidence=0.6,
+                method="rule_based",
+                reasoning=reasoning,
+                accessibility_score=accessibility_score,
+            )
+        )
 
         return suggestions
 
     def _generate_context_alt_text(
-        self,
-        analysis: ImageAnalysis,
-        context: str
+        self, analysis: ImageAnalysis, context: str
     ) -> List[AltTextSuggestion]:
         """Generate alt-text using surrounding context."""
         suggestions = []
@@ -505,16 +508,16 @@ class IntelligentAltTextGenerator:
         context_lower = context.lower()
 
         # Look for context clues
-        figure_match = re.search(r'figure\s*(\d+)', context_lower)
+        figure_match = re.search(r"figure\s*(\d+)", context_lower)
         if figure_match:
             figure_num = figure_match.group(1)
             alt_text = f"Figure {figure_num}"
 
             # Look for caption or description
             caption_patterns = [
-                r'figure\s*\d+[:.]\s*([^.]+)',
-                r'(?:shows?|depicts?|illustrates?)\s+([^.]+)',
-                r'(?:image|photo|picture)\s+(?:of|shows?)\s+([^.]+)'
+                r"figure\s*\d+[:.]\s*([^.]+)",
+                r"(?:shows?|depicts?|illustrates?)\s+([^.]+)",
+                r"(?:image|photo|picture)\s+(?:of|shows?)\s+([^.]+)",
             ]
 
             for pattern in caption_patterns:
@@ -527,20 +530,22 @@ class IntelligentAltTextGenerator:
 
             accessibility_score = self._calculate_accessibility_score(alt_text, analysis)
 
-            suggestions.append(AltTextSuggestion(
-                text=alt_text,
-                confidence=0.7,
-                method="context_analysis",
-                reasoning="Generated from surrounding text context",
-                accessibility_score=accessibility_score
-            ))
+            suggestions.append(
+                AltTextSuggestion(
+                    text=alt_text,
+                    confidence=0.7,
+                    method="context_analysis",
+                    reasoning="Generated from surrounding text context",
+                    accessibility_score=accessibility_score,
+                )
+            )
 
         # Look for references to charts, graphs, etc.
-        chart_keywords = ['chart', 'graph', 'plot', 'diagram', 'table']
+        chart_keywords = ["chart", "graph", "plot", "diagram", "table"]
         for keyword in chart_keywords:
             if keyword in context_lower:
                 # Extract description after keyword
-                pattern = f'{keyword}\\s+(?:shows?|depicts?|of)?\\s*([^.]+)'
+                pattern = f"{keyword}\\s+(?:shows?|depicts?|of)?\\s*([^.]+)"
                 match = re.search(pattern, context_lower)
                 if match:
                     description = match.group(1).strip()
@@ -548,13 +553,15 @@ class IntelligentAltTextGenerator:
 
                     accessibility_score = self._calculate_accessibility_score(alt_text, analysis)
 
-                    suggestions.append(AltTextSuggestion(
-                        text=alt_text,
-                        confidence=0.65,
-                        method="context_keywords",
-                        reasoning=f"Found {keyword} reference in context",
-                        accessibility_score=accessibility_score
-                    ))
+                    suggestions.append(
+                        AltTextSuggestion(
+                            text=alt_text,
+                            confidence=0.65,
+                            method="context_keywords",
+                            reasoning=f"Found {keyword} reference in context",
+                            accessibility_score=accessibility_score,
+                        )
+                    )
 
         return suggestions
 
@@ -567,28 +574,20 @@ class IntelligentAltTextGenerator:
             "photo": [
                 "Photograph",
                 "Color photograph",
-                "Black and white photograph" if analysis.brightness < 0.3 else "Bright photograph"
+                "Black and white photograph" if analysis.brightness < 0.3 else "Bright photograph",
             ],
-            "chart": [
-                "Data chart",
-                "Statistical chart",
-                "Information chart"
-            ],
-            "diagram": [
-                "Technical diagram",
-                "Explanatory diagram",
-                "Process diagram"
-            ],
+            "chart": ["Data chart", "Statistical chart", "Information chart"],
+            "diagram": ["Technical diagram", "Explanatory diagram", "Process diagram"],
             "illustration": [
                 "Illustration",
                 "Artistic illustration",
-                "Detailed illustration" if analysis.complexity == "complex" else "Simple illustration"
+                (
+                    "Detailed illustration"
+                    if analysis.complexity == "complex"
+                    else "Simple illustration"
+                ),
             ],
-            "icon": [
-                "Icon",
-                "Symbol",
-                "Graphic icon"
-            ]
+            "icon": ["Icon", "Symbol", "Graphic icon"],
         }
 
         template_list = templates.get(analysis.image_type, ["Image"])
@@ -596,13 +595,15 @@ class IntelligentAltTextGenerator:
         for template in template_list:
             accessibility_score = self._calculate_accessibility_score(template, analysis)
 
-            suggestions.append(AltTextSuggestion(
-                text=template,
-                confidence=0.4,
-                method="template",
-                reasoning=f"Template for {analysis.image_type} type",
-                accessibility_score=accessibility_score
-            ))
+            suggestions.append(
+                AltTextSuggestion(
+                    text=template,
+                    confidence=0.4,
+                    method="template",
+                    reasoning=f"Template for {analysis.image_type} type",
+                    accessibility_score=accessibility_score,
+                )
+            )
 
         return suggestions
 
@@ -620,11 +621,13 @@ class IntelligentAltTextGenerator:
             score -= 0.2
 
         # Descriptive quality
-        if any(word in alt_text.lower() for word in ['shows', 'depicts', 'contains', 'illustrates']):
+        if any(
+            word in alt_text.lower() for word in ["shows", "depicts", "contains", "illustrates"]
+        ):
             score += 0.1
 
         # Specific vs generic
-        generic_words = ['image', 'picture', 'photo', 'graphic']
+        generic_words = ["image", "picture", "photo", "graphic"]
         if not any(word in alt_text.lower() for word in generic_words):
             score += 0.1
 
@@ -640,9 +643,7 @@ class IntelligentAltTextGenerator:
         return min(1.0, max(0.0, score))
 
     def _rank_suggestions(
-        self,
-        suggestions: List[AltTextSuggestion],
-        analysis: ImageAnalysis
+        self, suggestions: List[AltTextSuggestion], analysis: ImageAnalysis
     ) -> List[AltTextSuggestion]:
         """Rank and filter suggestions by quality."""
         if not suggestions:
@@ -660,18 +661,18 @@ class IntelligentAltTextGenerator:
         for suggestion in unique_suggestions:
             # Combine confidence, accessibility, and method preference
             method_weights = {
-                'ai_vision': 1.0,
-                'context_analysis': 0.9,
-                'rule_based': 0.7,
-                'context_keywords': 0.6,
-                'template': 0.3
+                "ai_vision": 1.0,
+                "context_analysis": 0.9,
+                "rule_based": 0.7,
+                "context_keywords": 0.6,
+                "template": 0.3,
             }
 
             method_weight = method_weights.get(suggestion.method, 0.5)
             combined_score = (
-                suggestion.confidence * 0.4 +
-                suggestion.accessibility_score * 0.4 +
-                method_weight * 0.2
+                suggestion.confidence * 0.4
+                + suggestion.accessibility_score * 0.4
+                + method_weight * 0.2
             )
 
             suggestion.confidence = combined_score
@@ -683,9 +684,7 @@ class IntelligentAltTextGenerator:
         return unique_suggestions[:5]
 
     def _interactive_selection(
-        self,
-        suggestions: List[AltTextSuggestion],
-        analysis: ImageAnalysis
+        self, suggestions: List[AltTextSuggestion], analysis: ImageAnalysis
     ) -> List[AltTextSuggestion]:
         """Allow user to interactively select/modify suggestions."""
         print(f"\n🖼️  Alt-text suggestions for {analysis.path.name}:")
@@ -696,10 +695,18 @@ class IntelligentAltTextGenerator:
 
         options = []
         for i, suggestion in enumerate(suggestions):
-            confidence_icon = "🟢" if suggestion.confidence >= 0.8 else "🟡" if suggestion.confidence >= 0.6 else "🔴"
-            print(f"   {i+1}. {confidence_icon} \"{suggestion.text}\"")
-            print(f"      Method: {suggestion.method} | Score: {suggestion.accessibility_score:.2f}")
-            options.append(suggestion.text[:50] + "..." if len(suggestion.text) > 50 else suggestion.text)
+            confidence_icon = (
+                "🟢"
+                if suggestion.confidence >= 0.8
+                else "🟡" if suggestion.confidence >= 0.6 else "🔴"
+            )
+            print(f'   {i+1}. {confidence_icon} "{suggestion.text}"')
+            print(
+                f"      Method: {suggestion.method} | Score: {suggestion.accessibility_score:.2f}"
+            )
+            options.append(
+                suggestion.text[:50] + "..." if len(suggestion.text) > 50 else suggestion.text
+            )
 
         options.extend(["Enter custom alt-text", "Skip this image"])
 
@@ -716,7 +723,7 @@ class IntelligentAltTextGenerator:
                     confidence=1.0,
                     method="user_input",
                     reasoning="User-provided alt-text",
-                    accessibility_score=self._calculate_accessibility_score(custom_text, analysis)
+                    accessibility_score=self._calculate_accessibility_score(custom_text, analysis),
                 )
                 return [custom_suggestion]
 
@@ -731,10 +738,7 @@ class AccessibilityAuditor:
         self.logger = logging.getLogger(__name__)
 
     def audit_content_accessibility(
-        self,
-        content: str,
-        images: List[Path],
-        interactive: bool = False
+        self, content: str, images: List[Path], interactive: bool = False
     ) -> AccessibilityReport:
         """Perform comprehensive accessibility audit.
 
@@ -770,11 +774,7 @@ class AccessibilityAuditor:
         return report
 
     def _audit_images(
-        self,
-        images: List[Path],
-        content: str,
-        report: AccessibilityReport,
-        interactive: bool
+        self, images: List[Path], content: str, report: AccessibilityReport, interactive: bool
     ):
         """Audit image accessibility."""
         report.images_processed = len(images)
@@ -795,121 +795,138 @@ class AccessibilityAuditor:
                 # Check for accessibility issues
                 best_suggestion = suggestions[0]
 
-                if not best_suggestion.text and not self.alt_text_generator.image_analyzer.analyze_image(image_path).is_decorative:
-                    report.issues_found.append(AccessibilityIssue(
-                        issue_type="missing_alt_text",
-                        severity="high",
-                        element=f"Image: {image_path.name}",
-                        description="Image lacks descriptive alt-text",
-                        suggestion=f"Add alt-text: \"{best_suggestion.text}\"",
-                        auto_fixable=True
-                    ))
+                if (
+                    not best_suggestion.text
+                    and not self.alt_text_generator.image_analyzer.analyze_image(
+                        image_path
+                    ).is_decorative
+                ):
+                    report.issues_found.append(
+                        AccessibilityIssue(
+                            issue_type="missing_alt_text",
+                            severity="high",
+                            element=f"Image: {image_path.name}",
+                            description="Image lacks descriptive alt-text",
+                            suggestion=f'Add alt-text: "{best_suggestion.text}"',
+                            auto_fixable=True,
+                        )
+                    )
 
                 elif len(best_suggestion.text) > 200:
-                    report.issues_found.append(AccessibilityIssue(
-                        issue_type="alt_text_too_long",
-                        severity="medium",
-                        element=f"Image: {image_path.name}",
-                        description="Alt-text is too long (>200 characters)",
-                        suggestion="Consider shortening the description or using longdesc",
-                        auto_fixable=False
-                    ))
+                    report.issues_found.append(
+                        AccessibilityIssue(
+                            issue_type="alt_text_too_long",
+                            severity="medium",
+                            element=f"Image: {image_path.name}",
+                            description="Alt-text is too long (>200 characters)",
+                            suggestion="Consider shortening the description or using longdesc",
+                            auto_fixable=False,
+                        )
+                    )
 
     def _audit_content_structure(self, content: str, report: AccessibilityReport):
         """Audit content structure for accessibility."""
         # Check heading structure
-        headings = re.findall(r'<h([1-6])[^>]*>(.*?)</h[1-6]>', content, re.IGNORECASE | re.DOTALL)
+        headings = re.findall(r"<h([1-6])[^>]*>(.*?)</h[1-6]>", content, re.IGNORECASE | re.DOTALL)
 
         if headings:
             # Check for proper heading hierarchy
             heading_levels = [int(match[0]) for match in headings]
 
             for i, level in enumerate(heading_levels[1:], 1):
-                prev_level = heading_levels[i-1]
+                prev_level = heading_levels[i - 1]
                 if level > prev_level + 1:
-                    report.issues_found.append(AccessibilityIssue(
-                        issue_type="heading_hierarchy",
-                        severity="medium",
-                        element=f"Heading {i+1}",
-                        description=f"Heading jumps from h{prev_level} to h{level}",
-                        suggestion="Use sequential heading levels (h1, h2, h3, etc.)",
-                        auto_fixable=False
-                    ))
+                    report.issues_found.append(
+                        AccessibilityIssue(
+                            issue_type="heading_hierarchy",
+                            severity="medium",
+                            element=f"Heading {i+1}",
+                            description=f"Heading jumps from h{prev_level} to h{level}",
+                            suggestion="Use sequential heading levels (h1, h2, h3, etc.)",
+                            auto_fixable=False,
+                        )
+                    )
         else:
             # No headings found
             if len(content) > 1000:  # Only flag for substantial content
-                report.issues_found.append(AccessibilityIssue(
-                    issue_type="no_headings",
-                    severity="high",
-                    element="Document structure",
-                    description="Document lacks heading structure",
-                    suggestion="Add headings to organize content",
-                    auto_fixable=False
-                ))
+                report.issues_found.append(
+                    AccessibilityIssue(
+                        issue_type="no_headings",
+                        severity="high",
+                        element="Document structure",
+                        description="Document lacks heading structure",
+                        suggestion="Add headings to organize content",
+                        auto_fixable=False,
+                    )
+                )
 
         # Check for tables without headers
-        tables = re.findall(r'<table[^>]*>.*?</table>', content, re.IGNORECASE | re.DOTALL)
+        tables = re.findall(r"<table[^>]*>.*?</table>", content, re.IGNORECASE | re.DOTALL)
         for i, table in enumerate(tables):
-            if '<th' not in table.lower() and 'scope=' not in table.lower():
-                report.issues_found.append(AccessibilityIssue(
-                    issue_type="table_headers",
-                    severity="medium",
-                    element=f"Table {i+1}",
-                    description="Table lacks proper headers",
-                    suggestion="Add <th> elements or scope attributes",
-                    auto_fixable=False
-                ))
+            if "<th" not in table.lower() and "scope=" not in table.lower():
+                report.issues_found.append(
+                    AccessibilityIssue(
+                        issue_type="table_headers",
+                        severity="medium",
+                        element=f"Table {i+1}",
+                        description="Table lacks proper headers",
+                        suggestion="Add <th> elements or scope attributes",
+                        auto_fixable=False,
+                    )
+                )
 
     def _audit_language_accessibility(self, content: str, report: AccessibilityReport):
         """Audit language and readability for accessibility."""
         # Check for language attribute
-        if 'lang=' not in content.lower():
-            report.issues_found.append(AccessibilityIssue(
-                issue_type="missing_language",
-                severity="medium",
-                element="Document",
-                description="Document language not specified",
-                suggestion="Add lang attribute to document",
-                auto_fixable=True
-            ))
+        if "lang=" not in content.lower():
+            report.issues_found.append(
+                AccessibilityIssue(
+                    issue_type="missing_language",
+                    severity="medium",
+                    element="Document",
+                    description="Document language not specified",
+                    suggestion="Add lang attribute to document",
+                    auto_fixable=True,
+                )
+            )
 
         # Basic readability check
-        sentences = re.split(r'[.!?]+', content)
+        sentences = re.split(r"[.!?]+", content)
         if sentences:
             avg_sentence_length = sum(len(s.split()) for s in sentences) / len(sentences)
 
             if avg_sentence_length > 25:
-                report.issues_found.append(AccessibilityIssue(
-                    issue_type="complex_sentences",
-                    severity="low",
-                    element="Text content",
-                    description=f"Average sentence length is high ({avg_sentence_length:.1f} words)",
-                    suggestion="Consider breaking up long sentences for better readability",
-                    auto_fixable=False
-                ))
+                report.issues_found.append(
+                    AccessibilityIssue(
+                        issue_type="complex_sentences",
+                        severity="low",
+                        element="Text content",
+                        description=f"Average sentence length is high ({avg_sentence_length:.1f} words)",
+                        suggestion="Consider breaking up long sentences for better readability",
+                        auto_fixable=False,
+                    )
+                )
 
         # Check for color-only information
-        color_words = ['red', 'green', 'blue', 'yellow', 'purple', 'orange', 'pink', 'brown']
+        color_words = ["red", "green", "blue", "yellow", "purple", "orange", "pink", "brown"]
         color_references = sum(content.lower().count(color) for color in color_words)
 
         if color_references > 5:  # Arbitrary threshold
-            report.issues_found.append(AccessibilityIssue(
-                issue_type="color_dependency",
-                severity="medium",
-                element="Text content",
-                description="Content may rely on color for information",
-                suggestion="Ensure information is conveyed through text as well as color",
-                auto_fixable=False
-            ))
+            report.issues_found.append(
+                AccessibilityIssue(
+                    issue_type="color_dependency",
+                    severity="medium",
+                    element="Text content",
+                    description="Content may rely on color for information",
+                    suggestion="Ensure information is conveyed through text as well as color",
+                    auto_fixable=False,
+                )
+            )
 
     def _extract_image_context(self, content: str, image_name: str) -> str:
         """Extract context around image references."""
         # Look for image references in content
-        image_patterns = [
-            rf'{re.escape(image_name)}',
-            r'figure\s*\d*',
-            r'image\s*\d*'
-        ]
+        image_patterns = [rf"{re.escape(image_name)}", r"figure\s*\d*", r"image\s*\d*"]
 
         for pattern in image_patterns:
             matches = list(re.finditer(pattern, content, re.IGNORECASE))
@@ -927,12 +944,7 @@ class AccessibilityAuditor:
         base_score = 1.0
 
         # Deduct points for issues
-        severity_weights = {
-            'critical': 0.2,
-            'high': 0.1,
-            'medium': 0.05,
-            'low': 0.02
-        }
+        severity_weights = {"critical": 0.2, "high": 0.1, "medium": 0.05, "low": 0.02}
 
         for issue in report.issues_found:
             weight = severity_weights.get(issue.severity, 0.02)
@@ -947,31 +959,25 @@ class AccessibilityAuditor:
 
     def _check_wcag_compliance(self, report: AccessibilityReport) -> Dict[str, bool]:
         """Check WCAG 2.1 compliance levels."""
-        compliance = {
-            'A': True,
-            'AA': True,
-            'AAA': True
-        }
+        compliance = {"A": True, "AA": True, "AAA": True}
 
         # Check for critical issues that break WCAG compliance
         for issue in report.issues_found:
-            if issue.severity == 'critical':
-                compliance['A'] = False
-                compliance['AA'] = False
-                compliance['AAA'] = False
-            elif issue.severity == 'high':
-                compliance['AA'] = False
-                compliance['AAA'] = False
-            elif issue.severity == 'medium':
-                compliance['AAA'] = False
+            if issue.severity == "critical":
+                compliance["A"] = False
+                compliance["AA"] = False
+                compliance["AAA"] = False
+            elif issue.severity == "high":
+                compliance["AA"] = False
+                compliance["AAA"] = False
+            elif issue.severity == "medium":
+                compliance["AAA"] = False
 
         return compliance
 
 
 def generate_image_alt_texts(
-    images: List[Path],
-    content: str = "",
-    interactive: bool = False
+    images: List[Path], content: str = "", interactive: bool = False
 ) -> Dict[Path, str]:
     """Convenience function to generate alt-texts for multiple images.
 
@@ -992,13 +998,13 @@ def generate_image_alt_texts(
         context = ""
         if content:
             # Simple context extraction
-            lines = content.split('\n')
+            lines = content.split("\n")
             for i, line in enumerate(lines):
                 if image_name.lower() in line.lower():
                     # Get surrounding lines
                     start = max(0, i - 2)
                     end = min(len(lines), i + 3)
-                    context = ' '.join(lines[start:end])
+                    context = " ".join(lines[start:end])
                     break
 
         suggestions = generator.generate_alt_text(image_path, context, interactive)
@@ -1009,9 +1015,7 @@ def generate_image_alt_texts(
 
 
 def audit_accessibility(
-    content: str,
-    images: List[Path],
-    interactive: bool = False
+    content: str, images: List[Path], interactive: bool = False
 ) -> AccessibilityReport:
     """Convenience function for accessibility auditing.
 

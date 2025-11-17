@@ -25,6 +25,7 @@ import requests
 @dataclass
 class ConversionJob:
     """Represents a conversion job in the system."""
+
     job_id: str
     input_file_path: str
     output_file_path: Optional[str] = None
@@ -46,6 +47,7 @@ class ConversionJob:
 @dataclass
 class WebhookEndpoint:
     """Webhook endpoint configuration."""
+
     url: str
     secret: Optional[str] = None
     events: List[str] = field(default_factory=list)
@@ -58,6 +60,7 @@ class WebhookEndpoint:
 @dataclass
 class APIKey:
     """API key for authentication."""
+
     key_id: str
     key_hash: str
     name: str
@@ -72,6 +75,7 @@ class APIKey:
 @dataclass
 class RateLimitInfo:
     """Rate limiting information."""
+
     requests_made: int = 0
     window_start: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     requests_per_minute: int = 60
@@ -89,7 +93,8 @@ class DatabaseManager:
     def _init_database(self):
         """Initialize database schema."""
         with self._get_connection() as conn:
-            conn.executescript("""
+            conn.executescript(
+                """
                 CREATE TABLE IF NOT EXISTS conversion_jobs (
                     job_id TEXT PRIMARY KEY,
                     input_file_path TEXT NOT NULL,
@@ -149,42 +154,52 @@ class DatabaseManager:
                 CREATE INDEX IF NOT EXISTS idx_jobs_created ON conversion_jobs(created_at);
                 CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id);
                 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log(timestamp);
-            """)
+            """
+            )
 
     def _get_connection(self):
         """Get database connection."""
         return sqlite3.connect(
-            self.db_path,
-            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+            self.db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
         )
 
     def create_conversion_job(self, job: ConversionJob) -> str:
         """Create a new conversion job."""
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO conversion_jobs (
                     job_id, input_file_path, output_file_path, input_format,
                     output_format, status, created_at, started_at, completed_at,
                     error_message, metadata, user_id, priority, progress_percent,
                     file_size_bytes, estimated_duration_seconds
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                job.job_id, job.input_file_path, job.output_file_path,
-                job.input_format, job.output_format, job.status,
-                job.created_at, job.started_at, job.completed_at,
-                job.error_message, json.dumps(job.metadata), job.user_id,
-                job.priority, job.progress_percent, job.file_size_bytes,
-                job.estimated_duration_seconds
-            ))
+            """,
+                (
+                    job.job_id,
+                    job.input_file_path,
+                    job.output_file_path,
+                    job.input_format,
+                    job.output_format,
+                    job.status,
+                    job.created_at,
+                    job.started_at,
+                    job.completed_at,
+                    job.error_message,
+                    json.dumps(job.metadata),
+                    job.user_id,
+                    job.priority,
+                    job.progress_percent,
+                    job.file_size_bytes,
+                    job.estimated_duration_seconds,
+                ),
+            )
         return job.job_id
 
     def get_conversion_job(self, job_id: str) -> Optional[ConversionJob]:
         """Get conversion job by ID."""
         with self._get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT * FROM conversion_jobs WHERE job_id = ?",
-                (job_id,)
-            )
+            cursor = conn.execute("SELECT * FROM conversion_jobs WHERE job_id = ?", (job_id,))
             row = cursor.fetchone()
             if row:
                 return self._row_to_conversion_job(row)
@@ -193,22 +208,34 @@ class DatabaseManager:
     def update_conversion_job(self, job: ConversionJob):
         """Update conversion job."""
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 UPDATE conversion_jobs SET
                     output_file_path = ?, status = ?, started_at = ?,
                     completed_at = ?, error_message = ?, metadata = ?,
                     progress_percent = ?, estimated_duration_seconds = ?
                 WHERE job_id = ?
-            """, (
-                job.output_file_path, job.status, job.started_at,
-                job.completed_at, job.error_message,
-                json.dumps(job.metadata), job.progress_percent,
-                job.estimated_duration_seconds, job.job_id
-            ))
+            """,
+                (
+                    job.output_file_path,
+                    job.status,
+                    job.started_at,
+                    job.completed_at,
+                    job.error_message,
+                    json.dumps(job.metadata),
+                    job.progress_percent,
+                    job.estimated_duration_seconds,
+                    job.job_id,
+                ),
+            )
 
-    def list_conversion_jobs(self, user_id: Optional[str] = None,
-                           status: Optional[str] = None,
-                           limit: int = 100, offset: int = 0) -> List[ConversionJob]:
+    def list_conversion_jobs(
+        self,
+        user_id: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[ConversionJob]:
         """List conversion jobs with filtering."""
         query = "SELECT * FROM conversion_jobs WHERE 1=1"
         params = []
@@ -246,30 +273,37 @@ class DatabaseManager:
             priority=row[12],
             progress_percent=row[13],
             file_size_bytes=row[14],
-            estimated_duration_seconds=row[15]
+            estimated_duration_seconds=row[15],
         )
 
     def create_api_key(self, api_key: APIKey):
         """Create a new API key."""
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO api_keys (
                     key_id, key_hash, name, user_id, permissions,
                     rate_limit_per_minute, created_at, last_used_at, enabled
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                api_key.key_id, api_key.key_hash, api_key.name,
-                api_key.user_id, json.dumps(api_key.permissions),
-                api_key.rate_limit_per_minute, api_key.created_at,
-                api_key.last_used_at, api_key.enabled
-            ))
+            """,
+                (
+                    api_key.key_id,
+                    api_key.key_hash,
+                    api_key.name,
+                    api_key.user_id,
+                    json.dumps(api_key.permissions),
+                    api_key.rate_limit_per_minute,
+                    api_key.created_at,
+                    api_key.last_used_at,
+                    api_key.enabled,
+                ),
+            )
 
     def get_api_key(self, key_id: str) -> Optional[APIKey]:
         """Get API key by ID."""
         with self._get_connection() as conn:
             cursor = conn.execute(
-                "SELECT * FROM api_keys WHERE key_id = ? AND enabled = 1",
-                (key_id,)
+                "SELECT * FROM api_keys WHERE key_id = ? AND enabled = 1", (key_id,)
             )
             row = cursor.fetchone()
             if row:
@@ -282,7 +316,7 @@ class DatabaseManager:
                     rate_limit_per_minute=row[5],
                     created_at=row[6],
                     last_used_at=row[7],
-                    enabled=bool(row[8])
+                    enabled=bool(row[8]),
                 )
         return None
 
@@ -291,25 +325,38 @@ class DatabaseManager:
         with self._get_connection() as conn:
             conn.execute(
                 "UPDATE api_keys SET last_used_at = ? WHERE key_id = ?",
-                (datetime.now(timezone.utc), key_id)
+                (datetime.now(timezone.utc), key_id),
             )
 
-    def log_audit_event(self, user_id: Optional[str], action: str,
-                       resource_type: str = None, resource_id: str = None,
-                       details: Dict[str, Any] = None, ip_address: str = None,
-                       user_agent: str = None):
+    def log_audit_event(
+        self,
+        user_id: Optional[str],
+        action: str,
+        resource_type: str = None,
+        resource_id: str = None,
+        details: Dict[str, Any] = None,
+        ip_address: str = None,
+        user_agent: str = None,
+    ):
         """Log audit event."""
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO audit_log (
                     user_id, action, resource_type, resource_id,
                     details, ip_address, user_agent
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                user_id, action, resource_type, resource_id,
-                json.dumps(details) if details else None,
-                ip_address, user_agent
-            ))
+            """,
+                (
+                    user_id,
+                    action,
+                    resource_type,
+                    resource_id,
+                    json.dumps(details) if details else None,
+                    ip_address,
+                    user_agent,
+                ),
+            )
 
 
 class WebhookManager:
@@ -332,22 +379,29 @@ class WebhookManager:
                     headers=json.loads(row[4]) if row[4] else {},
                     enabled=bool(row[5]),
                     retry_count=row[6],
-                    timeout_seconds=row[7]
+                    timeout_seconds=row[7],
                 )
                 self.endpoints.append(endpoint)
 
     def add_endpoint(self, endpoint: WebhookEndpoint):
         """Add webhook endpoint."""
         with self.db_manager._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO webhook_endpoints (
                     url, secret, events, headers, enabled, retry_count, timeout_seconds
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                endpoint.url, endpoint.secret,
-                json.dumps(endpoint.events), json.dumps(endpoint.headers),
-                endpoint.enabled, endpoint.retry_count, endpoint.timeout_seconds
-            ))
+            """,
+                (
+                    endpoint.url,
+                    endpoint.secret,
+                    json.dumps(endpoint.events),
+                    json.dumps(endpoint.headers),
+                    endpoint.enabled,
+                    endpoint.retry_count,
+                    endpoint.timeout_seconds,
+                ),
+            )
         self.endpoints.append(endpoint)
 
     def send_webhook(self, event: str, data: Dict[str, Any]):
@@ -359,44 +413,41 @@ class WebhookManager:
     def _send_to_endpoint(self, endpoint: WebhookEndpoint, event: str, data: Dict[str, Any]):
         """Send webhook to specific endpoint with retries."""
         payload = {
-            'event': event,
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'data': data
+            "event": event,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "data": data,
         }
 
         headers = {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Docx2Shelf-Webhook/1.2.6',
-            **endpoint.headers
+            "Content-Type": "application/json",
+            "User-Agent": "Docx2Shelf-Webhook/1.2.6",
+            **endpoint.headers,
         }
 
         # Add signature if secret is configured
         if endpoint.secret:
             payload_json = json.dumps(payload, sort_keys=True)
             signature = hmac.new(
-                endpoint.secret.encode(),
-                payload_json.encode(),
-                hashlib.sha256
+                endpoint.secret.encode(), payload_json.encode(), hashlib.sha256
             ).hexdigest()
-            headers['X-Docx2Shelf-Signature'] = f'sha256={signature}'
+            headers["X-Docx2Shelf-Signature"] = f"sha256={signature}"
 
         # Send with retries
         for attempt in range(endpoint.retry_count + 1):
             try:
                 response = requests.post(
-                    endpoint.url,
-                    json=payload,
-                    headers=headers,
-                    timeout=endpoint.timeout_seconds
+                    endpoint.url, json=payload, headers=headers, timeout=endpoint.timeout_seconds
                 )
                 response.raise_for_status()
                 break  # Success
 
             except requests.RequestException as e:
                 if attempt == endpoint.retry_count:
-                    print(f"Failed to send webhook to {endpoint.url} after {endpoint.retry_count + 1} attempts: {e}")
+                    print(
+                        f"Failed to send webhook to {endpoint.url} after {endpoint.retry_count + 1} attempts: {e}"
+                    )
                 else:
-                    time.sleep(2 ** attempt)  # Exponential backoff
+                    time.sleep(2**attempt)  # Exponential backoff
 
 
 class RateLimiter:
@@ -406,16 +457,15 @@ class RateLimiter:
         self.clients: Dict[str, RateLimitInfo] = {}
         self.lock = Lock()
 
-    def is_allowed(self, client_id: str, requests_per_minute: int = 60,
-                   burst_size: int = 10) -> bool:
+    def is_allowed(
+        self, client_id: str, requests_per_minute: int = 60, burst_size: int = 10
+    ) -> bool:
         """Check if client is allowed to make request."""
         with self.lock:
             now = datetime.now(timezone.utc)
 
             if client_id not in self.clients:
-                self.clients[client_id] = RateLimitInfo(
-                    requests_per_minute=requests_per_minute
-                )
+                self.clients[client_id] = RateLimitInfo(requests_per_minute=requests_per_minute)
 
             client_info = self.clients[client_id]
 
@@ -476,15 +526,18 @@ class EnterpriseAPIManager:
         self.db_manager.update_api_key_usage(key_id)
         return stored_key
 
-    def create_conversion_job(self, input_file_path: str, user_id: str = None,
-                            metadata: Dict[str, Any] = None) -> ConversionJob:
+    def create_conversion_job(
+        self, input_file_path: str, user_id: str = None, metadata: Dict[str, Any] = None
+    ) -> ConversionJob:
         """Create new conversion job."""
         job = ConversionJob(
             job_id=str(uuid.uuid4()),
             input_file_path=input_file_path,
             user_id=user_id,
             metadata=metadata or {},
-            file_size_bytes=Path(input_file_path).stat().st_size if Path(input_file_path).exists() else 0
+            file_size_bytes=(
+                Path(input_file_path).stat().st_size if Path(input_file_path).exists() else 0
+            ),
         )
 
         job_id = self.db_manager.create_conversion_job(job)
@@ -495,15 +548,15 @@ class EnterpriseAPIManager:
             self.conversion_queue.sort(key=lambda x: (-x.priority, x.created_at))
 
         # Send webhook
-        self.webhook_manager.send_webhook('job.created', asdict(job))
+        self.webhook_manager.send_webhook("job.created", asdict(job))
 
         # Log audit event
         self.db_manager.log_audit_event(
             user_id=user_id,
-            action='job.created',
-            resource_type='conversion_job',
+            action="job.created",
+            resource_type="conversion_job",
             resource_id=job_id,
-            details={'input_file': input_file_path}
+            details={"input_file": input_file_path},
         )
 
         return job
@@ -515,9 +568,9 @@ class EnterpriseAPIManager:
                 return self.conversion_queue.pop(0)
         return None
 
-    def update_job_status(self, job_id: str, status: str,
-                         progress_percent: float = None,
-                         error_message: str = None):
+    def update_job_status(
+        self, job_id: str, status: str, progress_percent: float = None, error_message: str = None
+    ):
         """Update job status."""
         job = self.db_manager.get_conversion_job(job_id)
         if not job:
@@ -529,31 +582,32 @@ class EnterpriseAPIManager:
         if error_message:
             job.error_message = error_message
 
-        if status == 'running' and not job.started_at:
+        if status == "running" and not job.started_at:
             job.started_at = datetime.now(timezone.utc)
-        elif status in ['completed', 'failed']:
+        elif status in ["completed", "failed"]:
             job.completed_at = datetime.now(timezone.utc)
 
         self.db_manager.update_conversion_job(job)
 
         # Send webhook
-        event = f'job.{status}'
+        event = f"job.{status}"
         self.webhook_manager.send_webhook(event, asdict(job))
 
         # Log audit event
         self.db_manager.log_audit_event(
             user_id=job.user_id,
             action=event,
-            resource_type='conversion_job',
+            resource_type="conversion_job",
             resource_id=job_id,
-            details={'status': status, 'progress': progress_percent}
+            details={"status": status, "progress": progress_percent},
         )
 
-    def generate_api_key(self, name: str, user_id: str,
-                        permissions: List[str] | None = None) -> str:
+    def generate_api_key(
+        self, name: str, user_id: str, permissions: List[str] | None = None
+    ) -> str:
         """Generate new API key."""
         key_id = str(uuid.uuid4())[:8]
-        key_secret = str(uuid.uuid4()).replace('-', '')
+        key_secret = str(uuid.uuid4()).replace("-", "")
         api_key = f"{key_id}{key_secret}"
 
         key_hash = hashlib.sha256(api_key.encode()).hexdigest()
@@ -563,7 +617,7 @@ class EnterpriseAPIManager:
             key_hash=key_hash,
             name=name,
             user_id=user_id,
-            permissions=permissions or []
+            permissions=permissions or [],
         )
 
         self.db_manager.create_api_key(api_key_obj)
@@ -571,10 +625,10 @@ class EnterpriseAPIManager:
         # Log audit event
         self.db_manager.log_audit_event(
             user_id=user_id,
-            action='api_key.created',
-            resource_type='api_key',
+            action="api_key.created",
+            resource_type="api_key",
             resource_id=key_id,
-            details={'name': name, 'permissions': permissions}
+            details={"name": name, "permissions": permissions},
         )
 
         return api_key
@@ -584,12 +638,12 @@ class EnterpriseAPIManager:
         with self.queue_lock:
             pending_jobs = len(self.conversion_queue)
 
-        running_jobs = len(self.db_manager.list_conversion_jobs(status='running'))
+        running_jobs = len(self.db_manager.list_conversion_jobs(status="running"))
 
         return {
-            'pending_jobs': pending_jobs,
-            'running_jobs': running_jobs,
-            'queue_size': pending_jobs + running_jobs
+            "pending_jobs": pending_jobs,
+            "running_jobs": running_jobs,
+            "queue_size": pending_jobs + running_jobs,
         }
 
 
@@ -606,7 +660,7 @@ try:
         description="Enterprise-grade document conversion API with batch processing",
         version="1.2.8",
         docs_url="/docs",
-        redoc_url="/redoc"
+        redoc_url="/redoc",
     )
 
     # CORS middleware
@@ -680,7 +734,7 @@ try:
         return api_manager
 
     async def verify_api_key(
-        credentials: HTTPAuthorizationCredentials = Depends(security)
+        credentials: HTTPAuthorizationCredentials = Depends(security),
     ) -> APIKey:
         """Verify API key and return user info."""
         manager = get_api_manager()
@@ -691,8 +745,7 @@ try:
 
         # Check rate limiting
         if not manager.rate_limiter.is_allowed(
-            api_key_obj.key_id,
-            api_key_obj.rate_limit_per_minute
+            api_key_obj.key_id, api_key_obj.rate_limit_per_minute
         ):
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
@@ -705,7 +758,7 @@ try:
             "name": "Docx2Shelf Enterprise API",
             "version": "1.2.8",
             "description": "Enterprise document conversion API",
-            "docs": "/docs"
+            "docs": "/docs",
         }
 
     @app.get("/health", response_model=Dict[str, str])
@@ -717,7 +770,7 @@ try:
     async def create_batch_job(
         request: BatchJobRequest,
         background_tasks: BackgroundTasks,
-        api_key: APIKey = Depends(verify_api_key)
+        api_key: APIKey = Depends(verify_api_key),
     ):
         """Create a new batch processing job."""
         try:
@@ -734,7 +787,7 @@ try:
                 config=request.config,
                 processing_mode=request.processing_mode,
                 user_id=api_key.user_id,
-                webhook_url=request.webhook_url
+                webhook_url=request.webhook_url,
             )
 
             # Submit to batch processor
@@ -748,13 +801,13 @@ try:
                 action="batch_job.created",
                 resource_type="batch_job",
                 resource_id=job_id,
-                details={"name": request.name, "mode": request.processing_mode}
+                details={"name": request.name, "mode": request.processing_mode},
             )
 
             return JobResponse(
                 job_id=job_id,
                 status="pending",
-                message="Batch job created and queued for processing"
+                message="Batch job created and queued for processing",
             )
 
         except ValueError as e:
@@ -795,7 +848,7 @@ try:
                 "completed_at": job.completed_at,
                 "book_results": job.book_results,
                 "success_log": job.success_log[-10:],  # Last 10 successes
-                "error_log": job.error_log[-10:]  # Last 10 errors
+                "error_log": job.error_log[-10:],  # Last 10 errors
             }
 
         except HTTPException:
@@ -808,7 +861,7 @@ try:
         status: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
-        api_key: APIKey = Depends(verify_api_key)
+        api_key: APIKey = Depends(verify_api_key),
     ):
         """List batch jobs."""
         try:
@@ -822,7 +875,7 @@ try:
                 jobs = [job for job in jobs if job.user_id == api_key.user_id]
 
             # Apply pagination
-            jobs = jobs[offset:offset + limit]
+            jobs = jobs[offset : offset + limit]
 
             return [
                 {
@@ -835,7 +888,7 @@ try:
                     "processed_items": job.processed_items,
                     "failed_items": job.failed_items,
                     "created_at": job.created_at,
-                    "completed_at": job.completed_at
+                    "completed_at": job.completed_at,
                 }
                 for job in jobs
             ]
@@ -868,7 +921,7 @@ try:
                     user_id=api_key.user_id,
                     action="batch_job.cancelled",
                     resource_type="batch_job",
-                    resource_id=job_id
+                    resource_id=job_id,
                 )
 
                 return {"message": "Job cancelled successfully"}
@@ -884,7 +937,7 @@ try:
     async def convert_document(
         request: ConversionRequest,
         background_tasks: BackgroundTasks,
-        api_key: APIKey = Depends(verify_api_key)
+        api_key: APIKey = Depends(verify_api_key),
     ):
         """Convert a single document."""
         try:
@@ -903,8 +956,8 @@ try:
                     "hyphenate": request.hyphenate,
                     "justify": request.justify,
                     "output_directory": request.output_directory,
-                    "webhook_url": request.webhook_url
-                }
+                    "webhook_url": request.webhook_url,
+                },
             )
 
             # Start processing in background
@@ -913,7 +966,7 @@ try:
             return JobResponse(
                 job_id=job.job_id,
                 status="pending",
-                message="Conversion job created and queued for processing"
+                message="Conversion job created and queued for processing",
             )
 
         except Exception as e:
@@ -945,7 +998,7 @@ try:
                 "error_message": job.error_message,
                 "metadata": job.metadata,
                 "file_size_bytes": job.file_size_bytes,
-                "estimated_duration_seconds": job.estimated_duration_seconds
+                "estimated_duration_seconds": job.estimated_duration_seconds,
             }
 
         except HTTPException:
@@ -954,10 +1007,7 @@ try:
             raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
     @app.post("/api/v1/auth/keys", response_model=APIKeyResponse)
-    async def create_api_key(
-        request: APIKeyRequest,
-        api_key: APIKey = Depends(verify_api_key)
-    ):
+    async def create_api_key(request: APIKeyRequest, api_key: APIKey = Depends(verify_api_key)):
         """Create a new API key (admin only)."""
         if "*" not in api_key.permissions and "admin" not in api_key.permissions:
             raise HTTPException(status_code=403, detail="Admin access required")
@@ -965,15 +1015,11 @@ try:
         try:
             manager = get_api_manager()
             new_key = manager.generate_api_key(
-                name=request.name,
-                user_id=api_key.user_id,
-                permissions=request.permissions
+                name=request.name, user_id=api_key.user_id, permissions=request.permissions
             )
 
             return APIKeyResponse(
-                api_key=new_key,
-                key_id=new_key[:8],
-                message="API key created successfully"
+                api_key=new_key, key_id=new_key[:8], message="API key created successfully"
             )
 
         except Exception as e:
@@ -990,6 +1036,7 @@ try:
 
             # Get batch processor stats
             from .enterprise import get_batch_processor
+
             processor = get_batch_processor()
 
             # Get job statistics (user-filtered)
@@ -1003,8 +1050,7 @@ try:
                     user_id=api_key.user_id, limit=1000
                 )
                 batch_jobs = [
-                    job for job in processor.list_jobs()
-                    if job.user_id == api_key.user_id
+                    job for job in processor.list_jobs() if job.user_id == api_key.user_id
                 ]
 
             job_stats = {
@@ -1012,7 +1058,7 @@ try:
                 "completed_jobs": len([j for j in all_jobs if j.status == "completed"]),
                 "failed_jobs": len([j for j in all_jobs if j.status == "failed"]),
                 "running_jobs": len([j for j in all_jobs if j.status == "running"]),
-                "pending_jobs": len([j for j in all_jobs if j.status == "pending"])
+                "pending_jobs": len([j for j in all_jobs if j.status == "pending"]),
             }
 
             batch_stats = {
@@ -1020,14 +1066,14 @@ try:
                 "completed_batch_jobs": len([j for j in batch_jobs if j.status == "completed"]),
                 "failed_batch_jobs": len([j for j in batch_jobs if j.status == "failed"]),
                 "running_batch_jobs": len([j for j in batch_jobs if j.status == "running"]),
-                "pending_batch_jobs": len([j for j in batch_jobs if j.status == "pending"])
+                "pending_batch_jobs": len([j for j in batch_jobs if j.status == "pending"]),
             }
 
             return {
                 "conversion_jobs": job_stats,
                 "batch_jobs": batch_stats,
                 "queue_status": queue_status,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
         except Exception as e:
@@ -1066,7 +1112,7 @@ try:
                 description=job.metadata.get("description", ""),
                 publisher=job.metadata.get("publisher", ""),
                 subjects=job.metadata.get("subjects", []),
-                keywords=job.metadata.get("keywords", [])
+                keywords=job.metadata.get("keywords", []),
             )
 
             # Create build options
@@ -1078,7 +1124,7 @@ try:
                 justify=job.metadata.get("justify", True),
                 image_quality=job.metadata.get("image_quality", 85),
                 image_max_width=job.metadata.get("image_max_width", 1200),
-                image_max_height=job.metadata.get("image_max_height", 1600)
+                image_max_height=job.metadata.get("image_max_height", 1600),
             )
 
             # Determine output path
@@ -1098,11 +1144,7 @@ try:
                 manager.update_job_status(job_id, "running", 25)
 
                 # Convert to HTML/XHTML
-                convert_document(
-                    input_path,
-                    temp_path,
-                    options.split_at
-                )
+                convert_document(input_path, temp_path, options.split_at)
 
                 # Update progress
                 manager.update_job_status(job_id, "running", 75)
@@ -1112,7 +1154,7 @@ try:
                     content_dir=temp_path,
                     output_path=output_file,
                     metadata=metadata,
-                    options=options
+                    options=options,
                 )
 
                 # Update progress

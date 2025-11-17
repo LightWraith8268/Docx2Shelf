@@ -111,7 +111,7 @@ class ScrivenerIntegration(WritingToolIntegration):
     def authenticate(self, credentials: Dict[str, str]) -> bool:
         """Authenticate with Scrivener (file-based)."""
         # Scrivener works with local files, so authentication is just path validation
-        scrivener_path = credentials.get('scrivener_projects_path', '')
+        scrivener_path = credentials.get("scrivener_projects_path", "")
         if scrivener_path and Path(scrivener_path).exists():
             self.scrivener_path = Path(scrivener_path)
             self.authenticated = True
@@ -136,7 +136,7 @@ class ScrivenerIntegration(WritingToolIntegration):
                         format="rtf",
                         author="Unknown",
                         last_modified=str(rtf_file.stat().st_mtime),
-                        source_service="scrivener"
+                        source_service="scrivener",
                     )
                     documents.append(doc)
 
@@ -146,7 +146,7 @@ class ScrivenerIntegration(WritingToolIntegration):
         """Download document from Scrivener."""
         doc_path = Path(document_id)
         if doc_path.exists():
-            content = doc_path.read_text(encoding='utf-8', errors='ignore')
+            content = doc_path.read_text(encoding="utf-8", errors="ignore")
             return ExternalDocument(
                 document_id=document_id,
                 title=doc_path.stem,
@@ -154,7 +154,7 @@ class ScrivenerIntegration(WritingToolIntegration):
                 format="rtf",
                 author="Unknown",
                 last_modified=str(doc_path.stat().st_mtime),
-                source_service="scrivener"
+                source_service="scrivener",
             )
         return None
 
@@ -167,7 +167,7 @@ class ScrivenerIntegration(WritingToolIntegration):
                 "file_size": stat.st_size,
                 "created": stat.st_ctime,
                 "modified": stat.st_mtime,
-                "format": doc_path.suffix.lower()
+                "format": doc_path.suffix.lower(),
             }
         return {}
 
@@ -182,15 +182,15 @@ class NotionIntegration(WritingToolIntegration):
 
     def authenticate(self, credentials: Dict[str, str]) -> bool:
         """Authenticate with Notion API."""
-        self.api_key = credentials.get('api_key', '')
+        self.api_key = credentials.get("api_key", "")
         if not self.api_key:
             return False
 
         # Test authentication
         headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Notion-Version': '2022-06-28',
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {self.api_key}",
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json",
         }
 
         try:
@@ -206,9 +206,9 @@ class NotionIntegration(WritingToolIntegration):
             return []
 
         headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Notion-Version': '2022-06-28',
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {self.api_key}",
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json",
         }
 
         try:
@@ -217,26 +217,26 @@ class NotionIntegration(WritingToolIntegration):
                 f"{self.base_url}/search",
                 headers=headers,
                 json={"filter": {"object": "page"}},
-                timeout=30
+                timeout=30,
             )
 
             documents = []
             if response.status_code == 200:
                 data = response.json()
-                for page in data.get('results', []):
+                for page in data.get("results", []):
                     title = "Untitled"
-                    if page.get('properties', {}).get('title'):
-                        title = page['properties']['title']['title'][0]['plain_text']
+                    if page.get("properties", {}).get("title"):
+                        title = page["properties"]["title"]["title"][0]["plain_text"]
 
                     doc = ExternalDocument(
-                        document_id=page['id'],
+                        document_id=page["id"],
                         title=title,
                         content="",  # Will be loaded on download
                         format="notion",
                         author="Notion User",
-                        last_modified=page.get('last_edited_time', ''),
+                        last_modified=page.get("last_edited_time", ""),
                         source_service="notion",
-                        metadata={"url": page.get('url', '')}
+                        metadata={"url": page.get("url", "")},
                     )
                     documents.append(doc)
 
@@ -250,34 +250,27 @@ class NotionIntegration(WritingToolIntegration):
         if not self.authenticated:
             return None
 
-        headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Notion-Version': '2022-06-28'
-        }
+        headers = {"Authorization": f"Bearer {self.api_key}", "Notion-Version": "2022-06-28"}
 
         try:
             # Get page content
             response = requests.get(
-                f"{self.base_url}/blocks/{document_id}/children",
-                headers=headers,
-                timeout=30
+                f"{self.base_url}/blocks/{document_id}/children", headers=headers, timeout=30
             )
 
             if response.status_code == 200:
-                blocks = response.json().get('results', [])
+                blocks = response.json().get("results", [])
                 content = self._blocks_to_markdown(blocks)
 
                 # Get page metadata
                 page_response = requests.get(
-                    f"{self.base_url}/pages/{document_id}",
-                    headers=headers,
-                    timeout=30
+                    f"{self.base_url}/pages/{document_id}", headers=headers, timeout=30
                 )
 
                 page_data = page_response.json() if page_response.status_code == 200 else {}
                 title = "Untitled"
-                if page_data.get('properties', {}).get('title'):
-                    title = page_data['properties']['title']['title'][0]['plain_text']
+                if page_data.get("properties", {}).get("title"):
+                    title = page_data["properties"]["title"]["title"][0]["plain_text"]
 
                 return ExternalDocument(
                     document_id=document_id,
@@ -285,8 +278,8 @@ class NotionIntegration(WritingToolIntegration):
                     content=content,
                     format="markdown",
                     author="Notion User",
-                    last_modified=page_data.get('last_edited_time', ''),
-                    source_service="notion"
+                    last_modified=page_data.get("last_edited_time", ""),
+                    source_service="notion",
                 )
 
         except Exception:
@@ -299,36 +292,40 @@ class NotionIntegration(WritingToolIntegration):
         content = []
 
         for block in blocks:
-            block_type = block.get('type', '')
+            block_type = block.get("type", "")
 
-            if block_type == 'paragraph':
-                text = self._extract_rich_text(block.get('paragraph', {}).get('rich_text', []))
+            if block_type == "paragraph":
+                text = self._extract_rich_text(block.get("paragraph", {}).get("rich_text", []))
                 content.append(text)
 
-            elif block_type == 'heading_1':
-                text = self._extract_rich_text(block.get('heading_1', {}).get('rich_text', []))
+            elif block_type == "heading_1":
+                text = self._extract_rich_text(block.get("heading_1", {}).get("rich_text", []))
                 content.append(f"# {text}")
 
-            elif block_type == 'heading_2':
-                text = self._extract_rich_text(block.get('heading_2', {}).get('rich_text', []))
+            elif block_type == "heading_2":
+                text = self._extract_rich_text(block.get("heading_2", {}).get("rich_text", []))
                 content.append(f"## {text}")
 
-            elif block_type == 'heading_3':
-                text = self._extract_rich_text(block.get('heading_3', {}).get('rich_text', []))
+            elif block_type == "heading_3":
+                text = self._extract_rich_text(block.get("heading_3", {}).get("rich_text", []))
                 content.append(f"### {text}")
 
-            elif block_type == 'bulleted_list_item':
-                text = self._extract_rich_text(block.get('bulleted_list_item', {}).get('rich_text', []))
+            elif block_type == "bulleted_list_item":
+                text = self._extract_rich_text(
+                    block.get("bulleted_list_item", {}).get("rich_text", [])
+                )
                 content.append(f"- {text}")
 
-            elif block_type == 'numbered_list_item':
-                text = self._extract_rich_text(block.get('numbered_list_item', {}).get('rich_text', []))
+            elif block_type == "numbered_list_item":
+                text = self._extract_rich_text(
+                    block.get("numbered_list_item", {}).get("rich_text", [])
+                )
                 content.append(f"1. {text}")
 
-            elif block_type == 'code':
-                code = block.get('code', {})
-                text = self._extract_rich_text(code.get('rich_text', []))
-                language = code.get('language', '')
+            elif block_type == "code":
+                code = block.get("code", {})
+                text = self._extract_rich_text(code.get("rich_text", []))
+                language = code.get("language", "")
                 content.append(f"```{language}\n{text}\n```")
 
             content.append("")  # Add line break
@@ -337,23 +334,18 @@ class NotionIntegration(WritingToolIntegration):
 
     def _extract_rich_text(self, rich_text: List[Dict]) -> str:
         """Extract plain text from Notion rich text."""
-        return "".join(item.get('plain_text', '') for item in rich_text)
+        return "".join(item.get("plain_text", "") for item in rich_text)
 
     def get_document_metadata(self, document_id: str) -> Dict[str, Any]:
         """Get Notion page metadata."""
         if not self.authenticated:
             return {}
 
-        headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Notion-Version': '2022-06-28'
-        }
+        headers = {"Authorization": f"Bearer {self.api_key}", "Notion-Version": "2022-06-28"}
 
         try:
             response = requests.get(
-                f"{self.base_url}/pages/{document_id}",
-                headers=headers,
-                timeout=30
+                f"{self.base_url}/pages/{document_id}", headers=headers, timeout=30
             )
 
             if response.status_code == 200:
@@ -383,28 +375,23 @@ class GoogleDocsIntegration(WritingToolIntegration):
         - 'client_id': OAuth client ID (for future token refresh)
         - 'client_secret': OAuth client secret (for future token refresh)
         """
-        self.access_token = credentials.get('access_token', '').strip()
+        self.access_token = credentials.get("access_token", "").strip()
         if not self.access_token:
             return False
 
         # Test authentication with Google Drive API
-        headers = {
-            'Authorization': f'Bearer {self.access_token}',
-            'Accept': 'application/json'
-        }
+        headers = {"Authorization": f"Bearer {self.access_token}", "Accept": "application/json"}
 
         try:
             # Verify token by getting current user info
             response = requests.get(
-                f"{self.base_url}/about?fields=user",
-                headers=headers,
-                timeout=30
+                f"{self.base_url}/about?fields=user", headers=headers, timeout=30
             )
 
             if response.status_code == 200:
                 data = response.json()
-                user = data.get('user', {})
-                self.user_email = user.get('emailAddress', 'Unknown User')
+                user = data.get("user", {})
+                self.user_email = user.get("emailAddress", "Unknown User")
                 self.authenticated = True
                 return True
             else:
@@ -418,46 +405,40 @@ class GoogleDocsIntegration(WritingToolIntegration):
         if not self.authenticated or not self.access_token:
             return []
 
-        headers = {
-            'Authorization': f'Bearer {self.access_token}',
-            'Accept': 'application/json'
-        }
+        headers = {"Authorization": f"Bearer {self.access_token}", "Accept": "application/json"}
 
         try:
             # Search for Google Docs documents
             # mimeType: application/vnd.google-apps.document
             query = "mimeType='application/vnd.google-apps.document'"
             params = {
-                'q': query,
-                'fields': 'files(id,name,mimeType,modifiedTime,owners,webViewLink)',
-                'pageSize': 50,
-                'orderBy': 'modifiedTime desc'
+                "q": query,
+                "fields": "files(id,name,mimeType,modifiedTime,owners,webViewLink)",
+                "pageSize": 50,
+                "orderBy": "modifiedTime desc",
             }
 
             response = requests.get(
-                f"{self.base_url}/files",
-                headers=headers,
-                params=params,
-                timeout=30
+                f"{self.base_url}/files", headers=headers, params=params, timeout=30
             )
 
             documents = []
             if response.status_code == 200:
                 data = response.json()
-                for file_item in data.get('files', []):
-                    owner = file_item.get('owners', [{}])[0]
+                for file_item in data.get("files", []):
+                    owner = file_item.get("owners", [{}])[0]
                     doc = ExternalDocument(
-                        document_id=file_item['id'],
-                        title=file_item['name'],
+                        document_id=file_item["id"],
+                        title=file_item["name"],
                         content="",  # Will be loaded on download
                         format="gdoc",
-                        author=owner.get('displayName', 'Unknown'),
-                        last_modified=file_item.get('modifiedTime', ''),
+                        author=owner.get("displayName", "Unknown"),
+                        last_modified=file_item.get("modifiedTime", ""),
                         source_service="google_docs",
                         metadata={
-                            'webViewLink': file_item.get('webViewLink', ''),
-                            'mimeType': file_item.get('mimeType', '')
-                        }
+                            "webViewLink": file_item.get("webViewLink", ""),
+                            "mimeType": file_item.get("mimeType", ""),
+                        },
                     )
                     documents.append(doc)
 
@@ -475,24 +456,19 @@ class GoogleDocsIntegration(WritingToolIntegration):
         if not self.authenticated or not self.access_token:
             return None
 
-        headers = {
-            'Authorization': f'Bearer {self.access_token}',
-            'Accept': 'application/json'
-        }
+        headers = {"Authorization": f"Bearer {self.access_token}", "Accept": "application/json"}
 
         try:
             # Get document metadata
             response = requests.get(
-                f"{self.docs_url}/documents/{document_id}",
-                headers=headers,
-                timeout=30
+                f"{self.docs_url}/documents/{document_id}", headers=headers, timeout=30
             )
 
             if response.status_code != 200:
                 return None
 
             doc_data = response.json()
-            title = doc_data.get('title', 'Untitled')
+            title = doc_data.get("title", "Untitled")
 
             # Extract content from document structure
             content = self._extract_content_from_gdoc(doc_data)
@@ -501,25 +477,25 @@ class GoogleDocsIntegration(WritingToolIntegration):
             drive_response = requests.get(
                 f"{self.base_url}/files/{document_id}",
                 headers=headers,
-                params={'fields': 'modifiedTime,owners'},
-                timeout=30
+                params={"fields": "modifiedTime,owners"},
+                timeout=30,
             )
 
             drive_data = drive_response.json() if drive_response.status_code == 200 else {}
-            owner = drive_data.get('owners', [{}])[0]
+            owner = drive_data.get("owners", [{}])[0]
 
             return ExternalDocument(
                 document_id=document_id,
                 title=title,
                 content=content,
                 format="markdown",
-                author=owner.get('displayName', 'Unknown'),
-                last_modified=drive_data.get('modifiedTime', ''),
+                author=owner.get("displayName", "Unknown"),
+                last_modified=drive_data.get("modifiedTime", ""),
                 source_service="google_docs",
                 metadata={
-                    'revisionId': doc_data.get('revisionId', ''),
-                    'suggestionsEnabled': doc_data.get('suggestionsEnabled', False)
-                }
+                    "revisionId": doc_data.get("revisionId", ""),
+                    "suggestionsEnabled": doc_data.get("suggestionsEnabled", False),
+                },
             )
 
         except Exception:
@@ -530,25 +506,20 @@ class GoogleDocsIntegration(WritingToolIntegration):
         if not self.authenticated or not self.access_token:
             return {}
 
-        headers = {
-            'Authorization': f'Bearer {self.access_token}',
-            'Accept': 'application/json'
-        }
+        headers = {"Authorization": f"Bearer {self.access_token}", "Accept": "application/json"}
 
         try:
             response = requests.get(
-                f"{self.docs_url}/documents/{document_id}",
-                headers=headers,
-                timeout=30
+                f"{self.docs_url}/documents/{document_id}", headers=headers, timeout=30
             )
 
             if response.status_code == 200:
                 doc = response.json()
                 return {
-                    'title': doc.get('title', ''),
-                    'revision_id': doc.get('revisionId', ''),
-                    'suggestions_enabled': doc.get('suggestionsEnabled', False),
-                    'body': len(doc.get('body', {}).get('content', [])) > 0
+                    "title": doc.get("title", ""),
+                    "revision_id": doc.get("revisionId", ""),
+                    "suggestions_enabled": doc.get("suggestionsEnabled", False),
+                    "body": len(doc.get("body", {}).get("content", [])) > 0,
                 }
 
         except Exception:
@@ -563,30 +534,30 @@ class GoogleDocsIntegration(WritingToolIntegration):
         """
         try:
             content_parts = []
-            body = doc_data.get('body', {})
-            content = body.get('content', [])
+            body = doc_data.get("body", {})
+            content = body.get("content", [])
 
             for element in content:
-                if 'paragraph' in element:
-                    paragraph = element['paragraph']
+                if "paragraph" in element:
+                    paragraph = element["paragraph"]
                     text = self._extract_text_from_paragraph(paragraph)
                     if text.strip():
                         # Check for heading style
-                        style = paragraph.get('paragraphStyle', {})
-                        named_style = style.get('namedStyleType', 'NORMAL_TEXT')
+                        style = paragraph.get("paragraphStyle", {})
+                        named_style = style.get("namedStyleType", "NORMAL_TEXT")
 
-                        if named_style.startswith('HEADING_'):
-                            level = int(named_style.split('_')[1])
+                        if named_style.startswith("HEADING_"):
+                            level = int(named_style.split("_")[1])
                             content_parts.append(f"{'#' * level} {text}")
                         else:
                             content_parts.append(text)
 
-                elif 'table' in element:
-                    table_text = self._extract_text_from_table(element['table'])
+                elif "table" in element:
+                    table_text = self._extract_text_from_table(element["table"])
                     if table_text.strip():
                         content_parts.append(table_text)
 
-            return '\n\n'.join(content_parts)
+            return "\n\n".join(content_parts)
 
         except Exception:
             return ""
@@ -595,13 +566,13 @@ class GoogleDocsIntegration(WritingToolIntegration):
         """Extract text from a paragraph element."""
         try:
             text_parts = []
-            elements = paragraph.get('elements', [])
+            elements = paragraph.get("elements", [])
 
             for elem in elements:
-                if 'textRun' in elem:
-                    text_parts.append(elem['textRun'].get('content', ''))
+                if "textRun" in elem:
+                    text_parts.append(elem["textRun"].get("content", ""))
 
-            return ''.join(text_parts).strip()
+            return "".join(text_parts).strip()
 
         except Exception:
             return ""
@@ -610,21 +581,19 @@ class GoogleDocsIntegration(WritingToolIntegration):
         """Extract text from a table element (simplified)."""
         try:
             rows = []
-            for row in table.get('tableRows', []):
+            for row in table.get("tableRows", []):
                 cells = []
-                for cell in row.get('tableCells', []):
+                for cell in row.get("tableCells", []):
                     cell_text = []
-                    for content in cell.get('content', []):
-                        if 'paragraph' in content:
-                            text = self._extract_text_from_paragraph(
-                                content['paragraph']
-                            )
+                    for content in cell.get("content", []):
+                        if "paragraph" in content:
+                            text = self._extract_text_from_paragraph(content["paragraph"])
                             if text:
                                 cell_text.append(text)
-                    cells.append(' | '.join(cell_text))
-                rows.append(' | '.join(cells))
+                    cells.append(" | ".join(cell_text))
+                rows.append(" | ".join(cells))
 
-            return '\n'.join(rows)
+            return "\n".join(rows)
 
         except Exception:
             return ""
@@ -635,42 +604,42 @@ class PublishingPlatformConnector:
 
     def __init__(self):
         self.platforms = {
-            'kdp': PublishingTarget(
-                platform_id='kdp',
-                platform_name='Amazon Kindle Direct Publishing',
-                api_endpoint='https://kdp.amazon.com/api/v1',
-                supported_formats=['epub', 'mobi'],
+            "kdp": PublishingTarget(
+                platform_id="kdp",
+                platform_name="Amazon Kindle Direct Publishing",
+                api_endpoint="https://kdp.amazon.com/api/v1",
+                supported_formats=["epub", "mobi"],
                 metadata_mapping={
-                    'title': 'book_title',
-                    'author': 'author_name',
-                    'description': 'book_description',
-                    'isbn': 'isbn',
-                    'language': 'language_code'
-                }
+                    "title": "book_title",
+                    "author": "author_name",
+                    "description": "book_description",
+                    "isbn": "isbn",
+                    "language": "language_code",
+                },
             ),
-            'apple_books': PublishingTarget(
-                platform_id='apple_books',
-                platform_name='Apple Books',
-                api_endpoint='https://books.apple.com/api/v1',
-                supported_formats=['epub'],
+            "apple_books": PublishingTarget(
+                platform_id="apple_books",
+                platform_name="Apple Books",
+                api_endpoint="https://books.apple.com/api/v1",
+                supported_formats=["epub"],
                 metadata_mapping={
-                    'title': 'title',
-                    'author': 'author',
-                    'description': 'summary',
-                    'isbn': 'isbn'
-                }
+                    "title": "title",
+                    "author": "author",
+                    "description": "summary",
+                    "isbn": "isbn",
+                },
             ),
-            'kobo': PublishingTarget(
-                platform_id='kobo',
-                platform_name='Kobo Writing Life',
-                api_endpoint='https://writinglife.kobo.com/api/v1',
-                supported_formats=['epub'],
+            "kobo": PublishingTarget(
+                platform_id="kobo",
+                platform_name="Kobo Writing Life",
+                api_endpoint="https://writinglife.kobo.com/api/v1",
+                supported_formats=["epub"],
                 metadata_mapping={
-                    'title': 'title',
-                    'author': 'contributor',
-                    'description': 'description'
-                }
-            )
+                    "title": "title",
+                    "author": "contributor",
+                    "description": "description",
+                },
+            ),
         }
 
     def get_platform(self, platform_id: str) -> Optional[PublishingTarget]:
@@ -703,11 +672,11 @@ class PublishingPlatformConnector:
             issues.append(f"Format not supported by {platform.platform_name}")
 
         # Platform-specific validations
-        if platform_id == 'kdp':
+        if platform_id == "kdp":
             issues.extend(self._validate_kdp_requirements(epub_path))
-        elif platform_id == 'apple_books':
+        elif platform_id == "apple_books":
             issues.extend(self._validate_apple_requirements(epub_path))
-        elif platform_id == 'kobo':
+        elif platform_id == "kobo":
             issues.extend(self._validate_kobo_requirements(epub_path))
 
         return len(issues) == 0, issues
@@ -744,9 +713,9 @@ class TemplateGallery:
         try:
             params = {}
             if query:
-                params['q'] = query
+                params["q"] = query
             if category:
-                params['category'] = category
+                params["category"] = category
 
             response = requests.get(f"{self.api_base}/templates", params=params, timeout=30)
             response.raise_for_status()
@@ -754,7 +723,7 @@ class TemplateGallery:
             data = response.json()
             templates = []
 
-            for template_data in data.get('templates', []):
+            for template_data in data.get("templates", []):
                 template = TemplateItem(**template_data)
                 templates.append(template)
 
@@ -771,16 +740,16 @@ class TemplateGallery:
             response.raise_for_status()
             template_data = response.json()
 
-            download_url = template_data.get('download_url', '')
+            download_url = template_data.get("download_url", "")
             if not download_url:
                 return False
 
             # Download template
-            with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as temp_file:
+            with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as temp_file:
                 urlretrieve(download_url, temp_file.name)
 
                 # Extract template
-                with zipfile.ZipFile(temp_file.name, 'r') as zip_ref:
+                with zipfile.ZipFile(temp_file.name, "r") as zip_ref:
                     zip_ref.extractall(output_dir)
 
                 Path(temp_file.name).unlink()
@@ -796,7 +765,7 @@ class TemplateGallery:
             response = requests.get(f"{self.api_base}/categories", timeout=30)
             response.raise_for_status()
             data = response.json()
-            return data.get('categories', [])
+            return data.get("categories", [])
 
         except Exception:
             return []
@@ -810,9 +779,9 @@ class EcosystemIntegrationManager:
         self.config_dir.mkdir(parents=True, exist_ok=True)
 
         self.writing_tools = {
-            'scrivener': ScrivenerIntegration(),
-            'notion': NotionIntegration(),
-            'google_docs': GoogleDocsIntegration()
+            "scrivener": ScrivenerIntegration(),
+            "notion": NotionIntegration(),
+            "google_docs": GoogleDocsIntegration(),
         }
 
         self.publishing_connector = PublishingPlatformConnector()
@@ -825,7 +794,7 @@ class EcosystemIntegrationManager:
         config_file = self.config_dir / "integrations.json"
         if config_file.exists():
             try:
-                with open(config_file, 'r', encoding='utf-8') as f:
+                with open(config_file, "r", encoding="utf-8") as f:
                     self.configurations = json.load(f)
             except Exception:
                 self.configurations = {}
@@ -835,17 +804,17 @@ class EcosystemIntegrationManager:
     def save_configurations(self):
         """Save integration configurations."""
         config_file = self.config_dir / "integrations.json"
-        with open(config_file, 'w', encoding='utf-8') as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             json.dump(self.configurations, f, indent=2)
 
     def configure_integration(self, service_name: str, config: IntegrationConfig):
         """Configure an integration."""
         self.configurations[service_name] = {
-            'service_name': config.service_name,
-            'api_endpoint': config.api_endpoint,
-            'api_key': config.api_key,
-            'enabled': config.enabled,
-            'settings': config.settings
+            "service_name": config.service_name,
+            "api_endpoint": config.api_endpoint,
+            "api_key": config.api_key,
+            "enabled": config.enabled,
+            "settings": config.settings,
         }
         self.save_configurations()
 

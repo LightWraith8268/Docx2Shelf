@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class KindlePreviewerConfig:
     """Configuration for Kindle Previewer integration."""
+
     auto_detect_installation: bool = True
     custom_previewer_path: Optional[Path] = None
     generate_conversion_log: bool = True
@@ -34,6 +35,7 @@ class KindlePreviewerConfig:
 @dataclass
 class PreviewerIssue:
     """Issue found by Kindle Previewer."""
+
     severity: str  # error, warning, info
     code: str
     message: str
@@ -45,6 +47,7 @@ class PreviewerIssue:
 @dataclass
 class ConversionReport:
     """Kindle Previewer conversion report."""
+
     success: bool
     output_file: Optional[Path]
     log_file: Optional[Path]
@@ -71,7 +74,9 @@ class KindlePreviewerIntegration:
                 logger.info(f"Using custom Kindle Previewer: {self.previewer_path}")
                 return
             else:
-                logger.warning(f"Custom Kindle Previewer path not found: {self.config.custom_previewer_path}")
+                logger.warning(
+                    f"Custom Kindle Previewer path not found: {self.config.custom_previewer_path}"
+                )
 
         if not self.config.auto_detect_installation:
             return
@@ -81,19 +86,42 @@ class KindlePreviewerIntegration:
 
         if system == "windows":
             possible_paths = [
-                Path(r"C:\Program Files (x86)\Amazon\Kindle Previewer 3\lib\fc\bin\kindlepreviewer.exe"),
+                Path(
+                    r"C:\Program Files (x86)\Amazon\Kindle Previewer 3\lib\fc\bin\kindlepreviewer.exe"
+                ),
                 Path(r"C:\Program Files\Amazon\Kindle Previewer 3\lib\fc\bin\kindlepreviewer.exe"),
-                Path.home() / "AppData" / "Local" / "Amazon" / "Kindle Previewer 3" / "lib" / "fc" / "bin" / "kindlepreviewer.exe"
+                Path.home()
+                / "AppData"
+                / "Local"
+                / "Amazon"
+                / "Kindle Previewer 3"
+                / "lib"
+                / "fc"
+                / "bin"
+                / "kindlepreviewer.exe",
             ]
         elif system == "darwin":  # macOS
             possible_paths = [
                 Path("/Applications/Kindle Previewer 3.app/Contents/MacOS/Kindle Previewer 3"),
-                Path.home() / "Applications" / "Kindle Previewer 3.app" / "Contents" / "MacOS" / "Kindle Previewer 3"
+                Path.home()
+                / "Applications"
+                / "Kindle Previewer 3.app"
+                / "Contents"
+                / "MacOS"
+                / "Kindle Previewer 3",
             ]
         else:  # Linux and others
             possible_paths = [
-                Path.home() / ".local" / "share" / "Amazon" / "Kindle Previewer 3" / "lib" / "fc" / "bin" / "kindlepreviewer",
-                Path("/opt/amazon/kindle-previewer-3/lib/fc/bin/kindlepreviewer")
+                Path.home()
+                / ".local"
+                / "share"
+                / "Amazon"
+                / "Kindle Previewer 3"
+                / "lib"
+                / "fc"
+                / "bin"
+                / "kindlepreviewer",
+                Path("/opt/amazon/kindle-previewer-3/lib/fc/bin/kindlepreviewer"),
             ]
 
         # Try to find in PATH first
@@ -113,7 +141,9 @@ class KindlePreviewerIntegration:
                 logger.info(f"Found Kindle Previewer: {self.previewer_path}")
                 return
 
-        logger.info("Kindle Previewer not found. Install from https://kdp.amazon.com/en_US/help/topic/G202131170")
+        logger.info(
+            "Kindle Previewer not found. Install from https://kdp.amazon.com/en_US/help/topic/G202131170"
+        )
 
     def is_available(self) -> bool:
         """Check if Kindle Previewer is available."""
@@ -135,15 +165,17 @@ class KindlePreviewerIntegration:
                 success=False,
                 output_file=None,
                 log_file=None,
-                issues=[PreviewerIssue(
-                    severity="error",
-                    code="KP_NOT_FOUND",
-                    message="Kindle Previewer not found. Please install from Amazon KDP."
-                )],
+                issues=[
+                    PreviewerIssue(
+                        severity="error",
+                        code="KP_NOT_FOUND",
+                        message="Kindle Previewer not found. Please install from Amazon KDP.",
+                    )
+                ],
                 conversion_time=0.0,
                 file_size_original=0,
                 file_size_converted=None,
-                metadata={}
+                metadata={},
             )
 
         if not epub_path.exists():
@@ -151,18 +183,21 @@ class KindlePreviewerIntegration:
                 success=False,
                 output_file=None,
                 log_file=None,
-                issues=[PreviewerIssue(
-                    severity="error",
-                    code="FILE_NOT_FOUND",
-                    message=f"EPUB file not found: {epub_path}"
-                )],
+                issues=[
+                    PreviewerIssue(
+                        severity="error",
+                        code="FILE_NOT_FOUND",
+                        message=f"EPUB file not found: {epub_path}",
+                    )
+                ],
                 conversion_time=0.0,
                 file_size_original=0,
                 file_size_converted=None,
-                metadata={}
+                metadata={},
             )
 
         import time
+
         start_time = time.time()
         file_size_original = epub_path.stat().st_size
 
@@ -179,20 +214,22 @@ class KindlePreviewerIntegration:
             conversion_time = time.time() - start_time
 
             # Parse results
-            issues = self._parse_conversion_log(result.get('log_file'))
+            issues = self._parse_conversion_log(result.get("log_file"))
 
-            output_file = result.get('output_file')
-            file_size_converted = output_file.stat().st_size if output_file and output_file.exists() else None
+            output_file = result.get("output_file")
+            file_size_converted = (
+                output_file.stat().st_size if output_file and output_file.exists() else None
+            )
 
             return ConversionReport(
-                success=result.get('success', False),
+                success=result.get("success", False),
                 output_file=output_file,
-                log_file=result.get('log_file'),
+                log_file=result.get("log_file"),
                 issues=issues,
                 conversion_time=conversion_time,
                 file_size_original=file_size_original,
                 file_size_converted=file_size_converted,
-                metadata=result.get('metadata', {})
+                metadata=result.get("metadata", {}),
             )
 
         except Exception as e:
@@ -201,15 +238,17 @@ class KindlePreviewerIntegration:
                 success=False,
                 output_file=None,
                 log_file=None,
-                issues=[PreviewerIssue(
-                    severity="error",
-                    code="CONVERSION_FAILED",
-                    message=f"Conversion failed: {str(e)}"
-                )],
+                issues=[
+                    PreviewerIssue(
+                        severity="error",
+                        code="CONVERSION_FAILED",
+                        message=f"Conversion failed: {str(e)}",
+                    )
+                ],
                 conversion_time=time.time() - start_time,
                 file_size_original=file_size_original,
                 file_size_converted=None,
-                metadata={}
+                metadata={},
             )
 
     def _run_conversion(self, epub_path: Path, output_dir: Path) -> Dict[str, Any]:
@@ -219,8 +258,10 @@ class KindlePreviewerIntegration:
         cmd = [
             str(self.previewer_path),
             str(epub_path),
-            "-o", str(output_dir),
-            "-f", self.config.output_format
+            "-o",
+            str(output_dir),
+            "-f",
+            self.config.output_format,
         ]
 
         if self.config.device_type:
@@ -238,7 +279,7 @@ class KindlePreviewerIntegration:
                 capture_output=True,
                 text=True,
                 timeout=self.config.timeout_seconds,
-                cwd=output_dir
+                cwd=output_dir,
             )
 
             # Find output files
@@ -248,7 +289,7 @@ class KindlePreviewerIntegration:
             # Save stdout/stderr to log file if no log file found
             if not log_file and (process.stdout or process.stderr):
                 log_file = output_dir / f"{epub_path.stem}_conversion.log"
-                with open(log_file, 'w', encoding='utf-8') as f:
+                with open(log_file, "w", encoding="utf-8") as f:
                     if process.stdout:
                         f.write("=== STDOUT ===\n")
                         f.write(process.stdout)
@@ -261,18 +302,18 @@ class KindlePreviewerIntegration:
             success = process.returncode == 0 and output_file and output_file.exists()
 
             return {
-                'success': success,
-                'output_file': output_file,
-                'log_file': log_file,
-                'returncode': process.returncode,
-                'stdout': process.stdout,
-                'stderr': process.stderr,
-                'metadata': {
-                    'command': ' '.join(cmd),
-                    'returncode': process.returncode,
-                    'output_format': self.config.output_format,
-                    'device_type': self.config.device_type
-                }
+                "success": success,
+                "output_file": output_file,
+                "log_file": log_file,
+                "returncode": process.returncode,
+                "stdout": process.stdout,
+                "stderr": process.stderr,
+                "metadata": {
+                    "command": " ".join(cmd),
+                    "returncode": process.returncode,
+                    "output_format": self.config.output_format,
+                    "device_type": self.config.device_type,
+                },
             }
 
         except subprocess.TimeoutExpired:
@@ -284,11 +325,7 @@ class KindlePreviewerIntegration:
         """Find the converted file in output directory."""
 
         # Common output file patterns
-        extensions = {
-            "KFX": [".kfx"],
-            "AZW3": [".azw3"],
-            "MOBI": [".mobi", ".azw"]
-        }
+        extensions = {"KFX": [".kfx"], "AZW3": [".azw3"], "MOBI": [".mobi", ".azw"]}
 
         format_extensions = extensions.get(self.config.output_format, [".kfx", ".azw3", ".mobi"])
 
@@ -312,7 +349,7 @@ class KindlePreviewerIntegration:
             f"{base_name}.log",
             f"{base_name}_conversion.log",
             "conversion.log",
-            "previewer.log"
+            "previewer.log",
         ]
 
         for pattern in log_patterns:
@@ -335,7 +372,7 @@ class KindlePreviewerIntegration:
             return issues
 
         try:
-            log_content = log_file.read_text(encoding='utf-8', errors='ignore')
+            log_content = log_file.read_text(encoding="utf-8", errors="ignore")
 
             # Parse different types of log messages
             issues.extend(self._parse_error_messages(log_content))
@@ -344,11 +381,13 @@ class KindlePreviewerIntegration:
 
         except Exception as e:
             logger.warning(f"Failed to parse log file {log_file}: {e}")
-            issues.append(PreviewerIssue(
-                severity="warning",
-                code="LOG_PARSE_ERROR",
-                message=f"Could not parse log file: {e}"
-            ))
+            issues.append(
+                PreviewerIssue(
+                    severity="warning",
+                    code="LOG_PARSE_ERROR",
+                    message=f"Could not parse log file: {e}",
+                )
+            )
 
         return issues
 
@@ -358,23 +397,26 @@ class KindlePreviewerIntegration:
 
         # Common Kindle Previewer error patterns
         error_patterns = [
-            (r'ERROR:\s*(.+)', "CONVERSION_ERROR"),
-            (r'FATAL:\s*(.+)', "FATAL_ERROR"),
-            (r'Failed to convert:\s*(.+)', "CONVERSION_FAILED"),
-            (r'Invalid EPUB:\s*(.+)', "INVALID_EPUB"),
-            (r'CSS Error:\s*(.+)', "CSS_ERROR"),
-            (r'Image Error:\s*(.+)', "IMAGE_ERROR"),
+            (r"ERROR:\s*(.+)", "CONVERSION_ERROR"),
+            (r"FATAL:\s*(.+)", "FATAL_ERROR"),
+            (r"Failed to convert:\s*(.+)", "CONVERSION_FAILED"),
+            (r"Invalid EPUB:\s*(.+)", "INVALID_EPUB"),
+            (r"CSS Error:\s*(.+)", "CSS_ERROR"),
+            (r"Image Error:\s*(.+)", "IMAGE_ERROR"),
         ]
 
         import re
+
         for pattern, code in error_patterns:
             for match in re.finditer(pattern, log_content, re.IGNORECASE | re.MULTILINE):
-                issues.append(PreviewerIssue(
-                    severity="error",
-                    code=code,
-                    message=match.group(1).strip(),
-                    location=self._extract_location(match.group(0))
-                ))
+                issues.append(
+                    PreviewerIssue(
+                        severity="error",
+                        code=code,
+                        message=match.group(1).strip(),
+                        location=self._extract_location(match.group(0)),
+                    )
+                )
 
         return issues
 
@@ -383,23 +425,26 @@ class KindlePreviewerIntegration:
         issues = []
 
         warning_patterns = [
-            (r'WARNING:\s*(.+)', "CONVERSION_WARNING"),
-            (r'WARN:\s*(.+)', "CONVERSION_WARNING"),
-            (r'Unsupported:\s*(.+)', "UNSUPPORTED_FEATURE"),
-            (r'Deprecated:\s*(.+)', "DEPRECATED_FEATURE"),
-            (r'Font Warning:\s*(.+)', "FONT_WARNING"),
-            (r'CSS Warning:\s*(.+)', "CSS_WARNING"),
+            (r"WARNING:\s*(.+)", "CONVERSION_WARNING"),
+            (r"WARN:\s*(.+)", "CONVERSION_WARNING"),
+            (r"Unsupported:\s*(.+)", "UNSUPPORTED_FEATURE"),
+            (r"Deprecated:\s*(.+)", "DEPRECATED_FEATURE"),
+            (r"Font Warning:\s*(.+)", "FONT_WARNING"),
+            (r"CSS Warning:\s*(.+)", "CSS_WARNING"),
         ]
 
         import re
+
         for pattern, code in warning_patterns:
             for match in re.finditer(pattern, log_content, re.IGNORECASE | re.MULTILINE):
-                issues.append(PreviewerIssue(
-                    severity="warning",
-                    code=code,
-                    message=match.group(1).strip(),
-                    location=self._extract_location(match.group(0))
-                ))
+                issues.append(
+                    PreviewerIssue(
+                        severity="warning",
+                        code=code,
+                        message=match.group(1).strip(),
+                        location=self._extract_location(match.group(0)),
+                    )
+                )
 
         return issues
 
@@ -408,20 +453,23 @@ class KindlePreviewerIntegration:
         issues = []
 
         info_patterns = [
-            (r'INFO:\s*(.+)', "INFO"),
-            (r'Note:\s*(.+)', "NOTE"),
-            (r'Converted:\s*(.+)', "CONVERSION_SUCCESS"),
+            (r"INFO:\s*(.+)", "INFO"),
+            (r"Note:\s*(.+)", "NOTE"),
+            (r"Converted:\s*(.+)", "CONVERSION_SUCCESS"),
         ]
 
         import re
+
         for pattern, code in info_patterns:
             for match in re.finditer(pattern, log_content, re.IGNORECASE | re.MULTILINE):
-                issues.append(PreviewerIssue(
-                    severity="info",
-                    code=code,
-                    message=match.group(1).strip(),
-                    location=self._extract_location(match.group(0))
-                ))
+                issues.append(
+                    PreviewerIssue(
+                        severity="info",
+                        code=code,
+                        message=match.group(1).strip(),
+                        location=self._extract_location(match.group(0)),
+                    )
+                )
 
         return issues
 
@@ -431,11 +479,11 @@ class KindlePreviewerIntegration:
 
         # Common location patterns
         location_patterns = [
-            r'in file (.+\.x?html?)',
-            r'at (.+\.x?html?):\d+',
-            r'(.+\.x?html?):\d+:\d+',
-            r'chapter (\d+)',
-            r'page (\d+)'
+            r"in file (.+\.x?html?)",
+            r"at (.+\.x?html?):\d+",
+            r"(.+\.x?html?):\d+:\d+",
+            r"chapter (\d+)",
+            r"page (\d+)",
         ]
 
         for pattern in location_patterns:
@@ -458,7 +506,7 @@ class KindlePreviewerIntegration:
 
         # Write report
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(html_report, encoding='utf-8')
+        output_path.write_text(html_report, encoding="utf-8")
 
         logger.info(f"Preflight report saved to {output_path}")
 
@@ -471,8 +519,16 @@ class KindlePreviewerIntegration:
         info_count = len([i for i in report.issues if i.severity == "info"])
 
         # Determine overall status
-        status = "success" if report.success and error_count == 0 else "warning" if error_count == 0 else "error"
-        status_text = "✅ Passed" if status == "success" else "⚠️ Passed with warnings" if status == "warning" else "❌ Failed"
+        status = (
+            "success"
+            if report.success and error_count == 0
+            else "warning" if error_count == 0 else "error"
+        )
+        status_text = (
+            "✅ Passed"
+            if status == "success"
+            else "⚠️ Passed with warnings" if status == "warning" else "❌ Failed"
+        )
 
         html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -569,7 +625,7 @@ class KindlePreviewerIntegration:
 def run_kindle_preflight(
     epub_path: Path,
     output_dir: Optional[Path] = None,
-    config: Optional[KindlePreviewerConfig] = None
+    config: Optional[KindlePreviewerConfig] = None,
 ) -> ConversionReport:
     """
     Run Kindle Previewer preflight check on EPUB file.

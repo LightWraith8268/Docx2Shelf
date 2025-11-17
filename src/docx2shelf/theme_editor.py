@@ -93,8 +93,8 @@ class ThemeEditor:
                             "Arial, sans-serif",
                             "Helvetica, sans-serif",
                             "Verdana, sans-serif",
-                            "system-ui, sans-serif"
-                        ]
+                            "system-ui, sans-serif",
+                        ],
                     ),
                     ThemeProperty(
                         name="heading_font",
@@ -109,8 +109,8 @@ class ThemeEditor:
                             "Arial, sans-serif",
                             "Helvetica, sans-serif",
                             "Verdana, sans-serif",
-                            "system-ui, sans-serif"
-                        ]
+                            "system-ui, sans-serif",
+                        ],
                     ),
                     ThemeProperty(
                         name="body_font_size",
@@ -121,7 +121,7 @@ class ThemeEditor:
                         default_value="1.0em",
                         min_value=0.8,
                         max_value=1.5,
-                        unit="em"
+                        unit="em",
                     ),
                     ThemeProperty(
                         name="line_height",
@@ -131,9 +131,9 @@ class ThemeEditor:
                         current_value="1.5",
                         default_value="1.5",
                         min_value=1.0,
-                        max_value=2.5
-                    )
-                ]
+                        max_value=2.5,
+                    ),
+                ],
             ),
             ThemeSection(
                 name="colors",
@@ -146,7 +146,7 @@ class ThemeEditor:
                         description="Main text color",
                         property_type="color",
                         current_value="#000000",
-                        default_value="#000000"
+                        default_value="#000000",
                     ),
                     ThemeProperty(
                         name="background_color",
@@ -154,7 +154,7 @@ class ThemeEditor:
                         description="Page background color",
                         property_type="color",
                         current_value="#ffffff",
-                        default_value="#ffffff"
+                        default_value="#ffffff",
                     ),
                     ThemeProperty(
                         name="link_color",
@@ -162,7 +162,7 @@ class ThemeEditor:
                         description="Color for hyperlinks",
                         property_type="color",
                         current_value="#0066cc",
-                        default_value="#0066cc"
+                        default_value="#0066cc",
                     ),
                     ThemeProperty(
                         name="heading_color",
@@ -170,9 +170,9 @@ class ThemeEditor:
                         description="Color for headings",
                         property_type="color",
                         current_value="#000000",
-                        default_value="#000000"
-                    )
-                ]
+                        default_value="#000000",
+                    ),
+                ],
             ),
             ThemeSection(
                 name="layout",
@@ -188,7 +188,7 @@ class ThemeEditor:
                         default_value="1.5em",
                         min_value=0.5,
                         max_value=3.0,
-                        unit="em"
+                        unit="em",
                     ),
                     ThemeProperty(
                         name="paragraph_spacing",
@@ -199,7 +199,7 @@ class ThemeEditor:
                         default_value="1.0em",
                         min_value=0.0,
                         max_value=2.0,
-                        unit="em"
+                        unit="em",
                     ),
                     ThemeProperty(
                         name="text_align",
@@ -208,9 +208,9 @@ class ThemeEditor:
                         property_type="choice",
                         current_value="left",
                         default_value="left",
-                        choices=["left", "justify", "center"]
-                    )
-                ]
+                        choices=["left", "justify", "center"],
+                    ),
+                ],
             ),
             ThemeSection(
                 name="advanced",
@@ -224,7 +224,7 @@ class ThemeEditor:
                         property_type="choice",
                         current_value="page",
                         default_value="page",
-                        choices=["page", "none", "column"]
+                        choices=["page", "none", "column"],
                     ),
                     ThemeProperty(
                         name="drop_caps",
@@ -233,10 +233,10 @@ class ThemeEditor:
                         property_type="choice",
                         current_value="none",
                         default_value="none",
-                        choices=["none", "simple", "ornate"]
-                    )
-                ]
-            )
+                        choices=["none", "simple", "ornate"],
+                    ),
+                ],
+            ),
         ]
 
     def run_interactive_editor(self, base_theme: str = "serif") -> Optional[Dict[str, str]]:
@@ -264,10 +264,7 @@ class ThemeEditor:
                 if self.current_theme and prompt_bool("Save theme before exiting?"):
                     if self._save_theme():
                         theme_path = self.themes_dir / f"{self.current_theme.name}.json"
-                        return {
-                            'theme_id': self.current_theme.name,
-                            'theme_path': str(theme_path)
-                        }
+                        return {"theme_id": self.current_theme.name, "theme_path": str(theme_path)}
                 return None
             elif action == "preview":
                 self._generate_live_preview()
@@ -277,10 +274,7 @@ class ThemeEditor:
                     # Ask if they want to use this theme and exit
                     if prompt_bool("Use this theme and return to wizard?"):
                         theme_path = self.themes_dir / f"{self.current_theme.name}.json"
-                        return {
-                            'theme_id': self.current_theme.name,
-                            'theme_path': str(theme_path)
-                        }
+                        return {"theme_id": self.current_theme.name, "theme_path": str(theme_path)}
                 else:
                     print("❌ Failed to save theme")
             elif action == "export":
@@ -317,7 +311,7 @@ class ThemeEditor:
             description="Custom theme created with the theme editor",
             base_theme=base_theme,
             sections=self._copy_base_sections(),
-            preview_text=self._get_sample_content()
+            preview_text=self._get_sample_content(),
         )
 
         # Apply base theme defaults
@@ -328,6 +322,7 @@ class ThemeEditor:
     def _copy_base_sections(self) -> List[ThemeSection]:
         """Create a copy of base sections for editing."""
         import copy
+
         return copy.deepcopy(self.base_sections)
 
     def _apply_base_theme_defaults(self, base_theme: str):
@@ -337,21 +332,21 @@ class ThemeEditor:
                 "body_font": "Georgia, serif",
                 "heading_font": "Georgia, serif",
                 "text_color": "#000000",
-                "background_color": "#ffffff"
+                "background_color": "#ffffff",
             },
             "sans": {
                 "body_font": "Arial, sans-serif",
                 "heading_font": "Arial, sans-serif",
                 "text_color": "#333333",
-                "background_color": "#ffffff"
+                "background_color": "#ffffff",
             },
             "printlike": {
                 "body_font": "Times New Roman, serif",
                 "heading_font": "Times New Roman, serif",
                 "text_color": "#000000",
                 "background_color": "#fffef7",
-                "page_margin": "2.0em"
-            }
+                "page_margin": "2.0em",
+            },
         }
 
         defaults = theme_defaults.get(base_theme, theme_defaults["serif"])
@@ -394,7 +389,7 @@ class ThemeEditor:
             "8": "export",
             "9": "reset",
             "q": "quit",
-            "quit": "quit"
+            "quit": "quit",
         }
 
         return action_map.get(choice, "unknown")
@@ -573,7 +568,9 @@ class ThemeEditor:
             html_content = self._generate_preview_html(css_content)
 
             # Write to temporary file
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", delete=False, encoding="utf-8"
+            ) as f:
                 f.write(html_content)
                 preview_path = Path(f.name)
 
@@ -735,17 +732,17 @@ class ThemeEditor:
                 "css": self._generate_css(),
                 "properties": self._serialize_properties(),
                 "custom_css": self.current_theme.custom_css,
-                "created_with": "Docx2Shelf Theme Editor"
+                "created_with": "Docx2Shelf Theme Editor",
             }
 
             # Save to theme file
             theme_file = self.themes_dir / f"{self.current_theme.name}.json"
-            with open(theme_file, 'w', encoding='utf-8') as f:
+            with open(theme_file, "w", encoding="utf-8") as f:
                 json.dump(theme_data, f, indent=2)
 
             # Also save as CSS file
             css_file = self.themes_dir / f"{self.current_theme.name}.css"
-            with open(css_file, 'w', encoding='utf-8') as f:
+            with open(css_file, "w", encoding="utf-8") as f:
                 f.write(self._generate_css())
 
             print(f"Theme saved to: {theme_file}")
@@ -765,7 +762,7 @@ class ThemeEditor:
         try:
             css_content = self._generate_css()
 
-            with open(export_path, 'w', encoding='utf-8') as f:
+            with open(export_path, "w", encoding="utf-8") as f:
                 f.write(css_content)
 
             print(f"✅ Theme exported to: {export_path}")
@@ -811,18 +808,38 @@ class ThemeEditor:
         color = color.strip()
 
         # Hex colors
-        if re.match(r'^#[0-9A-Fa-f]{3}$', color) or re.match(r'^#[0-9A-Fa-f]{6}$', color):
+        if re.match(r"^#[0-9A-Fa-f]{3}$", color) or re.match(r"^#[0-9A-Fa-f]{6}$", color):
             return True
 
         # RGB colors
-        if re.match(r'^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$', color):
+        if re.match(r"^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$", color):
             return True
 
         # Named colors (basic check)
         named_colors = [
-            'black', 'white', 'red', 'green', 'blue', 'yellow', 'cyan', 'magenta',
-            'gray', 'grey', 'darkred', 'darkgreen', 'darkblue', 'orange', 'purple',
-            'brown', 'pink', 'lime', 'navy', 'maroon', 'olive', 'teal', 'silver'
+            "black",
+            "white",
+            "red",
+            "green",
+            "blue",
+            "yellow",
+            "cyan",
+            "magenta",
+            "gray",
+            "grey",
+            "darkred",
+            "darkgreen",
+            "darkblue",
+            "orange",
+            "purple",
+            "brown",
+            "pink",
+            "lime",
+            "navy",
+            "maroon",
+            "olive",
+            "teal",
+            "silver",
         ]
 
         return color.lower() in named_colors
@@ -836,7 +853,7 @@ class ThemeEditor:
             if prop.unit:
                 # Remove unit if present
                 if size.endswith(prop.unit):
-                    numeric_part = size[:-len(prop.unit)]
+                    numeric_part = size[: -len(prop.unit)]
                 else:
                     numeric_part = size
             else:

@@ -19,6 +19,7 @@ from typing import List, Optional
 
 class FontWeight(Enum):
     """Standard font weight values."""
+
     THIN = "100"
     EXTRA_LIGHT = "200"
     LIGHT = "300"
@@ -32,6 +33,7 @@ class FontWeight(Enum):
 
 class FontStyle(Enum):
     """Font style options."""
+
     NORMAL = "normal"
     ITALIC = "italic"
     OBLIQUE = "oblique"
@@ -39,6 +41,7 @@ class FontStyle(Enum):
 
 class TextAlign(Enum):
     """Text alignment options."""
+
     LEFT = "left"
     RIGHT = "right"
     CENTER = "center"
@@ -49,6 +52,7 @@ class TextAlign(Enum):
 
 class OpenTypeFeature(Enum):
     """Common OpenType features."""
+
     LIGATURES = "liga"
     DISCRETIONARY_LIGATURES = "dlig"
     CONTEXTUAL_ALTERNATES = "calt"
@@ -71,6 +75,7 @@ class OpenTypeFeature(Enum):
 @dataclass
 class FontFace:
     """Represents a font face with all its properties."""
+
     family: str
     weight: FontWeight = FontWeight.NORMAL
     style: FontStyle = FontStyle.NORMAL
@@ -83,6 +88,7 @@ class FontFace:
 @dataclass
 class TypographyScale:
     """Typographic scale for consistent sizing."""
+
     base_size: str = "1rem"
     scale_ratio: float = 1.25  # Major third
     h1: Optional[str] = None
@@ -120,6 +126,7 @@ class TypographyScale:
 @dataclass
 class SpacingScale:
     """Spacing scale for consistent margins and padding."""
+
     base_unit: str = "1rem"
     xs: str = "0.25rem"
     sm: str = "0.5rem"
@@ -160,11 +167,13 @@ class AdvancedTypography:
     first_line_indent: str = "1.5em"
 
     # OpenType features
-    opentype_features: List[OpenTypeFeature] = field(default_factory=lambda: [
-        OpenTypeFeature.LIGATURES,
-        OpenTypeFeature.CONTEXTUAL_ALTERNATES,
-        OpenTypeFeature.LINING_NUMS
-    ])
+    opentype_features: List[OpenTypeFeature] = field(
+        default_factory=lambda: [
+            OpenTypeFeature.LIGATURES,
+            OpenTypeFeature.CONTEXTUAL_ALTERNATES,
+            OpenTypeFeature.LINING_NUMS,
+        ]
+    )
 
     # Hyphenation and justification
     hyphenation: bool = True
@@ -246,9 +255,15 @@ def generate_typography_css(typography: AdvancedTypography) -> str:
     css_parts.append(f"  --space-xxl: {typography.spacing_scale.xxl};")
     css_parts.append("")
     css_parts.append("  /* Font Stacks */")
-    primary_stack = ", ".join(f"'{font}'" if " " in font else font for font in typography.primary_font_stack)
-    heading_stack = ", ".join(f"'{font}'" if " " in font else font for font in typography.heading_font_stack)
-    code_stack = ", ".join(f"'{font}'" if " " in font else font for font in typography.code_font_stack)
+    primary_stack = ", ".join(
+        f"'{font}'" if " " in font else font for font in typography.primary_font_stack
+    )
+    heading_stack = ", ".join(
+        f"'{font}'" if " " in font else font for font in typography.heading_font_stack
+    )
+    code_stack = ", ".join(
+        f"'{font}'" if " " in font else font for font in typography.code_font_stack
+    )
     css_parts.append(f"  --font-primary: {primary_stack};")
     css_parts.append(f"  --font-heading: {heading_stack};")
     css_parts.append(f"  --font-code: {code_stack};")
@@ -340,14 +355,18 @@ def generate_typography_css(typography: AdvancedTypography) -> str:
     css_parts.append("/* Responsive Typography */")
     css_parts.append("@media screen and (max-width: 768px) {")
     css_parts.append("  html {")
-    css_parts.append(f"    font-size: calc({typography.typography_scale.base_size} * {typography.mobile_scale_factor});")
+    css_parts.append(
+        f"    font-size: calc({typography.typography_scale.base_size} * {typography.mobile_scale_factor});"
+    )
     css_parts.append("  }")
     css_parts.append("}")
     css_parts.append("")
 
     css_parts.append("@media screen and (min-width: 769px) and (max-width: 1024px) {")
     css_parts.append("  html {")
-    css_parts.append(f"    font-size: calc({typography.typography_scale.base_size} * {typography.tablet_scale_factor});")
+    css_parts.append(
+        f"    font-size: calc({typography.typography_scale.base_size} * {typography.tablet_scale_factor});"
+    )
     css_parts.append("  }")
     css_parts.append("}")
     css_parts.append("")
@@ -355,7 +374,9 @@ def generate_typography_css(typography: AdvancedTypography) -> str:
     # Accessibility
     css_parts.append("/* Accessibility */")
     css_parts.append("*:focus {")
-    css_parts.append(f"  outline: {typography.focus_outline_width} {typography.focus_outline_style} {typography.focus_outline_color};")
+    css_parts.append(
+        f"  outline: {typography.focus_outline_width} {typography.focus_outline_style} {typography.focus_outline_color};"
+    )
     css_parts.append("  outline-offset: 2px;")
     css_parts.append("}")
     css_parts.append("")
@@ -391,8 +412,8 @@ def create_professional_typography() -> AdvancedTypography:
         opentype_features=[
             OpenTypeFeature.LIGATURES,
             OpenTypeFeature.CONTEXTUAL_ALTERNATES,
-            OpenTypeFeature.OLDSTYLE_NUMS
-        ]
+            OpenTypeFeature.OLDSTYLE_NUMS,
+        ],
     )
 
 
@@ -410,8 +431,8 @@ def create_modern_typography() -> AdvancedTypography:
             OpenTypeFeature.LIGATURES,
             OpenTypeFeature.CONTEXTUAL_ALTERNATES,
             OpenTypeFeature.LINING_NUMS,
-            OpenTypeFeature.TABULAR_NUMS
-        ]
+            OpenTypeFeature.TABULAR_NUMS,
+        ],
     )
 
 
@@ -429,6 +450,6 @@ def create_academic_typography() -> AdvancedTypography:
             OpenTypeFeature.LIGATURES,
             OpenTypeFeature.CONTEXTUAL_ALTERNATES,
             OpenTypeFeature.OLDSTYLE_NUMS,
-            OpenTypeFeature.SMALL_CAPS
-        ]
+            OpenTypeFeature.SMALL_CAPS,
+        ],
     )

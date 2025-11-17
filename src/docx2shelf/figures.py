@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class FigureConfig:
     """Configuration for figure processing."""
+
     auto_number: bool = True
     number_format: str = "Figure {number}"
     caption_class: str = "figure-caption"
@@ -32,6 +33,7 @@ class FigureConfig:
 @dataclass
 class FigureInfo:
     """Information about a figure or table."""
+
     id: str
     number: int
     caption: str
@@ -52,9 +54,11 @@ class FigureProcessor:
         self.figure_counter = 0
         self.table_counter = 0
 
-    def process_content(self, html_content: str, chapter_title: str = "", chapter_id: str = "") -> str:
+    def process_content(
+        self, html_content: str, chapter_title: str = "", chapter_id: str = ""
+    ) -> str:
         """Process HTML content to wrap images and tables in semantic markup."""
-        soup = BeautifulSoup(html_content, 'html.parser')
+        soup = BeautifulSoup(html_content, "html.parser")
 
         # Process images
         self._process_images(soup, chapter_title, chapter_id)
@@ -66,11 +70,11 @@ class FigureProcessor:
 
     def _process_images(self, soup: BeautifulSoup, chapter_title: str, chapter_id: str) -> None:
         """Convert img tags to semantic figure elements."""
-        images = soup.find_all('img')
+        images = soup.find_all("img")
 
         for img in images:
             # Skip if already wrapped in figure
-            if img.find_parent('figure'):
+            if img.find_parent("figure"):
                 continue
 
             # Generate figure info
@@ -83,10 +87,7 @@ class FigureProcessor:
                 caption = self.config.number_format.format(number=self.figure_counter)
 
             # Create figure element
-            figure = soup.new_tag('figure', **{
-                'class': self.config.figure_class,
-                'id': figure_id
-            })
+            figure = soup.new_tag("figure", **{"class": self.config.figure_class, "id": figure_id})
 
             # Move img into figure
             img_parent = img.parent
@@ -95,9 +96,7 @@ class FigureProcessor:
 
             # Add figcaption if we have a caption
             if caption:
-                figcaption = soup.new_tag('figcaption', **{
-                    'class': self.config.caption_class
-                })
+                figcaption = soup.new_tag("figcaption", **{"class": self.config.caption_class})
                 figcaption.string = caption
                 figure.append(figcaption)
 
@@ -106,24 +105,26 @@ class FigureProcessor:
                 img_parent.append(figure)
 
             # Store figure info
-            self.figures.append(FigureInfo(
-                id=figure_id,
-                number=self.figure_counter,
-                caption=caption,
-                alt_text=img.get('alt', ''),
-                src=img.get('src', ''),
-                chapter_title=chapter_title,
-                chapter_id=chapter_id,
-                type='figure'
-            ))
+            self.figures.append(
+                FigureInfo(
+                    id=figure_id,
+                    number=self.figure_counter,
+                    caption=caption,
+                    alt_text=img.get("alt", ""),
+                    src=img.get("src", ""),
+                    chapter_title=chapter_title,
+                    chapter_id=chapter_id,
+                    type="figure",
+                )
+            )
 
     def _process_tables(self, soup: BeautifulSoup, chapter_title: str, chapter_id: str) -> None:
         """Wrap tables in semantic figure elements."""
-        tables = soup.find_all('table')
+        tables = soup.find_all("table")
 
         for table in tables:
             # Skip if already wrapped in figure
-            if table.find_parent('figure'):
+            if table.find_parent("figure"):
                 continue
 
             # Generate table info
@@ -136,10 +137,7 @@ class FigureProcessor:
                 caption = f"Table {self.table_counter}"
 
             # Create figure element (tables use figure too in HTML5)
-            figure = soup.new_tag('figure', **{
-                'class': 'table-figure',
-                'id': table_id
-            })
+            figure = soup.new_tag("figure", **{"class": "table-figure", "id": table_id})
 
             # Move table into figure
             table_parent = table.parent
@@ -147,9 +145,7 @@ class FigureProcessor:
 
             # Add figcaption if we have a caption (before table for tables)
             if caption:
-                figcaption = soup.new_tag('figcaption', **{
-                    'class': 'table-caption'
-                })
+                figcaption = soup.new_tag("figcaption", **{"class": "table-caption"})
                 figcaption.string = caption
                 figure.append(figcaption)
 
@@ -160,40 +156,42 @@ class FigureProcessor:
                 table_parent.append(figure)
 
             # Store table info
-            self.tables.append(FigureInfo(
-                id=table_id,
-                number=self.table_counter,
-                caption=caption,
-                alt_text='',  # Tables don't have alt text
-                src='',       # Tables don't have src
-                chapter_title=chapter_title,
-                chapter_id=chapter_id,
-                type='table'
-            ))
+            self.tables.append(
+                FigureInfo(
+                    id=table_id,
+                    number=self.table_counter,
+                    caption=caption,
+                    alt_text="",  # Tables don't have alt text
+                    src="",  # Tables don't have src
+                    chapter_title=chapter_title,
+                    chapter_id=chapter_id,
+                    type="table",
+                )
+            )
 
     def _extract_image_caption(self, img: Tag) -> str:
         """Extract caption text from image context."""
         # Check for title attribute
-        if img.get('title'):
-            return img['title']
+        if img.get("title"):
+            return img["title"]
 
         # Check for alt attribute as fallback
-        if img.get('alt'):
-            return img['alt']
+        if img.get("alt"):
+            return img["alt"]
 
         # Look for caption in surrounding elements
         parent = img.parent
         if parent:
             # Check for caption class nearby
-            caption_elem = parent.find(class_=re.compile(r'caption|figure-caption'))
+            caption_elem = parent.find(class_=re.compile(r"caption|figure-caption"))
             if caption_elem:
                 return caption_elem.get_text().strip()
 
             # Check for em/i elements that might be captions
-            next_sibling = img.find_next_sibling(['em', 'i', 'p'])
+            next_sibling = img.find_next_sibling(["em", "i", "p"])
             if next_sibling and len(next_sibling.get_text().strip()) < 200:
                 text = next_sibling.get_text().strip()
-                if text.startswith(('Figure', 'Fig.', 'Image')):
+                if text.startswith(("Figure", "Fig.", "Image")):
                     return text
 
         return ""
@@ -201,15 +199,15 @@ class FigureProcessor:
     def _extract_table_caption(self, table: Tag) -> str:
         """Extract caption text from table context."""
         # Check for existing caption element
-        caption_elem = table.find('caption')
+        caption_elem = table.find("caption")
         if caption_elem:
             return caption_elem.get_text().strip()
 
         # Look for preceding paragraph that might be a caption
-        prev_sibling = table.find_previous_sibling('p')
+        prev_sibling = table.find_previous_sibling("p")
         if prev_sibling:
             text = prev_sibling.get_text().strip()
-            if text.startswith(('Table', 'Tab.')):
+            if text.startswith(("Table", "Tab.")):
                 return text
 
         return ""
@@ -227,17 +225,17 @@ class FigureProcessor:
 
             html += f'  <li><a href="{figure_link}">'
             if figure.caption:
-                html += f'{figure.caption}'
+                html += f"{figure.caption}"
             else:
-                html += f'Figure {figure.number}'
-            html += '</a>'
+                html += f"Figure {figure.number}"
+            html += "</a>"
 
             if figure.chapter_title:
                 html += f' <span class="chapter-ref">({figure.chapter_title})</span>'
 
-            html += '</li>\n'
+            html += "</li>\n"
 
-        html += '</ol>\n'
+        html += "</ol>\n"
         return html
 
     def generate_list_of_tables(self) -> str:
@@ -253,17 +251,17 @@ class FigureProcessor:
 
             html += f'  <li><a href="{table_link}">'
             if table.caption:
-                html += f'{table.caption}'
+                html += f"{table.caption}"
             else:
-                html += f'Table {table.number}'
-            html += '</a>'
+                html += f"Table {table.number}"
+            html += "</a>"
 
             if table.chapter_title:
                 html += f' <span class="chapter-ref">({table.chapter_title})</span>'
 
-            html += '</li>\n'
+            html += "</li>\n"
 
-        html += '</ol>\n'
+        html += "</ol>\n"
         return html
 
     def get_figure_count(self) -> int:
@@ -286,7 +284,7 @@ def process_figures_and_tables(
     html_content: str,
     chapter_title: str = "",
     chapter_id: str = "",
-    config: Optional[FigureConfig] = None
+    config: Optional[FigureConfig] = None,
 ) -> Tuple[str, FigureProcessor]:
     """
     Process HTML content to add semantic figure markup.

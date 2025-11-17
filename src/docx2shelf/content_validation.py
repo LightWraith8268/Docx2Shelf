@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class ValidationCategory(Enum):
     """Content validation categories."""
+
     GRAMMAR = "grammar"
     STYLE = "style"
     FORMATTING = "formatting"
@@ -28,15 +29,17 @@ class ValidationCategory(Enum):
 
 class ValidationSeverity(Enum):
     """Validation issue severity levels."""
-    ERROR = "error"        # Must fix
-    WARNING = "warning"    # Should fix
+
+    ERROR = "error"  # Must fix
+    WARNING = "warning"  # Should fix
     SUGGESTION = "suggestion"  # Consider fixing
-    INFO = "info"         # For information only
+    INFO = "info"  # For information only
 
 
 @dataclass
 class ValidationIssue:
     """Individual content validation issue."""
+
     category: ValidationCategory
     severity: ValidationSeverity
     title: str
@@ -54,6 +57,7 @@ class ValidationIssue:
 @dataclass
 class ContentStats:
     """Content statistics for analysis."""
+
     word_count: int = 0
     sentence_count: int = 0
     paragraph_count: int = 0
@@ -68,6 +72,7 @@ class ContentStats:
 @dataclass
 class ValidationReport:
     """Content validation report."""
+
     file_path: str
     issues: List[ValidationIssue] = field(default_factory=list)
     stats: ContentStats = field(default_factory=ContentStats)
@@ -82,9 +87,31 @@ class ContentValidator:
 
     def __init__(self):
         self.common_words = {
-            'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have',
-            'i', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you',
-            'do', 'at', 'this', 'but', 'his', 'by', 'from'
+            "the",
+            "be",
+            "to",
+            "of",
+            "and",
+            "a",
+            "in",
+            "that",
+            "have",
+            "i",
+            "it",
+            "for",
+            "not",
+            "on",
+            "with",
+            "he",
+            "as",
+            "you",
+            "do",
+            "at",
+            "this",
+            "but",
+            "his",
+            "by",
+            "from",
         }
 
         # Common style patterns
@@ -113,9 +140,15 @@ class ContentValidator:
         self._check_structure(content, report)
 
         # Count issues by severity
-        report.error_count = len([i for i in report.issues if i.severity == ValidationSeverity.ERROR])
-        report.warning_count = len([i for i in report.issues if i.severity == ValidationSeverity.WARNING])
-        report.suggestion_count = len([i for i in report.issues if i.severity == ValidationSeverity.SUGGESTION])
+        report.error_count = len(
+            [i for i in report.issues if i.severity == ValidationSeverity.ERROR]
+        )
+        report.warning_count = len(
+            [i for i in report.issues if i.severity == ValidationSeverity.WARNING]
+        )
+        report.suggestion_count = len(
+            [i for i in report.issues if i.severity == ValidationSeverity.SUGGESTION]
+        )
         report.auto_fixable_count = len([i for i in report.issues if i.auto_fixable])
 
         return report
@@ -123,33 +156,33 @@ class ContentValidator:
     def _extract_text(self, content: str) -> str:
         """Extract plain text from HTML/XHTML content."""
         # Remove HTML tags
-        text = re.sub(r'<[^>]+>', ' ', content)
+        text = re.sub(r"<[^>]+>", " ", content)
 
         # Decode HTML entities
-        text = text.replace('&amp;', '&')
-        text = text.replace('&lt;', '<')
-        text = text.replace('&gt;', '>')
-        text = text.replace('&quot;', '"')
-        text = text.replace('&#39;', "'")
-        text = text.replace('&nbsp;', ' ')
+        text = text.replace("&amp;", "&")
+        text = text.replace("&lt;", "<")
+        text = text.replace("&gt;", ">")
+        text = text.replace("&quot;", '"')
+        text = text.replace("&#39;", "'")
+        text = text.replace("&nbsp;", " ")
 
         # Clean up whitespace
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r"\s+", " ", text).strip()
 
         return text
 
     def _extract_text_raw(self, content: str) -> str:
         """Extract plain text from HTML/XHTML content preserving original spacing."""
         # Remove HTML tags but preserve whitespace
-        text = re.sub(r'<[^>]+>', '', content)
+        text = re.sub(r"<[^>]+>", "", content)
 
         # Decode HTML entities
-        text = text.replace('&amp;', '&')
-        text = text.replace('&lt;', '<')
-        text = text.replace('&gt;', '>')
-        text = text.replace('&quot;', '"')
-        text = text.replace('&#39;', "'")
-        text = text.replace('&nbsp;', ' ')
+        text = text.replace("&amp;", "&")
+        text = text.replace("&lt;", "<")
+        text = text.replace("&gt;", ">")
+        text = text.replace("&quot;", '"')
+        text = text.replace("&#39;", "'")
+        text = text.replace("&nbsp;", " ")
 
         return text.strip()
 
@@ -164,11 +197,11 @@ class ContentValidator:
         words = text.split()
         stats.word_count = len(words)
 
-        sentences = re.split(r'[.!?]+', text)
+        sentences = re.split(r"[.!?]+", text)
         sentences = [s.strip() for s in sentences if s.strip()]
         stats.sentence_count = len(sentences)
 
-        paragraphs = text.split('\n\n')
+        paragraphs = text.split("\n\n")
         paragraphs = [p.strip() for p in paragraphs if p.strip()]
         stats.paragraph_count = len(paragraphs)
 
@@ -196,136 +229,148 @@ class ContentValidator:
         """Check for common grammar issues."""
 
         # Double spaces
-        if '  ' in text:
-            matches = [(m.start(), m.end()) for m in re.finditer(r'  +', text)]
+        if "  " in text:
+            matches = [(m.start(), m.end()) for m in re.finditer(r"  +", text)]
             for start, end in matches:
-                report.issues.append(ValidationIssue(
-                    ValidationCategory.GRAMMAR,
-                    ValidationSeverity.WARNING,
-                    "Multiple consecutive spaces",
-                    "Found multiple spaces in a row",
-                    "Replace with single space",
-                    context=text[max(0, start-20):min(len(text), end+20)],
-                    file_path=report.file_path,
-                    start_pos=start,
-                    end_pos=end,
-                    auto_fixable=True,
-                    confidence=0.95
-                ))
+                report.issues.append(
+                    ValidationIssue(
+                        ValidationCategory.GRAMMAR,
+                        ValidationSeverity.WARNING,
+                        "Multiple consecutive spaces",
+                        "Found multiple spaces in a row",
+                        "Replace with single space",
+                        context=text[max(0, start - 20) : min(len(text), end + 20)],
+                        file_path=report.file_path,
+                        start_pos=start,
+                        end_pos=end,
+                        auto_fixable=True,
+                        confidence=0.95,
+                    )
+                )
 
         # Space before punctuation
-        pattern = r'\s+([.!?,:;])'
+        pattern = r"\s+([.!?,:;])"
         matches = list(re.finditer(pattern, text))
         for match in matches:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.GRAMMAR,
-                ValidationSeverity.WARNING,
-                "Space before punctuation",
-                f"Unnecessary space before '{match.group(1)}'",
-                "Remove space before punctuation",
-                context=text[max(0, match.start()-15):min(len(text), match.end()+15)],
-                file_path=report.file_path,
-                start_pos=match.start(),
-                end_pos=match.end(),
-                auto_fixable=True,
-                confidence=0.9
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.GRAMMAR,
+                    ValidationSeverity.WARNING,
+                    "Space before punctuation",
+                    f"Unnecessary space before '{match.group(1)}'",
+                    "Remove space before punctuation",
+                    context=text[max(0, match.start() - 15) : min(len(text), match.end() + 15)],
+                    file_path=report.file_path,
+                    start_pos=match.start(),
+                    end_pos=match.end(),
+                    auto_fixable=True,
+                    confidence=0.9,
+                )
+            )
 
         # Missing space after punctuation
-        pattern = r'([.!?,:;])([A-Za-z])'
+        pattern = r"([.!?,:;])([A-Za-z])"
         matches = list(re.finditer(pattern, text))
         for match in matches:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.GRAMMAR,
-                ValidationSeverity.WARNING,
-                "Missing space after punctuation",
-                f"No space after '{match.group(1)}'",
-                "Add space after punctuation",
-                context=text[max(0, match.start()-10):min(len(text), match.end()+20)],
-                file_path=report.file_path,
-                start_pos=match.start(),
-                end_pos=match.end(),
-                auto_fixable=True,
-                confidence=0.85
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.GRAMMAR,
+                    ValidationSeverity.WARNING,
+                    "Missing space after punctuation",
+                    f"No space after '{match.group(1)}'",
+                    "Add space after punctuation",
+                    context=text[max(0, match.start() - 10) : min(len(text), match.end() + 20)],
+                    file_path=report.file_path,
+                    start_pos=match.start(),
+                    end_pos=match.end(),
+                    auto_fixable=True,
+                    confidence=0.85,
+                )
+            )
 
         # Common typos and errors
         common_errors = {
-            r'\bteh\b': 'the',
-            r'\band\sand\b': 'and',
-            r'\byou\syou\b': 'you',
-            r'\bwith\swith\b': 'with',
-            r'\bform\b(?=\s+the)': 'from',  # "form the" -> "from the"
+            r"\bteh\b": "the",
+            r"\band\sand\b": "and",
+            r"\byou\syou\b": "you",
+            r"\bwith\swith\b": "with",
+            r"\bform\b(?=\s+the)": "from",  # "form the" -> "from the"
         }
 
         for pattern, correction in common_errors.items():
             matches = list(re.finditer(pattern, text, re.IGNORECASE))
             for match in matches:
-                report.issues.append(ValidationIssue(
-                    ValidationCategory.GRAMMAR,
-                    ValidationSeverity.ERROR,
-                    "Possible typo",
-                    f"'{match.group()}' might be a typo",
-                    f"Consider changing to '{correction}'",
-                    context=text[max(0, match.start()-15):min(len(text), match.end()+15)],
-                    file_path=report.file_path,
-                    start_pos=match.start(),
-                    end_pos=match.end(),
-                    auto_fixable=True,
-                    confidence=0.8
-                ))
+                report.issues.append(
+                    ValidationIssue(
+                        ValidationCategory.GRAMMAR,
+                        ValidationSeverity.ERROR,
+                        "Possible typo",
+                        f"'{match.group()}' might be a typo",
+                        f"Consider changing to '{correction}'",
+                        context=text[max(0, match.start() - 15) : min(len(text), match.end() + 15)],
+                        file_path=report.file_path,
+                        start_pos=match.start(),
+                        end_pos=match.end(),
+                        auto_fixable=True,
+                        confidence=0.8,
+                    )
+                )
 
     def _check_style(self, content: str, text: str, report: ValidationReport):
         """Check for style issues."""
 
         # Passive voice detection (simplified)
         passive_patterns = [
-            r'\b(was|were|is|are|been|being)\s+\w+ed\b',
-            r'\b(was|were|is|are|been|being)\s+\w+en\b'
+            r"\b(was|were|is|are|been|being)\s+\w+ed\b",
+            r"\b(was|were|is|are|been|being)\s+\w+en\b",
         ]
 
         for pattern in passive_patterns:
             matches = list(re.finditer(pattern, text, re.IGNORECASE))
             for match in matches:
-                report.issues.append(ValidationIssue(
-                    ValidationCategory.STYLE,
-                    ValidationSeverity.SUGGESTION,
-                    "Possible passive voice",
-                    f"'{match.group()}' may be passive voice",
-                    "Consider using active voice for more engaging writing",
-                    context=text[max(0, match.start()-20):min(len(text), match.end()+20)],
-                    file_path=report.file_path,
-                    start_pos=match.start(),
-                    end_pos=match.end(),
-                    confidence=0.6
-                ))
+                report.issues.append(
+                    ValidationIssue(
+                        ValidationCategory.STYLE,
+                        ValidationSeverity.SUGGESTION,
+                        "Possible passive voice",
+                        f"'{match.group()}' may be passive voice",
+                        "Consider using active voice for more engaging writing",
+                        context=text[max(0, match.start() - 20) : min(len(text), match.end() + 20)],
+                        file_path=report.file_path,
+                        start_pos=match.start(),
+                        end_pos=match.end(),
+                        confidence=0.6,
+                    )
+                )
 
         # Redundant phrases
         redundant_phrases = {
-            r'\bvery\s+unique\b': 'unique',
-            r'\bfree\s+gift\b': 'gift',
-            r'\bfuture\s+plans\b': 'plans',
-            r'\bpast\s+history\b': 'history',
-            r'\bin\s+order\s+to\b': 'to',
-            r'\bdue\s+to\s+the\s+fact\s+that\b': 'because'
+            r"\bvery\s+unique\b": "unique",
+            r"\bfree\s+gift\b": "gift",
+            r"\bfuture\s+plans\b": "plans",
+            r"\bpast\s+history\b": "history",
+            r"\bin\s+order\s+to\b": "to",
+            r"\bdue\s+to\s+the\s+fact\s+that\b": "because",
         }
 
         for pattern, suggestion in redundant_phrases.items():
             matches = list(re.finditer(pattern, text, re.IGNORECASE))
             for match in matches:
-                report.issues.append(ValidationIssue(
-                    ValidationCategory.STYLE,
-                    ValidationSeverity.SUGGESTION,
-                    "Redundant phrase",
-                    f"'{match.group()}' is redundant",
-                    f"Consider using '{suggestion}' instead",
-                    context=text[max(0, match.start()-15):min(len(text), match.end()+15)],
-                    file_path=report.file_path,
-                    start_pos=match.start(),
-                    end_pos=match.end(),
-                    auto_fixable=True,
-                    confidence=0.75
-                ))
+                report.issues.append(
+                    ValidationIssue(
+                        ValidationCategory.STYLE,
+                        ValidationSeverity.SUGGESTION,
+                        "Redundant phrase",
+                        f"'{match.group()}' is redundant",
+                        f"Consider using '{suggestion}' instead",
+                        context=text[max(0, match.start() - 15) : min(len(text), match.end() + 15)],
+                        file_path=report.file_path,
+                        start_pos=match.start(),
+                        end_pos=match.end(),
+                        auto_fixable=True,
+                        confidence=0.75,
+                    )
+                )
 
         # Overused words
         words = text.lower().split()
@@ -337,126 +382,144 @@ class ContentValidator:
 
         for word, count in word_counts.items():
             if count > len(words) / 100:  # More than 1% of total words
-                report.issues.append(ValidationIssue(
-                    ValidationCategory.STYLE,
-                    ValidationSeverity.SUGGESTION,
-                    "Overused word",
-                    f"The word '{word}' appears {count} times",
-                    "Consider using synonyms for variety",
-                    file_path=report.file_path,
-                    confidence=0.7
-                ))
+                report.issues.append(
+                    ValidationIssue(
+                        ValidationCategory.STYLE,
+                        ValidationSeverity.SUGGESTION,
+                        "Overused word",
+                        f"The word '{word}' appears {count} times",
+                        "Consider using synonyms for variety",
+                        file_path=report.file_path,
+                        confidence=0.7,
+                    )
+                )
 
     def _check_formatting(self, content: str, report: ValidationReport):
         """Check for formatting issues."""
 
         # Multiple consecutive line breaks
-        pattern = r'\n\s*\n\s*\n+'
+        pattern = r"\n\s*\n\s*\n+"
         matches = list(re.finditer(pattern, content))
         for match in matches:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.FORMATTING,
-                ValidationSeverity.WARNING,
-                "Multiple line breaks",
-                "Found multiple consecutive line breaks",
-                "Use consistent paragraph spacing",
-                file_path=report.file_path,
-                start_pos=match.start(),
-                end_pos=match.end(),
-                auto_fixable=True,
-                confidence=0.9
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.FORMATTING,
+                    ValidationSeverity.WARNING,
+                    "Multiple line breaks",
+                    "Found multiple consecutive line breaks",
+                    "Use consistent paragraph spacing",
+                    file_path=report.file_path,
+                    start_pos=match.start(),
+                    end_pos=match.end(),
+                    auto_fixable=True,
+                    confidence=0.9,
+                )
+            )
 
         # Inconsistent quotation marks
         straight_quotes = content.count('"') + content.count("'")
-        smart_quotes = content.count('"') + content.count('"') + content.count(''') + content.count(''')
+        smart_quotes = (
+            content.count('"') + content.count('"') + content.count(""") + content.count(""")
+        )
 
         if straight_quotes > 0 and smart_quotes > 0:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.FORMATTING,
-                ValidationSeverity.WARNING,
-                "Inconsistent quotation marks",
-                "Mix of straight and smart quotes detected",
-                "Use consistent quotation mark style throughout",
-                file_path=report.file_path,
-                auto_fixable=True,
-                confidence=0.85
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.FORMATTING,
+                    ValidationSeverity.WARNING,
+                    "Inconsistent quotation marks",
+                    "Mix of straight and smart quotes detected",
+                    "Use consistent quotation mark style throughout",
+                    file_path=report.file_path,
+                    auto_fixable=True,
+                    confidence=0.85,
+                )
+            )
 
         # Empty paragraphs
-        empty_p_pattern = r'<p>\s*</p>'
+        empty_p_pattern = r"<p>\s*</p>"
         matches = list(re.finditer(empty_p_pattern, content))
         for match in matches:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.FORMATTING,
-                ValidationSeverity.WARNING,
-                "Empty paragraph",
-                "Found empty paragraph tag",
-                "Remove empty paragraph or add content",
-                file_path=report.file_path,
-                start_pos=match.start(),
-                end_pos=match.end(),
-                auto_fixable=True,
-                confidence=0.95
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.FORMATTING,
+                    ValidationSeverity.WARNING,
+                    "Empty paragraph",
+                    "Found empty paragraph tag",
+                    "Remove empty paragraph or add content",
+                    file_path=report.file_path,
+                    start_pos=match.start(),
+                    end_pos=match.end(),
+                    auto_fixable=True,
+                    confidence=0.95,
+                )
+            )
 
     def _check_readability(self, text: str, report: ValidationReport):
         """Check readability metrics and provide suggestions."""
 
         if report.stats.avg_words_per_sentence > 25:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.READABILITY,
-                ValidationSeverity.SUGGESTION,
-                "Long sentences",
-                f"Average sentence length is {report.stats.avg_words_per_sentence:.1f} words",
-                "Consider breaking up long sentences for better readability",
-                file_path=report.file_path,
-                confidence=0.8
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.READABILITY,
+                    ValidationSeverity.SUGGESTION,
+                    "Long sentences",
+                    f"Average sentence length is {report.stats.avg_words_per_sentence:.1f} words",
+                    "Consider breaking up long sentences for better readability",
+                    file_path=report.file_path,
+                    confidence=0.8,
+                )
+            )
 
         if report.stats.flesch_reading_ease < 30:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.READABILITY,
-                ValidationSeverity.WARNING,
-                "Very difficult to read",
-                f"Flesch Reading Ease score is {report.stats.flesch_reading_ease:.1f} (very difficult)",
-                "Simplify language and sentence structure",
-                file_path=report.file_path,
-                confidence=0.75
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.READABILITY,
+                    ValidationSeverity.WARNING,
+                    "Very difficult to read",
+                    f"Flesch Reading Ease score is {report.stats.flesch_reading_ease:.1f} (very difficult)",
+                    "Simplify language and sentence structure",
+                    file_path=report.file_path,
+                    confidence=0.75,
+                )
+            )
         elif report.stats.flesch_reading_ease < 50:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.READABILITY,
-                ValidationSeverity.SUGGESTION,
-                "Difficult to read",
-                f"Flesch Reading Ease score is {report.stats.flesch_reading_ease:.1f} (difficult)",
-                "Consider simplifying language for broader accessibility",
-                file_path=report.file_path,
-                confidence=0.65
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.READABILITY,
+                    ValidationSeverity.SUGGESTION,
+                    "Difficult to read",
+                    f"Flesch Reading Ease score is {report.stats.flesch_reading_ease:.1f} (difficult)",
+                    "Consider simplifying language for broader accessibility",
+                    file_path=report.file_path,
+                    confidence=0.65,
+                )
+            )
 
         if report.stats.flesch_kincaid_grade > 16:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.READABILITY,
-                ValidationSeverity.SUGGESTION,
-                "High grade level",
-                f"Flesch-Kincaid grade level is {report.stats.flesch_kincaid_grade:.1f}",
-                "Consider lowering complexity for wider audience",
-                file_path=report.file_path,
-                confidence=0.7
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.READABILITY,
+                    ValidationSeverity.SUGGESTION,
+                    "High grade level",
+                    f"Flesch-Kincaid grade level is {report.stats.flesch_kincaid_grade:.1f}",
+                    "Consider lowering complexity for wider audience",
+                    file_path=report.file_path,
+                    confidence=0.7,
+                )
+            )
 
     def _check_consistency(self, content: str, text: str, report: ValidationReport):
         """Check for consistency issues."""
 
         # Inconsistent capitalization in headings
-        headings = re.findall(r'<h[1-6][^>]*>(.*?)</h[1-6]>', content, re.IGNORECASE | re.DOTALL)
+        headings = re.findall(r"<h[1-6][^>]*>(.*?)</h[1-6]>", content, re.IGNORECASE | re.DOTALL)
         if len(headings) > 1:
             title_case_count = 0
             sentence_case_count = 0
 
             for heading in headings:
-                heading_text = re.sub(r'<[^>]+>', '', heading).strip()
+                heading_text = re.sub(r"<[^>]+>", "", heading).strip()
                 if heading_text:
                     words = heading_text.split()
                     if len(words) > 1:
@@ -468,21 +531,23 @@ class ContentValidator:
                             sentence_case_count += 1
 
             if title_case_count > 0 and sentence_case_count > 0:
-                report.issues.append(ValidationIssue(
-                    ValidationCategory.CONSISTENCY,
-                    ValidationSeverity.WARNING,
-                    "Inconsistent heading capitalization",
-                    "Mix of title case and sentence case in headings",
-                    "Use consistent capitalization style for all headings",
-                    file_path=report.file_path,
-                    confidence=0.8
-                ))
+                report.issues.append(
+                    ValidationIssue(
+                        ValidationCategory.CONSISTENCY,
+                        ValidationSeverity.WARNING,
+                        "Inconsistent heading capitalization",
+                        "Mix of title case and sentence case in headings",
+                        "Use consistent capitalization style for all headings",
+                        file_path=report.file_path,
+                        confidence=0.8,
+                    )
+                )
 
         # Date format consistency
         date_patterns = [
-            r'\b\d{1,2}/\d{1,2}/\d{4}\b',  # MM/DD/YYYY
-            r'\b\d{1,2}-\d{1,2}-\d{4}\b',  # MM-DD-YYYY
-            r'\b\d{4}-\d{1,2}-\d{1,2}\b',  # YYYY-MM-DD
+            r"\b\d{1,2}/\d{1,2}/\d{4}\b",  # MM/DD/YYYY
+            r"\b\d{1,2}-\d{1,2}-\d{4}\b",  # MM-DD-YYYY
+            r"\b\d{4}-\d{1,2}-\d{1,2}\b",  # YYYY-MM-DD
         ]
 
         found_patterns = set()
@@ -491,49 +556,55 @@ class ContentValidator:
                 found_patterns.add(pattern)
 
         if len(found_patterns) > 1:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.CONSISTENCY,
-                ValidationSeverity.SUGGESTION,
-                "Inconsistent date formats",
-                "Multiple date formats found in text",
-                "Use consistent date format throughout document",
-                file_path=report.file_path,
-                confidence=0.75
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.CONSISTENCY,
+                    ValidationSeverity.SUGGESTION,
+                    "Inconsistent date formats",
+                    "Multiple date formats found in text",
+                    "Use consistent date format throughout document",
+                    file_path=report.file_path,
+                    confidence=0.75,
+                )
+            )
 
     def _check_structure(self, content: str, report: ValidationReport):
         """Check document structure issues."""
 
         # Check for proper paragraph structure
-        p_tags = content.count('<p>')
+        p_tags = content.count("<p>")
         if p_tags == 0 and len(content) > 1000:
-            report.issues.append(ValidationIssue(
-                ValidationCategory.STRUCTURE,
-                ValidationSeverity.ERROR,
-                "No paragraph structure",
-                "Content lacks proper paragraph tags",
-                "Wrap text content in <p> tags",
-                file_path=report.file_path,
-                confidence=0.95
-            ))
+            report.issues.append(
+                ValidationIssue(
+                    ValidationCategory.STRUCTURE,
+                    ValidationSeverity.ERROR,
+                    "No paragraph structure",
+                    "Content lacks proper paragraph tags",
+                    "Wrap text content in <p> tags",
+                    file_path=report.file_path,
+                    confidence=0.95,
+                )
+            )
 
         # Check heading hierarchy
-        headings = re.findall(r'<h([1-6])', content)
+        headings = re.findall(r"<h([1-6])", content)
         if headings:
             heading_levels = [int(h) for h in headings]
 
             # Check for skipped levels
             for i in range(1, len(heading_levels)):
-                if heading_levels[i] - heading_levels[i-1] > 1:
-                    report.issues.append(ValidationIssue(
-                        ValidationCategory.STRUCTURE,
-                        ValidationSeverity.WARNING,
-                        "Skipped heading level",
-                        f"Heading jumps from h{heading_levels[i-1]} to h{heading_levels[i]}",
-                        "Use sequential heading levels (h1, h2, h3...)",
-                        file_path=report.file_path,
-                        confidence=0.85
-                    ))
+                if heading_levels[i] - heading_levels[i - 1] > 1:
+                    report.issues.append(
+                        ValidationIssue(
+                            ValidationCategory.STRUCTURE,
+                            ValidationSeverity.WARNING,
+                            "Skipped heading level",
+                            f"Heading jumps from h{heading_levels[i-1]} to h{heading_levels[i]}",
+                            "Use sequential heading levels (h1, h2, h3...)",
+                            file_path=report.file_path,
+                            confidence=0.85,
+                        )
+                    )
                     break
 
     def _calculate_flesch_reading_ease(self, text: str, stats: ContentStats) -> float:
@@ -545,12 +616,12 @@ class ContentValidator:
         syllable_count = 0
         words = text.split()
         for word in words:
-            clean_word = re.sub(r'[^a-zA-Z]', '', word.lower())
+            clean_word = re.sub(r"[^a-zA-Z]", "", word.lower())
             if clean_word:
                 # Simple syllable counting heuristic
-                vowel_groups = re.findall(r'[aeiouy]+', clean_word)
+                vowel_groups = re.findall(r"[aeiouy]+", clean_word)
                 syllables = len(vowel_groups)
-                if clean_word.endswith('e') and syllables > 1:
+                if clean_word.endswith("e") and syllables > 1:
                     syllables -= 1
                 syllable_count += max(1, syllables)
 
@@ -568,11 +639,11 @@ class ContentValidator:
         syllable_count = 0
         words = text.split()
         for word in words:
-            clean_word = re.sub(r'[^a-zA-Z]', '', word.lower())
+            clean_word = re.sub(r"[^a-zA-Z]", "", word.lower())
             if clean_word:
-                vowel_groups = re.findall(r'[aeiouy]+', clean_word)
+                vowel_groups = re.findall(r"[aeiouy]+", clean_word)
                 syllables = len(vowel_groups)
-                if clean_word.endswith('e') and syllables > 1:
+                if clean_word.endswith("e") and syllables > 1:
                     syllables -= 1
                 syllable_count += max(1, syllables)
 
@@ -584,17 +655,17 @@ class ContentValidator:
     def _initialize_style_patterns(self) -> Dict[str, str]:
         """Initialize style checking patterns."""
         return {
-            'weak_words': r'\b(very|really|quite|rather|somewhat|pretty|fairly)\b',
-            'hedge_words': r'\b(maybe|perhaps|possibly|probably|might|could)\b',
-            'filler_words': r'\b(just|actually|basically|literally|obviously)\b'
+            "weak_words": r"\b(very|really|quite|rather|somewhat|pretty|fairly)\b",
+            "hedge_words": r"\b(maybe|perhaps|possibly|probably|might|could)\b",
+            "filler_words": r"\b(just|actually|basically|literally|obviously)\b",
         }
 
     def _initialize_formatting_patterns(self) -> Dict[str, str]:
         """Initialize formatting checking patterns."""
         return {
-            'multiple_spaces': r'  +',
-            'tabs_mixed_spaces': r'[\t ]+[\t ]+',
-            'trailing_whitespace': r'[ \t]+$'
+            "multiple_spaces": r"  +",
+            "tabs_mixed_spaces": r"[\t ]+[\t ]+",
+            "trailing_whitespace": r"[ \t]+$",
         }
 
 

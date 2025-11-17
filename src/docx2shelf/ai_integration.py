@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 # Optional AI dependencies - graceful fallback if not available
 try:
     import openai
+
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
@@ -25,12 +26,14 @@ except ImportError:
 try:
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
 try:
     from PIL import Image
+
     PILLOW_AVAILABLE = True
 except (ImportError, AttributeError):
     PILLOW_AVAILABLE = False
@@ -41,6 +44,7 @@ from .utils import prompt_bool
 @dataclass
 class AIConfig:
     """Configuration for AI features."""
+
     enabled: bool = True
     openai_api_key: Optional[str] = None
     use_local_models: bool = True
@@ -51,16 +55,18 @@ class AIConfig:
     model_type: str = "local"  # "local", "openai", "huggingface"
     local_model: str = "gpt2"  # Default local model
     enable_caching: bool = True  # Alias for cache_enabled
-    model_preferences: Dict[str, str] = field(default_factory=lambda: {
-        "text_classification": "distilbert-base-uncased-finetuned-sst-2-english",
-        "text_generation": "gpt2",
-        "image_to_text": "nlpconnect/vit-gpt2-image-captioning"
-    })
+    model_preferences: Dict[str, str] = field(
+        default_factory=lambda: {
+            "text_classification": "distilbert-base-uncased-finetuned-sst-2-english",
+            "text_generation": "gpt2",
+            "image_to_text": "nlpconnect/vit-gpt2-image-captioning",
+        }
+    )
 
     def __post_init__(self):
         """Ensure compatibility with different attribute names."""
         # Sync cache_enabled and enable_caching
-        if hasattr(self, 'cache_enabled') and hasattr(self, 'enable_caching'):
+        if hasattr(self, "cache_enabled") and hasattr(self, "enable_caching"):
             if self.cache_enabled != self.enable_caching:
                 self.enable_caching = self.cache_enabled
 
@@ -68,6 +74,7 @@ class AIConfig:
 @dataclass
 class AIResult:
     """Result from an AI operation."""
+
     success: bool
     data: Any
     confidence: float = 0.0
@@ -89,6 +96,7 @@ class AIModelManager:
         else:
             try:
                 from .path_utils import get_user_cache_dir
+
                 self.cache_dir = get_user_cache_dir("docx2shelf") / "ai_cache"
             except ImportError:
                 # Fallback
@@ -152,7 +160,7 @@ class AIModelManager:
         cache_file = self.get_cache_path(cache_key)
         if cache_file.exists():
             try:
-                with open(cache_file, 'r', encoding='utf-8') as f:
+                with open(cache_file, "r", encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
                 self.logger.warning(f"Failed to load cache: {e}")
@@ -166,7 +174,7 @@ class AIModelManager:
 
         cache_file = self.get_cache_path(cache_key)
         try:
-            with open(cache_file, 'w', encoding='utf-8') as f:
+            with open(cache_file, "w", encoding="utf-8") as f:
                 json.dump(result, f, indent=2)
         except Exception as e:
             self.logger.warning(f"Failed to save cache: {e}")
@@ -190,6 +198,7 @@ class MetadataEnhancer:
             AIResult with enhanced metadata suggestions
         """
         import time
+
         start_time = time.time()
 
         # Create cache key
@@ -202,10 +211,10 @@ class MetadataEnhancer:
             return AIResult(
                 success=True,
                 data=cached,
-                confidence=cached.get('confidence', 0.8),
-                model_used=cached.get('model_used', 'cached'),
+                confidence=cached.get("confidence", 0.8),
+                model_used=cached.get("model_used", "cached"),
                 processing_time=time.time() - start_time,
-                cached=True
+                cached=True,
             )
 
         try:
@@ -213,15 +222,15 @@ class MetadataEnhancer:
             enhanced = self._analyze_content_for_metadata(content, existing_metadata)
 
             result_data = {
-                'title_suggestions': enhanced.get('title_suggestions', []),
-                'description_suggestions': enhanced.get('description_suggestions', []),
-                'keyword_suggestions': enhanced.get('keyword_suggestions', []),
-                'genre_suggestions': enhanced.get('genre_suggestions', []),
-                'reading_level': enhanced.get('reading_level', 'unknown'),
-                'word_count': enhanced.get('word_count', 0),
-                'estimated_reading_time': enhanced.get('estimated_reading_time', 0),
-                'confidence': enhanced.get('confidence', 0.7),
-                'model_used': enhanced.get('model_used', 'rule-based')
+                "title_suggestions": enhanced.get("title_suggestions", []),
+                "description_suggestions": enhanced.get("description_suggestions", []),
+                "keyword_suggestions": enhanced.get("keyword_suggestions", []),
+                "genre_suggestions": enhanced.get("genre_suggestions", []),
+                "reading_level": enhanced.get("reading_level", "unknown"),
+                "word_count": enhanced.get("word_count", 0),
+                "estimated_reading_time": enhanced.get("estimated_reading_time", 0),
+                "confidence": enhanced.get("confidence", 0.7),
+                "model_used": enhanced.get("model_used", "rule-based"),
             }
 
             # Save to cache
@@ -230,9 +239,9 @@ class MetadataEnhancer:
             return AIResult(
                 success=True,
                 data=result_data,
-                confidence=result_data['confidence'],
-                model_used=result_data['model_used'],
-                processing_time=time.time() - start_time
+                confidence=result_data["confidence"],
+                model_used=result_data["model_used"],
+                processing_time=time.time() - start_time,
             )
 
         except Exception as e:
@@ -241,7 +250,7 @@ class MetadataEnhancer:
                 success=False,
                 data={},
                 error_message=str(e),
-                processing_time=time.time() - start_time
+                processing_time=time.time() - start_time,
             )
 
     def _analyze_content_for_metadata(self, content: str, existing_metadata: Dict) -> Dict:
@@ -252,7 +261,9 @@ class MetadataEnhancer:
         estimated_reading_time = max(1, word_count // 250)  # ~250 words per minute
 
         # Extract potential titles from first paragraphs
-        title_suggestions = self._extract_title_suggestions(content, existing_metadata.get('title', ''))
+        title_suggestions = self._extract_title_suggestions(
+            content, existing_metadata.get("title", "")
+        )
 
         # Generate description from content
         description_suggestions = self._generate_description_suggestions(content)
@@ -267,15 +278,15 @@ class MetadataEnhancer:
         reading_level = self._estimate_reading_level(content)
 
         return {
-            'title_suggestions': title_suggestions,
-            'description_suggestions': description_suggestions,
-            'keyword_suggestions': keyword_suggestions,
-            'genre_suggestions': genre_suggestions,
-            'reading_level': reading_level,
-            'word_count': word_count,
-            'estimated_reading_time': estimated_reading_time,
-            'confidence': 0.7,
-            'model_used': 'rule-based-analysis'
+            "title_suggestions": title_suggestions,
+            "description_suggestions": description_suggestions,
+            "keyword_suggestions": keyword_suggestions,
+            "genre_suggestions": genre_suggestions,
+            "reading_level": reading_level,
+            "word_count": word_count,
+            "estimated_reading_time": estimated_reading_time,
+            "confidence": 0.7,
+            "model_used": "rule-based-analysis",
         }
 
     def _extract_title_suggestions(self, content: str, current_title: str) -> List[str]:
@@ -283,24 +294,26 @@ class MetadataEnhancer:
         suggestions = []
 
         # Look for chapter titles or headings
-        lines = content.split('\n')
+        lines = content.split("\n")
         for line in lines[:20]:  # Check first 20 lines
             line = line.strip()
             if line and len(line) < 100:
                 # Check if it looks like a title
-                if (line.isupper() or
-                    line.startswith('Chapter') or
-                    line.startswith('Part') or
-                    (len(line.split()) <= 8 and not line.endswith('.'))):
+                if (
+                    line.isupper()
+                    or line.startswith("Chapter")
+                    or line.startswith("Part")
+                    or (len(line.split()) <= 8 and not line.endswith("."))
+                ):
 
-                    cleaned = re.sub(r'^(Chapter|Part)\s*\d+:?\s*', '', line, flags=re.IGNORECASE)
+                    cleaned = re.sub(r"^(Chapter|Part)\s*\d+:?\s*", "", line, flags=re.IGNORECASE)
                     if cleaned and cleaned != current_title:
                         suggestions.append(cleaned.strip())
 
         # Add current title variations
         if current_title:
             # Remove common suffixes/prefixes
-            clean_title = re.sub(r'^(The|A|An)\s+', '', current_title)
+            clean_title = re.sub(r"^(The|A|An)\s+", "", current_title)
             if clean_title != current_title:
                 suggestions.append(clean_title)
 
@@ -309,7 +322,7 @@ class MetadataEnhancer:
     def _generate_description_suggestions(self, content: str) -> List[str]:
         """Generate description suggestions from content."""
         # Extract first few sentences as potential description
-        sentences = re.split(r'[.!?]+', content)
+        sentences = re.split(r"[.!?]+", content)
         clean_sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 20]
 
         suggestions = []
@@ -326,7 +339,7 @@ class MetadataEnhancer:
                     suggestions.append(two_sentences)
 
             # First paragraph summary
-            first_paragraph = content.split('\n\n')[0] if '\n\n' in content else content[:500]
+            first_paragraph = content.split("\n\n")[0] if "\n\n" in content else content[:500]
             if len(first_paragraph) <= 400 and first_paragraph not in suggestions:
                 suggestions.append(first_paragraph)
 
@@ -335,16 +348,80 @@ class MetadataEnhancer:
     def _extract_keywords(self, content: str) -> List[str]:
         """Extract relevant keywords from content."""
         # Simple keyword extraction using frequency and relevance
-        words = re.findall(r'\b[a-zA-Z]{3,}\b', content.lower())
+        words = re.findall(r"\b[a-zA-Z]{3,}\b", content.lower())
 
         # Filter out common words
         stop_words = {
-            'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one',
-            'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see',
-            'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use', 'with',
-            'have', 'this', 'will', 'your', 'they', 'said', 'each', 'which', 'their', 'time', 'would',
-            'there', 'could', 'other', 'after', 'first', 'never', 'these', 'think', 'where', 'being',
-            'every', 'great', 'might', 'shall', 'still', 'those', 'under', 'while', 'should', 'through'
+            "the",
+            "and",
+            "for",
+            "are",
+            "but",
+            "not",
+            "you",
+            "all",
+            "can",
+            "had",
+            "her",
+            "was",
+            "one",
+            "our",
+            "out",
+            "day",
+            "get",
+            "has",
+            "him",
+            "his",
+            "how",
+            "man",
+            "new",
+            "now",
+            "old",
+            "see",
+            "two",
+            "way",
+            "who",
+            "boy",
+            "did",
+            "its",
+            "let",
+            "put",
+            "say",
+            "she",
+            "too",
+            "use",
+            "with",
+            "have",
+            "this",
+            "will",
+            "your",
+            "they",
+            "said",
+            "each",
+            "which",
+            "their",
+            "time",
+            "would",
+            "there",
+            "could",
+            "other",
+            "after",
+            "first",
+            "never",
+            "these",
+            "think",
+            "where",
+            "being",
+            "every",
+            "great",
+            "might",
+            "shall",
+            "still",
+            "those",
+            "under",
+            "while",
+            "should",
+            "through",
         }
 
         # Count word frequencies
@@ -360,14 +437,85 @@ class MetadataEnhancer:
     def _detect_genre_basic(self, content: str) -> List[str]:
         """Basic genre detection using keyword patterns."""
         genre_keywords = {
-            'fantasy': ['magic', 'wizard', 'dragon', 'spell', 'enchanted', 'kingdom', 'quest', 'sword', 'mystical'],
-            'romance': ['love', 'heart', 'kiss', 'passion', 'romance', 'relationship', 'wedding', 'marriage'],
-            'mystery': ['detective', 'murder', 'crime', 'investigation', 'suspect', 'clue', 'mystery', 'police'],
-            'science_fiction': ['space', 'alien', 'robot', 'technology', 'future', 'planet', 'spaceship', 'galaxy'],
-            'thriller': ['danger', 'chase', 'escape', 'suspense', 'threat', 'victim', 'conspiracy', 'terror'],
-            'horror': ['ghost', 'monster', 'vampire', 'demon', 'haunted', 'nightmare', 'death', 'evil'],
-            'historical': ['war', 'century', 'historical', 'period', 'ancient', 'medieval', 'revolution'],
-            'literary': ['life', 'character', 'society', 'human', 'emotion', 'relationship', 'experience']
+            "fantasy": [
+                "magic",
+                "wizard",
+                "dragon",
+                "spell",
+                "enchanted",
+                "kingdom",
+                "quest",
+                "sword",
+                "mystical",
+            ],
+            "romance": [
+                "love",
+                "heart",
+                "kiss",
+                "passion",
+                "romance",
+                "relationship",
+                "wedding",
+                "marriage",
+            ],
+            "mystery": [
+                "detective",
+                "murder",
+                "crime",
+                "investigation",
+                "suspect",
+                "clue",
+                "mystery",
+                "police",
+            ],
+            "science_fiction": [
+                "space",
+                "alien",
+                "robot",
+                "technology",
+                "future",
+                "planet",
+                "spaceship",
+                "galaxy",
+            ],
+            "thriller": [
+                "danger",
+                "chase",
+                "escape",
+                "suspense",
+                "threat",
+                "victim",
+                "conspiracy",
+                "terror",
+            ],
+            "horror": [
+                "ghost",
+                "monster",
+                "vampire",
+                "demon",
+                "haunted",
+                "nightmare",
+                "death",
+                "evil",
+            ],
+            "historical": [
+                "war",
+                "century",
+                "historical",
+                "period",
+                "ancient",
+                "medieval",
+                "revolution",
+            ],
+            "literary": [
+                "life",
+                "character",
+                "society",
+                "human",
+                "emotion",
+                "relationship",
+                "experience",
+            ],
         }
 
         content_lower = content.lower()
@@ -380,11 +528,11 @@ class MetadataEnhancer:
 
         # Sort by score and return top genres
         sorted_genres = sorted(genre_scores.items(), key=lambda x: x[1], reverse=True)
-        return [genre.replace('_', ' ').title() for genre, score in sorted_genres[:3]]
+        return [genre.replace("_", " ").title() for genre, score in sorted_genres[:3]]
 
     def _estimate_reading_level(self, content: str) -> str:
         """Estimate reading level using basic text metrics."""
-        sentences = re.split(r'[.!?]+', content)
+        sentences = re.split(r"[.!?]+", content)
         sentences = [s.strip() for s in sentences if s.strip()]
 
         if not sentences:
@@ -423,7 +571,7 @@ class MetadataEnhancer:
             return 0
 
         # Simple syllable counting heuristic
-        vowels = 'aeiouy'
+        vowels = "aeiouy"
         syllable_count = 0
         prev_was_vowel = False
 
@@ -434,7 +582,7 @@ class MetadataEnhancer:
             prev_was_vowel = is_vowel
 
         # Handle silent e
-        if word.endswith('e') and syllable_count > 1:
+        if word.endswith("e") and syllable_count > 1:
             syllable_count -= 1
 
         return max(1, syllable_count)
@@ -458,6 +606,7 @@ class GenreDetector:
             AIResult with genre detection results
         """
         import time
+
         start_time = time.time()
 
         # Create cache key
@@ -470,17 +619,17 @@ class GenreDetector:
             return AIResult(
                 success=True,
                 data=cached,
-                confidence=cached.get('confidence', 0.8),
-                model_used=cached.get('model_used', 'cached'),
+                confidence=cached.get("confidence", 0.8),
+                model_used=cached.get("model_used", "cached"),
                 processing_time=time.time() - start_time,
-                cached=True
+                cached=True,
             )
 
         try:
             # Try AI model first
             ai_result = self._detect_with_ai_model(content)
 
-            if not ai_result['success']:
+            if not ai_result["success"]:
                 # Fallback to rule-based detection
                 ai_result = self._detect_with_rules(content)
 
@@ -488,11 +637,11 @@ class GenreDetector:
             self.model_manager.save_to_cache(cache_key, ai_result)
 
             return AIResult(
-                success=ai_result['success'],
+                success=ai_result["success"],
                 data=ai_result,
-                confidence=ai_result.get('confidence', 0.7),
-                model_used=ai_result.get('model_used', 'unknown'),
-                processing_time=time.time() - start_time
+                confidence=ai_result.get("confidence", 0.7),
+                model_used=ai_result.get("model_used", "unknown"),
+                processing_time=time.time() - start_time,
             )
 
         except Exception as e:
@@ -501,7 +650,7 @@ class GenreDetector:
                 success=False,
                 data={},
                 error_message=str(e),
-                processing_time=time.time() - start_time
+                processing_time=time.time() - start_time,
             )
 
     def _detect_with_ai_model(self, content: str) -> Dict:
@@ -509,7 +658,7 @@ class GenreDetector:
         model = self.model_manager.get_model("text_classification")
 
         if not model:
-            return {'success': False, 'reason': 'model_unavailable'}
+            return {"success": False, "reason": "model_unavailable"}
 
         try:
             # Take a sample of the content for analysis
@@ -523,67 +672,155 @@ class GenreDetector:
                 # Map classification results to genres
                 # This is a simplified mapping - real implementation would need
                 # proper genre classification model
-                confidence = result[0].get('score', 0.5)
-                label = result[0].get('label', 'unknown')
+                confidence = result[0].get("score", 0.5)
+                label = result[0].get("label", "unknown")
 
                 # Map generic sentiment labels to potential genres
                 genre_mapping = {
-                    'POSITIVE': 'romance',
-                    'NEGATIVE': 'thriller',
-                    'NEUTRAL': 'literary'
+                    "POSITIVE": "romance",
+                    "NEGATIVE": "thriller",
+                    "NEUTRAL": "literary",
                 }
 
-                detected_genre = genre_mapping.get(label, 'general')
+                detected_genre = genre_mapping.get(label, "general")
 
                 return {
-                    'success': True,
-                    'primary_genre': detected_genre,
-                    'confidence': confidence,
-                    'secondary_genres': [],
-                    'model_used': 'transformers_classification'
+                    "success": True,
+                    "primary_genre": detected_genre,
+                    "confidence": confidence,
+                    "secondary_genres": [],
+                    "model_used": "transformers_classification",
                 }
 
         except Exception as e:
             self.logger.warning(f"AI model detection failed: {e}")
 
-        return {'success': False, 'reason': 'model_error'}
+        return {"success": False, "reason": "model_error"}
 
     def _detect_with_rules(self, content: str) -> Dict:
         """Fallback rule-based genre detection."""
         # Enhanced rule-based detection
         genre_patterns = {
-            'fantasy': {
-                'keywords': ['magic', 'wizard', 'dragon', 'spell', 'enchanted', 'kingdom', 'quest', 'sword', 'mystical', 'fairy', 'elf', 'dwarf'],
-                'weight': 1.0
+            "fantasy": {
+                "keywords": [
+                    "magic",
+                    "wizard",
+                    "dragon",
+                    "spell",
+                    "enchanted",
+                    "kingdom",
+                    "quest",
+                    "sword",
+                    "mystical",
+                    "fairy",
+                    "elf",
+                    "dwarf",
+                ],
+                "weight": 1.0,
             },
-            'romance': {
-                'keywords': ['love', 'heart', 'kiss', 'passion', 'romance', 'relationship', 'wedding', 'marriage', 'beloved', 'darling'],
-                'weight': 1.0
+            "romance": {
+                "keywords": [
+                    "love",
+                    "heart",
+                    "kiss",
+                    "passion",
+                    "romance",
+                    "relationship",
+                    "wedding",
+                    "marriage",
+                    "beloved",
+                    "darling",
+                ],
+                "weight": 1.0,
             },
-            'mystery': {
-                'keywords': ['detective', 'murder', 'crime', 'investigation', 'suspect', 'clue', 'mystery', 'police', 'evidence', 'witness'],
-                'weight': 1.0
+            "mystery": {
+                "keywords": [
+                    "detective",
+                    "murder",
+                    "crime",
+                    "investigation",
+                    "suspect",
+                    "clue",
+                    "mystery",
+                    "police",
+                    "evidence",
+                    "witness",
+                ],
+                "weight": 1.0,
             },
-            'science_fiction': {
-                'keywords': ['space', 'alien', 'robot', 'technology', 'future', 'planet', 'spaceship', 'galaxy', 'laser', 'android'],
-                'weight': 1.0
+            "science_fiction": {
+                "keywords": [
+                    "space",
+                    "alien",
+                    "robot",
+                    "technology",
+                    "future",
+                    "planet",
+                    "spaceship",
+                    "galaxy",
+                    "laser",
+                    "android",
+                ],
+                "weight": 1.0,
             },
-            'thriller': {
-                'keywords': ['danger', 'chase', 'escape', 'suspense', 'threat', 'victim', 'conspiracy', 'terror', 'hunt', 'survival'],
-                'weight': 1.0
+            "thriller": {
+                "keywords": [
+                    "danger",
+                    "chase",
+                    "escape",
+                    "suspense",
+                    "threat",
+                    "victim",
+                    "conspiracy",
+                    "terror",
+                    "hunt",
+                    "survival",
+                ],
+                "weight": 1.0,
             },
-            'horror': {
-                'keywords': ['ghost', 'monster', 'vampire', 'demon', 'haunted', 'nightmare', 'death', 'evil', 'scream', 'blood'],
-                'weight': 1.0
+            "horror": {
+                "keywords": [
+                    "ghost",
+                    "monster",
+                    "vampire",
+                    "demon",
+                    "haunted",
+                    "nightmare",
+                    "death",
+                    "evil",
+                    "scream",
+                    "blood",
+                ],
+                "weight": 1.0,
             },
-            'historical': {
-                'keywords': ['war', 'century', 'historical', 'period', 'ancient', 'medieval', 'revolution', 'empire', 'colonial'],
-                'weight': 1.0
+            "historical": {
+                "keywords": [
+                    "war",
+                    "century",
+                    "historical",
+                    "period",
+                    "ancient",
+                    "medieval",
+                    "revolution",
+                    "empire",
+                    "colonial",
+                ],
+                "weight": 1.0,
             },
-            'literary': {
-                'keywords': ['life', 'character', 'society', 'human', 'emotion', 'relationship', 'experience', 'memory', 'family'],
-                'weight': 0.8
-            }
+            "literary": {
+                "keywords": [
+                    "life",
+                    "character",
+                    "society",
+                    "human",
+                    "emotion",
+                    "relationship",
+                    "experience",
+                    "memory",
+                    "family",
+                ],
+                "weight": 0.8,
+            },
         }
 
         content_lower = content.lower()
@@ -591,20 +828,20 @@ class GenreDetector:
 
         for genre, pattern in genre_patterns.items():
             score = 0
-            for keyword in pattern['keywords']:
+            for keyword in pattern["keywords"]:
                 count = content_lower.count(keyword)
-                score += count * pattern['weight']
+                score += count * pattern["weight"]
 
             if score > 0:
                 genre_scores[genre] = score
 
         if not genre_scores:
             return {
-                'success': True,
-                'primary_genre': 'general',
-                'confidence': 0.3,
-                'secondary_genres': [],
-                'model_used': 'rule-based-fallback'
+                "success": True,
+                "primary_genre": "general",
+                "confidence": 0.3,
+                "secondary_genres": [],
+                "model_used": "rule-based-fallback",
             }
 
         # Sort and get top genres
@@ -620,11 +857,11 @@ class GenreDetector:
         secondary_genres = [genre for genre, score in sorted_genres[1:3]]
 
         return {
-            'success': True,
-            'primary_genre': primary_genre,
-            'confidence': confidence,
-            'secondary_genres': secondary_genres,
-            'model_used': 'rule-based'
+            "success": True,
+            "primary_genre": primary_genre,
+            "confidence": confidence,
+            "secondary_genres": secondary_genres,
+            "model_used": "rule-based",
         }
 
 
@@ -646,13 +883,12 @@ class ImageAltTextGenerator:
             AIResult with generated alt-text
         """
         import time
+
         start_time = time.time()
 
         if not PILLOW_AVAILABLE:
             return AIResult(
-                success=False,
-                data={},
-                error_message="PIL not available for image processing"
+                success=False, data={}, error_message="PIL not available for image processing"
             )
 
         # Create cache key
@@ -666,17 +902,17 @@ class ImageAltTextGenerator:
             return AIResult(
                 success=True,
                 data=cached,
-                confidence=cached.get('confidence', 0.8),
-                model_used=cached.get('model_used', 'cached'),
+                confidence=cached.get("confidence", 0.8),
+                model_used=cached.get("model_used", "cached"),
                 processing_time=time.time() - start_time,
-                cached=True
+                cached=True,
             )
 
         try:
             # Try AI model first
             ai_result = self._generate_with_ai_model(image_path, context)
 
-            if not ai_result['success']:
+            if not ai_result["success"]:
                 # Fallback to rule-based generation
                 ai_result = self._generate_with_rules(image_path, context)
 
@@ -684,11 +920,11 @@ class ImageAltTextGenerator:
             self.model_manager.save_to_cache(cache_key, ai_result)
 
             return AIResult(
-                success=ai_result['success'],
+                success=ai_result["success"],
                 data=ai_result,
-                confidence=ai_result.get('confidence', 0.7),
-                model_used=ai_result.get('model_used', 'unknown'),
-                processing_time=time.time() - start_time
+                confidence=ai_result.get("confidence", 0.7),
+                model_used=ai_result.get("model_used", "unknown"),
+                processing_time=time.time() - start_time,
             )
 
         except Exception as e:
@@ -697,13 +933,13 @@ class ImageAltTextGenerator:
                 success=False,
                 data={},
                 error_message=str(e),
-                processing_time=time.time() - start_time
+                processing_time=time.time() - start_time,
             )
 
     def _get_image_hash(self, image_path: Path) -> str:
         """Get hash of image file for caching."""
         try:
-            with open(image_path, 'rb') as f:
+            with open(image_path, "rb") as f:
                 return hashlib.md5(f.read()).hexdigest()
         except Exception:
             return hashlib.md5(str(image_path).encode()).hexdigest()
@@ -713,38 +949,38 @@ class ImageAltTextGenerator:
         model = self.model_manager.get_model("image_to_text")
 
         if not model:
-            return {'success': False, 'reason': 'model_unavailable'}
+            return {"success": False, "reason": "model_unavailable"}
 
         try:
             # Load and process image
             image = Image.open(image_path)
 
             # Convert to RGB if necessary
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
+            if image.mode != "RGB":
+                image = image.convert("RGB")
 
             # Generate caption
             result = model(image)
 
             if result and len(result) > 0:
-                generated_text = result[0].get('generated_text', '').strip()
+                generated_text = result[0].get("generated_text", "").strip()
 
                 if generated_text:
                     # Enhance with context if available
                     enhanced_text = self._enhance_with_context(generated_text, context)
 
                     return {
-                        'success': True,
-                        'alt_text': enhanced_text,
-                        'raw_generated': generated_text,
-                        'confidence': 0.8,
-                        'model_used': 'vision_transformer'
+                        "success": True,
+                        "alt_text": enhanced_text,
+                        "raw_generated": generated_text,
+                        "confidence": 0.8,
+                        "model_used": "vision_transformer",
                     }
 
         except Exception as e:
             self.logger.warning(f"AI vision model failed: {e}")
 
-        return {'success': False, 'reason': 'model_error'}
+        return {"success": False, "reason": "model_error"}
 
     def _generate_with_rules(self, image_path: Path, context: str) -> Dict:
         """Fallback rule-based alt-text generation."""
@@ -752,14 +988,14 @@ class ImageAltTextGenerator:
             # Analyze image properties
             image = Image.open(image_path)
             width, height = image.size
-            format_name = image.format or 'unknown'
+            format_name = image.format or "unknown"
 
             # Generate basic description based on filename and properties
             filename = image_path.stem
 
             # Clean filename for description
-            clean_name = re.sub(r'[_-]', ' ', filename)
-            clean_name = re.sub(r'\d+', '', clean_name).strip()
+            clean_name = re.sub(r"[_-]", " ", filename)
+            clean_name = re.sub(r"\d+", "", clean_name).strip()
 
             # Basic description
             if clean_name:
@@ -771,40 +1007,48 @@ class ImageAltTextGenerator:
             if context:
                 # Look for relevant keywords in context
                 context_words = context.lower().split()
-                image_keywords = ['figure', 'chart', 'graph', 'photo', 'illustration', 'diagram']
+                image_keywords = ["figure", "chart", "graph", "photo", "illustration", "diagram"]
 
                 for keyword in image_keywords:
                     if keyword in context_words:
-                        alt_text = f"{keyword.title()}: {clean_name}" if clean_name else keyword.title()
+                        alt_text = (
+                            f"{keyword.title()}: {clean_name}" if clean_name else keyword.title()
+                        )
                         break
 
             # Add basic image properties for accessibility
-            orientation = "landscape" if width > height else "portrait" if height > width else "square"
-            size_desc = "large" if max(width, height) > 1000 else "medium" if max(width, height) > 500 else "small"
+            orientation = (
+                "landscape" if width > height else "portrait" if height > width else "square"
+            )
+            size_desc = (
+                "large"
+                if max(width, height) > 1000
+                else "medium" if max(width, height) > 500 else "small"
+            )
 
             enhanced_alt = f"{alt_text} ({size_desc} {orientation} {format_name.lower()} image)"
 
             return {
-                'success': True,
-                'alt_text': enhanced_alt,
-                'confidence': 0.4,
-                'model_used': 'rule-based',
-                'image_properties': {
-                    'width': width,
-                    'height': height,
-                    'format': format_name,
-                    'orientation': orientation,
-                    'size_category': size_desc
-                }
+                "success": True,
+                "alt_text": enhanced_alt,
+                "confidence": 0.4,
+                "model_used": "rule-based",
+                "image_properties": {
+                    "width": width,
+                    "height": height,
+                    "format": format_name,
+                    "orientation": orientation,
+                    "size_category": size_desc,
+                },
             }
 
         except Exception as e:
             self.logger.error(f"Rule-based alt-text generation failed: {e}")
             return {
-                'success': True,
-                'alt_text': f"Image: {image_path.name}",
-                'confidence': 0.2,
-                'model_used': 'filename-fallback'
+                "success": True,
+                "alt_text": f"Image: {image_path.name}",
+                "confidence": 0.2,
+                "model_used": "filename-fallback",
             }
 
     def _enhance_with_context(self, generated_text: str, context: str) -> str:
@@ -816,13 +1060,13 @@ class ImageAltTextGenerator:
         context_lower = context.lower()
 
         # Check if it's a figure, chart, etc.
-        if 'figure' in context_lower:
+        if "figure" in context_lower:
             return f"Figure: {generated_text}"
-        elif 'chart' in context_lower or 'graph' in context_lower:
+        elif "chart" in context_lower or "graph" in context_lower:
             return f"Chart: {generated_text}"
-        elif 'diagram' in context_lower:
+        elif "diagram" in context_lower:
             return f"Diagram: {generated_text}"
-        elif 'photo' in context_lower or 'photograph' in context_lower:
+        elif "photo" in context_lower or "photograph" in context_lower:
             return f"Photograph: {generated_text}"
 
         return generated_text
@@ -851,12 +1095,12 @@ class AIIntegrationManager:
     def get_capabilities(self) -> Dict[str, bool]:
         """Get available AI capabilities."""
         return {
-            'metadata_enhancement': self.config.enabled,
-            'genre_detection': self.config.enabled,
-            'alt_text_generation': self.config.enabled and PILLOW_AVAILABLE,
-            'local_models': TRANSFORMERS_AVAILABLE,
-            'openai_api': OPENAI_AVAILABLE and bool(self.config.openai_api_key),
-            'caching': self.config.cache_enabled
+            "metadata_enhancement": self.config.enabled,
+            "genre_detection": self.config.enabled,
+            "alt_text_generation": self.config.enabled and PILLOW_AVAILABLE,
+            "local_models": TRANSFORMERS_AVAILABLE,
+            "openai_api": OPENAI_AVAILABLE and bool(self.config.openai_api_key),
+            "caching": self.config.cache_enabled,
         }
 
     def enhance_metadata(self, content: str, metadata: Dict[str, Any]) -> AIResult:

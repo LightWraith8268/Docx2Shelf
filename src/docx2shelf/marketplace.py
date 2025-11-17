@@ -30,6 +30,7 @@ except ImportError:
 @dataclass
 class MarketplaceTheme:
     """A theme available in the marketplace."""
+
     name: str
     description: str
     category: str  # serif, sans-serif, specialty, academic, fiction
@@ -49,6 +50,7 @@ class MarketplaceTheme:
 @dataclass
 class MarketplaceTool:
     """A tool available in the marketplace."""
+
     name: str
     description: str
     category: str  # conversion, quality, accessibility, publishing
@@ -69,6 +71,7 @@ class MarketplaceTool:
 @dataclass
 class MarketplaceResource:
     """A resource available in the marketplace."""
+
     name: str
     description: str
     category: str  # template, font, image, reference
@@ -138,7 +141,7 @@ class MarketplaceManager:
                     "compatibility": "3.0+",
                     "rating": 4.8,
                     "downloads": 15420,
-                    "featured": True
+                    "featured": True,
                 },
                 {
                     "name": "Fiction Novel",
@@ -154,7 +157,7 @@ class MarketplaceManager:
                     "compatibility": "3.0+",
                     "rating": 4.9,
                     "downloads": 28350,
-                    "featured": True
+                    "featured": True,
                 },
                 {
                     "name": "Technical Manual",
@@ -170,7 +173,7 @@ class MarketplaceManager:
                     "compatibility": "3.0+",
                     "rating": 4.7,
                     "downloads": 9850,
-                    "featured": False
+                    "featured": False,
                 },
                 {
                     "name": "Children's Book",
@@ -186,8 +189,8 @@ class MarketplaceManager:
                     "compatibility": "3.0+",
                     "rating": 4.6,
                     "downloads": 6240,
-                    "featured": False
-                }
+                    "featured": False,
+                },
             ],
             "tools": [
                 {
@@ -205,7 +208,7 @@ class MarketplaceManager:
                     "homepage": "https://tools.docx2shelf.com/epub-optimizer",
                     "rating": 4.8,
                     "downloads": 12400,
-                    "featured": True
+                    "featured": True,
                 },
                 {
                     "name": "Image Processor",
@@ -222,7 +225,7 @@ class MarketplaceManager:
                     "homepage": "https://tools.docx2shelf.com/image-processor",
                     "rating": 4.5,
                     "downloads": 8750,
-                    "featured": False
+                    "featured": False,
                 },
                 {
                     "name": "Accessibility Checker",
@@ -239,8 +242,8 @@ class MarketplaceManager:
                     "homepage": "https://tools.docx2shelf.com/a11y-checker",
                     "rating": 4.9,
                     "downloads": 5320,
-                    "featured": True
-                }
+                    "featured": True,
+                },
             ],
             "resources": [
                 {
@@ -256,7 +259,7 @@ class MarketplaceManager:
                     "author": "Various",
                     "rating": 4.7,
                     "downloads": 18650,
-                    "featured": True
+                    "featured": True,
                 },
                 {
                     "name": "EPUB Templates",
@@ -271,7 +274,7 @@ class MarketplaceManager:
                     "author": "Docx2Shelf",
                     "rating": 4.8,
                     "downloads": 22100,
-                    "featured": True
+                    "featured": True,
                 },
                 {
                     "name": "Publishing Reference Guide",
@@ -286,14 +289,16 @@ class MarketplaceManager:
                     "author": "Docx2Shelf Team",
                     "rating": 4.9,
                     "downloads": 31200,
-                    "featured": False
-                }
+                    "featured": False,
+                },
             ],
             "version": "1.0.0",
-            "last_updated": "2025-09-20"
+            "last_updated": "2025-09-20",
         }
 
-    def get_themes(self, category: Optional[str] = None, featured_only: bool = False) -> List[MarketplaceTheme]:
+    def get_themes(
+        self, category: Optional[str] = None, featured_only: bool = False
+    ) -> List[MarketplaceTheme]:
         """Get available themes from the marketplace."""
         themes_data = self.catalog_data.get("themes", [])
         themes = [MarketplaceTheme(**theme) for theme in themes_data]
@@ -308,7 +313,9 @@ class MarketplaceManager:
         themes.sort(key=lambda x: x.downloads, reverse=True)
         return themes
 
-    def get_tools(self, category: Optional[str] = None, platform: Optional[str] = None) -> List[MarketplaceTool]:
+    def get_tools(
+        self, category: Optional[str] = None, platform: Optional[str] = None
+    ) -> List[MarketplaceTool]:
         """Get available tools from the marketplace."""
         tools_data = self.catalog_data.get("tools", [])
         tools = [MarketplaceTool(**tool) for tool in tools_data]
@@ -323,7 +330,9 @@ class MarketplaceManager:
         tools.sort(key=lambda x: (x.rating, x.downloads), reverse=True)
         return tools
 
-    def get_resources(self, category: Optional[str] = None, resource_type: Optional[str] = None) -> List[MarketplaceResource]:
+    def get_resources(
+        self, category: Optional[str] = None, resource_type: Optional[str] = None
+    ) -> List[MarketplaceResource]:
         """Get available resources from the marketplace."""
         resources_data = self.catalog_data.get("resources", [])
         resources = [MarketplaceResource(**resource) for resource in resources_data]
@@ -346,24 +355,27 @@ class MarketplaceManager:
         if not item_type or item_type == "themes":
             themes = self.get_themes()
             for theme in themes:
-                if (query_lower in theme.name.lower() or
-                    query_lower in theme.description.lower() or
-                    any(query_lower in tag.lower() for tag in theme.tags)):
+                if (
+                    query_lower in theme.name.lower()
+                    or query_lower in theme.description.lower()
+                    or any(query_lower in tag.lower() for tag in theme.tags)
+                ):
                     results["themes"].append(theme)
 
         if not item_type or item_type == "tools":
             tools = self.get_tools()
             for tool in tools:
-                if (query_lower in tool.name.lower() or
-                    query_lower in tool.description.lower()):
+                if query_lower in tool.name.lower() or query_lower in tool.description.lower():
                     results["tools"].append(tool)
 
         if not item_type or item_type == "resources":
             resources = self.get_resources()
             for resource in resources:
-                if (query_lower in resource.name.lower() or
-                    query_lower in resource.description.lower() or
-                    any(query_lower in tag.lower() for tag in resource.tags)):
+                if (
+                    query_lower in resource.name.lower()
+                    or query_lower in resource.description.lower()
+                    or any(query_lower in tag.lower() for tag in resource.tags)
+                ):
                     results["resources"].append(resource)
 
         return results
@@ -395,7 +407,7 @@ class MarketplaceManager:
                 theme_dir = self.themes_dir / theme.name.replace(" ", "_").lower()
                 theme_dir.mkdir(exist_ok=True)
 
-                with zipfile.ZipFile(temp_file_path, 'r') as zip_ref:
+                with zipfile.ZipFile(temp_file_path, "r") as zip_ref:
                     zip_ref.extractall(theme_dir)
 
                 # Save metadata
@@ -447,7 +459,7 @@ class MarketplaceManager:
                 tool_dir = self.tools_dir / tool.name.replace(" ", "_").lower()
                 tool_dir.mkdir(exist_ok=True)
 
-                with zipfile.ZipFile(temp_file_path, 'r') as zip_ref:
+                with zipfile.ZipFile(temp_file_path, "r") as zip_ref:
                     zip_ref.extractall(tool_dir)
 
                 # Save metadata and installation info
@@ -500,7 +512,7 @@ class MarketplaceManager:
                     temp_file_path = temp_file.name
 
                 try:
-                    with zipfile.ZipFile(temp_file_path, 'r') as zip_ref:
+                    with zipfile.ZipFile(temp_file_path, "r") as zip_ref:
                         zip_ref.extractall(resource_dir)
                 finally:
                     os.unlink(temp_file_path)
@@ -548,7 +560,7 @@ class MarketplaceManager:
         return {
             "themes": self.get_themes(featured_only=True),
             "tools": [t for t in self.get_tools() if t.featured],
-            "resources": [r for r in self.get_resources() if r.featured]
+            "resources": [r for r in self.get_resources() if r.featured],
         }
 
     def get_categories(self) -> Dict[str, List[str]]:
@@ -560,7 +572,7 @@ class MarketplaceManager:
         return {
             "themes": sorted(list(set(t.category for t in themes))),
             "tools": sorted(list(set(t.category for t in tools))),
-            "resources": sorted(list(set(r.category for r in resources)))
+            "resources": sorted(list(set(r.category for r in resources))),
         }
 
 

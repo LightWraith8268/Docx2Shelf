@@ -72,47 +72,47 @@ class ConversionWizard:
                 title="Welcome to Docx2Shelf",
                 description="Get started with converting your document to EPUB",
                 is_required=False,
-                help_text="This wizard will guide you through the conversion process step by step."
+                help_text="This wizard will guide you through the conversion process step by step.",
             ),
             WizardStep(
                 step_id="input_file",
                 title="Select Input File",
                 description="Choose the DOCX file you want to convert",
-                help_text="Supported formats: .docx, .md, .txt, .html"
+                help_text="Supported formats: .docx, .md, .txt, .html",
             ),
             WizardStep(
                 step_id="metadata",
                 title="Book Metadata",
                 description="Enter title, author, and other book information",
-                help_text="This information will appear in e-readers and bookstores"
+                help_text="This information will appear in e-readers and bookstores",
             ),
             WizardStep(
                 step_id="theme_style",
                 title="Theme & Styling",
                 description="Choose visual appearance and formatting options",
                 is_required=False,
-                help_text="Select from built-in themes or customize your own"
+                help_text="Select from built-in themes or customize your own",
             ),
             WizardStep(
                 step_id="structure",
                 title="Book Structure",
                 description="Configure chapters and table of contents",
                 is_required=False,
-                help_text="Define how your content should be organized"
+                help_text="Define how your content should be organized",
             ),
             WizardStep(
                 step_id="preview",
                 title="Preview & Review",
                 description="Review your settings and preview the result",
                 is_required=False,
-                help_text="Make final adjustments before conversion"
+                help_text="Make final adjustments before conversion",
             ),
             WizardStep(
                 step_id="conversion",
                 title="Convert to EPUB",
                 description="Generate your EPUB file",
-                help_text="The conversion process will create your final EPUB"
-            )
+                help_text="The conversion process will create your final EPUB",
+            ),
         ]
 
     def start_wizard(self, input_file: Optional[Path] = None) -> int:
@@ -225,16 +225,16 @@ class ConversionWizard:
             if not self._handle_navigation(file_path):
                 return False
 
-            if file_path in ['', 'skip']:
+            if file_path in ["", "skip"]:
                 continue
 
-            path = Path(file_path.strip('"\''))
+            path = Path(file_path.strip("\"'"))
 
             if not path.exists():
                 print(f"❌ File not found: {path}")
                 continue
 
-            if path.suffix.lower() not in ['.docx', '.md', '.txt', '.html', '.htm']:
+            if path.suffix.lower() not in [".docx", ".md", ".txt", ".html", ".htm"]:
                 print(f"❌ Unsupported file type: {path.suffix}")
                 print("Supported formats: .docx, .md, .txt, .html")
                 continue
@@ -256,7 +256,9 @@ class ConversionWizard:
         ai_manager = get_ai_manager()
         if ai_manager.is_available() and self.state.input_file:
             print("\n🤖 AI-Powered Metadata Enhancement Available!")
-            if self._prompt_bool("Would you like AI to analyze your document and suggest metadata?"):
+            if self._prompt_bool(
+                "Would you like AI to analyze your document and suggest metadata?"
+            ):
                 self._enhance_metadata_with_ai(metadata)
 
         # Interactive metadata entry
@@ -264,11 +266,16 @@ class ConversionWizard:
 
         title = self._get_user_input(f"Title [{metadata.title}]") or metadata.title
         author = self._get_user_input(f"Author [{metadata.author}]") or metadata.author
-        description = self._get_user_input(f"Description [{metadata.description or 'None'}]") or metadata.description
+        description = (
+            self._get_user_input(f"Description [{metadata.description or 'None'}]")
+            or metadata.description
+        )
         language = self._get_user_input(f"Language [{metadata.language}]") or metadata.language
 
         # AI Genre Detection
-        if ai_manager.is_available() and self._prompt_bool("Would you like AI to suggest genres and keywords?"):
+        if ai_manager.is_available() and self._prompt_bool(
+            "Would you like AI to suggest genres and keywords?"
+        ):
             self._suggest_genre_and_keywords(metadata)
 
         # Update metadata
@@ -281,7 +288,7 @@ class ConversionWizard:
         print(f"   Title: {metadata.title}")
         print(f"   Author: {metadata.author}")
         print(f"   Language: {metadata.language}")
-        if hasattr(metadata, 'genre') and metadata.genre:
+        if hasattr(metadata, "genre") and metadata.genre:
             print(f"   Genre: {metadata.genre}")
 
         return True
@@ -306,7 +313,7 @@ class ConversionWizard:
                 choice_num = int(choice)
                 if 1 <= choice_num <= len(themes):
                     selected_theme = themes[choice_num - 1]
-                    self.state.custom_settings['theme'] = selected_theme['id']
+                    self.state.custom_settings["theme"] = selected_theme["id"]
                     print(f"✅ Theme selected: {selected_theme['name']}")
                     break
                 elif choice_num == len(themes) + 1:
@@ -328,20 +335,20 @@ class ConversionWizard:
         print("   b) Manual page breaks")
         print("   c) Custom configuration")
 
-        structure_choice = self._get_user_input("Choose option (a/b/c)") or 'a'
+        structure_choice = self._get_user_input("Choose option (a/b/c)") or "a"
 
         if not self._handle_navigation(structure_choice):
             return False
 
-        self.state.custom_settings['chapter_detection'] = structure_choice
+        self.state.custom_settings["chapter_detection"] = structure_choice
 
         # Table of contents depth
         toc_depth = self._get_user_input("Table of contents depth (1-6) [2]") or "2"
 
         try:
-            self.state.custom_settings['toc_depth'] = int(toc_depth)
+            self.state.custom_settings["toc_depth"] = int(toc_depth)
         except ValueError:
-            self.state.custom_settings['toc_depth'] = 2
+            self.state.custom_settings["toc_depth"] = 2
 
         print(f"✅ Structure configured with TOC depth {self.state.custom_settings['toc_depth']}")
         return True
@@ -398,19 +405,20 @@ class ConversionWizard:
         metadata = EpubMetadata(
             title=self.state.input_file.stem if self.state.input_file else "Untitled",
             author="Unknown Author",
-            language="en"
+            language="en",
         )
 
-        if self.state.input_file and self.state.input_file.suffix.lower() == '.docx':
+        if self.state.input_file and self.state.input_file.suffix.lower() == ".docx":
             try:
                 from docx import Document
+
                 doc = Document(self.state.input_file)
-                core = getattr(doc, 'core_properties', None)
+                core = getattr(doc, "core_properties", None)
 
                 if core:
-                    if getattr(core, 'title', None):
+                    if getattr(core, "title", None):
                         metadata.title = core.title
-                    if getattr(core, 'author', None):
+                    if getattr(core, "author", None):
                         metadata.author = core.author
 
             except Exception:
@@ -422,8 +430,16 @@ class ConversionWizard:
         """Get list of available themes."""
         return [
             {"id": "serif", "name": "Serif", "description": "Classic book style with serif fonts"},
-            {"id": "sans", "name": "Sans-serif", "description": "Modern clean style with sans-serif fonts"},
-            {"id": "printlike", "name": "Print-like", "description": "Traditional print book appearance"},
+            {
+                "id": "sans",
+                "name": "Sans-serif",
+                "description": "Modern clean style with sans-serif fonts",
+            },
+            {
+                "id": "printlike",
+                "name": "Print-like",
+                "description": "Traditional print book appearance",
+            },
             {"id": "minimal", "name": "Minimal", "description": "Clean minimal design"},
         ]
 
@@ -438,10 +454,10 @@ class ConversionWizard:
             editor = ThemeEditor()
             result = editor.run_interactive_editor()
 
-            if result and result.get('theme_id'):
+            if result and result.get("theme_id"):
                 # Save the custom theme ID to wizard state
-                self.state.custom_settings['theme'] = result['theme_id']
-                self.state.custom_settings['custom_theme_path'] = result.get('theme_path')
+                self.state.custom_settings["theme"] = result["theme_id"]
+                self.state.custom_settings["custom_theme_path"] = result.get("theme_path")
                 print(f"✅ Custom theme created: {result['theme_id']}")
                 return True
             else:
@@ -455,10 +471,7 @@ class ConversionWizard:
         except Exception as e:
             # Use enhanced error handling for theme editor issues
             handled = handle_error(
-                error=e,
-                operation="theme editor",
-                step="theme_selection",
-                interactive=True
+                error=e, operation="theme editor", step="theme_selection", interactive=True
             )
             if not handled:
                 print(f"❌ Theme editor error: {e}")
@@ -469,7 +482,6 @@ class ConversionWizard:
         """Generate a preview of the EPUB."""
         import argparse
         import tempfile
-        import webbrowser
 
         from .cli import run_build
 
@@ -490,8 +502,8 @@ class ConversionWizard:
                 args.title = self.state.metadata.title
                 args.author = self.state.metadata.author
                 args.language = self.state.metadata.language
-                args.theme = self.state.custom_settings.get('theme', 'serif')
-                args.toc_depth = self.state.custom_settings.get('toc_depth', 2)
+                args.theme = self.state.custom_settings.get("theme", "serif")
+                args.toc_depth = self.state.custom_settings.get("toc_depth", 2)
                 args.output = str(temp_path)
                 args.no_prompt = True
                 args.quiet = False
@@ -522,7 +534,7 @@ class ConversionWizard:
         import webbrowser
 
         try:
-            port = self.state.custom_settings.get('preview_port', 8000)
+            port = self.state.custom_settings.get("preview_port", 8000)
             url = f"http://localhost:{port}"
 
             if webbrowser.open(url):
@@ -540,10 +552,10 @@ class ConversionWizard:
             print(f"Title: {self.state.metadata.title}")
             print(f"Author: {self.state.metadata.author}")
 
-        theme = self.state.custom_settings.get('theme', 'serif')
+        theme = self.state.custom_settings.get("theme", "serif")
         print(f"Theme: {theme}")
 
-        toc_depth = self.state.custom_settings.get('toc_depth', 2)
+        toc_depth = self.state.custom_settings.get("toc_depth", 2)
         print(f"TOC Depth: {toc_depth}")
 
     @wrap_with_error_handling("EPUB conversion", "conversion")
@@ -560,8 +572,8 @@ class ConversionWizard:
             args.title = self.state.metadata.title
             args.author = self.state.metadata.author
             args.language = self.state.metadata.language
-            args.theme = self.state.custom_settings.get('theme', 'serif')
-            args.toc_depth = self.state.custom_settings.get('toc_depth', 2)
+            args.theme = self.state.custom_settings.get("theme", "serif")
+            args.toc_depth = self.state.custom_settings.get("toc_depth", 2)
 
             # Set default values for other required arguments
             args.output = None  # Let system generate name
@@ -585,7 +597,7 @@ class ConversionWizard:
                 operation="EPUB conversion",
                 file_path=self.state.input_file,
                 step="conversion",
-                interactive=True
+                interactive=True,
             )
             if not handled:
                 raise
@@ -614,15 +626,15 @@ class ConversionWizard:
             self.state.session_file = self.session_dir / f"session_{int(time.time())}.json"
 
         session_data = {
-            'current_step': self.state.current_step,
-            'input_file': str(self.state.input_file) if self.state.input_file else None,
-            'metadata': self.state.metadata.__dict__ if self.state.metadata else None,
-            'custom_settings': self.state.custom_settings,
-            'preview_enabled': self.state.preview_enabled,
+            "current_step": self.state.current_step,
+            "input_file": str(self.state.input_file) if self.state.input_file else None,
+            "metadata": self.state.metadata.__dict__ if self.state.metadata else None,
+            "custom_settings": self.state.custom_settings,
+            "preview_enabled": self.state.preview_enabled,
         }
 
         try:
-            with open(self.state.session_file, 'w') as f:
+            with open(self.state.session_file, "w") as f:
                 json.dump(session_data, f, indent=2, default=str)
         except Exception:
             pass  # Ignore save errors
@@ -636,14 +648,14 @@ class ConversionWizard:
 
             latest_session = max(session_files, key=lambda p: p.stat().st_mtime)
 
-            with open(latest_session, 'r') as f:
+            with open(latest_session, "r") as f:
                 session_data = json.load(f)
 
             if self._confirm(f"Resume previous session from {latest_session.stem}?"):
-                self.state.current_step = session_data.get('current_step', 0)
-                if session_data.get('input_file'):
-                    self.state.input_file = Path(session_data['input_file'])
-                self.state.custom_settings = session_data.get('custom_settings', {})
+                self.state.current_step = session_data.get("current_step", 0)
+                if session_data.get("input_file"):
+                    self.state.input_file = Path(session_data["input_file"])
+                self.state.custom_settings = session_data.get("custom_settings", {})
                 # Restore metadata would need more complex deserialization
 
         except Exception:
@@ -667,11 +679,11 @@ class ConversionWizard:
         """Ask user for yes/no confirmation."""
         while True:
             response = self._get_user_input(f"{question} (y/n)").lower()
-            if response in ['y', 'yes']:
+            if response in ["y", "yes"]:
                 return True
-            elif response in ['n', 'no']:
+            elif response in ["n", "no"]:
                 return False
-            elif response in ['quit', 'exit']:
+            elif response in ["quit", "exit"]:
                 return False
             else:
                 print("Please enter 'y' or 'n'")
@@ -680,16 +692,16 @@ class ConversionWizard:
         """Handle navigation commands."""
         response = response.lower().strip()
 
-        if response in ['quit', 'exit', 'q']:
+        if response in ["quit", "exit", "q"]:
             return False
-        elif response in ['back', 'b']:
+        elif response in ["back", "b"]:
             if self.state.current_step > 0:
                 self.state.current_step -= 2  # Will be incremented in main loop
                 return True
             else:
                 print("Already at first step")
                 return True
-        elif response in ['help', 'h']:
+        elif response in ["help", "h"]:
             self._show_step_help()
             return True
 
@@ -740,16 +752,23 @@ class ConversionWizard:
                 return
 
             # Detect genres
-            genre_result = detect_genre_with_ai(content, {
-                'title': metadata.title,
-                'author': metadata.author,
-                'description': metadata.description or ''
-            })
+            genre_result = detect_genre_with_ai(
+                content,
+                {
+                    "title": metadata.title,
+                    "author": metadata.author,
+                    "description": metadata.description or "",
+                },
+            )
 
             if genre_result.genres:
                 print("\n📚 Suggested Genres:")
                 for i, genre in enumerate(genre_result.genres[:5], 1):
-                    confidence_icon = "🟢" if genre.confidence >= 0.8 else "🟡" if genre.confidence >= 0.6 else "🔴"
+                    confidence_icon = (
+                        "🟢"
+                        if genre.confidence >= 0.8
+                        else "🟡" if genre.confidence >= 0.6 else "🔴"
+                    )
                     print(f"   {i}. {confidence_icon} {genre.genre} ({genre.confidence:.1%})")
 
                 choice = self._get_user_input("Select genre number (or Enter to skip)")
@@ -773,13 +792,14 @@ class ConversionWizard:
             return ""
 
         try:
-            if self.state.input_file.suffix.lower() == '.docx':
+            if self.state.input_file.suffix.lower() == ".docx":
                 # Use docx2txt or similar to extract text
                 from .convert import extract_text_from_docx
+
                 return extract_text_from_docx(self.state.input_file)
             else:
                 # Read as text file
-                return self.state.input_file.read_text(encoding='utf-8')
+                return self.state.input_file.read_text(encoding="utf-8")
         except Exception:
             return ""
 
@@ -787,9 +807,9 @@ class ConversionWizard:
         """Prompt user with yes/no question."""
         while True:
             response = self._get_user_input(f"{question} (y/n)").lower()
-            if response in ['y', 'yes']:
+            if response in ["y", "yes"]:
                 return True
-            elif response in ['n', 'no', 'quit', 'exit']:
+            elif response in ["n", "no", "quit", "exit"]:
                 return False
             else:
                 print("Please enter 'y' or 'n'")

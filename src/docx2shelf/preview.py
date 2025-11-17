@@ -19,9 +19,9 @@ class EPUBPreviewHandler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers(self):
         # Add CORS headers for local development
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET')
-        self.send_header('Access-Control-Allow-Headers', '*')
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET")
+        self.send_header("Access-Control-Allow-Headers", "*")
         super().end_headers()
 
     def log_message(self, format, *args):
@@ -146,7 +146,7 @@ def create_preview_index(preview_dir: Path, title: str = "EPUB Preview") -> Path
     # Add links to XHTML files
     for xhtml_file in xhtml_files:
         rel_path = xhtml_file.relative_to(preview_dir)
-        file_name = xhtml_file.stem.replace('_', ' ').title()
+        file_name = xhtml_file.stem.replace("_", " ").title()
         html_content += f'            <a href="{rel_path}" class="file-link" target="preview-frame">{file_name}</a>\n'
 
     html_content += """        </div>
@@ -158,8 +158,10 @@ def create_preview_index(preview_dir: Path, title: str = "EPUB Preview") -> Path
     # Add links to CSS files
     for css_file in css_files:
         rel_path = css_file.relative_to(preview_dir)
-        file_name = css_file.stem.replace('_', ' ').title()
-        html_content += f'            <a href="{rel_path}" class="file-link" target="_blank">{file_name}</a>\n'
+        file_name = css_file.stem.replace("_", " ").title()
+        html_content += (
+            f'            <a href="{rel_path}" class="file-link" target="_blank">{file_name}</a>\n'
+        )
 
     html_content += """        </div>
     </div>
@@ -190,7 +192,7 @@ def create_preview_index(preview_dir: Path, title: str = "EPUB Preview") -> Path
 </html>"""
 
     index_path = preview_dir / "index.html"
-    index_path.write_text(html_content, encoding='utf-8')
+    index_path.write_text(html_content, encoding="utf-8")
     return index_path
 
 
@@ -201,15 +203,19 @@ def find_available_port(start_port: int = 8000, max_attempts: int = 100) -> int:
     for port in range(start_port, start_port + max_attempts):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('localhost', port))
+                s.bind(("localhost", port))
                 return port
         except OSError:
             continue
 
-    raise RuntimeError(f"Could not find available port in range {start_port}-{start_port + max_attempts}")
+    raise RuntimeError(
+        f"Could not find available port in range {start_port}-{start_port + max_attempts}"
+    )
 
 
-def start_preview_server(preview_dir: Path, port: int = 8000, quiet: bool = False) -> tuple[threading.Thread, int]:
+def start_preview_server(
+    preview_dir: Path, port: int = 8000, quiet: bool = False
+) -> tuple[threading.Thread, int]:
     """Start a local HTTP server for EPUB preview.
 
     Returns tuple of (server_thread, actual_port)
@@ -217,7 +223,9 @@ def start_preview_server(preview_dir: Path, port: int = 8000, quiet: bool = Fals
     actual_port = find_available_port(port)
 
     def serve():
-        handler = lambda *args, **kwargs: EPUBPreviewHandler(*args, preview_dir=preview_dir, **kwargs)
+        handler = lambda *args, **kwargs: EPUBPreviewHandler(
+            *args, preview_dir=preview_dir, **kwargs
+        )
 
         with socketserver.TCPServer(("localhost", actual_port), handler) as httpd:
             if not quiet:
@@ -250,7 +258,9 @@ def open_preview_in_browser(port: int, quiet: bool = False) -> bool:
         return False
 
 
-def create_epub_preview(epub_content_dir: Path, output_dir: Path, title: str = "EPUB Preview", quiet: bool = False) -> Path:
+def create_epub_preview(
+    epub_content_dir: Path, output_dir: Path, title: str = "EPUB Preview", quiet: bool = False
+) -> Path:
     """Create a preview directory structure from EPUB content.
 
     Returns path to the preview directory.
@@ -289,7 +299,7 @@ def run_live_preview(
     title: str = "EPUB Preview",
     port: int = 8000,
     auto_open: bool = True,
-    quiet: bool = False
+    quiet: bool = False,
 ) -> Optional[int]:
     """Run complete live preview workflow.
 
@@ -307,12 +317,12 @@ def run_live_preview(
             open_preview_in_browser(actual_port, quiet)
 
         if not quiet:
-            print("\n" + "="*50)
+            print("\n" + "=" * 50)
             print("📚 EPUB Preview Ready!")
             print(f"🌐 URL: http://localhost:{actual_port}")
             print("📁 Preview files:", preview_dir)
             print("\nPress Ctrl+C to stop the preview server")
-            print("="*50)
+            print("=" * 50)
 
         return actual_port
 

@@ -24,13 +24,9 @@ BUILTIN_PROFILES = {
             "language": "required",
             "publisher": "recommended",
             "description": "required",
-            "isbn": "optional"
+            "isbn": "optional",
         },
-        "validations": [
-            "cover_size_check",
-            "language_required",
-            "description_length_check"
-        ]
+        "validations": ["cover_size_check", "language_required", "description_length_check"],
     },
     "kobo": {
         "name": "Kobo Writing Life",
@@ -50,12 +46,9 @@ BUILTIN_PROFILES = {
             "language": "required",
             "publisher": "optional",
             "description": "required",
-            "series": "supported"
+            "series": "supported",
         },
-        "validations": [
-            "cover_size_check",
-            "language_required"
-        ]
+        "validations": ["cover_size_check", "language_required"],
     },
     "apple": {
         "name": "Apple Books",
@@ -75,13 +68,9 @@ BUILTIN_PROFILES = {
             "language": "required",
             "publisher": "recommended",
             "description": "required",
-            "isbn": "recommended"
+            "isbn": "recommended",
         },
-        "validations": [
-            "cover_size_check",
-            "language_required",
-            "apple_specific_checks"
-        ]
+        "validations": ["cover_size_check", "language_required", "apple_specific_checks"],
     },
     "generic": {
         "name": "Generic EPUB",
@@ -97,13 +86,8 @@ BUILTIN_PROFILES = {
         "justify": True,
         "epub2_compat": False,
         "epubcheck": True,
-        "metadata_requirements": {
-            "language": "required",
-            "description": "recommended"
-        },
-        "validations": [
-            "basic_epub_checks"
-        ]
+        "metadata_requirements": {"language": "required", "description": "recommended"},
+        "validations": ["basic_epub_checks"],
     },
     "legacy": {
         "name": "Legacy Readers",
@@ -119,13 +103,9 @@ BUILTIN_PROFILES = {
         "justify": True,
         "epub2_compat": True,
         "epubcheck": True,
-        "metadata_requirements": {
-            "language": "required"
-        },
-        "validations": [
-            "epub2_compatibility_checks"
-        ]
-    }
+        "metadata_requirements": {"language": "required"},
+        "validations": ["epub2_compatibility_checks"],
+    },
 }
 
 
@@ -167,13 +147,13 @@ def apply_profile_to_args(args, profile_name: str) -> None:
             setattr(args, arg_name, value)
 
     # Handle special boolean conversions
-    if hasattr(args, 'hyphenate') and isinstance(args.hyphenate, bool):
+    if hasattr(args, "hyphenate") and isinstance(args.hyphenate, bool):
         args.hyphenate = "on" if args.hyphenate else "off"
 
-    if hasattr(args, 'justify') and isinstance(args.justify, bool):
+    if hasattr(args, "justify") and isinstance(args.justify, bool):
         args.justify = "on" if args.justify else "off"
 
-    if hasattr(args, 'epubcheck') and isinstance(args.epubcheck, bool):
+    if hasattr(args, "epubcheck") and isinstance(args.epubcheck, bool):
         args.epubcheck = "on" if args.epubcheck else "off"
 
 
@@ -211,23 +191,28 @@ def _run_validation(validation_name: str, meta, profile: Dict) -> List[str]:
 
     if validation_name == "cover_size_check":
         # Check cover dimensions if available
-        if hasattr(meta, 'cover_path') and meta.cover_path:
+        if hasattr(meta, "cover_path") and meta.cover_path:
             try:
                 from PIL import Image
+
                 with Image.open(meta.cover_path) as img:
                     width, height = img.size
                     max_width = profile.get("image_max_width", 1600)
                     max_height = profile.get("image_max_height", 2560)
 
                     if width > max_width or height > max_height:
-                        errors.append(f"Cover size {width}x{height} exceeds {profile['name']} limits ({max_width}x{max_height})")
+                        errors.append(
+                            f"Cover size {width}x{height} exceeds {profile['name']} limits ({max_width}x{max_height})"
+                        )
 
                     # Check aspect ratio for some profiles
                     if profile_name := profile.get("name"):
                         if "KDP" in profile_name:
                             ratio = height / width
                             if ratio < 1.25 or ratio > 2.0:
-                                errors.append(f"Cover aspect ratio {ratio:.2f} outside KDP recommendations (1.25-2.0)")
+                                errors.append(
+                                    f"Cover aspect ratio {ratio:.2f} outside KDP recommendations (1.25-2.0)"
+                                )
 
             except ImportError:
                 pass  # PIL not available
@@ -235,11 +220,11 @@ def _run_validation(validation_name: str, meta, profile: Dict) -> List[str]:
                 pass  # Could not read image
 
     elif validation_name == "language_required":
-        if not getattr(meta, 'language', None):
+        if not getattr(meta, "language", None):
             errors.append(f"{profile['name']} requires language to be specified")
 
     elif validation_name == "description_length_check":
-        description = getattr(meta, 'description', None)
+        description = getattr(meta, "description", None)
         if description:
             if len(description) < 50:
                 errors.append(f"{profile['name']} recommends description of at least 50 characters")
@@ -248,7 +233,7 @@ def _run_validation(validation_name: str, meta, profile: Dict) -> List[str]:
 
     elif validation_name == "apple_specific_checks":
         # Apple Books specific requirements
-        if getattr(meta, 'publisher', None) == "":
+        if getattr(meta, "publisher", None) == "":
             errors.append("Apple Books recommends setting a publisher name")
 
     elif validation_name == "epub2_compatibility_checks":
@@ -257,9 +242,9 @@ def _run_validation(validation_name: str, meta, profile: Dict) -> List[str]:
 
     elif validation_name == "basic_epub_checks":
         # Basic EPUB validation
-        if not getattr(meta, 'title', None):
+        if not getattr(meta, "title", None):
             errors.append("EPUB requires a title")
-        if not getattr(meta, 'author', None):
+        if not getattr(meta, "author", None):
             errors.append("EPUB requires an author")
 
     return errors
@@ -267,14 +252,14 @@ def _run_validation(validation_name: str, meta, profile: Dict) -> List[str]:
 
 def create_custom_profile(profile_data: Dict, output_path: Path) -> None:
     """Create a custom profile file."""
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(profile_data, f, indent=2, ensure_ascii=False)
 
 
 def load_custom_profile(profile_path: Path) -> Dict:
     """Load a custom profile from a file."""
     try:
-        with open(profile_path, 'r', encoding='utf-8') as f:
+        with open(profile_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         raise ValueError(f"Could not load profile from {profile_path}: {e}")
@@ -315,7 +300,7 @@ def get_profile_summary(profile_name: str) -> str:
         f"  Justification: {'On' if profile.get('justify', True) else 'Off'}",
         f"  EPUB2 Compatibility: {'On' if profile.get('epub2_compat', False) else 'Off'}",
         "",
-        "Metadata Requirements:"
+        "Metadata Requirements:",
     ]
 
     requirements = profile.get("metadata_requirements", {})

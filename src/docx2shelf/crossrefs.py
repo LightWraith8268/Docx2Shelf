@@ -25,6 +25,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 class CrossRefType(Enum):
     """Types of cross-references supported."""
+
     HEADING = "heading"
     FIGURE = "figure"
     TABLE = "table"
@@ -125,10 +126,12 @@ class CrossRefProcessor:
             "targets_found": 0,
             "references_found": 0,
             "broken_references": 0,
-            "id_collisions_resolved": 0
+            "id_collisions_resolved": 0,
         }
 
-    def process_content(self, html_chunks: List[str], chunk_files: List[str]) -> Tuple[List[str], Dict[str, str]]:
+    def process_content(
+        self, html_chunks: List[str], chunk_files: List[str]
+    ) -> Tuple[List[str], Dict[str, str]]:
         """
         Process HTML content to extract targets and resolve cross-references.
 
@@ -149,10 +152,7 @@ class CrossRefProcessor:
         updated_chunks = self._update_html_with_anchors_and_links(html_chunks)
 
         # Step 5: Generate target mapping for external use
-        target_mapping = {
-            target.id: target.chapter_file
-            for target in self.targets.values()
-        }
+        target_mapping = {target.id: target.chapter_file for target in self.targets.values()}
 
         return updated_chunks, target_mapping
 
@@ -177,7 +177,7 @@ class CrossRefProcessor:
     def _extract_heading_targets(self, chunk: str, filename: str, chunk_idx: int) -> None:
         """Extract heading elements as targets."""
 
-        heading_pattern = r'<(h[1-6])([^>]*?)>(.*?)</\1>'
+        heading_pattern = r"<(h[1-6])([^>]*?)>(.*?)</\1>"
 
         for match in re.finditer(heading_pattern, chunk, re.IGNORECASE | re.DOTALL):
             tag = match.group(1).lower()
@@ -185,7 +185,7 @@ class CrossRefProcessor:
             content = match.group(3)
 
             # Clean content for title
-            clean_title = re.sub(r'<[^>]+>', '', content).strip()
+            clean_title = re.sub(r"<[^>]+>", "", content).strip()
 
             if not clean_title:
                 continue
@@ -206,7 +206,7 @@ class CrossRefProcessor:
                 ref_type=CrossRefType.HEADING,
                 chapter_file=filename,
                 position=match.start(),
-                level=int(tag[1])
+                level=int(tag[1]),
             )
 
             self.targets[stable_id] = target
@@ -216,9 +216,9 @@ class CrossRefProcessor:
 
         # Look for images with captions or figure elements
         patterns = [
-            r'<figure[^>]*?>(.*?)</figure>',
+            r"<figure[^>]*?>(.*?)</figure>",
             r'<img[^>]*?alt\s*=\s*["\']([^"\']+)["\'][^>]*?>',
-            r'<div[^>]*?class\s*=\s*["\'][^"\']*figure[^"\']*["\'][^>]*?>(.*?)</div>'
+            r'<div[^>]*?class\s*=\s*["\'][^"\']*figure[^"\']*["\'][^>]*?>(.*?)</div>',
         ]
 
         figure_number = 1
@@ -240,7 +240,7 @@ class CrossRefProcessor:
                     ref_type=CrossRefType.FIGURE,
                     chapter_file=filename,
                     position=match.start(),
-                    number=str(figure_number)
+                    number=str(figure_number),
                 )
 
                 self.targets[stable_id] = target
@@ -249,16 +249,18 @@ class CrossRefProcessor:
     def _extract_table_targets(self, chunk: str, filename: str, chunk_idx: int) -> None:
         """Extract table elements as targets."""
 
-        table_pattern = r'<table[^>]*?>(.*?)</table>'
+        table_pattern = r"<table[^>]*?>(.*?)</table>"
         table_number = 1
 
         for match in re.finditer(table_pattern, chunk, re.IGNORECASE | re.DOTALL):
             table_content = match.group(1)
 
             # Look for caption
-            caption_match = re.search(r'<caption[^>]*?>(.*?)</caption>', table_content, re.IGNORECASE | re.DOTALL)
+            caption_match = re.search(
+                r"<caption[^>]*?>(.*?)</caption>", table_content, re.IGNORECASE | re.DOTALL
+            )
             caption = caption_match.group(1) if caption_match else f"Table {table_number}"
-            caption = re.sub(r'<[^>]+>', '', caption).strip()
+            caption = re.sub(r"<[^>]+>", "", caption).strip()
 
             # Generate stable ID
             stable_id = self._generate_stable_id(caption, CrossRefType.TABLE)
@@ -270,7 +272,7 @@ class CrossRefProcessor:
                 ref_type=CrossRefType.TABLE,
                 chapter_file=filename,
                 position=match.start(),
-                number=str(table_number)
+                number=str(table_number),
             )
 
             self.targets[stable_id] = target
@@ -282,7 +284,7 @@ class CrossRefProcessor:
         # Look for Word bookmarks or anchor tags
         bookmark_patterns = [
             r'<a[^>]*?name\s*=\s*["\']([^"\']+)["\'][^>]*?>(.*?)</a>',
-            r'<span[^>]*?id\s*=\s*["\']([^"\']+)["\'][^>]*?data-bookmark[^>]*?>(.*?)</span>'
+            r'<span[^>]*?id\s*=\s*["\']([^"\']+)["\'][^>]*?data-bookmark[^>]*?>(.*?)</span>',
         ]
 
         for pattern in bookmark_patterns:
@@ -291,7 +293,7 @@ class CrossRefProcessor:
                 content = match.group(2)
 
                 # Clean content
-                clean_content = re.sub(r'<[^>]+>', '', content).strip()
+                clean_content = re.sub(r"<[^>]+>", "", content).strip()
                 title = clean_content or bookmark_name
 
                 # Generate stable ID
@@ -304,7 +306,7 @@ class CrossRefProcessor:
                     text_content=clean_content,
                     ref_type=CrossRefType.BOOKMARK,
                     chapter_file=filename,
-                    position=match.start()
+                    position=match.start(),
                 )
 
                 self.targets[stable_id] = target
@@ -316,7 +318,7 @@ class CrossRefProcessor:
         ref_patterns = [
             r'<a[^>]*?href\s*=\s*["\']#([^"\']+)["\'][^>]*?>(.*?)</a>',
             r'<span[^>]*?class\s*=\s*["\'][^"\']*cross-?ref[^"\']*["\'][^>]*?>(.*?)</span>',
-            r'<!--\s*REF\s+([^>]+)\s*-->(.*?)<!--\s*/REF\s*-->'
+            r"<!--\s*REF\s+([^>]+)\s*-->(.*?)<!--\s*/REF\s*-->",
         ]
 
         ref_number = 1
@@ -324,7 +326,7 @@ class CrossRefProcessor:
         for chunk_idx, (chunk, filename) in enumerate(zip(html_chunks, chunk_files)):
             for pattern in ref_patterns:
                 for match in re.finditer(pattern, chunk, re.IGNORECASE | re.DOTALL):
-                    if pattern.startswith(r'<a'):  # Hyperlink pattern
+                    if pattern.startswith(r"<a"):  # Hyperlink pattern
                         target_anchor = match.group(1)
                         ref_text = match.group(2)
                     else:  # Other patterns
@@ -332,7 +334,7 @@ class CrossRefProcessor:
                         ref_text = match.group(2) if match.lastindex >= 2 else match.group(1)
 
                     # Clean reference text
-                    clean_ref_text = re.sub(r'<[^>]+>', '', ref_text).strip()
+                    clean_ref_text = re.sub(r"<[^>]+>", "", ref_text).strip()
 
                     # Create cross-reference
                     ref = CrossReference(
@@ -342,7 +344,7 @@ class CrossRefProcessor:
                         target_id=target_anchor,
                         target_type=self._guess_target_type(clean_ref_text),
                         ref_text=clean_ref_text,
-                        word_field_result=clean_ref_text
+                        word_field_result=clean_ref_text,
                     )
 
                     self.references.append(ref)
@@ -420,7 +422,7 @@ class CrossRefProcessor:
         for target in self.targets.values():
             if target.ref_type == CrossRefType.HEADING:
                 # Update heading tags
-                pattern = rf'<(h{target.level})([^>]*?)>({re.escape(target.title)})</\1>'
+                pattern = rf"<(h{target.level})([^>]*?)>({re.escape(target.title)})</\1>"
 
                 def add_id(match):
                     tag = match.group(1)
@@ -428,12 +430,12 @@ class CrossRefProcessor:
                     content = match.group(3)
 
                     # Add or update ID
-                    if 'id=' in attrs:
+                    if "id=" in attrs:
                         attrs = re.sub(r'id\s*=\s*["\'][^"\']*["\']', f'id="{target.id}"', attrs)
                     else:
                         attrs += f' id="{target.id}"'
 
-                    return f'<{tag}{attrs}>{content}</{tag}>'
+                    return f"<{tag}{attrs}>{content}</{tag}>"
 
                 chunk = re.sub(pattern, add_id, chunk, flags=re.IGNORECASE)
 
@@ -445,13 +447,17 @@ class CrossRefProcessor:
         for ref in self.references:
             if not ref.is_broken and ref.href:
                 # Find and update the reference link
-                pattern = rf'<a[^>]*?href\s*=\s*["\']#?{re.escape(ref.target_id)}["\'][^>]*?>(.*?)</a>'
+                pattern = (
+                    rf'<a[^>]*?href\s*=\s*["\']#?{re.escape(ref.target_id)}["\'][^>]*?>(.*?)</a>'
+                )
                 replacement = f'<a href="{ref.href}" class="cross-ref">\\1</a>'
                 chunk = re.sub(pattern, replacement, chunk, flags=re.IGNORECASE)
 
         return chunk
 
-    def _generate_stable_id(self, content: str, ref_type: CrossRefType, original_id: Optional[str] = None) -> str:
+    def _generate_stable_id(
+        self, content: str, ref_type: CrossRefType, original_id: Optional[str] = None
+    ) -> str:
         """Generate a stable, collision-safe ID."""
 
         # Start with original ID if available and safe
@@ -460,9 +466,11 @@ class CrossRefProcessor:
         else:
             # Generate from content
             # Clean content for ID
-            clean_content = re.sub(r'[^\w\s-]', '', content)
-            clean_content = re.sub(r'\s+', '-', clean_content).lower()
-            clean_content = clean_content[:self.config.max_id_length - len(self.config.id_prefix) - 10]
+            clean_content = re.sub(r"[^\w\s-]", "", content)
+            clean_content = re.sub(r"\s+", "-", clean_content).lower()
+            clean_content = clean_content[
+                : self.config.max_id_length - len(self.config.id_prefix) - 10
+            ]
 
             base_id = f"{self.config.id_prefix}-{ref_type.value}-{clean_content}"
 
@@ -472,7 +480,9 @@ class CrossRefProcessor:
 
         while final_id in self.id_registry:
             # Generate collision suffix
-            suffix = hashlib.md5(f"{base_id}-{counter}".encode()).hexdigest()[:self.config.collision_suffix_length]
+            suffix = hashlib.md5(f"{base_id}-{counter}".encode()).hexdigest()[
+                : self.config.collision_suffix_length
+            ]
             final_id = f"{base_id}-{suffix}"
             counter += 1
 
@@ -487,20 +497,20 @@ class CrossRefProcessor:
 
     def _is_safe_id(self, id_str: str) -> bool:
         """Check if an ID is safe to use."""
-        return bool(re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', id_str))
+        return bool(re.match(r"^[a-zA-Z][a-zA-Z0-9_-]*$", id_str))
 
     def _extract_caption(self, content: str) -> Optional[str]:
         """Extract caption text from figure content."""
         caption_patterns = [
-            r'<figcaption[^>]*?>(.*?)</figcaption>',
+            r"<figcaption[^>]*?>(.*?)</figcaption>",
             r'<p[^>]*?class\s*=\s*["\'][^"\']*caption[^"\']*["\'][^>]*?>(.*?)</p>',
-            r'<div[^>]*?class\s*=\s*["\'][^"\']*caption[^"\']*["\'][^>]*?>(.*?)</div>'
+            r'<div[^>]*?class\s*=\s*["\'][^"\']*caption[^"\']*["\'][^>]*?>(.*?)</div>',
         ]
 
         for pattern in caption_patterns:
             match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
             if match:
-                caption = re.sub(r'<[^>]+>', '', match.group(1)).strip()
+                caption = re.sub(r"<[^>]+>", "", match.group(1)).strip()
                 if caption:
                     return caption
 
@@ -510,13 +520,13 @@ class CrossRefProcessor:
         """Guess the target type from reference text."""
         ref_lower = ref_text.lower()
 
-        if 'figure' in ref_lower or 'fig' in ref_lower:
+        if "figure" in ref_lower or "fig" in ref_lower:
             return CrossRefType.FIGURE
-        elif 'table' in ref_lower:
+        elif "table" in ref_lower:
             return CrossRefType.TABLE
-        elif 'chapter' in ref_lower or 'section' in ref_lower:
+        elif "chapter" in ref_lower or "section" in ref_lower:
             return CrossRefType.HEADING
-        elif 'equation' in ref_lower or 'eq' in ref_lower:
+        elif "equation" in ref_lower or "eq" in ref_lower:
             return CrossRefType.EQUATION
         else:
             return CrossRefType.HEADING  # Default
@@ -539,7 +549,7 @@ class CrossRefProcessor:
                 "type": target.ref_type.value,
                 "file": target.chapter_file,
                 "number": target.number or "",
-                "level": str(target.level)
+                "level": str(target.level),
             }
 
         return manifest
@@ -557,5 +567,5 @@ def create_scholarly_crossref_config() -> CrossRefConfig:
         include_titles=True,
         generate_back_refs=True,
         process_broken_refs=True,
-        max_title_length=100
+        max_title_length=100,
     )

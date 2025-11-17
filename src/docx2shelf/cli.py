@@ -53,9 +53,10 @@ def _arg_parser() -> argparse.ArgumentParser:
 
     # Add version argument
     p.add_argument(
-        "--version", action="version",
+        "--version",
+        action="version",
         version=get_version_string(),
-        help="Show version information and exit"
+        help="Show version information and exit",
     )
 
     sub = p.add_subparsers(dest="command", required=False)
@@ -100,6 +101,7 @@ def _arg_parser() -> argparse.ArgumentParser:
     # Import themes dynamically to get available themes
     try:
         from .themes import get_available_themes
+
         available_themes = get_available_themes()
     except ImportError:
         available_themes = ["serif", "sans", "printlike"]  # Fallback
@@ -113,15 +115,37 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument(
         "--store-profile",
         choices=["kdp", "apple", "kobo", "google", "bn", "generic"],
-        help="Optimize EPUB for specific store (Amazon KDP, Apple Books, Kobo, Google Play, B&N, or generic)"
+        help="Optimize EPUB for specific store (Amazon KDP, Apple Books, Kobo, Google Play, B&N, or generic)",
     )
     b.add_argument("--embed-fonts", type=str, help="Directory of TTF/OTF to embed")
-    b.add_argument("--image-quality", type=int, default=85, help="JPEG/WebP quality for image compression (1-100)")
-    b.add_argument("--image-max-width", type=int, default=1200, help="Maximum image width in pixels")
-    b.add_argument("--image-max-height", type=int, default=1600, help="Maximum image height in pixels")
-    b.add_argument("--image-format", choices=["original", "webp", "avif"], default="webp", help="Convert images to modern format")
-    b.add_argument("--enhanced-images", action="store_true", help="Enable enhanced image processing for edge cases (CMYK, transparency, large images)")
-    b.add_argument("--vertical-writing", action="store_true", help="Enable vertical writing mode for CJK languages")
+    b.add_argument(
+        "--image-quality",
+        type=int,
+        default=85,
+        help="JPEG/WebP quality for image compression (1-100)",
+    )
+    b.add_argument(
+        "--image-max-width", type=int, default=1200, help="Maximum image width in pixels"
+    )
+    b.add_argument(
+        "--image-max-height", type=int, default=1600, help="Maximum image height in pixels"
+    )
+    b.add_argument(
+        "--image-format",
+        choices=["original", "webp", "avif"],
+        default="webp",
+        help="Convert images to modern format",
+    )
+    b.add_argument(
+        "--enhanced-images",
+        action="store_true",
+        help="Enable enhanced image processing for edge cases (CMYK, transparency, large images)",
+    )
+    b.add_argument(
+        "--vertical-writing",
+        action="store_true",
+        help="Enable vertical writing mode for CJK languages",
+    )
     b.add_argument("--hyphenate", choices=["on", "off"], default="on")
     b.add_argument("--justify", choices=["on", "off"], default="on")
     b.add_argument("--toc-depth", type=int, default=2, help="Table of contents depth (1-6)")
@@ -145,7 +169,11 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--css", type=str, help="Path to extra CSS to merge (optional)")
     b.add_argument("--page-numbers", choices=["on", "off"], default="off")
     b.add_argument("--epub-version", type=str, default="3")
-    b.add_argument("--epub2-compat", action="store_true", help="Enable EPUB 2 compatibility mode (stricter CSS)")
+    b.add_argument(
+        "--epub2-compat",
+        action="store_true",
+        help="Enable EPUB 2 compatibility mode (stricter CSS)",
+    )
     b.add_argument("--cover-scale", choices=["contain", "cover"], default="contain")
     b.add_argument(
         "--font-size", dest="font_size", type=str, help="Base font size (e.g., 1rem, 12pt)"
@@ -158,10 +186,18 @@ def _arg_parser() -> argparse.ArgumentParser:
     b.add_argument("--ack", type=str, help="Path to plain-text acknowledgements (optional)")
 
     # AI Enhancement Options
-    b.add_argument("--ai-enhance", action="store_true", help="Enable AI-powered metadata enhancement")
-    b.add_argument("--ai-genre", action="store_true", help="Use AI for genre detection and keyword generation")
-    b.add_argument("--ai-alt-text", action="store_true", help="Generate AI-powered alt text for images")
-    b.add_argument("--ai-interactive", action="store_true", help="Interactive AI suggestions with user prompts")
+    b.add_argument(
+        "--ai-enhance", action="store_true", help="Enable AI-powered metadata enhancement"
+    )
+    b.add_argument(
+        "--ai-genre", action="store_true", help="Use AI for genre detection and keyword generation"
+    )
+    b.add_argument(
+        "--ai-alt-text", action="store_true", help="Generate AI-powered alt text for images"
+    )
+    b.add_argument(
+        "--ai-interactive", action="store_true", help="Interactive AI suggestions with user prompts"
+    )
     b.add_argument("--ai-config", type=str, help="Path to AI configuration file (optional)")
 
     b.add_argument("--output", type=str, help="Output .epub path (optional)")
@@ -173,14 +209,23 @@ def _arg_parser() -> argparse.ArgumentParser:
     )
     b.add_argument("--inspect", action="store_true", help="Emit inspect folder with sources")
     b.add_argument("--dry-run", action="store_true", help="Print planned manifest/spine only")
-    b.add_argument("--preview", action="store_true", help="Generate live preview in browser instead of EPUB file")
-    b.add_argument("--preview-port", type=int, default=8000, help="Port for preview server (default: 8000)")
+    b.add_argument(
+        "--preview",
+        action="store_true",
+        help="Generate live preview in browser instead of EPUB file",
+    )
+    b.add_argument(
+        "--preview-port", type=int, default=8000, help="Port for preview server (default: 8000)"
+    )
 
     # Import profiles for dynamic choices
     try:
         from .profiles import get_available_profiles
+
         available_profiles = get_available_profiles()
-        profile_help = "Publishing profile to pre-fill settings (use --list-profiles to see all options)"
+        profile_help = (
+            "Publishing profile to pre-fill settings (use --list-profiles to see all options)"
+        )
     except ImportError:
         available_profiles = ["kdp", "kobo", "apple", "generic", "legacy"]
         profile_help = "Publishing profile to pre-fill settings"
@@ -227,25 +272,28 @@ def _arg_parser() -> argparse.ArgumentParser:
     t.add_argument("--force", action="store_true", help="Overwrite existing file if present")
 
     # --- Wizard subcommand ---
-    wizard = sub.add_parser("wizard", help="Interactive conversion wizard with step-by-step guidance")
+    wizard = sub.add_parser(
+        "wizard", help="Interactive conversion wizard with step-by-step guidance"
+    )
     wizard.add_argument(
         "--input", type=str, help="Optional path to input file to start wizard with"
     )
     wizard.add_argument(
         "--no-preview", action="store_true", help="Disable real-time preview generation"
     )
-    wizard.add_argument(
-        "--session-dir", type=str, help="Directory to store wizard session files"
-    )
+    wizard.add_argument("--session-dir", type=str, help="Directory to store wizard session files")
 
     # --- Theme Editor subcommand ---
-    theme_editor = sub.add_parser("theme-editor", help="Advanced theme editor with visual customization")
-    theme_editor.add_argument(
-        "--base-theme", type=str, default="serif", help="Base theme to start from (serif, sans, printlike)"
+    theme_editor = sub.add_parser(
+        "theme-editor", help="Advanced theme editor with visual customization"
     )
     theme_editor.add_argument(
-        "--themes-dir", type=str, help="Directory to store custom themes"
+        "--base-theme",
+        type=str,
+        default="serif",
+        help="Base theme to start from (serif, sans, printlike)",
     )
+    theme_editor.add_argument("--themes-dir", type=str, help="Directory to store custom themes")
 
     # --- List themes subcommand ---
     list_themes = sub.add_parser("list-themes", help="List available CSS themes")
@@ -278,9 +326,18 @@ def _arg_parser() -> argparse.ArgumentParser:
 
     # --- Batch mode subcommand ---
     batch = sub.add_parser("batch", help="Process multiple DOCX files in batch mode")
-    batch.add_argument("--dir", dest="batch_dir", required=True, help="Directory containing DOCX files")
-    batch.add_argument("--pattern", dest="batch_pattern", default="*.docx", help="File pattern to match (default: *.docx)")
-    batch.add_argument("--output-dir", dest="batch_output_dir", help="Output directory for generated EPUBs")
+    batch.add_argument(
+        "--dir", dest="batch_dir", required=True, help="Directory containing DOCX files"
+    )
+    batch.add_argument(
+        "--pattern",
+        dest="batch_pattern",
+        default="*.docx",
+        help="File pattern to match (default: *.docx)",
+    )
+    batch.add_argument(
+        "--output-dir", dest="batch_output_dir", help="Output directory for generated EPUBs"
+    )
     batch.add_argument("--parallel", action="store_true", help="Process files in parallel")
     batch.add_argument("--max-workers", type=int, help="Maximum number of parallel workers")
     batch.add_argument("--report", help="Generate batch processing report to file")
@@ -291,7 +348,7 @@ def _arg_parser() -> argparse.ArgumentParser:
     batch.add_argument(
         "--store-profile",
         choices=["kdp", "apple", "kobo", "google", "bn", "generic"],
-        help="Optimize EPUB for specific store"
+        help="Optimize EPUB for specific store",
     )
     batch.add_argument("--epub-version", type=str, default="3")
     batch.add_argument("--image-format", choices=["original", "webp", "avif"], default="webp")
@@ -302,8 +359,12 @@ def _arg_parser() -> argparse.ArgumentParser:
     mi = m_sub.add_parser("install", help="Install a tool")
     mi.add_argument("name", choices=["pandoc", "epubcheck"], help="Tool name")
     mi.add_argument("--version", dest="version", help="Tool version (optional)")
-    mi.add_argument("--preset", choices=["stable", "latest", "bleeding"],
-                   default="stable", help="Version preset to use")
+    mi.add_argument(
+        "--preset",
+        choices=["stable", "latest", "bleeding"],
+        default="stable",
+        help="Version preset to use",
+    )
     mu = m_sub.add_parser("uninstall", help="Uninstall a tool")
     mu.add_argument("name", choices=["pandoc", "epubcheck", "all"], help="Tool name")
     m_sub.add_parser("where", help="Show tool locations")
@@ -314,8 +375,12 @@ def _arg_parser() -> argparse.ArgumentParser:
     # Offline bundle commands
     mb = m_sub.add_parser("bundle", help="Create offline installation bundle")
     mb.add_argument("--output", help="Output directory for bundle (default: user data dir)")
-    mb.add_argument("--preset", choices=["stable", "latest", "bleeding"],
-                   default="stable", help="Version preset for bundled tools")
+    mb.add_argument(
+        "--preset",
+        choices=["stable", "latest", "bleeding"],
+        default="stable",
+        help="Version preset for bundled tools",
+    )
 
     # Plugin management commands
     plugins_parser = sub.add_parser("plugins", help="Manage plugins and hooks")
@@ -323,11 +388,30 @@ def _arg_parser() -> argparse.ArgumentParser:
 
     # List plugins
     plist = p_sub.add_parser("list", help="List available plugins")
-    plist.add_argument("--all", action="store_true", help="Show all available plugins (not just loaded)")
+    plist.add_argument(
+        "--all", action="store_true", help="Show all available plugins (not just loaded)"
+    )
     plist.add_argument("--core-only", action="store_true", help="Show only core built-in plugins")
-    plist.add_argument("--marketplace-only", action="store_true", help="Show only marketplace plugins")
-    plist.add_argument("--category", choices=['core', 'accessibility', 'publishing', 'workflow', 'performance', 'integration', 'theme', 'utility'], help="Filter by category")
-    plist.add_argument("--verbose", "-v", action="store_true", help="Show detailed plugin information")
+    plist.add_argument(
+        "--marketplace-only", action="store_true", help="Show only marketplace plugins"
+    )
+    plist.add_argument(
+        "--category",
+        choices=[
+            "core",
+            "accessibility",
+            "publishing",
+            "workflow",
+            "performance",
+            "integration",
+            "theme",
+            "utility",
+        ],
+        help="Filter by category",
+    )
+    plist.add_argument(
+        "--verbose", "-v", action="store_true", help="Show detailed plugin information"
+    )
 
     # Marketplace commands
     pm = p_sub.add_parser("marketplace", help="Browse and install marketplace plugins")
@@ -363,11 +447,17 @@ def _arg_parser() -> argparse.ArgumentParser:
 
     # List bundles
     pblist = pb_sub.add_parser("list", help="List available plugin bundles")
-    pblist.add_argument("--verbose", "-v", action="store_true", help="Show detailed bundle information")
+    pblist.add_argument(
+        "--verbose", "-v", action="store_true", help="Show detailed bundle information"
+    )
 
     # Install bundle
     pbinstall = pb_sub.add_parser("install", help="Install plugin bundle")
-    pbinstall.add_argument("bundle", choices=['publishing', 'workflow', 'accessibility', 'cloud', 'premium'], help="Bundle to install")
+    pbinstall.add_argument(
+        "bundle",
+        choices=["publishing", "workflow", "accessibility", "cloud", "premium"],
+        help="Bundle to install",
+    )
 
     # Bundle info
     pbinfo = pb_sub.add_parser("info", help="Show information about a bundle")
@@ -388,14 +478,22 @@ def _arg_parser() -> argparse.ArgumentParser:
     pinfo.add_argument("name", help="Plugin name")
 
     # Discover plugins
-    pdiscover = p_sub.add_parser("discover", help="Discover available plugins in standard locations")
-    pdiscover.add_argument("--install", action="store_true", help="Install user plugins directory if it doesn't exist")
+    pdiscover = p_sub.add_parser(
+        "discover", help="Discover available plugins in standard locations"
+    )
+    pdiscover.add_argument(
+        "--install", action="store_true", help="Install user plugins directory if it doesn't exist"
+    )
 
     # Create plugin template
     pcreate = p_sub.add_parser("create", help="Create a new plugin from template")
     pcreate.add_argument("name", help="Plugin name")
-    pcreate.add_argument("--template", choices=["basic", "html-cleaner", "metadata-enhancer"],
-                        default="basic", help="Template to use")
+    pcreate.add_argument(
+        "--template",
+        choices=["basic", "html-cleaner", "metadata-enhancer"],
+        default="basic",
+        help="Template to use",
+    )
     pcreate.add_argument("--output", help="Output directory (default: current directory)")
 
     # Connector management commands
@@ -404,7 +502,9 @@ def _arg_parser() -> argparse.ArgumentParser:
     c_sub.add_parser("list", help="List available connectors")
     ce = c_sub.add_parser("enable", help="Enable a connector")
     ce.add_argument("name", help="Connector name")
-    ce.add_argument("--allow-network", action="store_true", help="Allow network access for connector")
+    ce.add_argument(
+        "--allow-network", action="store_true", help="Allow network access for connector"
+    )
     cd = c_sub.add_parser("disable", help="Disable a connector")
     cd.add_argument("name", help="Connector name")
     ca = c_sub.add_parser("auth", help="Authenticate with a connector")
@@ -422,7 +522,9 @@ def _arg_parser() -> argparse.ArgumentParser:
     # AI metadata enhancement
     ai_meta = ai_sub.add_parser("metadata", help="Enhance metadata using AI analysis")
     ai_meta.add_argument("input_file", help="Document file to analyze")
-    ai_meta.add_argument("--interactive", action="store_true", help="Interactive metadata suggestions")
+    ai_meta.add_argument(
+        "--interactive", action="store_true", help="Interactive metadata suggestions"
+    )
     ai_meta.add_argument("--output", help="Output enhanced metadata to file")
 
     # AI genre detection
@@ -433,13 +535,17 @@ def _arg_parser() -> argparse.ArgumentParser:
     # AI alt text generation
     ai_alt = ai_sub.add_parser("alt-text", help="Generate alt text for images using AI")
     ai_alt.add_argument("input_path", help="Image file or document with images")
-    ai_alt.add_argument("--interactive", action="store_true", help="Interactive alt text suggestions")
+    ai_alt.add_argument(
+        "--interactive", action="store_true", help="Interactive alt text suggestions"
+    )
     ai_alt.add_argument("--output", help="Output alt text suggestions to file")
 
     # AI configuration
     ai_config = ai_sub.add_parser("config", help="Configure AI settings")
     ai_config.add_argument("--list", action="store_true", help="List current AI configuration")
-    ai_config.add_argument("--set", nargs=2, metavar=("KEY", "VALUE"), help="Set configuration value")
+    ai_config.add_argument(
+        "--set", nargs=2, metavar=("KEY", "VALUE"), help="Set configuration value"
+    )
     ai_config.add_argument("--reset", action="store_true", help="Reset to default configuration")
 
     sub.add_parser("update", help="Update docx2shelf to the latest version")
@@ -457,78 +563,118 @@ def _arg_parser() -> argparse.ArgumentParser:
     check = sub.add_parser("checklist", help="Run publishing store compatibility checklists")
     check.add_argument("--metadata", help="Path to metadata.txt file (default: ./metadata.txt)")
     check.add_argument("--cover", help="Path to cover image file")
-    check.add_argument("--store", choices=["kdp", "apple", "kobo", "all"], default="all",
-                      help="Which store to check (default: all)")
+    check.add_argument(
+        "--store",
+        choices=["kdp", "apple", "kobo", "all"],
+        default="all",
+        help="Which store to check (default: all)",
+    )
     check.add_argument("--json", action="store_true", help="Output results as JSON")
 
     # --- Quality assessment subcommand ---
     quality = sub.add_parser("quality", help="Comprehensive quality analysis of EPUB files")
     quality.add_argument("epub_path", help="Path to EPUB file to analyze")
-    quality.add_argument("--content-files", nargs="*", help="Additional content files to validate (XHTML/HTML)")
-    quality.add_argument("--target-level", choices=["A", "AA", "AAA"], default="AA",
-                        help="WCAG accessibility target level (default: AA)")
-    quality.add_argument("--skip-accessibility", action="store_true",
-                        help="Skip accessibility compliance checking")
-    quality.add_argument("--skip-content-validation", action="store_true",
-                        help="Skip content validation (grammar, style, formatting)")
-    quality.add_argument("--skip-quality-scoring", action="store_true",
-                        help="Skip overall quality scoring")
+    quality.add_argument(
+        "--content-files", nargs="*", help="Additional content files to validate (XHTML/HTML)"
+    )
+    quality.add_argument(
+        "--target-level",
+        choices=["A", "AA", "AAA"],
+        default="AA",
+        help="WCAG accessibility target level (default: AA)",
+    )
+    quality.add_argument(
+        "--skip-accessibility", action="store_true", help="Skip accessibility compliance checking"
+    )
+    quality.add_argument(
+        "--skip-content-validation",
+        action="store_true",
+        help="Skip content validation (grammar, style, formatting)",
+    )
+    quality.add_argument(
+        "--skip-quality-scoring", action="store_true", help="Skip overall quality scoring"
+    )
     quality.add_argument("--json", action="store_true", help="Output results as JSON")
     quality.add_argument("--output", help="Save detailed report to file")
-    quality.add_argument("--auto-fix", action="store_true",
-                        help="Automatically fix issues where possible")
-    quality.add_argument("--verbose", action="store_true",
-                        help="Show detailed issue descriptions and recommendations")
+    quality.add_argument(
+        "--auto-fix", action="store_true", help="Automatically fix issues where possible"
+    )
+    quality.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Show detailed issue descriptions and recommendations",
+    )
 
     # --- EPUB validation subcommand ---
-    validate = sub.add_parser("validate", help="Validate EPUB files using EPUBCheck and custom rules")
+    validate = sub.add_parser(
+        "validate", help="Validate EPUB files using EPUBCheck and custom rules"
+    )
     validate.add_argument("epub_path", help="Path to EPUB file to validate")
     validate.add_argument("--verbose", action="store_true", help="Show detailed validation report")
     validate.add_argument("--skip-epubcheck", action="store_true", help="Skip EPUBCheck validation")
-    validate.add_argument("--skip-custom", action="store_true", help="Skip custom validation checks")
-    validate.add_argument("--timeout", type=int, default=120, help="Timeout for EPUBCheck in seconds")
+    validate.add_argument(
+        "--skip-custom", action="store_true", help="Skip custom validation checks"
+    )
+    validate.add_argument(
+        "--timeout", type=int, default=120, help="Timeout for EPUBCheck in seconds"
+    )
 
     # Convert command for format conversion
-    convert = sub.add_parser("convert", help="Convert EPUB to other formats (PDF, MOBI, AZW3, Web, Text)")
+    convert = sub.add_parser(
+        "convert", help="Convert EPUB to other formats (PDF, MOBI, AZW3, Web, Text)"
+    )
     convert.add_argument("input", help="Path to EPUB file to convert")
-    convert.add_argument("--format", "-f",
-                        choices=["pdf", "mobi", "azw3", "web", "txt", "text"],
-                        required=True,
-                        help="Output format")
-    convert.add_argument("--output", "-o",
-                        help="Output file/directory path (auto-generated if not specified)")
-    convert.add_argument("--quality",
-                        choices=["standard", "high", "web"],
-                        default="standard",
-                        help="Output quality level")
-    convert.add_argument("--compression", action="store_true", default=True,
-                        help="Enable compression (where applicable)")
-    convert.add_argument("--no-compression", action="store_false", dest="compression",
-                        help="Disable compression")
-    convert.add_argument("--page-size",
-                        default="A4",
-                        help="Page size for PDF (A4, Letter, Legal, etc.)")
-    convert.add_argument("--margin",
-                        default="1in",
-                        help="Page margins for PDF (e.g., 1in, 2cm)")
-    convert.add_argument("--font-size",
-                        default="12pt",
-                        help="Base font size")
-    convert.add_argument("--font-family",
-                        choices=["serif", "sans-serif", "monospace"],
-                        default="serif",
-                        help="Font family")
-    convert.add_argument("--no-toc", action="store_false", dest="include_toc",
-                        help="Exclude table of contents")
-    convert.add_argument("--no-cover", action="store_false", dest="include_cover",
-                        help="Exclude cover image")
-    convert.add_argument("--css",
-                        help="Path to custom CSS file for styling")
-    convert.add_argument("--check-deps", action="store_true",
-                        help="Check format dependencies and exit")
+    convert.add_argument(
+        "--format",
+        "-f",
+        choices=["pdf", "mobi", "azw3", "web", "txt", "text"],
+        required=True,
+        help="Output format",
+    )
+    convert.add_argument(
+        "--output", "-o", help="Output file/directory path (auto-generated if not specified)"
+    )
+    convert.add_argument(
+        "--quality",
+        choices=["standard", "high", "web"],
+        default="standard",
+        help="Output quality level",
+    )
+    convert.add_argument(
+        "--compression",
+        action="store_true",
+        default=True,
+        help="Enable compression (where applicable)",
+    )
+    convert.add_argument(
+        "--no-compression", action="store_false", dest="compression", help="Disable compression"
+    )
+    convert.add_argument(
+        "--page-size", default="A4", help="Page size for PDF (A4, Letter, Legal, etc.)"
+    )
+    convert.add_argument("--margin", default="1in", help="Page margins for PDF (e.g., 1in, 2cm)")
+    convert.add_argument("--font-size", default="12pt", help="Base font size")
+    convert.add_argument(
+        "--font-family",
+        choices=["serif", "sans-serif", "monospace"],
+        default="serif",
+        help="Font family",
+    )
+    convert.add_argument(
+        "--no-toc", action="store_false", dest="include_toc", help="Exclude table of contents"
+    )
+    convert.add_argument(
+        "--no-cover", action="store_false", dest="include_cover", help="Exclude cover image"
+    )
+    convert.add_argument("--css", help="Path to custom CSS file for styling")
+    convert.add_argument(
+        "--check-deps", action="store_true", help="Check format dependencies and exit"
+    )
 
     # --- Enterprise subcommand ---
-    enterprise = sub.add_parser("enterprise", help="Enterprise features for batch processing and automation")
+    enterprise = sub.add_parser(
+        "enterprise", help="Enterprise features for batch processing and automation"
+    )
     enterprise_sub = enterprise.add_subparsers(dest="enterprise_cmd", required=True)
 
     # Enterprise batch processing
@@ -536,8 +682,12 @@ def _arg_parser() -> argparse.ArgumentParser:
     ent_batch.add_argument("name", help="Job name")
     ent_batch.add_argument("--input", required=True, help="Input directory or pattern")
     ent_batch.add_argument("--output", required=True, help="Output directory")
-    ent_batch.add_argument("--mode", choices=["files", "books"], default="books",
-                          help="Processing mode: 'files' (individual) or 'books' (folders as books)")
+    ent_batch.add_argument(
+        "--mode",
+        choices=["files", "books"],
+        default="books",
+        help="Processing mode: 'files' (individual) or 'books' (folders as books)",
+    )
     ent_batch.add_argument("--config", help="Path to job configuration file (YAML/JSON)")
     ent_batch.add_argument("--webhook", help="Webhook URL for job notifications")
     ent_batch.add_argument("--priority", type=int, default=5, help="Job priority (1-10)")
@@ -545,7 +695,7 @@ def _arg_parser() -> argparse.ArgumentParser:
     ent_batch.add_argument(
         "--store-profile",
         choices=["kdp", "apple", "kobo", "google", "bn", "generic"],
-        help="Optimize EPUB for specific store"
+        help="Optimize EPUB for specific store",
     )
     ent_batch.add_argument("--split-at", default="h1", help="Chapter split level")
     ent_batch.add_argument("--max-concurrent", type=int, help="Maximum concurrent jobs")
@@ -553,17 +703,24 @@ def _arg_parser() -> argparse.ArgumentParser:
     # Enterprise job management
     ent_jobs = enterprise_sub.add_parser("jobs", help="Manage batch jobs")
     ent_jobs.add_argument("--list", action="store_true", help="List all jobs")
-    ent_jobs.add_argument("--status", choices=["pending", "running", "completed", "failed", "cancelled"],
-                         help="Filter jobs by status")
+    ent_jobs.add_argument(
+        "--status",
+        choices=["pending", "running", "completed", "failed", "cancelled"],
+        help="Filter jobs by status",
+    )
     ent_jobs.add_argument("--cancel", help="Cancel job by ID")
     ent_jobs.add_argument("--details", help="Show detailed job information by ID")
     ent_jobs.add_argument("--cleanup", action="store_true", help="Clean up old completed jobs")
 
     # Enterprise configuration
     ent_config = enterprise_sub.add_parser("config", help="Enterprise configuration management")
-    ent_config.add_argument("--init", action="store_true", help="Initialize enterprise configuration")
+    ent_config.add_argument(
+        "--init", action="store_true", help="Initialize enterprise configuration"
+    )
     ent_config.add_argument("--show", action="store_true", help="Show current configuration")
-    ent_config.add_argument("--set", nargs=2, metavar=("KEY", "VALUE"), help="Set configuration value")
+    ent_config.add_argument(
+        "--set", nargs=2, metavar=("KEY", "VALUE"), help="Set configuration value"
+    )
     ent_config.add_argument("--reset", action="store_true", help="Reset to default configuration")
     ent_config.add_argument("--export", help="Export configuration to file")
     ent_config.add_argument("--import", dest="import_config", help="Import configuration from file")
@@ -572,8 +729,9 @@ def _arg_parser() -> argparse.ArgumentParser:
     ent_users = enterprise_sub.add_parser("users", help="User management and permissions")
     ent_users.add_argument("--create", help="Create new user (username)")
     ent_users.add_argument("--email", help="User email (for create)")
-    ent_users.add_argument("--role", choices=["admin", "user", "viewer"], default="user",
-                          help="User role (for create)")
+    ent_users.add_argument(
+        "--role", choices=["admin", "user", "viewer"], default="user", help="User role (for create)"
+    )
     ent_users.add_argument("--list", action="store_true", help="List all users")
     ent_users.add_argument("--permissions", help="Set user permissions (comma-separated)")
     ent_users.add_argument("--deactivate", help="Deactivate user by ID")
@@ -601,8 +759,9 @@ def _arg_parser() -> argparse.ArgumentParser:
     ent_reports.add_argument("--stats", action="store_true", help="Show processing statistics")
     ent_reports.add_argument("--usage", action="store_true", help="Show usage analytics")
     ent_reports.add_argument("--export", help="Export report to file (CSV/JSON)")
-    ent_reports.add_argument("--period", choices=["day", "week", "month"], default="week",
-                            help="Reporting period")
+    ent_reports.add_argument(
+        "--period", choices=["day", "week", "month"], default="week", help="Reporting period"
+    )
 
     return p
 
@@ -1067,15 +1226,23 @@ def _print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path
     print(f" {mark(meta.title)} Title: {meta.title or '—'}")
     print(f" {mark(meta.author)} Author: {meta.author or '—'}")
     print(f" {mark(meta.language)} Language: {meta.language or '—'}")
-    print(f" {mark(meta.isbn or meta.uuid)} Identifier: {'ISBN '+meta.isbn if meta.isbn else (meta.uuid or '—')}")
+    print(
+        f" {mark(meta.isbn or meta.uuid)} Identifier: {'ISBN '+meta.isbn if meta.isbn else (meta.uuid or '—')}"
+    )
     if meta.series:
         print(f" {mark(meta.series)} Series: {meta.series} #{meta.series_index or '—'}")
     print(f" {mark(meta.publisher)} Publisher: {meta.publisher or '—'}")
     print(f" {mark(meta.pubdate)} PubDate: {meta.pubdate.isoformat() if meta.pubdate else '—'}")
-    print(f" {mark(bool(meta.subjects))} Subjects: {', '.join(meta.subjects) if meta.subjects else '—'}")
-    print(f" {mark(bool(meta.keywords))} Keywords: {', '.join(meta.keywords) if meta.keywords else '—'}")
+    print(
+        f" {mark(bool(meta.subjects))} Subjects: {', '.join(meta.subjects) if meta.subjects else '—'}"
+    )
+    print(
+        f" {mark(bool(meta.keywords))} Keywords: {', '.join(meta.keywords) if meta.keywords else '—'}"
+    )
     print(f" {mark(meta.cover_path)} Cover: {meta.cover_path}")
-    print(f" {mark(opts.extra_css)} Extra CSS: {opts.extra_css or '—'}  | Fonts: {opts.embed_fonts_dir or '—'}")
+    print(
+        f" {mark(opts.extra_css)} Extra CSS: {opts.extra_css or '—'}  | Fonts: {opts.embed_fonts_dir or '—'}"
+    )
     # Show chapter mode information
     if opts.chapter_start_mode == "manual" and opts.chapter_starts:
         chapter_list = (
@@ -1131,7 +1298,7 @@ def run_batch_mode(args: argparse.Namespace) -> int:
             parallel=args.parallel,
             max_workers=args.max_workers,
             base_args=args,
-            quiet=getattr(args, 'quiet', False)
+            quiet=getattr(args, "quiet", False),
         )
 
         # Generate report if requested
@@ -1141,7 +1308,7 @@ def run_batch_mode(args: argparse.Namespace) -> int:
             print(f"[BATCH] Batch report written to: {report_path}")
 
         # Return non-zero if any files failed
-        return 0 if summary['failed'] == 0 else 1
+        return 0 if summary["failed"] == 0 else 1
 
     except ImportError:
         print("Batch processing not available.")
@@ -1168,16 +1335,18 @@ def run_build(args: argparse.Namespace) -> int:
 
     # Initialize JSON logger if requested
     json_logger = None
-    if getattr(args, 'json_output', None):
+    if getattr(args, "json_output", None):
         from .json_logger import init_json_logger
+
         json_logger = init_json_logger(Path(args.json_output))
 
     # Apply profile settings if specified
-    if getattr(args, 'profile', None):
+    if getattr(args, "profile", None):
         try:
             from .profiles import apply_profile_to_args
+
             apply_profile_to_args(args, args.profile)
-            if not getattr(args, 'quiet', False):
+            if not getattr(args, "quiet", False):
                 print(f"[PROFILE] Applied profile: {args.profile}")
         except ImportError:
             print("Warning: Profile system not available", file=sys.stderr)
@@ -1190,7 +1359,9 @@ def run_build(args: argparse.Namespace) -> int:
         # Normalize and validate input path
         input_path = normalize_path(Path(args.input).expanduser())
         if not is_safe_path(input_path):
-            print(f"Error: Input path contains invalid characters or directory traversal: {input_path}")
+            print(
+                f"Error: Input path contains invalid characters or directory traversal: {input_path}"
+            )
             return 1
 
         input_path = input_path.resolve()
@@ -1200,7 +1371,7 @@ def run_build(args: argparse.Namespace) -> int:
                 error=FileNotFoundError(f"Input file not found: {input_path}"),
                 operation="input file validation",
                 file_path=input_path,
-                interactive=True
+                interactive=True,
             )
             if not handled:
                 print(f"Error: Input path not found: {input_path}", file=sys.stderr)
@@ -1225,7 +1396,7 @@ def run_build(args: argparse.Namespace) -> int:
                 error=FileNotFoundError(f"Cover file not found: {cover_path}"),
                 operation="cover file validation",
                 file_path=cover_path,
-                interactive=True
+                interactive=True,
             )
             if not handled:
                 print(f"Error: cover not found: {cover_path}", file=sys.stderr)
@@ -1233,11 +1404,7 @@ def run_build(args: argparse.Namespace) -> int:
 
     except Exception as e:
         # Handle unexpected validation errors
-        handled = handle_error(
-            error=e,
-            operation="file path validation",
-            interactive=True
-        )
+        handled = handle_error(error=e, operation="file path validation", interactive=True)
         if not handled:
             print(f"Error validating paths: {e}", file=sys.stderr)
             return 2
@@ -1336,7 +1503,7 @@ def run_build(args: argparse.Namespace) -> int:
     )
 
     # AI Enhancement Integration
-    if getattr(args, 'ai_enhance', False) or getattr(args, 'ai_genre', False):
+    if getattr(args, "ai_enhance", False) or getattr(args, "ai_genre", False):
         ai_manager = get_ai_manager()
         if ai_manager.is_available():
             try:
@@ -1344,50 +1511,55 @@ def run_build(args: argparse.Namespace) -> int:
                 content = _read_document_content(input_path)
                 if content:
                     # AI metadata enhancement
-                    if getattr(args, 'ai_enhance', False):
-                        if not getattr(args, 'quiet', False):
+                    if getattr(args, "ai_enhance", False):
+                        if not getattr(args, "quiet", False):
                             print("[AI] Enhancing metadata with AI...")
                         enhanced = enhance_metadata_with_ai(
-                            content, meta,
-                            interactive=getattr(args, 'ai_interactive', False)
+                            content, meta, interactive=getattr(args, "ai_interactive", False)
                         )
                         meta = enhanced.original
-                        if not getattr(args, 'quiet', False) and enhanced.applied_suggestions:
-                            print(f"[AI] Applied {len(enhanced.applied_suggestions)} AI metadata suggestions")
+                        if not getattr(args, "quiet", False) and enhanced.applied_suggestions:
+                            print(
+                                f"[AI] Applied {len(enhanced.applied_suggestions)} AI metadata suggestions"
+                            )
 
                     # AI genre detection
-                    if getattr(args, 'ai_genre', False):
-                        if not getattr(args, 'quiet', False):
+                    if getattr(args, "ai_genre", False):
+                        if not getattr(args, "quiet", False):
                             print("[AI] Detecting genres with AI...")
-                        genre_result = detect_genre_with_ai(content, {
-                            'title': meta.title,
-                            'author': meta.author,
-                            'description': meta.description or ''
-                        })
-                        if genre_result.genres and not hasattr(meta, 'genre'):
+                        genre_result = detect_genre_with_ai(
+                            content,
+                            {
+                                "title": meta.title,
+                                "author": meta.author,
+                                "description": meta.description or "",
+                            },
+                        )
+                        if genre_result.genres and not hasattr(meta, "genre"):
                             meta.genre = genre_result.genres[0].genre
                         if genre_result.keywords and not meta.keywords:
                             meta.keywords = genre_result.keywords[:10]
-                        if not getattr(args, 'quiet', False):
+                        if not getattr(args, "quiet", False):
                             print(f"[AI] AI detected genre: {getattr(meta, 'genre', 'None')}")
 
             except Exception as e:
-                if not getattr(args, 'quiet', False):
+                if not getattr(args, "quiet", False):
                     print(f"[WARNING] AI enhancement failed: {e}")
         else:
-            if not getattr(args, 'quiet', False):
+            if not getattr(args, "quiet", False):
                 print("[WARNING] AI features requested but not available")
 
     # Apply store profile optimizations if specified
-    if getattr(args, 'store_profile', None):
+    if getattr(args, "store_profile", None):
         try:
             from .store_profiles import StoreProfile, StoreProfileManager
+
             profile = StoreProfile(args.store_profile)
             manager = StoreProfileManager()
 
             # Apply store-specific CSS optimizations
             store_css = manager.generate_store_css(profile)
-            if not getattr(args, 'quiet', False):
+            if not getattr(args, "quiet", False):
                 print(f"[STORE] Applied {profile.value} optimization profile")
 
             # Store the store profile for later use in BuildOptions
@@ -1535,7 +1707,7 @@ def run_build(args: argparse.Namespace) -> int:
         html_chunks = split_html_by_pagebreak(combined)
     elif args.split_at == "mixed":
         combined = "".join(html_chunks)
-        mixed_pattern = getattr(args, 'mixed_split_pattern', None)
+        mixed_pattern = getattr(args, "mixed_split_pattern", None)
         html_chunks = split_html_mixed(combined, mixed_pattern)
 
     plan = plan_build(meta, opts, html_chunks, resources)
@@ -1602,30 +1774,34 @@ def run_build(args: argparse.Namespace) -> int:
 
     # Final assembly phase with performance monitoring
     with build_monitor.phase_timer("epub_assembly"):
-        assemble_epub(meta, opts, html_chunks, resources, output, combined_styles_css, build_monitor)
+        assemble_epub(
+            meta, opts, html_chunks, resources, output, combined_styles_css, build_monitor
+        )
 
     # EPUB validation phase
-    if getattr(args, 'epubcheck', 'on') == 'on' and output.exists():
+    if getattr(args, "epubcheck", "on") == "on" and output.exists():
         from .validation import print_validation_report, validate_epub
 
-        if not getattr(args, 'quiet', False):
+        if not getattr(args, "quiet", False):
             print("\n[VALIDATION] Validating EPUB quality...")
 
         with build_monitor.phase_timer("epub_validation"):
             validation_result = validate_epub(output, custom_checks=True, timeout=120)
 
-        if not getattr(args, 'quiet', False):
-            print_validation_report(validation_result, verbose=getattr(args, 'verbose', False))
+        if not getattr(args, "quiet", False):
+            print_validation_report(validation_result, verbose=getattr(args, "verbose", False))
 
         # Exit with error code if validation failed with errors
         if validation_result.has_errors:
-            print(f"\n[ERROR] EPUB validation failed with {len(validation_result.errors)} critical error(s).")
+            print(
+                f"\n[ERROR] EPUB validation failed with {len(validation_result.errors)} critical error(s)."
+            )
             print("Please fix the errors above before distributing your EPUB.")
             return 3  # Different exit code for validation failures
 
     # Stop monitoring and display performance summary
     build_monitor.stop_monitoring()
-    if not getattr(args, 'quiet', False):
+    if not getattr(args, "quiet", False):
         print(f"\n📊 Performance Summary:\n{build_monitor.get_summary()}")
 
     print(f"Wrote: {output}")
@@ -1741,7 +1917,7 @@ def run_preview_themes(args: argparse.Namespace) -> int:
     # Load sample text
     if args.sample_text:
         try:
-            sample_text = Path(args.sample_text).read_text(encoding='utf-8')
+            sample_text = Path(args.sample_text).read_text(encoding="utf-8")
         except Exception as e:
             print(f"Error reading sample text file: {e}")
             sample_text = get_default_sample_text()
@@ -2005,7 +2181,7 @@ def run_init_metadata(args: argparse.Namespace) -> int:
         "# Lines starting with # are ignored. Keys are case-insensitive.",
         "# Use key: value or key=value. Paths can be relative to this DOCX folder.",
         "# Output naming (optional): you can pass --output-pattern on the CLI",
-                '# Example: --output-pattern "{series}-{index2}-{title}"',
+        '# Example: --output-pattern "{series}-{index2}-{title}"',
         "",
         f"Title: {title_guess}",
         "Author:",
@@ -2078,8 +2254,9 @@ def run_tools(args: argparse.Namespace) -> int:
     if args.tool_cmd == "install":
         # Use version preset if no specific version provided
         version = args.version
-        if not version and hasattr(args, 'preset'):
+        if not version and hasattr(args, "preset"):
             from .tools import get_pinned_version
+
             version = get_pinned_version(args.name)
 
         if args.name == "pandoc":
@@ -2114,6 +2291,7 @@ def run_tools(args: argparse.Namespace) -> int:
 
     elif args.tool_cmd == "doctor":
         from .tools import tools_doctor
+
         return tools_doctor()
 
     elif args.tool_cmd == "bundle":
@@ -2178,14 +2356,24 @@ def run_checklist(args: argparse.Namespace) -> int:
             description=metadata_dict.get("description"),
             isbn=metadata_dict.get("isbn"),
             publisher=metadata_dict.get("publisher"),
-            pubdate=parse_date(metadata_dict.get("pubdate")) if metadata_dict.get("pubdate") else None,
+            pubdate=(
+                parse_date(metadata_dict.get("pubdate")) if metadata_dict.get("pubdate") else None
+            ),
             uuid=metadata_dict.get("uuid"),
             series=metadata_dict.get("series"),
             series_index=metadata_dict.get("series_index"),
             title_sort=metadata_dict.get("title_sort"),
             author_sort=metadata_dict.get("author_sort"),
-            subjects=metadata_dict.get("subjects", "").split(",") if metadata_dict.get("subjects") else [],
-            keywords=metadata_dict.get("keywords", "").split(",") if metadata_dict.get("keywords") else [],
+            subjects=(
+                metadata_dict.get("subjects", "").split(",")
+                if metadata_dict.get("subjects")
+                else []
+            ),
+            keywords=(
+                metadata_dict.get("keywords", "").split(",")
+                if metadata_dict.get("keywords")
+                else []
+            ),
             cover_path=Path(args.cover) if args.cover else Path("cover.jpg"),  # Default cover path
             # Extended metadata fields
             editor=metadata_dict.get("editor"),
@@ -2194,7 +2382,11 @@ def run_checklist(args: argparse.Namespace) -> int:
             narrator=metadata_dict.get("narrator"),
             designer=metadata_dict.get("designer"),
             contributor=metadata_dict.get("contributor"),
-            bisac_codes=metadata_dict.get("bisac_codes", "").split(",") if metadata_dict.get("bisac_codes") else [],
+            bisac_codes=(
+                metadata_dict.get("bisac_codes", "").split(",")
+                if metadata_dict.get("bisac_codes")
+                else []
+            ),
             age_range=metadata_dict.get("age_range"),
             reading_level=metadata_dict.get("reading_level"),
             copyright_holder=metadata_dict.get("copyright_holder"),
@@ -2208,7 +2400,11 @@ def run_checklist(args: argparse.Namespace) -> int:
             series_position=metadata_dict.get("series_position"),
             publication_type=metadata_dict.get("publication_type"),
             target_audience=metadata_dict.get("target_audience"),
-            content_warnings=metadata_dict.get("content_warnings", "").split(",") if metadata_dict.get("content_warnings") else []
+            content_warnings=(
+                metadata_dict.get("content_warnings", "").split(",")
+                if metadata_dict.get("content_warnings")
+                else []
+            ),
         )
     except Exception as e:
         print(f"Error parsing metadata file: {e}", file=sys.stderr)
@@ -2247,15 +2443,33 @@ def run_checklist(args: argparse.Namespace) -> int:
             for store, result in results.items():
                 json_results[store] = {
                     "passed": result.passed,
-                    "errors": [{"severity": i.severity, "category": i.category,
-                              "message": i.message, "fix_suggestion": i.fix_suggestion}
-                              for i in result.errors],
-                    "warnings": [{"severity": i.severity, "category": i.category,
-                                "message": i.message, "fix_suggestion": i.fix_suggestion}
-                                for i in result.warnings],
-                    "infos": [{"severity": i.severity, "category": i.category,
-                             "message": i.message, "fix_suggestion": i.fix_suggestion}
-                             for i in result.infos]
+                    "errors": [
+                        {
+                            "severity": i.severity,
+                            "category": i.category,
+                            "message": i.message,
+                            "fix_suggestion": i.fix_suggestion,
+                        }
+                        for i in result.errors
+                    ],
+                    "warnings": [
+                        {
+                            "severity": i.severity,
+                            "category": i.category,
+                            "message": i.message,
+                            "fix_suggestion": i.fix_suggestion,
+                        }
+                        for i in result.warnings
+                    ],
+                    "infos": [
+                        {
+                            "severity": i.severity,
+                            "category": i.category,
+                            "message": i.message,
+                            "fix_suggestion": i.fix_suggestion,
+                        }
+                        for i in result.infos
+                    ],
                 }
             print(json.dumps(json_results, indent=2))
         else:
@@ -2282,7 +2496,7 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
         print(f"Error: EPUB file not found: {epub_path}", file=sys.stderr)
         return 1
 
-    if not epub_path.suffix.lower() == '.epub':
+    if not epub_path.suffix.lower() == ".epub":
         print(f"Error: File must be an EPUB (.epub extension): {epub_path}", file=sys.stderr)
         return 1
 
@@ -2298,31 +2512,35 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
         print("📊 Running quality scoring analysis...")
         try:
             quality_report = analyze_epub_quality(epub_path)
-            results['quality_scoring'] = {
-                'overall_score': quality_report.overall_score,
-                'quality_level': quality_report.quality_level.value,
-                'total_issues': quality_report.total_issues,
-                'critical_issues': quality_report.critical_issues,
-                'auto_fixable_issues': quality_report.auto_fixable_issues,
-                'category_scores': {
-                    cat.value: {'score': score.score, 'issues': len(score.issues)}
+            results["quality_scoring"] = {
+                "overall_score": quality_report.overall_score,
+                "quality_level": quality_report.quality_level.value,
+                "total_issues": quality_report.total_issues,
+                "critical_issues": quality_report.critical_issues,
+                "auto_fixable_issues": quality_report.auto_fixable_issues,
+                "category_scores": {
+                    cat.value: {"score": score.score, "issues": len(score.issues)}
                     for cat, score in quality_report.category_scores.items()
                 },
-                'recommendations': quality_report.recommendations
+                "recommendations": quality_report.recommendations,
             }
             total_issues += quality_report.total_issues
             total_critical += quality_report.critical_issues
 
             if not args.json:
-                print(f"   Overall Score: {quality_report.overall_score:.1f}/100 ({quality_report.quality_level.value.title()})")
-                print(f"   Issues Found: {quality_report.total_issues} ({quality_report.critical_issues} critical)")
+                print(
+                    f"   Overall Score: {quality_report.overall_score:.1f}/100 ({quality_report.quality_level.value.title()})"
+                )
+                print(
+                    f"   Issues Found: {quality_report.total_issues} ({quality_report.critical_issues} critical)"
+                )
                 if quality_report.auto_fixable_issues > 0:
                     print(f"   Auto-fixable: {quality_report.auto_fixable_issues} issues")
                 print()
 
         except Exception as e:
             print(f"Error in quality scoring: {e}", file=sys.stderr)
-            results['quality_scoring'] = {'error': str(e)}
+            results["quality_scoring"] = {"error": str(e)}
 
     # 2. Accessibility Compliance Analysis
     if not args.skip_accessibility:
@@ -2335,29 +2553,37 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
             config = A11yConfig(target_level=target_level)
 
             a11y_result = audit_epub_accessibility(epub_path, config)
-            results['accessibility'] = {
-                'overall_score': a11y_result.overall_score,
-                'conformance_level': a11y_result.conformance_level.value if a11y_result.conformance_level else None,
-                'total_issues': a11y_result.total_issues,
-                'critical_issues': a11y_result.critical_issues,
-                'major_issues': a11y_result.major_issues,
-                'minor_issues': a11y_result.minor_issues,
-                'auto_fixes_applied': a11y_result.auto_fixes_applied,
-                'issues_by_type': {k.value: v for k, v in a11y_result.issues_by_type.items()},
-                'recommendations': a11y_result.recommendations
+            results["accessibility"] = {
+                "overall_score": a11y_result.overall_score,
+                "conformance_level": (
+                    a11y_result.conformance_level.value if a11y_result.conformance_level else None
+                ),
+                "total_issues": a11y_result.total_issues,
+                "critical_issues": a11y_result.critical_issues,
+                "major_issues": a11y_result.major_issues,
+                "minor_issues": a11y_result.minor_issues,
+                "auto_fixes_applied": a11y_result.auto_fixes_applied,
+                "issues_by_type": {k.value: v for k, v in a11y_result.issues_by_type.items()},
+                "recommendations": a11y_result.recommendations,
             }
             total_issues += a11y_result.total_issues
             total_critical += a11y_result.critical_issues
 
             if not args.json:
-                conformance = a11y_result.conformance_level.value if a11y_result.conformance_level else "None"
-                print(f"   Accessibility Score: {a11y_result.overall_score:.1f}/100 (WCAG {conformance})")
-                print(f"   Issues Found: {a11y_result.total_issues} ({a11y_result.critical_issues} critical)")
+                conformance = (
+                    a11y_result.conformance_level.value if a11y_result.conformance_level else "None"
+                )
+                print(
+                    f"   Accessibility Score: {a11y_result.overall_score:.1f}/100 (WCAG {conformance})"
+                )
+                print(
+                    f"   Issues Found: {a11y_result.total_issues} ({a11y_result.critical_issues} critical)"
+                )
                 print()
 
         except Exception as e:
             print(f"Error in accessibility analysis: {e}", file=sys.stderr)
-            results['accessibility'] = {'error': str(e)}
+            results["accessibility"] = {"error": str(e)}
 
     # 3. EPUB Structure & Format Validation
     print("📋 Running EPUB structure validation...")
@@ -2366,23 +2592,25 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
 
         validation_result = validate_epub(epub_path, custom_checks=True, timeout=120)
 
-        results['epub_validation'] = {
-            'is_valid': validation_result.is_valid,
-            'total_issues': validation_result.total_issues,
-            'errors': len(validation_result.errors),
-            'warnings': len(validation_result.warnings),
-            'info': len(validation_result.info),
-            'epubcheck_available': validation_result.epubcheck_available,
-            'custom_checks_run': validation_result.custom_checks_run,
-            'issues': [
+        results["epub_validation"] = {
+            "is_valid": validation_result.is_valid,
+            "total_issues": validation_result.total_issues,
+            "errors": len(validation_result.errors),
+            "warnings": len(validation_result.warnings),
+            "info": len(validation_result.info),
+            "epubcheck_available": validation_result.epubcheck_available,
+            "custom_checks_run": validation_result.custom_checks_run,
+            "issues": [
                 {
-                    'severity': issue.severity,
-                    'message': issue.message,
-                    'location': issue.location,
-                    'rule': issue.rule
+                    "severity": issue.severity,
+                    "message": issue.message,
+                    "location": issue.location,
+                    "rule": issue.rule,
                 }
-                for issue in (validation_result.errors + validation_result.warnings + validation_result.info)
-            ]
+                for issue in (
+                    validation_result.errors + validation_result.warnings + validation_result.info
+                )
+            ],
         }
 
         total_issues += validation_result.total_issues
@@ -2390,14 +2618,18 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
 
         if not args.json:
             print(f"   EPUB Valid: {'Yes' if validation_result.is_valid else 'No'}")
-            print(f"   Issues Found: {validation_result.total_issues} ({len(validation_result.errors)} errors, {len(validation_result.warnings)} warnings)")
+            print(
+                f"   Issues Found: {validation_result.total_issues} ({len(validation_result.errors)} errors, {len(validation_result.warnings)} warnings)"
+            )
             if not validation_result.epubcheck_available:
-                print("   [INFO] Install EPUBCheck for industry-standard validation: docx2shelf tools install epubcheck")
+                print(
+                    "   [INFO] Install EPUBCheck for industry-standard validation: docx2shelf tools install epubcheck"
+                )
             print()
 
     except Exception as e:
         print(f"Error in EPUB validation: {e}", file=sys.stderr)
-        results['epub_validation'] = {'error': str(e)}
+        results["epub_validation"] = {"error": str(e)}
 
     # 4. Content Validation
     if not args.skip_content_validation:
@@ -2406,12 +2638,14 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
             content_reports = []
 
             # Extract and validate content from EPUB
-            with ZipFile(epub_path, 'r') as epub_zip:
-                content_files = [f for f in epub_zip.namelist() if f.endswith('.xhtml') or f.endswith('.html')]
+            with ZipFile(epub_path, "r") as epub_zip:
+                content_files = [
+                    f for f in epub_zip.namelist() if f.endswith(".xhtml") or f.endswith(".html")
+                ]
 
                 for file_path in content_files[:10]:  # Limit to first 10 files for performance
                     try:
-                        content = epub_zip.read(file_path).decode('utf-8')
+                        content = epub_zip.read(file_path).decode("utf-8")
                         report = validate_content_quality(content, file_path)
                         content_reports.append(report)
                     except Exception as e:
@@ -2423,7 +2657,7 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
                     content_path = Path(file_path)
                     if content_path.exists():
                         try:
-                            content = content_path.read_text(encoding='utf-8')
+                            content = content_path.read_text(encoding="utf-8")
                             report = validate_content_quality(content, str(content_path))
                             content_reports.append(report)
                         except Exception as e:
@@ -2435,24 +2669,25 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
             total_warnings = sum(r.warning_count for r in content_reports)
             total_auto_fixable = sum(r.auto_fixable_count for r in content_reports)
 
-            results['content_validation'] = {
-                'files_checked': len(content_reports),
-                'total_issues': total_content_issues,
-                'error_count': total_errors,
-                'warning_count': total_warnings,
-                'suggestion_count': sum(r.suggestion_count for r in content_reports),
-                'auto_fixable_count': total_auto_fixable,
-                'reports': [
+            results["content_validation"] = {
+                "files_checked": len(content_reports),
+                "total_issues": total_content_issues,
+                "error_count": total_errors,
+                "warning_count": total_warnings,
+                "suggestion_count": sum(r.suggestion_count for r in content_reports),
+                "auto_fixable_count": total_auto_fixable,
+                "reports": [
                     {
-                        'file_path': r.file_path,
-                        'issues': len(r.issues),
-                        'stats': {
-                            'word_count': r.stats.word_count,
-                            'flesch_reading_ease': r.stats.flesch_reading_ease,
-                            'avg_words_per_sentence': r.stats.avg_words_per_sentence
-                        }
-                    } for r in content_reports
-                ]
+                        "file_path": r.file_path,
+                        "issues": len(r.issues),
+                        "stats": {
+                            "word_count": r.stats.word_count,
+                            "flesch_reading_ease": r.stats.flesch_reading_ease,
+                            "avg_words_per_sentence": r.stats.avg_words_per_sentence,
+                        },
+                    }
+                    for r in content_reports
+                ],
             }
 
             total_issues += total_content_issues
@@ -2460,32 +2695,34 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
 
             if not args.json:
                 print(f"   Files Analyzed: {len(content_reports)}")
-                print(f"   Issues Found: {total_content_issues} ({total_errors} errors, {total_warnings} warnings)")
+                print(
+                    f"   Issues Found: {total_content_issues} ({total_errors} errors, {total_warnings} warnings)"
+                )
                 if total_auto_fixable > 0:
                     print(f"   Auto-fixable: {total_auto_fixable} issues")
                 print()
 
         except Exception as e:
             print(f"Error in content validation: {e}", file=sys.stderr)
-            results['content_validation'] = {'error': str(e)}
+            results["content_validation"] = {"error": str(e)}
 
     # Output results
     if args.json:
         # JSON output
         output_data = {
-            'epub_path': str(epub_path),
-            'analysis_timestamp': __import__('datetime').datetime.now().isoformat(),
-            'summary': {
-                'total_issues': total_issues,
-                'critical_issues': total_critical,
-                'analysis_types': len([k for k in results.keys() if 'error' not in results[k]])
+            "epub_path": str(epub_path),
+            "analysis_timestamp": __import__("datetime").datetime.now().isoformat(),
+            "summary": {
+                "total_issues": total_issues,
+                "critical_issues": total_critical,
+                "analysis_types": len([k for k in results.keys() if "error" not in results[k]]),
             },
-            'results': results
+            "results": results,
         }
 
         if args.output:
             output_path = Path(args.output)
-            output_path.write_text(json.dumps(output_data, indent=2), encoding='utf-8')
+            output_path.write_text(json.dumps(output_data, indent=2), encoding="utf-8")
             print(f"📄 Detailed report saved to: {output_path}")
         else:
             print(json.dumps(output_data, indent=2))
@@ -2496,9 +2733,11 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
         print("📋 QUALITY ASSESSMENT SUMMARY")
         print("=" * 60)
 
-        if 'quality_scoring' in results and 'error' not in results['quality_scoring']:
-            quality_data = results['quality_scoring']
-            print(f"🎯 Overall Quality Score: {quality_data['overall_score']:.1f}/100 ({quality_data['quality_level'].title()})")
+        if "quality_scoring" in results and "error" not in results["quality_scoring"]:
+            quality_data = results["quality_scoring"]
+            print(
+                f"🎯 Overall Quality Score: {quality_data['overall_score']:.1f}/100 ({quality_data['quality_level'].title()})"
+            )
 
         print(f"📊 Total Issues Found: {total_issues}")
         if total_critical > 0:
@@ -2507,8 +2746,8 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
         # Show top recommendations
         all_recommendations = []
         for analysis_type, data in results.items():
-            if 'recommendations' in data:
-                all_recommendations.extend(data['recommendations'])
+            if "recommendations" in data:
+                all_recommendations.extend(data["recommendations"])
 
         if all_recommendations:
             print("\n💡 Top Recommendations:")
@@ -2517,57 +2756,71 @@ def run_quality_assessment(args: argparse.Namespace) -> int:
 
         if args.output:
             # Save detailed report
-            report_lines = [
-                f"Quality Assessment Report for {epub_path}",
-                "=" * 60,
-                ""
-            ]
+            report_lines = [f"Quality Assessment Report for {epub_path}", "=" * 60, ""]
 
             # Add detailed results for each analysis type
             for analysis_type, data in results.items():
-                if 'error' not in data:
+                if "error" not in data:
                     report_lines.append(f"{analysis_type.replace('_', ' ').title()}:")
                     report_lines.append("-" * 30)
 
-                    if analysis_type == 'quality_scoring':
+                    if analysis_type == "quality_scoring":
                         report_lines.append(f"Overall Score: {data['overall_score']:.1f}/100")
                         report_lines.append(f"Quality Level: {data['quality_level'].title()}")
                         report_lines.append(f"Total Issues: {data['total_issues']}")
                         report_lines.append("Category Scores:")
-                        for cat, score_data in data['category_scores'].items():
-                            report_lines.append(f"  - {cat.title()}: {score_data['score']:.1f}/100 ({score_data['issues']} issues)")
+                        for cat, score_data in data["category_scores"].items():
+                            report_lines.append(
+                                f"  - {cat.title()}: {score_data['score']:.1f}/100 ({score_data['issues']} issues)"
+                            )
 
-                    elif analysis_type == 'accessibility':
+                    elif analysis_type == "accessibility":
                         report_lines.append(f"Accessibility Score: {data['overall_score']:.1f}/100")
-                        conformance = data['conformance_level'] or 'None'
+                        conformance = data["conformance_level"] or "None"
                         report_lines.append(f"WCAG Conformance: {conformance}")
-                        report_lines.append(f"Issues: {data['total_issues']} total, {data['critical_issues']} critical")
+                        report_lines.append(
+                            f"Issues: {data['total_issues']} total, {data['critical_issues']} critical"
+                        )
 
-                    elif analysis_type == 'epub_validation':
+                    elif analysis_type == "epub_validation":
                         report_lines.append(f"EPUB Valid: {'Yes' if data['is_valid'] else 'No'}")
-                        report_lines.append(f"Issues: {data['total_issues']} total ({data['errors']} errors, {data['warnings']} warnings)")
-                        report_lines.append(f"EPUBCheck Available: {'Yes' if data['epubcheck_available'] else 'No'}")
-                        if data['issues']:
+                        report_lines.append(
+                            f"Issues: {data['total_issues']} total ({data['errors']} errors, {data['warnings']} warnings)"
+                        )
+                        report_lines.append(
+                            f"EPUBCheck Available: {'Yes' if data['epubcheck_available'] else 'No'}"
+                        )
+                        if data["issues"]:
                             report_lines.append("Issues Found:")
-                            for issue in data['issues'][:10]:  # Limit to first 10 issues for brevity
-                                location = f" ({issue['location']})" if issue.get('location') else ""
-                                report_lines.append(f"  • [{issue['severity'].upper()}]{location}: {issue['message']}")
-                            if len(data['issues']) > 10:
-                                report_lines.append(f"  ... and {len(data['issues']) - 10} more issues")
+                            for issue in data["issues"][
+                                :10
+                            ]:  # Limit to first 10 issues for brevity
+                                location = (
+                                    f" ({issue['location']})" if issue.get("location") else ""
+                                )
+                                report_lines.append(
+                                    f"  • [{issue['severity'].upper()}]{location}: {issue['message']}"
+                                )
+                            if len(data["issues"]) > 10:
+                                report_lines.append(
+                                    f"  ... and {len(data['issues']) - 10} more issues"
+                                )
 
-                    elif analysis_type == 'content_validation':
+                    elif analysis_type == "content_validation":
                         report_lines.append(f"Files Analyzed: {data['files_checked']}")
-                        report_lines.append(f"Issues: {data['total_issues']} total, {data['error_count']} errors")
+                        report_lines.append(
+                            f"Issues: {data['total_issues']} total, {data['error_count']} errors"
+                        )
 
-                    if 'recommendations' in data:
+                    if "recommendations" in data:
                         report_lines.append("Recommendations:")
-                        for rec in data['recommendations']:
+                        for rec in data["recommendations"]:
                             report_lines.append(f"  • {rec}")
 
                     report_lines.append("")
 
             output_path = Path(args.output)
-            output_path.write_text('\n'.join(report_lines), encoding='utf-8')
+            output_path.write_text("\n".join(report_lines), encoding="utf-8")
             print(f"\n📄 Detailed report saved to: {output_path}")
 
     # Return appropriate exit code
@@ -2583,7 +2836,7 @@ def run_validate(args: argparse.Namespace) -> int:
         print(f"Error: EPUB file not found: {epub_path}", file=sys.stderr)
         return 1
 
-    if not epub_path.suffix.lower() == '.epub':
+    if not epub_path.suffix.lower() == ".epub":
         print(f"Error: File must be an EPUB (.epub extension): {epub_path}", file=sys.stderr)
         return 1
 
@@ -2594,9 +2847,7 @@ def run_validate(args: argparse.Namespace) -> int:
         # Run validation
         custom_checks = not args.skip_custom
         validation_result = validate_epub(
-            epub_path,
-            custom_checks=custom_checks,
-            timeout=args.timeout
+            epub_path, custom_checks=custom_checks, timeout=args.timeout
         )
 
         # Override EPUBCheck if skipped
@@ -2659,11 +2910,7 @@ def run_ai_metadata(args) -> int:
             return 1
 
         # Create basic metadata
-        metadata = EpubMetadata(
-            title=input_file.stem,
-            author="Unknown Author",
-            language="en"
-        )
+        metadata = EpubMetadata(title=input_file.stem, author="Unknown Author", language="en")
 
         # Enhance with AI
         enhanced = enhance_metadata_with_ai(content, metadata, interactive=args.interactive)
@@ -2677,7 +2924,7 @@ def run_ai_metadata(args) -> int:
             print(f"   Title: {enhanced.original.title}")
             print(f"   Author: {enhanced.original.author}")
             print(f"   Description: {enhanced.original.description or '(none)'}")
-            if hasattr(enhanced.original, 'genre') and enhanced.original.genre:
+            if hasattr(enhanced.original, "genre") and enhanced.original.genre:
                 print(f"   Genre: {enhanced.original.genre}")
 
         return 0
@@ -2710,27 +2957,30 @@ def run_ai_genre(args) -> int:
             return 1
 
         # Detect genres
-        metadata_dict = {
-            'title': input_file.stem,
-            'author': 'Unknown Author',
-            'description': ''
-        }
+        metadata_dict = {"title": input_file.stem, "author": "Unknown Author", "description": ""}
         result = detect_genre_with_ai(content, metadata_dict)
 
         if args.json:
             import json
+
             output = {
-                'genres': [{'genre': g.genre, 'confidence': g.confidence, 'source': g.source}
-                          for g in result.genres],
-                'keywords': result.keywords,
-                'analysis_summary': result.analysis_summary
+                "genres": [
+                    {"genre": g.genre, "confidence": g.confidence, "source": g.source}
+                    for g in result.genres
+                ],
+                "keywords": result.keywords,
+                "analysis_summary": result.analysis_summary,
             }
             print(json.dumps(output, indent=2))
         else:
             print("\n📚 Detected Genres:")
             for genre in result.genres[:5]:
-                confidence_icon = "🟢" if genre.confidence >= 0.8 else "🟡" if genre.confidence >= 0.6 else "🔴"
-                print(f"   {confidence_icon} {genre.genre} ({genre.confidence:.1%}) - {genre.source}")
+                confidence_icon = (
+                    "🟢" if genre.confidence >= 0.8 else "🟡" if genre.confidence >= 0.6 else "🔴"
+                )
+                print(
+                    f"   {confidence_icon} {genre.genre} ({genre.confidence:.1%}) - {genre.source}"
+                )
 
             print(f"\n🏷️  Keywords: {', '.join(result.keywords[:15])}")
 
@@ -2757,16 +3007,28 @@ def run_ai_alt_text(args) -> int:
     try:
         print(f"🖼️  Generating alt text for: {input_path.name}")
 
-        if input_path.is_file() and input_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+        if input_path.is_file() and input_path.suffix.lower() in [
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".gif",
+            ".webp",
+        ]:
             # Single image file
             suggestions = generate_image_alt_texts([input_path], interactive=args.interactive)
 
             if suggestions:
                 print("\n✨ Alt Text Suggestions:")
                 for i, suggestion in enumerate(suggestions, 1):
-                    confidence_icon = "🟢" if suggestion.confidence >= 0.8 else "🟡" if suggestion.confidence >= 0.6 else "🔴"
+                    confidence_icon = (
+                        "🟢"
+                        if suggestion.confidence >= 0.8
+                        else "🟡" if suggestion.confidence >= 0.6 else "🔴"
+                    )
                     print(f"   {i}. {confidence_icon} {suggestion.alt_text}")
-                    print(f"      Confidence: {suggestion.confidence:.1%} | Source: {suggestion.source}")
+                    print(
+                        f"      Confidence: {suggestion.confidence:.1%} | Source: {suggestion.source}"
+                    )
             else:
                 print("No alt text suggestions generated")
 
@@ -2821,13 +3083,14 @@ def run_ai_config(args) -> int:
 def _read_document_content(file_path: Path) -> str:
     """Read document content for AI analysis."""
     try:
-        if file_path.suffix.lower() == '.docx':
+        if file_path.suffix.lower() == ".docx":
             # Use docx2txt or similar to extract text
             from .convert import extract_text_from_docx
+
             return extract_text_from_docx(file_path)
         else:
             # Read as text file
-            return file_path.read_text(encoding='utf-8')
+            return file_path.read_text(encoding="utf-8")
     except Exception:
         return ""
 
@@ -2835,18 +3098,18 @@ def _read_document_content(file_path: Path) -> str:
 def _save_metadata_to_file(metadata: EpubMetadata, output_path: Path):
     """Save metadata to a file."""
     metadata_dict = {
-        'title': metadata.title,
-        'author': metadata.author,
-        'description': metadata.description,
-        'language': metadata.language,
+        "title": metadata.title,
+        "author": metadata.author,
+        "description": metadata.description,
+        "language": metadata.language,
     }
 
-    if hasattr(metadata, 'genre') and metadata.genre:
-        metadata_dict['genre'] = metadata.genre
-    if hasattr(metadata, 'keywords') and metadata.keywords:
-        metadata_dict['keywords'] = metadata.keywords
+    if hasattr(metadata, "genre") and metadata.genre:
+        metadata_dict["genre"] = metadata.genre
+    if hasattr(metadata, "keywords") and metadata.keywords:
+        metadata_dict["keywords"] = metadata.keywords
 
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         for key, value in metadata_dict.items():
             if value:
                 f.write(f"{key}={value}\n")
@@ -2866,6 +3129,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     if not argv:
         # Launch interactive CLI when no args are provided
         from .interactive_cli import run_interactive_cli
+
         run_interactive_cli()
         return 0
     parser = _arg_parser()
@@ -2902,10 +3166,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         return run_doctor(args)
     if args.command == "interactive":
         from .interactive_cli import run_interactive_cli
+
         run_interactive_cli()
         return 0
     if args.command == "gui":
         from .gui.modern_app import main as run_modern_gui
+
         return run_modern_gui()
     if args.command == "checklist":
         return run_checklist(args)
@@ -2966,13 +3232,16 @@ def run_doctor(args: argparse.Namespace) -> int:
     if sys.version_info >= (3, 11):
         print("  [OK] Python version is compatible")
     else:
-        print(f"  [ERROR] Python {sys.version_info.major}.{sys.version_info.minor} is too old (requires 3.11+)")
+        print(
+            f"  [ERROR] Python {sys.version_info.major}.{sys.version_info.minor} is too old (requires 3.11+)"
+        )
         issues_found += 1
 
     # Package installation check
     print("\n[PACKAGE] Docx2Shelf Installation:")
     try:
         from importlib import metadata
+
         version = metadata.version("docx2shelf")
         print(f"  [OK] Docx2Shelf {version} installed")
     except Exception as e:
@@ -2996,7 +3265,7 @@ def run_doctor(args: argparse.Namespace) -> int:
         "pypandoc": "Pandoc Python integration",
         "requests": "Update and marketplace features",
         "fastapi": "Enterprise API features",
-        "sqlalchemy": "Enterprise database features"
+        "sqlalchemy": "Enterprise database features",
     }
 
     print("\n[OPTIONAL] Optional Dependencies:")
@@ -3010,6 +3279,7 @@ def run_doctor(args: argparse.Namespace) -> int:
     # Tools check (reuse existing tools_doctor)
     print("\n[TOOLS] External Tools:")
     from .tools import tools_doctor
+
     tools_result = tools_doctor()
     if tools_result != 0:
         issues_found += tools_result
@@ -3029,6 +3299,7 @@ def run_doctor(args: argparse.Namespace) -> int:
 
     # Check temp directory
     import tempfile
+
     try:
         temp_dir = Path(tempfile.gettempdir())
         print(f"  [OK] Temp directory: {temp_dir}")
@@ -3045,6 +3316,7 @@ def run_doctor(args: argparse.Namespace) -> int:
     print("\n[MEMORY] Memory Information:")
     try:
         import psutil
+
         memory = psutil.virtual_memory()
         print(f"  [OK] Available RAM: {memory.available // (1024**3)} GB")
         if memory.available < 1024**3:  # Less than 1GB
@@ -3101,7 +3373,7 @@ def run_plugins(args) -> int:
 
             print("Available plugins:")
             for plugin in available_plugins:
-                status = "✓ Loaded" if plugin['loaded'] else "○ Available"
+                status = "✓ Loaded" if plugin["loaded"] else "○ Available"
                 if args.verbose:
                     print(f"  {status} {plugin['name']} (v{plugin['version']})")
                     print(f"    Description: {plugin['description']}")
@@ -3110,7 +3382,9 @@ def run_plugins(args) -> int:
                     print(f"    Classes: {', '.join(plugin['classes'])}")
                     print()
                 else:
-                    print(f"  {status} {plugin['name']} (v{plugin['version']}) - {plugin['description']}")
+                    print(
+                        f"  {status} {plugin['name']} (v{plugin['version']}) - {plugin['description']}"
+                    )
         else:
             # Show only loaded plugins
             plugins = plugin_manager.list_plugins()
@@ -3121,13 +3395,13 @@ def run_plugins(args) -> int:
 
             print("Loaded plugins:")
             for plugin in plugins:
-                status = "✓" if plugin['enabled'] == 'True' else "✗"
+                status = "✓" if plugin["enabled"] == "True" else "✗"
                 if args.verbose:
-                    detailed = get_plugin_info(plugin['name'])
+                    detailed = get_plugin_info(plugin["name"])
                     print(f"  {status} {plugin['name']} (v{plugin['version']})")
                     if detailed:
                         print(f"    Hooks: {detailed['hook_count']} total")
-                        for hook_type, hook_classes in detailed['hooks'].items():
+                        for hook_type, hook_classes in detailed["hooks"].items():
                             print(f"      {hook_type}: {', '.join(hook_classes)}")
                     print()
                 else:
@@ -3178,7 +3452,7 @@ def run_plugins(args) -> int:
         print(f"Status: {'Enabled' if plugin_info['enabled'] else 'Disabled'}")
         print(f"Hooks: {plugin_info['hook_count']} total")
 
-        for hook_type, hook_classes in plugin_info['hooks'].items():
+        for hook_type, hook_classes in plugin_info["hooks"].items():
             print(f"  {hook_type}:")
             for hook_class in hook_classes:
                 print(f"    - {hook_class}")
@@ -3204,7 +3478,7 @@ def run_plugins(args) -> int:
         if available_plugins:
             print(f"\nFound {len(available_plugins)} plugins:")
             for plugin in available_plugins:
-                status = "✓ Loaded" if plugin['loaded'] else "○ Available"
+                status = "✓ Loaded" if plugin["loaded"] else "○ Available"
                 print(f"  {status} {plugin['name']} ({plugin['location']})")
         else:
             print("\nNo plugins found in discovery locations.")
@@ -3243,16 +3517,24 @@ def run_plugins(args) -> int:
 
         # Replace placeholder names in the basic template
         if args.template == "basic":
-            with open(plugin_file, 'r') as f:
+            with open(plugin_file, "r") as f:
                 content = f.read()
 
             content = content.replace("basic_template", args.name)
-            content = content.replace("BasicTemplatePlugin", f"{args.name.title().replace('_', '')}Plugin")
-            content = content.replace("BasicPreProcessor", f"{args.name.title().replace('_', '')}PreProcessor")
-            content = content.replace("BasicPostProcessor", f"{args.name.title().replace('_', '')}PostProcessor")
-            content = content.replace("BasicMetadataResolver", f"{args.name.title().replace('_', '')}MetadataResolver")
+            content = content.replace(
+                "BasicTemplatePlugin", f"{args.name.title().replace('_', '')}Plugin"
+            )
+            content = content.replace(
+                "BasicPreProcessor", f"{args.name.title().replace('_', '')}PreProcessor"
+            )
+            content = content.replace(
+                "BasicPostProcessor", f"{args.name.title().replace('_', '')}PostProcessor"
+            )
+            content = content.replace(
+                "BasicMetadataResolver", f"{args.name.title().replace('_', '')}MetadataResolver"
+            )
 
-            with open(plugin_file, 'w') as f:
+            with open(plugin_file, "w") as f:
                 f.write(content)
 
         print(f"✓ Created plugin: {plugin_file}")
@@ -3284,9 +3566,9 @@ def run_connectors(args) -> int:
 
         print("Available connectors:")
         for conn in connectors:
-            status = "✓" if conn['enabled'] else "✗"
-            network = "[NET]" if conn['requires_network'] else "[LOCAL]"
-            auth = "🔑" if conn['authenticated'] else "🔓"
+            status = "✓" if conn["enabled"] else "✗"
+            network = "[NET]" if conn["requires_network"] else "[LOCAL]"
+            auth = "🔑" if conn["authenticated"] else "🔓"
             print(f"  {status} {network} {auth} {conn['name']}")
 
         print("\nLegend:")
@@ -3328,7 +3610,7 @@ def run_connectors(args) -> int:
 
         auth_kwargs = {}
         if args.credentials:
-            auth_kwargs['credentials_path'] = args.credentials
+            auth_kwargs["credentials_path"] = args.credentials
 
         success = connector.authenticate(**auth_kwargs)
         if success:
@@ -3340,7 +3622,9 @@ def run_connectors(args) -> int:
 
     elif args.connector_cmd == "fetch":
         try:
-            output_path = Path(args.output) if args.output else Path(f"downloaded_{args.document_id}.docx")
+            output_path = (
+                Path(args.output) if args.output else Path(f"downloaded_{args.document_id}.docx")
+            )
             result_path = download_from_connector(args.connector, args.document_id, output_path)
             print(f"Downloaded document to: {result_path}")
             return 0
@@ -3351,7 +3635,9 @@ def run_connectors(args) -> int:
     return 1
 
 
-def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[str], resources: list[Path], args) -> int:
+def _run_preview_mode(
+    meta: EpubMetadata, opts: BuildOptions, html_chunks: list[str], resources: list[Path], args
+) -> int:
     """Run live preview mode instead of generating EPUB."""
     import signal
     import sys
@@ -3379,7 +3665,7 @@ def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[
                 resources=resources,
                 output_path=epub_temp,
                 styles_css="",  # Will be populated by conversion process
-                performance_monitor=None  # Preview mode doesn't need monitoring
+                performance_monitor=None,  # Preview mode doesn't need monitoring
             )
 
             # Check if inspect folder was created (contains the EPUB content structure)
@@ -3393,7 +3679,7 @@ def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[
                     html_chunks=html_chunks,
                     resources=resources,
                     output_path=epub_temp,
-                    styles_css=""
+                    styles_css="",
                 )
 
             if not inspect_dir.exists():
@@ -3411,7 +3697,7 @@ def _run_preview_mode(meta: EpubMetadata, opts: BuildOptions, html_chunks: list[
                 title=meta.title or "EPUB Preview",
                 port=opts.preview_port,
                 auto_open=True,
-                quiet=opts.quiet
+                quiet=opts.quiet,
             )
 
             if port is None:
@@ -3451,7 +3737,7 @@ def run_convert(args) -> int:
         print(f"Error: Input file not found: {input_path}")
         return 1
 
-    if not input_path.suffix.lower() == '.epub':
+    if not input_path.suffix.lower() == ".epub":
         print(f"Error: Input file must be an EPUB file, got: {input_path.suffix}")
         return 1
 
@@ -3470,11 +3756,11 @@ def run_convert(args) -> int:
             print(f"  {dep}: {status}")
 
         # Check if any required dependencies are missing
-        if args.format == 'pdf' and not any(deps.values()):
+        if args.format == "pdf" and not any(deps.values()):
             print("\nError: PDF conversion requires either weasyprint or prince")
             print("Install with: pip install weasyprint")
             return 1
-        elif args.format in ['mobi', 'azw3'] and not deps.get('calibre'):
+        elif args.format in ["mobi", "azw3"] and not deps.get("calibre"):
             print(f"\nError: {args.format.upper()} conversion requires Calibre")
             print("Install from: https://calibre-ebook.com/download")
             return 1
@@ -3486,17 +3772,17 @@ def run_convert(args) -> int:
         output_path = Path(args.output)
     else:
         # Auto-generate based on format
-        if args.format == 'web':
+        if args.format == "web":
             output_path = input_path.parent / f"{input_path.stem}_web"
         else:
             ext_map = {
-                'pdf': '.pdf',
-                'mobi': '.mobi',
-                'azw3': '.azw3',
-                'txt': '.txt',
-                'text': '.txt'
+                "pdf": ".pdf",
+                "mobi": ".mobi",
+                "azw3": ".azw3",
+                "txt": ".txt",
+                "text": ".txt",
             }
-            ext = ext_map.get(args.format, f'.{args.format}')
+            ext = ext_map.get(args.format, f".{args.format}")
             output_path = input_path.parent / f"{input_path.stem}{ext}"
 
     # Read custom CSS if provided
@@ -3504,14 +3790,14 @@ def run_convert(args) -> int:
     if args.css:
         css_path = Path(args.css)
         if css_path.exists():
-            custom_css = css_path.read_text(encoding='utf-8')
+            custom_css = css_path.read_text(encoding="utf-8")
         else:
             print(f"Warning: CSS file not found: {css_path}")
 
     # Extract metadata from args for conversion
     metadata = {
-        'title': getattr(args, 'title', None),
-        'author': getattr(args, 'author', None),
+        "title": getattr(args, "title", None),
+        "author": getattr(args, "author", None),
     }
 
     print(f"Converting {input_path} to {args.format.upper()}...")
@@ -3528,15 +3814,15 @@ def run_convert(args) -> int:
         custom_css=custom_css,
         page_size=args.page_size,
         margin=args.margin,
-        font_size=getattr(args, 'font_size', '12pt'),
+        font_size=getattr(args, "font_size", "12pt"),
         font_family=args.font_family,
         include_toc=args.include_toc,
-        include_cover=args.include_cover
+        include_cover=args.include_cover,
     )
 
     if success:
         print("✓ Conversion completed successfully!")
-        if args.format == 'web':
+        if args.format == "web":
             print(f"Open {output_path / 'index.html'} in your browser to view")
         return 0
     else:
@@ -3585,26 +3871,31 @@ def run_enterprise_batch(args) -> int:
             config_path = Path(args.config)
             if config_path.exists():
                 try:
-                    if config_path.suffix.lower() == '.yaml' or config_path.suffix.lower() == '.yml':
-                        with open(config_path, 'r', encoding='utf-8') as f:
+                    if (
+                        config_path.suffix.lower() == ".yaml"
+                        or config_path.suffix.lower() == ".yml"
+                    ):
+                        with open(config_path, "r", encoding="utf-8") as f:
                             config = yaml.safe_load(f) or {}
                     else:
-                        with open(config_path, 'r', encoding='utf-8') as f:
+                        with open(config_path, "r", encoding="utf-8") as f:
                             config = json.load(f)
                 except Exception as e:
                     print(f"Warning: Could not load config file: {e}")
 
         # Apply command line overrides
-        config.update({
-            "theme": args.theme,
-            "split_at": args.split_at,
-            "title": config.get("title", ""),
-            "author": config.get("author", ""),
-            "language": config.get("language", "en"),
-            "toc_depth": config.get("toc_depth", 2),
-            "hyphenate": config.get("hyphenate", True),
-            "justify": config.get("justify", True)
-        })
+        config.update(
+            {
+                "theme": args.theme,
+                "split_at": args.split_at,
+                "title": config.get("title", ""),
+                "author": config.get("author", ""),
+                "language": config.get("language", "en"),
+                "toc_depth": config.get("toc_depth", 2),
+                "hyphenate": config.get("hyphenate", True),
+                "justify": config.get("justify", True),
+            }
+        )
 
         # Create batch job
         job = BatchJob(
@@ -3614,7 +3905,7 @@ def run_enterprise_batch(args) -> int:
             output_directory=args.output,
             config=config,
             processing_mode=args.mode,
-            webhook_url=args.webhook
+            webhook_url=args.webhook,
         )
 
         # Submit to batch processor
@@ -3661,12 +3952,20 @@ def run_enterprise_jobs(args) -> int:
                 print("No batch jobs found")
                 return 0
 
-            print(f"{'Job ID':<36} {'Name':<20} {'Mode':<8} {'Status':<12} {'Progress':<10} {'Created'}")
+            print(
+                f"{'Job ID':<36} {'Name':<20} {'Mode':<8} {'Status':<12} {'Progress':<10} {'Created'}"
+            )
             print("-" * 100)
 
             for job in jobs:
-                created = job.created_at[:19] if isinstance(job.created_at, str) else str(job.created_at)[:19]
-                print(f"{job.id:<36} {job.name[:19]:<20} {job.processing_mode:<8} {job.status:<12} {job.progress:>3}% {created}")
+                created = (
+                    job.created_at[:19]
+                    if isinstance(job.created_at, str)
+                    else str(job.created_at)[:19]
+                )
+                print(
+                    f"{job.id:<36} {job.name[:19]:<20} {job.processing_mode:<8} {job.status:<12} {job.progress:>3}% {created}"
+                )
 
             return 0
 
@@ -3771,7 +4070,13 @@ def run_enterprise_config(args) -> int:
             key, value = args.set
 
             # Convert value to appropriate type
-            if key in ["max_concurrent_jobs", "max_files_per_job", "job_timeout_hours", "auto_cleanup_days", "api_port"]:
+            if key in [
+                "max_concurrent_jobs",
+                "max_files_per_job",
+                "job_timeout_hours",
+                "auto_cleanup_days",
+                "api_port",
+            ]:
                 value = int(value)
             elif key in ["enable_webhooks", "enable_api"]:
                 value = value.lower() in ["true", "1", "yes", "on"]
@@ -3787,19 +4092,23 @@ def run_enterprise_config(args) -> int:
 
         elif args.export:
             import shutil
+
             shutil.copy2(config_manager.config_path, args.export)
             print(f"✓ Configuration exported to: {args.export}")
             return 0
 
         elif args.import_config:
             import shutil
+
             shutil.copy2(args.import_config, config_manager.config_path)
             config_manager.config = config_manager._load_config()
             print(f"✓ Configuration imported from: {args.import_config}")
             return 0
 
         else:
-            print("Please specify an action: --init, --show, --set KEY VALUE, --reset, --export FILE, or --import FILE")
+            print(
+                "Please specify an action: --init, --show, --set KEY VALUE, --reset, --export FILE, or --import FILE"
+            )
             return 1
 
     except ImportError:
@@ -3827,10 +4136,7 @@ def run_enterprise_users(args) -> int:
                 permissions = [p.strip() for p in args.permissions.split(",")]
 
             user = user_manager.create_user(
-                username=args.create,
-                email=args.email,
-                role=args.role,
-                permissions=permissions
+                username=args.create, email=args.email, role=args.role, permissions=permissions
             )
 
             print("✓ User created successfully")
@@ -3853,7 +4159,11 @@ def run_enterprise_users(args) -> int:
             print("-" * 70)
 
             for user in users:
-                created = user.created_at[:19] if isinstance(user.created_at, str) else str(user.created_at)[:19]
+                created = (
+                    user.created_at[:19]
+                    if isinstance(user.created_at, str)
+                    else str(user.created_at)[:19]
+                )
                 print(f"{user.username:<20} {user.email:<30} {user.role:<10} {created}")
 
             return 0
@@ -3866,11 +4176,10 @@ def run_enterprise_users(args) -> int:
 
             # Generate new API key
             from .enterprise import get_api_manager
+
             api_manager = get_api_manager()
             new_key = api_manager.generate_api_key(
-                name=f"Generated for {user.username}",
-                user_id=user.id,
-                permissions=user.permissions
+                name=f"Generated for {user.username}", user_id=user.id, permissions=user.permissions
             )
 
             print(f"✓ New API key generated for {user.username}")
@@ -3887,7 +4196,9 @@ def run_enterprise_users(args) -> int:
                 return 1
 
         else:
-            print("Please specify an action: --create USERNAME --email EMAIL, --list, --generate-key USER_ID, or --deactivate USER_ID")
+            print(
+                "Please specify an action: --create USERNAME --email EMAIL, --list, --generate-key USER_ID, or --deactivate USER_ID"
+            )
             return 1
 
     except ImportError:
@@ -3919,16 +4230,17 @@ def run_enterprise_api(args) -> int:
             return 0
 
         elif args.status:
-            from .enterprise_api import get_api_manager
             import socket
+
+            from .enterprise_api import get_api_manager
 
             try:
                 # Get the API manager to access database
                 api_manager = get_api_manager()
 
                 # Try to connect to the API server
-                host = args.host if hasattr(args, 'host') else 'localhost'
-                port = args.port if hasattr(args, 'port') else 8000
+                host = args.host if hasattr(args, "host") else "localhost"
+                port = args.port if hasattr(args, "port") else 8000
 
                 server_running = False
                 try:
@@ -3945,14 +4257,14 @@ def run_enterprise_api(args) -> int:
                 print("=" * 40)
 
                 if server_running:
-                    print(f"✅ Status: Running")
+                    print("✅ Status: Running")
                     print(f"   Host: {host}:{port}")
                     print(f"   URL: http://{host}:{port}")
                     print(f"   Docs: http://{host}:{port}/docs")
                 else:
-                    print(f"⛔ Status: Not Running")
+                    print("⛔ Status: Not Running")
                     print(f"   Expected at: {host}:{port}")
-                    print(f"   Start with: docx2shelf enterprise api --start")
+                    print("   Start with: docx2shelf enterprise api --start")
 
                 # Display database info
                 print("\n📁 Database Information")
@@ -3960,11 +4272,11 @@ def run_enterprise_api(args) -> int:
                 db_path = api_manager.db_path
                 if db_path.exists():
                     db_size = db_path.stat().st_size / (1024 * 1024)  # Convert to MB
-                    print(f"✓ Database exists")
+                    print("✓ Database exists")
                     print(f"  Path: {db_path}")
                     print(f"  Size: {db_size:.2f} MB")
                 else:
-                    print(f"⚠ Database not found")
+                    print("⚠ Database not found")
                     print(f"  Path: {db_path}")
 
                 # Display queue status
@@ -4020,11 +4332,7 @@ def run_enterprise_webhooks(args) -> int:
             from .enterprise_api import WebhookEndpoint
 
             endpoint = WebhookEndpoint(
-                url=args.add,
-                secret=args.secret,
-                events=args.events or [],
-                headers={},
-                enabled=True
+                url=args.add, secret=args.secret, events=args.events or [], headers={}, enabled=True
             )
 
             webhook_manager.add_endpoint(endpoint)
@@ -4052,7 +4360,7 @@ def run_enterprise_webhooks(args) -> int:
             # Send a test webhook
             test_data = {
                 "test": True,
-                "message": "This is a test webhook from docx2shelf enterprise"
+                "message": "This is a test webhook from docx2shelf enterprise",
             }
 
             webhook_manager.send_webhook("test", test_data)
@@ -4110,8 +4418,8 @@ def run_enterprise_reports(args) -> int:
             for job in jobs:
                 if job.started_at and job.completed_at and job.status == "completed":
                     try:
-                        started = datetime.fromisoformat(job.started_at.replace('Z', '+00:00'))
-                        completed = datetime.fromisoformat(job.completed_at.replace('Z', '+00:00'))
+                        started = datetime.fromisoformat(job.started_at.replace("Z", "+00:00"))
+                        completed = datetime.fromisoformat(job.completed_at.replace("Z", "+00:00"))
                         duration = (completed - started).total_seconds()
                         processing_times.append(duration)
                     except (ValueError, AttributeError):
@@ -4142,26 +4450,40 @@ def run_enterprise_reports(args) -> int:
                 print("-" * 50)
 
                 for user in users:
-                    user_id = user.get('id') if isinstance(user, dict) else user.user_id
-                    username = user.get('username', 'Unknown') if isinstance(user, dict) else user.username
+                    user_id = user.get("id") if isinstance(user, dict) else user.user_id
+                    username = (
+                        user.get("username", "Unknown") if isinstance(user, dict) else user.username
+                    )
 
                     # Get user's jobs
                     user_jobs = api_manager.db_manager.list_conversion_jobs(user_id=user_id)
-                    completed = len([j for j in user_jobs if j.status == 'completed']) if user_jobs else 0
-                    failed = len([j for j in user_jobs if j.status == 'failed']) if user_jobs else 0
+                    completed = (
+                        len([j for j in user_jobs if j.status == "completed"]) if user_jobs else 0
+                    )
+                    failed = len([j for j in user_jobs if j.status == "failed"]) if user_jobs else 0
                     total_jobs = len(user_jobs) if user_jobs else 0
 
                     # Get API keys for this user
-                    api_keys = api_manager.db_manager.list_api_keys(user_id=user_id) if hasattr(api_manager.db_manager, 'list_api_keys') else []
+                    api_keys = (
+                        api_manager.db_manager.list_api_keys(user_id=user_id)
+                        if hasattr(api_manager.db_manager, "list_api_keys")
+                        else []
+                    )
 
                     print(f"\nUser: {username}")
-                    print(f"  Conversions: {completed} completed, {failed} failed (Total: {total_jobs})")
+                    print(
+                        f"  Conversions: {completed} completed, {failed} failed (Total: {total_jobs})"
+                    )
                     if api_keys:
-                        print(f"  API Keys: {len(api_keys) if isinstance(api_keys, list) else len(api_keys)}")
+                        print(
+                            f"  API Keys: {len(api_keys) if isinstance(api_keys, list) else len(api_keys)}"
+                        )
 
                     total_conversions += completed
                     if api_keys:
-                        total_api_calls += len(api_keys) if isinstance(api_keys, list) else len(api_keys)
+                        total_api_calls += (
+                            len(api_keys) if isinstance(api_keys, list) else len(api_keys)
+                        )
 
                 # Display overall statistics
                 print("\n" + "=" * 50)
@@ -4175,11 +4497,11 @@ def run_enterprise_reports(args) -> int:
                 print("-" * 50)
                 rate_limited_keys = 0
                 for user in users:
-                    user_id = user.get('id') if isinstance(user, dict) else user.user_id
-                    if hasattr(api_manager.db_manager, 'list_api_keys'):
+                    user_id = user.get("id") if isinstance(user, dict) else user.user_id
+                    if hasattr(api_manager.db_manager, "list_api_keys"):
                         api_keys = api_manager.db_manager.list_api_keys(user_id=user_id)
                         for key in (api_keys if isinstance(api_keys, list) else []):
-                            if hasattr(key, 'rate_limit_per_minute'):
+                            if hasattr(key, "rate_limit_per_minute"):
                                 rate_limited_keys += 1
 
                 print(f"API Keys with Rate Limiting: {rate_limited_keys}")
@@ -4194,41 +4516,62 @@ def run_enterprise_reports(args) -> int:
         elif args.export:
             jobs = processor.list_jobs()
 
-            if args.export.endswith('.json'):
+            if args.export.endswith(".json"):
                 # Export as JSON
                 export_data = []
                 for job in jobs:
-                    export_data.append({
-                        "id": job.id,
-                        "name": job.name,
-                        "status": job.status,
-                        "processing_mode": job.processing_mode,
-                        "total_items": job.total_items,
-                        "processed_items": job.processed_items,
-                        "failed_items": job.failed_items,
-                        "created_at": job.created_at,
-                        "started_at": job.started_at,
-                        "completed_at": job.completed_at
-                    })
+                    export_data.append(
+                        {
+                            "id": job.id,
+                            "name": job.name,
+                            "status": job.status,
+                            "processing_mode": job.processing_mode,
+                            "total_items": job.total_items,
+                            "processed_items": job.processed_items,
+                            "failed_items": job.failed_items,
+                            "created_at": job.created_at,
+                            "started_at": job.started_at,
+                            "completed_at": job.completed_at,
+                        }
+                    )
 
-                with open(args.export, 'w', encoding='utf-8') as f:
+                with open(args.export, "w", encoding="utf-8") as f:
                     json.dump(export_data, f, indent=2)
 
-            elif args.export.endswith('.csv'):
+            elif args.export.endswith(".csv"):
                 # Export as CSV
-                with open(args.export, 'w', newline='', encoding='utf-8') as f:
+                with open(args.export, "w", newline="", encoding="utf-8") as f:
                     writer = csv.writer(f)
-                    writer.writerow([
-                        'ID', 'Name', 'Status', 'Mode', 'Total Items',
-                        'Processed', 'Failed', 'Created', 'Started', 'Completed'
-                    ])
+                    writer.writerow(
+                        [
+                            "ID",
+                            "Name",
+                            "Status",
+                            "Mode",
+                            "Total Items",
+                            "Processed",
+                            "Failed",
+                            "Created",
+                            "Started",
+                            "Completed",
+                        ]
+                    )
 
                     for job in jobs:
-                        writer.writerow([
-                            job.id, job.name, job.status, job.processing_mode,
-                            job.total_items, job.processed_items, job.failed_items,
-                            job.created_at, job.started_at or '', job.completed_at or ''
-                        ])
+                        writer.writerow(
+                            [
+                                job.id,
+                                job.name,
+                                job.status,
+                                job.processing_mode,
+                                job.total_items,
+                                job.processed_items,
+                                job.failed_items,
+                                job.created_at,
+                                job.started_at or "",
+                                job.completed_at or "",
+                            ]
+                        )
             else:
                 print("Error: Export format must be .json or .csv")
                 return 1

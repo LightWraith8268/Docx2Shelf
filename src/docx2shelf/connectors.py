@@ -18,16 +18,19 @@ logger = logging.getLogger(__name__)
 
 class ConnectorError(Exception):
     """Base exception for connector-related errors."""
+
     pass
 
 
 class NetworkConnectorError(ConnectorError):
     """Exception for network-related connector errors."""
+
     pass
 
 
 class AuthenticationError(ConnectorError):
     """Exception for authentication-related errors."""
+
     pass
 
 
@@ -97,13 +100,15 @@ class LocalMarkdownConnector(DocumentConnector):
 
         for pattern in ["*.md", "*.markdown"]:
             for file_path in current_dir.glob(pattern):
-                markdown_files.append({
-                    'id': str(file_path),
-                    'name': file_path.name,
-                    'path': str(file_path),
-                    'size': file_path.stat().st_size,
-                    'modified': file_path.stat().st_mtime
-                })
+                markdown_files.append(
+                    {
+                        "id": str(file_path),
+                        "name": file_path.name,
+                        "path": str(file_path),
+                        "size": file_path.stat().st_size,
+                        "modified": file_path.stat().st_mtime,
+                    }
+                )
 
         return markdown_files
 
@@ -115,11 +120,12 @@ class LocalMarkdownConnector(DocumentConnector):
             raise ConnectorError(f"Markdown file not found: {source_path}")
 
         # If output path has .docx extension, we need to convert
-        if output_path.suffix.lower() == '.docx':
+        if output_path.suffix.lower() == ".docx":
             return self._convert_markdown_to_docx(source_path, output_path)
         else:
             # Just copy the file
             import shutil
+
             shutil.copy2(source_path, output_path)
             return output_path
 
@@ -129,9 +135,12 @@ class LocalMarkdownConnector(DocumentConnector):
             import subprocess
 
             # Try to use pandoc for conversion
-            result = subprocess.run([
-                'pandoc', str(md_path), '-o', str(docx_path)
-            ], capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                ["pandoc", str(md_path), "-o", str(docx_path)],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
 
             if docx_path.exists():
                 return docx_path
@@ -144,7 +153,7 @@ class LocalMarkdownConnector(DocumentConnector):
             html_content = self._markdown_to_simple_html(md_path)
 
             # Create a temporary HTML file and rename it to .docx
-            with open(docx_path, 'w', encoding='utf-8') as f:
+            with open(docx_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
             return docx_path
@@ -153,17 +162,17 @@ class LocalMarkdownConnector(DocumentConnector):
         """Simple Markdown to HTML conversion."""
         import re
 
-        with open(md_path, 'r', encoding='utf-8') as f:
+        with open(md_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Simple conversions
         html = content
-        html = re.sub(r'^# (.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
-        html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
-        html = re.sub(r'^### (.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
-        html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
-        html = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html)
-        html = html.replace('\n\n', '</p><p>')
+        html = re.sub(r"^# (.+)$", r"<h1>\1</h1>", html, flags=re.MULTILINE)
+        html = re.sub(r"^## (.+)$", r"<h2>\1</h2>", html, flags=re.MULTILINE)
+        html = re.sub(r"^### (.+)$", r"<h3>\1</h3>", html, flags=re.MULTILINE)
+        html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
+        html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
+        html = html.replace("\n\n", "</p><p>")
 
         return f"""<!DOCTYPE html>
 <html>
@@ -192,10 +201,10 @@ class GoogleDocsConnector(DocumentConnector):
             from googleapiclient.discovery import build
 
             # Scopes required for Google Docs API
-            SCOPES = ['https://www.googleapis.com/auth/documents.readonly']
+            SCOPES = ["https://www.googleapis.com/auth/documents.readonly"]
 
             creds = None
-            token_path = Path.home() / '.docx2shelf' / 'google_token.json'
+            token_path = Path.home() / ".docx2shelf" / "google_token.json"
 
             # Load existing token
             if token_path.exists():
@@ -208,7 +217,9 @@ class GoogleDocsConnector(DocumentConnector):
                 else:
                     if not credentials_path:
                         logger.error("Google Docs authentication requires credentials.json file")
-                        logger.info("Download from Google Cloud Console: https://console.cloud.google.com/")
+                        logger.info(
+                            "Download from Google Cloud Console: https://console.cloud.google.com/"
+                        )
                         return False
 
                     flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
@@ -216,10 +227,10 @@ class GoogleDocsConnector(DocumentConnector):
 
                 # Save the credentials for the next run
                 token_path.parent.mkdir(exist_ok=True)
-                with open(token_path, 'w') as token:
+                with open(token_path, "w") as token:
                     token.write(creds.to_json())
 
-            self.service = build('docs', 'v1', credentials=creds)
+            self.service = build("docs", "v1", credentials=creds)
             self._authenticated = True
             logger.info("Successfully authenticated with Google Docs")
             return True
@@ -259,7 +270,7 @@ class GoogleDocsConnector(DocumentConnector):
             # Export as DOCX format
             export_request = self.service.documents().export(
                 documentId=document_id,
-                mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             )
 
             # Download the content
@@ -269,7 +280,9 @@ class GoogleDocsConnector(DocumentConnector):
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_bytes(content)
 
-            logger.info(f"Downloaded Google Doc '{document.get('title', document_id)}' to {output_path}")
+            logger.info(
+                f"Downloaded Google Doc '{document.get('title', document_id)}' to {output_path}"
+            )
             return output_path
 
         except Exception as e:
@@ -308,7 +321,7 @@ class OneDriveConnector(DocumentConnector):
 
         try:
             # Use Microsoft Graph API to download the document
-            headers = {'Authorization': f'Bearer {self.access_token}'}
+            headers = {"Authorization": f"Bearer {self.access_token}"}
 
             # Get file metadata
             file_url = f"https://graph.microsoft.com/v1.0/me/drive/items/{document_id}"
@@ -325,7 +338,9 @@ class OneDriveConnector(DocumentConnector):
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_bytes(download_response.content)
 
-            logger.info(f"Downloaded OneDrive file '{file_info.get('name', document_id)}' to {output_path}")
+            logger.info(
+                f"Downloaded OneDrive file '{file_info.get('name', document_id)}' to {output_path}"
+            )
             return output_path
 
         except requests.RequestException as e:
@@ -352,10 +367,10 @@ class ConnectorManager:
         """List all available connectors."""
         return [
             {
-                'name': name,
-                'enabled': connector.enabled,
-                'requires_network': connector.requires_network,
-                'authenticated': connector.is_authenticated()
+                "name": name,
+                "enabled": connector.enabled,
+                "requires_network": connector.requires_network,
+                "authenticated": connector.is_authenticated(),
             }
             for name, connector in self.connectors.items()
         ]

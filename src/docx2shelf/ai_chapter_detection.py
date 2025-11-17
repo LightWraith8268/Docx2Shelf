@@ -8,11 +8,10 @@ local heuristics and optional AI services for enhanced accuracy.
 from __future__ import annotations
 
 import json
-import re
 import logging
+import re
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Tuple
-from pathlib import Path
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +19,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ChapterBoundary:
     """Represents a detected chapter boundary."""
+
     position: int
     title: str
     confidence: float
@@ -31,6 +31,7 @@ class ChapterBoundary:
 @dataclass
 class AIDetectionConfig:
     """Configuration for AI chapter detection."""
+
     min_chapter_length: int = 500  # Minimum words per chapter
     max_chapter_length: int = 10000  # Maximum words per chapter
     confidence_threshold: float = 0.7
@@ -62,7 +63,7 @@ class ChapterDetectionEngine:
         return [
             "demo-key-1",  # These would be real working keys
             "demo-key-2",  # Limited rate for free users
-            "demo-key-3"
+            "demo-key-3",
         ]
 
     def detect_chapters(self, content: str, filename: str = "") -> List[ChapterBoundary]:
@@ -111,39 +112,40 @@ class ChapterDetectionEngine:
 
         # Method 1: Look for chapter headers
         chapter_patterns = [
-            r'\b(chapter|chap\.?)\s+\d+\b',
-            r'\b(part|book)\s+\d+\b',
-            r'^(chapter|part|book)\s+[ivxlcdm]+\b',  # Roman numerals
-            r'^\d+\.\s+[A-Z]',  # Numbered sections
-            r'^[A-Z][A-Z\s]{3,}$',  # ALL CAPS headers
+            r"\b(chapter|chap\.?)\s+\d+\b",
+            r"\b(part|book)\s+\d+\b",
+            r"^(chapter|part|book)\s+[ivxlcdm]+\b",  # Roman numerals
+            r"^\d+\.\s+[A-Z]",  # Numbered sections
+            r"^[A-Z][A-Z\s]{3,}$",  # ALL CAPS headers
         ]
 
         for pattern in chapter_patterns:
             matches = re.finditer(pattern, content, re.IGNORECASE | re.MULTILINE)
             for match in matches:
                 title = self._extract_title_near_position(content, match.start())
-                boundaries.append(ChapterBoundary(
-                    position=match.start(),
-                    title=title,
-                    confidence=0.8,
-                    method='heuristic',
-                    content_preview=content[match.start():match.start()+100]
-                ))
+                boundaries.append(
+                    ChapterBoundary(
+                        position=match.start(),
+                        title=title,
+                        confidence=0.8,
+                        method="heuristic",
+                        content_preview=content[match.start() : match.start() + 100],
+                    )
+                )
 
         # Method 2: Look for significant breaks in text
-        paragraphs = content.split('\n\n')
+        paragraphs = content.split("\n\n")
         current_pos = 0
 
         for i, paragraph in enumerate(paragraphs):
             # Look for paragraphs that might be chapter starts
             if self._is_likely_chapter_start(paragraph):
                 title = paragraph.strip()[:50]
-                boundaries.append(ChapterBoundary(
-                    position=current_pos,
-                    title=title,
-                    confidence=0.6,
-                    method='heuristic'
-                ))
+                boundaries.append(
+                    ChapterBoundary(
+                        position=current_pos, title=title, confidence=0.6, method="heuristic"
+                    )
+                )
             current_pos += len(paragraph) + 2  # +2 for \n\n
 
         return boundaries
@@ -151,8 +153,9 @@ class ChapterDetectionEngine:
     def _local_llm_detection(self, content: str) -> List[ChapterBoundary]:
         """Use local LLM to detect chapter boundaries."""
         try:
-            import requests
             import json
+
+            import requests
 
             if len(content) > 15000:  # Limit content size for local processing
                 content = content[:15000]
@@ -180,10 +183,10 @@ Respond with valid JSON only in this format:
                     "stream": False,
                     "options": {
                         "temperature": 0.1,
-                        "num_predict": self.config.local_llm_max_tokens
-                    }
+                        "num_predict": self.config.local_llm_max_tokens,
+                    },
                 },
-                timeout=self.config.local_llm_timeout
+                timeout=self.config.local_llm_timeout,
             )
 
             if response.status_code == 200:
@@ -201,12 +204,14 @@ Respond with valid JSON only in this format:
 
                         boundaries = []
                         for boundary_data in data.get("boundaries", []):
-                            boundaries.append(ChapterBoundary(
-                                position=boundary_data.get("position", 0),
-                                title=boundary_data.get("title", "Chapter"),
-                                confidence=boundary_data.get("confidence", 0.8),
-                                method='local_llm'
-                            ))
+                            boundaries.append(
+                                ChapterBoundary(
+                                    position=boundary_data.get("position", 0),
+                                    title=boundary_data.get("title", "Chapter"),
+                                    confidence=boundary_data.get("confidence", 0.8),
+                                    method="local_llm",
+                                )
+                            )
 
                         logger.info(f"Local LLM detected {len(boundaries)} chapter boundaries")
                         return boundaries
@@ -230,26 +235,28 @@ Respond with valid JSON only in this format:
     def _parse_llm_text_response(self, response: str, content: str) -> List[ChapterBoundary]:
         """Parse LLM text response when JSON parsing fails."""
         boundaries = []
-        lines = response.split('\n')
+        lines = response.split("\n")
 
         for line in lines:
             # Look for chapter mentions in the response
-            if 'chapter' in line.lower() or 'part' in line.lower():
+            if "chapter" in line.lower() or "part" in line.lower():
                 # Try to extract title and position info
                 words = line.split()
                 for i, word in enumerate(words):
-                    if word.lower() in ['chapter', 'part'] and i + 1 < len(words):
-                        title = ' '.join(words[i:i+3])  # Take a few words as title
+                    if word.lower() in ["chapter", "part"] and i + 1 < len(words):
+                        title = " ".join(words[i : i + 3])  # Take a few words as title
 
                         # Try to find this title in the original content
                         position = content.lower().find(title.lower())
                         if position >= 0:
-                            boundaries.append(ChapterBoundary(
-                                position=position,
-                                title=title,
-                                confidence=0.6,
-                                method='local_llm_parsed'
-                            ))
+                            boundaries.append(
+                                ChapterBoundary(
+                                    position=position,
+                                    title=title,
+                                    confidence=0.6,
+                                    method="local_llm_parsed",
+                                )
+                            )
                         break
 
         return boundaries
@@ -286,20 +293,18 @@ Content:
         boundaries = []
 
         # Find likely chapter markers
-        lines = content.split('\n')
+        lines = content.split("\n")
         for i, line in enumerate(lines):
             line = line.strip()
-            if (line and
-                (re.match(r'(chapter|part)\s+\d+', line, re.IGNORECASE) or
-                 len(line) < 50 and line.isupper() or
-                 re.match(r'^\d+\.', line))):
+            if line and (
+                re.match(r"(chapter|part)\s+\d+", line, re.IGNORECASE)
+                or len(line) < 50
+                and line.isupper()
+                or re.match(r"^\d+\.", line)
+            ):
 
                 position = sum(len(l) + 1 for l in lines[:i])
-                boundaries.append({
-                    "position": position,
-                    "title": line[:50],
-                    "confidence": 0.9
-                })
+                boundaries.append({"position": position, "title": line[:50], "confidence": 0.9})
 
         return json.dumps({"boundaries": boundaries})
 
@@ -310,19 +315,23 @@ Content:
             boundaries = []
 
             for boundary_data in data.get("boundaries", []):
-                boundaries.append(ChapterBoundary(
-                    position=boundary_data["position"],
-                    title=boundary_data["title"],
-                    confidence=boundary_data["confidence"],
-                    method='ai'
-                ))
+                boundaries.append(
+                    ChapterBoundary(
+                        position=boundary_data["position"],
+                        title=boundary_data["title"],
+                        confidence=boundary_data["confidence"],
+                        method="ai",
+                    )
+                )
 
             return boundaries
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Failed to parse AI response: {e}")
             return []
 
-    def _combine_detections(self, heuristic: List[ChapterBoundary], ai: List[ChapterBoundary]) -> List[ChapterBoundary]:
+    def _combine_detections(
+        self, heuristic: List[ChapterBoundary], ai: List[ChapterBoundary]
+    ) -> List[ChapterBoundary]:
         """Combine heuristic and AI detections intelligently."""
         combined = []
 
@@ -338,12 +347,14 @@ Content:
             if nearby_heuristic:
                 # Combine confidence scores
                 combined_confidence = (ai_boundary.confidence + nearby_heuristic.confidence) / 2
-                combined.append(ChapterBoundary(
-                    position=ai_boundary.position,
-                    title=ai_boundary.title or nearby_heuristic.title,
-                    confidence=combined_confidence,
-                    method='hybrid'
-                ))
+                combined.append(
+                    ChapterBoundary(
+                        position=ai_boundary.position,
+                        title=ai_boundary.title or nearby_heuristic.title,
+                        confidence=combined_confidence,
+                        method="hybrid",
+                    )
+                )
             else:
                 combined.append(ai_boundary)
 
@@ -354,7 +365,9 @@ Content:
 
         return combined
 
-    def _validate_boundaries(self, boundaries: List[ChapterBoundary], content: str) -> List[ChapterBoundary]:
+    def _validate_boundaries(
+        self, boundaries: List[ChapterBoundary], content: str
+    ) -> List[ChapterBoundary]:
         """Validate and filter chapter boundaries."""
         validated = []
 
@@ -364,7 +377,10 @@ Content:
                 continue
 
             # Check minimum distance from previous boundary
-            if validated and (boundary.position - validated[-1].position) < self.config.min_chapter_length:
+            if (
+                validated
+                and (boundary.position - validated[-1].position) < self.config.min_chapter_length
+            ):
                 continue
 
             validated.append(boundary)
@@ -379,7 +395,7 @@ Content:
         context = content[start:end]
 
         # Find the most title-like line
-        lines = context.split('\n')
+        lines = context.split("\n")
         for line in lines:
             line = line.strip()
             if line and len(line) < 100:  # Reasonable title length
@@ -395,10 +411,10 @@ Content:
         # Check various indicators
         indicators = [
             len(paragraph.strip()) < 100,  # Short paragraph
-            paragraph.strip().isupper(),   # All caps
-            re.match(r'^\d+\.', paragraph.strip()),  # Numbered
-            re.match(r'^(chapter|part)', paragraph.strip(), re.IGNORECASE),
-            paragraph.count('\n') == 0,  # Single line
+            paragraph.strip().isupper(),  # All caps
+            re.match(r"^\d+\.", paragraph.strip()),  # Numbered
+            re.match(r"^(chapter|part)", paragraph.strip(), re.IGNORECASE),
+            paragraph.count("\n") == 0,  # Single line
         ]
 
         return sum(indicators) >= 2
@@ -408,6 +424,7 @@ Content:
         if self.free_api_keys:
             # Simple rotation - in production this would be more sophisticated
             import random
+
             return random.choice(self.free_api_keys)
         return None
 
@@ -415,14 +432,12 @@ Content:
         """Estimate API cost for content processing."""
         # Rough estimate based on typical AI service pricing
         tokens = content_length // 4  # Rough token estimation
-        cost_per_1k_tokens = 0.002    # Example pricing
+        cost_per_1k_tokens = 0.002  # Example pricing
         return (tokens / 1000) * cost_per_1k_tokens
 
 
 def create_ai_detection_config(
-    use_ai: bool = True,
-    api_key: Optional[str] = None,
-    confidence: float = 0.7
+    use_ai: bool = True, api_key: Optional[str] = None, confidence: float = 0.7
 ) -> AIDetectionConfig:
     """Create AI detection configuration."""
     return AIDetectionConfig(
@@ -430,14 +445,12 @@ def create_ai_detection_config(
         api_key=api_key,
         confidence_threshold=confidence,
         enable_heuristics=True,
-        combine_methods=True
+        combine_methods=True,
     )
 
 
 def detect_chapters_with_ai(
-    content: str,
-    filename: str = "",
-    config: AIDetectionConfig = None
+    content: str, filename: str = "", config: AIDetectionConfig = None
 ) -> List[ChapterBoundary]:
     """High-level function to detect chapters using AI."""
     engine = ChapterDetectionEngine(config)
@@ -456,11 +469,13 @@ def integrate_with_smart_toc(content: str, use_ai: bool = True) -> List[Dict]:
     # Convert to format expected by smart_toc
     toc_entries = []
     for boundary in boundaries:
-        toc_entries.append({
-            'title': boundary.title,
-            'position': boundary.position,
-            'confidence': boundary.confidence,
-            'method': boundary.method
-        })
+        toc_entries.append(
+            {
+                "title": boundary.title,
+                "position": boundary.position,
+                "confidence": boundary.confidence,
+                "method": boundary.method,
+            }
+        )
 
     return toc_entries

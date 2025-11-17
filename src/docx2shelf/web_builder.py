@@ -59,7 +59,7 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         path = parsed_path.path
 
-        content_length = int(self.headers.get('Content-Length', 0))
+        content_length = int(self.headers.get("Content-Length", 0))
         post_data = self.rfile.read(content_length)
 
         if path == "/api/upload":
@@ -80,10 +80,10 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
         html_content = self.web_builder.get_main_page_html()
 
         self.send_response(200)
-        self.send_header('Content-type', 'text/html; charset=utf-8')
-        self.send_header('Content-Length', len(html_content.encode('utf-8')))
+        self.send_header("Content-type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", len(html_content.encode("utf-8")))
         self.end_headers()
-        self.wfile.write(html_content.encode('utf-8'))
+        self.wfile.write(html_content.encode("utf-8"))
 
     def serve_api_status(self):
         """Serve API status information."""
@@ -91,7 +91,7 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
             "version": "1.2.4",
             "status": "ready",
             "active_projects": len(self.web_builder.projects),
-            "available_themes": list(self.web_builder.get_available_themes().keys())
+            "available_themes": list(self.web_builder.get_available_themes().keys()),
         }
 
         self.send_json_response(status)
@@ -109,7 +109,7 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
                 "name": project.get("name", "Untitled"),
                 "type": project.get("type", "single"),
                 "created": project.get("created"),
-                "status": project.get("status", "draft")
+                "status": project.get("status", "draft"),
             }
             for project_id, project in self.web_builder.projects.items()
         ]
@@ -128,15 +128,15 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
         # Get MIME type
         mime_type, _ = mimetypes.guess_type(str(full_path))
         if mime_type is None:
-            mime_type = 'application/octet-stream'
+            mime_type = "application/octet-stream"
 
         try:
-            with open(full_path, 'rb') as f:
+            with open(full_path, "rb") as f:
                 content = f.read()
 
             self.send_response(200)
-            self.send_header('Content-type', mime_type)
-            self.send_header('Content-Length', len(content))
+            self.send_header("Content-type", mime_type)
+            self.send_header("Content-Length", len(content))
             self.end_headers()
             self.wfile.write(content)
 
@@ -153,13 +153,13 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
         """Handle file upload and create project."""
         try:
             # Parse multipart form data
-            content_type_header = self.headers.get('Content-Type', '')
-            if 'boundary=' not in content_type_header:
+            content_type_header = self.headers.get("Content-Type", "")
+            if "boundary=" not in content_type_header:
                 self.send_error(400, "Invalid multipart data: missing boundary")
                 return
 
-            boundary = content_type_header.split('boundary=')[-1]
-            boundary_bytes = f'--{boundary}'.encode()
+            boundary = content_type_header.split("boundary=")[-1]
+            boundary_bytes = f"--{boundary}".encode()
 
             # Split the post data by boundary
             parts = post_data.split(boundary_bytes)
@@ -179,49 +179,51 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
 
                 try:
                     # Split headers from content
-                    header_end = part.find(b'\r\n\r\n')
+                    header_end = part.find(b"\r\n\r\n")
                     if header_end == -1:
-                        header_end = part.find(b'\n\n')
+                        header_end = part.find(b"\n\n")
                         content_start = header_end + 2
                     else:
                         content_start = header_end + 4
 
-                    headers_section = part[:header_end].decode('utf-8', errors='ignore')
+                    headers_section = part[:header_end].decode("utf-8", errors="ignore")
                     content = part[content_start:]
 
                     # Remove trailing boundary marker and whitespace
-                    content = content.rstrip(b'\r\n').rstrip(b'\n')
+                    content = content.rstrip(b"\r\n").rstrip(b"\n")
 
                     # Extract filename and content type from headers
                     filename = None
-                    content_type = 'application/octet-stream'
+                    content_type = "application/octet-stream"
 
-                    for line in headers_section.split('\n'):
-                        if 'filename=' in line:
+                    for line in headers_section.split("\n"):
+                        if "filename=" in line:
                             # Extract filename from Content-Disposition
-                            filename_start = line.find('filename=')
+                            filename_start = line.find("filename=")
                             if filename_start != -1:
-                                filename = line[filename_start + 10:].strip('"\r\n')
-                        elif 'Content-Type:' in line:
-                            content_type = line.split(':', 1)[1].strip()
+                                filename = line[filename_start + 10 :].strip('"\r\n')
+                        elif "Content-Type:" in line:
+                            content_type = line.split(":", 1)[1].strip()
 
                     if not filename:
                         continue
 
                     # Save file to temporary directory
                     file_path = temp_dir / filename
-                    with open(file_path, 'wb') as f:
+                    with open(file_path, "wb") as f:
                         f.write(content)
 
                     # Record file info
                     file_size = len(content)
-                    uploaded_files.append({
-                        'name': filename,
-                        'path': str(file_path),
-                        'size': file_size,
-                        'type': content_type,
-                        'uploaded': datetime.now().isoformat()
-                    })
+                    uploaded_files.append(
+                        {
+                            "name": filename,
+                            "path": str(file_path),
+                            "size": file_size,
+                            "type": content_type,
+                            "uploaded": datetime.now().isoformat(),
+                        }
+                    )
 
                     logger.info(f"Uploaded file: {filename} ({file_size} bytes)")
 
@@ -236,12 +238,12 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
             # Create project with uploaded files
             project = {
                 "id": project_id,
-                "name": uploaded_files[0]['name'],
+                "name": uploaded_files[0]["name"],
                 "type": "single" if len(uploaded_files) == 1 else "batch",
                 "created": datetime.now().isoformat(),
                 "status": "uploaded",
                 "files": uploaded_files,
-                "temp_dir": str(temp_dir)
+                "temp_dir": str(temp_dir),
             }
 
             self.web_builder.projects[project_id] = project
@@ -250,7 +252,7 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
                 "project_id": project_id,
                 "status": "uploaded",
                 "files": uploaded_files,
-                "file_count": len(uploaded_files)
+                "file_count": len(uploaded_files),
             }
 
             self.send_json_response(response)
@@ -262,9 +264,9 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
     def handle_convert(self, post_data: bytes):
         """Handle conversion request."""
         try:
-            data = json.loads(post_data.decode('utf-8'))
-            project_id = data.get('project_id')
-            options = data.get('options', {})
+            data = json.loads(post_data.decode("utf-8"))
+            project_id = data.get("project_id")
+            options = data.get("options", {})
 
             if project_id not in self.web_builder.projects:
                 self.send_error(404, "Project not found")
@@ -282,16 +284,16 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
     def handle_metadata_update(self, post_data: bytes):
         """Handle metadata update."""
         try:
-            data = json.loads(post_data.decode('utf-8'))
-            project_id = data.get('project_id')
-            metadata = data.get('metadata', {})
+            data = json.loads(post_data.decode("utf-8"))
+            project_id = data.get("project_id")
+            metadata = data.get("metadata", {})
 
             if project_id not in self.web_builder.projects:
                 self.send_error(404, "Project not found")
                 return
 
             # Update project metadata
-            self.web_builder.projects[project_id]['metadata'] = metadata
+            self.web_builder.projects[project_id]["metadata"] = metadata
 
             self.send_json_response({"status": "metadata_updated"})
 
@@ -302,17 +304,17 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
     def handle_anthology_create(self, post_data: bytes):
         """Handle anthology creation."""
         try:
-            data = json.loads(post_data.decode('utf-8'))
+            data = json.loads(post_data.decode("utf-8"))
 
             project_id = str(uuid.uuid4())
             project = {
                 "id": project_id,
-                "name": data.get('title', 'New Anthology'),
+                "name": data.get("title", "New Anthology"),
                 "type": "anthology",
                 "created": datetime.now().isoformat(),
                 "status": "draft",
-                "config": data.get('config', {}),
-                "stories": []
+                "config": data.get("config", {}),
+                "stories": [],
             }
 
             self.web_builder.projects[project_id] = project
@@ -326,21 +328,21 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
     def handle_anthology_add_story(self, post_data: bytes):
         """Handle adding story to anthology."""
         try:
-            data = json.loads(post_data.decode('utf-8'))
-            project_id = data.get('project_id')
+            data = json.loads(post_data.decode("utf-8"))
+            project_id = data.get("project_id")
 
             if project_id not in self.web_builder.projects:
                 self.send_error(404, "Project not found")
                 return
 
             project = self.web_builder.projects[project_id]
-            if project.get('type') != 'anthology':
+            if project.get("type") != "anthology":
                 self.send_error(400, "Project is not an anthology")
                 return
 
             # Add story to anthology
-            story_info = data.get('story', {})
-            project['stories'].append(story_info)
+            story_info = data.get("story", {})
+            project["stories"].append(story_info)
 
             self.send_json_response({"status": "story_added"})
 
@@ -350,11 +352,11 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
 
     def send_json_response(self, data: Dict[str, Any]):
         """Send JSON response."""
-        json_data = json.dumps(data, indent=2).encode('utf-8')
+        json_data = json.dumps(data, indent=2).encode("utf-8")
 
         self.send_response(200)
-        self.send_header('Content-type', 'application/json; charset=utf-8')
-        self.send_header('Content-Length', len(json_data))
+        self.send_header("Content-type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", len(json_data))
         self.end_headers()
         self.wfile.write(json_data)
 
@@ -390,6 +392,7 @@ class WebBuilderServer:
             # Open browser in a separate thread to avoid blocking
             def open_browser_delayed():
                 import time
+
                 time.sleep(1)  # Give server time to start
                 webbrowser.open(f"http://{self.host}:{self.port}")
 
@@ -565,45 +568,47 @@ class WebBuilder:
             "serif": {
                 "name": "Classic Serif",
                 "description": "Traditional serif fonts for classic literature",
-                "preview": "Traditional serif typography with elegant spacing"
+                "preview": "Traditional serif typography with elegant spacing",
             },
             "sans": {
                 "name": "Modern Sans",
                 "description": "Clean sans-serif fonts for contemporary content",
-                "preview": "Clean, modern sans-serif design"
+                "preview": "Clean, modern sans-serif design",
             },
             "printlike": {
                 "name": "Print-like",
                 "description": "Traditional book layout mimicking printed pages",
-                "preview": "Traditional print book appearance"
+                "preview": "Traditional print book appearance",
             },
             "dyslexic": {
                 "name": "Dyslexic-friendly",
                 "description": "Optimized for readers with dyslexia",
-                "preview": "Enhanced readability with dyslexic-friendly fonts"
-            }
+                "preview": "Enhanced readability with dyslexic-friendly fonts",
+            },
         }
 
     def start_conversion(self, project_id: str, options: Dict[str, Any]):
         """Start EPUB conversion for a project."""
+
         def convert_worker():
             try:
                 project = self.projects[project_id]
-                project['status'] = 'converting'
+                project["status"] = "converting"
 
                 # Simulate conversion process
                 import time
+
                 time.sleep(2)  # Simulate work
 
-                project['status'] = 'completed'
-                project['output_path'] = str(self.temp_dir / f"{project_id}.epub")
+                project["status"] = "completed"
+                project["output_path"] = str(self.temp_dir / f"{project_id}.epub")
 
                 logger.info(f"Conversion completed for project {project_id}")
 
             except Exception as e:
                 logger.error(f"Conversion failed for project {project_id}: {e}")
-                project['status'] = 'error'
-                project['error'] = str(e)
+                project["status"] = "error"
+                project["error"] = str(e)
 
         # Start conversion in background thread
         threading.Thread(target=convert_worker, daemon=True).start()
@@ -879,7 +884,7 @@ body {
 }
 """
 
-    (static_dir / "app.css").write_text(css_content, encoding='utf-8')
+    (static_dir / "app.css").write_text(css_content, encoding="utf-8")
 
     # Create JavaScript file
     js_content = """
@@ -1110,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 """
 
-    (static_dir / "app.js").write_text(js_content, encoding='utf-8')
+    (static_dir / "app.js").write_text(js_content, encoding="utf-8")
 
     logger.info(f"Created static files in {static_dir}")
 
@@ -1146,7 +1151,9 @@ def main():
     parser = argparse.ArgumentParser(description="Docx2Shelf Web Builder")
     parser.add_argument("--host", default="localhost", help="Server host")
     parser.add_argument("--port", type=int, default=8080, help="Server port (0 for auto-assign)")
-    parser.add_argument("--no-browser", action="store_true", help="Don't open browser automatically")
+    parser.add_argument(
+        "--no-browser", action="store_true", help="Don't open browser automatically"
+    )
 
     args = parser.parse_args()
 

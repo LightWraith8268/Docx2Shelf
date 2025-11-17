@@ -18,6 +18,7 @@ from .utils import prompt_bool, prompt_select
 @dataclass
 class ErrorSolution:
     """Represents a solution for an error."""
+
     title: str
     description: str
     action: Optional[str] = None  # Action code for automated fixes
@@ -28,6 +29,7 @@ class ErrorSolution:
 @dataclass
 class ErrorContext:
     """Context information for an error."""
+
     operation: str  # What was being done when error occurred
     file_path: Optional[Path] = None
     step: Optional[str] = None  # Wizard step, etc.
@@ -42,10 +44,7 @@ class EnhancedErrorHandler:
         self._solution_registry = self._initialize_solution_registry()
 
     def handle_error(
-        self,
-        error: Exception,
-        context: ErrorContext,
-        interactive: bool = True
+        self, error: Exception, context: ErrorContext, interactive: bool = True
     ) -> bool:
         """
         Handle an error with enhanced messaging and fix suggestions.
@@ -88,7 +87,7 @@ class EnhancedErrorHandler:
         for pattern_info in self._error_patterns:
             if self._matches_pattern(error, error_text, error_type, pattern_info, context):
                 # Get solutions for this pattern
-                solution_ids = pattern_info.get('solutions', [])
+                solution_ids = pattern_info.get("solutions", [])
                 for solution_id in solution_ids:
                     if solution_id in self._solution_registry:
                         solutions.append(self._solution_registry[solution_id])
@@ -103,41 +102,38 @@ class EnhancedErrorHandler:
         error_text: str,
         error_type: str,
         pattern_info: Dict[str, Any],
-        context: ErrorContext
+        context: ErrorContext,
     ) -> bool:
         """Check if an error matches a pattern."""
         # Check error type
-        if 'error_types' in pattern_info:
-            if error_type not in pattern_info['error_types']:
+        if "error_types" in pattern_info:
+            if error_type not in pattern_info["error_types"]:
                 return False
 
         # Check error message patterns
-        if 'message_patterns' in pattern_info:
-            for pattern in pattern_info['message_patterns']:
+        if "message_patterns" in pattern_info:
+            for pattern in pattern_info["message_patterns"]:
                 if re.search(pattern, error_text, re.IGNORECASE):
                     return True
             return False
 
         # Check context-specific patterns
-        if 'context_patterns' in pattern_info:
-            context_patterns = pattern_info['context_patterns']
+        if "context_patterns" in pattern_info:
+            context_patterns = pattern_info["context_patterns"]
 
-            if 'operation' in context_patterns:
-                if context.operation not in context_patterns['operation']:
+            if "operation" in context_patterns:
+                if context.operation not in context_patterns["operation"]:
                     return False
 
-            if 'file_extensions' in context_patterns and context.file_path:
-                allowed_exts = context_patterns['file_extensions']
+            if "file_extensions" in context_patterns and context.file_path:
+                allowed_exts = context_patterns["file_extensions"]
                 if context.file_path.suffix.lower() not in allowed_exts:
                     return False
 
         return True
 
     def _show_contextual_help(
-        self,
-        error: Exception,
-        context: ErrorContext,
-        solutions: List[ErrorSolution]
+        self, error: Exception, context: ErrorContext, solutions: List[ErrorSolution]
     ):
         """Show contextual help for the error."""
         print("\n💡 Here's what might help:")
@@ -149,7 +145,9 @@ class EnhancedErrorHandler:
 
         print("\n📋 Suggested solutions:")
         for i, solution in enumerate(solutions, 1):
-            confidence_bar = "🟢" if solution.confidence >= 80 else "🟡" if solution.confidence >= 60 else "🔴"
+            confidence_bar = (
+                "🟢" if solution.confidence >= 80 else "🟡" if solution.confidence >= 60 else "🔴"
+            )
             print(f"   {i}. {confidence_bar} {solution.title}")
             print(f"      {solution.description}")
 
@@ -179,7 +177,9 @@ class EnhancedErrorHandler:
         # Create menu options
         options = []
         for i, solution in enumerate(solutions):
-            confidence_icon = "🟢" if solution.confidence >= 80 else "🟡" if solution.confidence >= 60 else "🔴"
+            confidence_icon = (
+                "🟢" if solution.confidence >= 80 else "🟡" if solution.confidence >= 60 else "🔴"
+            )
             options.append(f"{confidence_icon} {solution.title}")
 
         options.append("⏭️  Skip and continue")
@@ -235,6 +235,7 @@ class EnhancedErrorHandler:
         """Automatically install Pandoc."""
         try:
             from .tools import install_pandoc
+
             print("🔧 Installing Pandoc...")
             install_pandoc()
             print("✅ Pandoc installed successfully!")
@@ -247,6 +248,7 @@ class EnhancedErrorHandler:
         """Automatically install EPUBCheck."""
         try:
             from .tools import install_epubcheck
+
             print("🔧 Installing EPUBCheck...")
             install_epubcheck()
             print("✅ EPUBCheck installed successfully!")
@@ -268,7 +270,7 @@ class EnhancedErrorHandler:
                     return False
 
             # Create basic metadata template
-            template = '''title: My Book
+            template = """title: My Book
 author: Author Name
 language: en
 description: A brief description of your book.
@@ -280,9 +282,9 @@ description: A brief description of your book.
 # isbn: 978-0-000000-00-0
 # publisher: Publisher Name
 # publicationDate: 2024-01-01
-'''
+"""
 
-            with open(metadata_path, 'w', encoding='utf-8') as f:
+            with open(metadata_path, "w", encoding="utf-8") as f:
                 f.write(template)
 
             print(f"✅ Created metadata template: {metadata_path}")
@@ -329,157 +331,154 @@ description: A brief description of your book.
         return [
             # Pandoc not found
             {
-                'message_patterns': [r'pandoc.*not found', r'pandoc.*command not found'],
-                'solutions': ['install_pandoc', 'use_fallback_parser']
+                "message_patterns": [r"pandoc.*not found", r"pandoc.*command not found"],
+                "solutions": ["install_pandoc", "use_fallback_parser"],
             },
             # EPUBCheck not found
             {
-                'message_patterns': [r'epubcheck.*not found', r'java.*not found'],
-                'solutions': ['install_epubcheck', 'skip_validation']
+                "message_patterns": [r"epubcheck.*not found", r"java.*not found"],
+                "solutions": ["install_epubcheck", "skip_validation"],
             },
             # File not found
-            {
-                'error_types': ['FileNotFoundError'],
-                'solutions': ['check_file_path', 'create_file']
-            },
+            {"error_types": ["FileNotFoundError"], "solutions": ["check_file_path", "create_file"]},
             # Permission errors
             {
-                'error_types': ['PermissionError'],
-                'solutions': ['fix_file_permissions', 'run_as_admin']
+                "error_types": ["PermissionError"],
+                "solutions": ["fix_file_permissions", "run_as_admin"],
             },
             # Metadata issues
             {
-                'message_patterns': [r'metadata.*missing', r'title.*required', r'author.*required'],
-                'solutions': ['create_metadata_file', 'provide_metadata_interactive']
+                "message_patterns": [r"metadata.*missing", r"title.*required", r"author.*required"],
+                "solutions": ["create_metadata_file", "provide_metadata_interactive"],
             },
             # DOCX parsing errors
             {
-                'message_patterns': [r'docx.*corrupt', r'zip.*error', r'invalid.*docx'],
-                'context_patterns': {'file_extensions': ['.docx']},
-                'solutions': ['try_repair_docx', 'use_alternative_format']
+                "message_patterns": [r"docx.*corrupt", r"zip.*error", r"invalid.*docx"],
+                "context_patterns": {"file_extensions": [".docx"]},
+                "solutions": ["try_repair_docx", "use_alternative_format"],
             },
             # Output directory issues
             {
-                'message_patterns': [r'output.*directory', r'cannot.*create.*directory'],
-                'solutions': ['create_output_directory', 'specify_different_output']
+                "message_patterns": [r"output.*directory", r"cannot.*create.*directory"],
+                "solutions": ["create_output_directory", "specify_different_output"],
             },
             # Memory issues
             {
-                'message_patterns': [r'memory.*error', r'out of memory'],
-                'solutions': ['reduce_image_size', 'process_in_chunks']
+                "message_patterns": [r"memory.*error", r"out of memory"],
+                "solutions": ["reduce_image_size", "process_in_chunks"],
             },
             # Network/download issues
             {
-                'message_patterns': [r'download.*failed', r'network.*error', r'connection.*error'],
-                'solutions': ['check_internet', 'retry_download', 'use_offline_mode']
-            }
+                "message_patterns": [r"download.*failed", r"network.*error", r"connection.*error"],
+                "solutions": ["check_internet", "retry_download", "use_offline_mode"],
+            },
         ]
 
     def _initialize_solution_registry(self) -> Dict[str, ErrorSolution]:
         """Initialize the solution registry with all available solutions."""
         return {
-            'install_pandoc': ErrorSolution(
+            "install_pandoc": ErrorSolution(
                 title="Install Pandoc",
                 description="Download and install Pandoc for better DOCX conversion",
                 action="install_pandoc",
-                confidence=95
+                confidence=95,
             ),
-            'install_epubcheck': ErrorSolution(
+            "install_epubcheck": ErrorSolution(
                 title="Install EPUBCheck",
                 description="Download and install EPUBCheck for EPUB validation",
                 action="install_epubcheck",
-                confidence=95
+                confidence=95,
             ),
-            'use_fallback_parser': ErrorSolution(
+            "use_fallback_parser": ErrorSolution(
                 title="Use fallback DOCX parser",
                 description="Continue with built-in DOCX parser (limited features)",
-                confidence=75
+                confidence=75,
             ),
-            'skip_validation': ErrorSolution(
+            "skip_validation": ErrorSolution(
                 title="Skip EPUB validation",
                 description="Continue without validating the generated EPUB",
-                confidence=60
+                confidence=60,
             ),
-            'check_file_path': ErrorSolution(
+            "check_file_path": ErrorSolution(
                 title="Check file path",
                 description="Verify the file path is correct and the file exists",
-                confidence=90
+                confidence=90,
             ),
-            'create_file': ErrorSolution(
+            "create_file": ErrorSolution(
                 title="Create missing file",
                 description="Create the missing file with default content",
                 requires_input=True,
-                confidence=70
+                confidence=70,
             ),
-            'fix_file_permissions': ErrorSolution(
+            "fix_file_permissions": ErrorSolution(
                 title="Fix file permissions",
                 description="Attempt to fix file access permissions",
                 action="fix_file_permissions",
-                confidence=80
+                confidence=80,
             ),
-            'run_as_admin': ErrorSolution(
+            "run_as_admin": ErrorSolution(
                 title="Run as administrator",
                 description="Try running the command with administrator privileges",
-                confidence=70
+                confidence=70,
             ),
-            'create_metadata_file': ErrorSolution(
+            "create_metadata_file": ErrorSolution(
                 title="Create metadata file",
                 description="Create a metadata.txt file with default values",
                 action="create_metadata_file",
-                confidence=90
+                confidence=90,
             ),
-            'provide_metadata_interactive': ErrorSolution(
+            "provide_metadata_interactive": ErrorSolution(
                 title="Provide metadata interactively",
                 description="Enter metadata details through interactive prompts",
-                confidence=85
+                confidence=85,
             ),
-            'try_repair_docx': ErrorSolution(
+            "try_repair_docx": ErrorSolution(
                 title="Try repairing DOCX",
                 description="Attempt to repair the corrupted DOCX file",
-                confidence=60
+                confidence=60,
             ),
-            'use_alternative_format': ErrorSolution(
+            "use_alternative_format": ErrorSolution(
                 title="Use alternative format",
                 description="Save the document as RTF or HTML and try again",
-                confidence=75
+                confidence=75,
             ),
-            'create_output_directory': ErrorSolution(
+            "create_output_directory": ErrorSolution(
                 title="Create output directory",
                 description="Create the missing output directory",
                 action="create_output_directory",
-                confidence=95
+                confidence=95,
             ),
-            'specify_different_output': ErrorSolution(
+            "specify_different_output": ErrorSolution(
                 title="Specify different output location",
                 description="Choose a different location for output files",
                 requires_input=True,
-                confidence=80
+                confidence=80,
             ),
-            'reduce_image_size': ErrorSolution(
+            "reduce_image_size": ErrorSolution(
                 title="Reduce image sizes",
                 description="Compress or resize large images in the document",
-                confidence=75
+                confidence=75,
             ),
-            'process_in_chunks': ErrorSolution(
+            "process_in_chunks": ErrorSolution(
                 title="Process in smaller chunks",
                 description="Break large documents into smaller parts",
-                confidence=70
+                confidence=70,
             ),
-            'check_internet': ErrorSolution(
+            "check_internet": ErrorSolution(
                 title="Check internet connection",
                 description="Verify your internet connection and try again",
-                confidence=85
+                confidence=85,
             ),
-            'retry_download': ErrorSolution(
+            "retry_download": ErrorSolution(
                 title="Retry download",
                 description="Try downloading the required files again",
-                confidence=80
+                confidence=80,
             ),
-            'use_offline_mode': ErrorSolution(
+            "use_offline_mode": ErrorSolution(
                 title="Use offline mode",
                 description="Continue without downloading external resources",
-                confidence=70
-            )
+                confidence=70,
+            ),
         }
 
 
@@ -493,7 +492,7 @@ def handle_error(
     file_path: Optional[Path] = None,
     step: Optional[str] = None,
     user_input: Optional[str] = None,
-    interactive: bool = True
+    interactive: bool = True,
 ) -> bool:
     """
     Handle an error with enhanced messaging and fix suggestions.
@@ -510,10 +509,7 @@ def handle_error(
         True if error was handled/fixed, False if should propagate
     """
     context = ErrorContext(
-        operation=operation,
-        file_path=file_path,
-        step=step,
-        user_input=user_input
+        operation=operation, file_path=file_path, step=step, user_input=user_input
     )
 
     return _error_handler.handle_error(error, context, interactive)
@@ -527,6 +523,7 @@ def wrap_with_error_handling(operation: str, step: Optional[str] = None):
         operation: Description of what the function does
         step: Optional step name for context
     """
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             try:
@@ -546,15 +543,12 @@ def wrap_with_error_handling(operation: str, step: Optional[str] = None):
                             break
 
                 handled = handle_error(
-                    error=e,
-                    operation=operation,
-                    file_path=file_path,
-                    step=step,
-                    interactive=True
+                    error=e, operation=operation, file_path=file_path, step=step, interactive=True
                 )
 
                 if not handled:
                     raise
 
         return wrapper
+
     return decorator

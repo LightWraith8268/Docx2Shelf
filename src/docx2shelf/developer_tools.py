@@ -22,6 +22,7 @@ from watchdog.observers import Observer
 @dataclass
 class CodeTemplate:
     """Code template for generating boilerplate code."""
+
     name: str
     description: str
     category: str
@@ -33,6 +34,7 @@ class CodeTemplate:
 @dataclass
 class DevelopmentConfig:
     """Development environment configuration."""
+
     hot_reload_enabled: bool = True
     auto_install_deps: bool = True
     debug_mode: bool = False
@@ -66,8 +68,10 @@ class HotReloadHandler(FileSystemEventHandler):
 
         # Debounce rapid changes
         now = time.time()
-        if (file_path in self.last_reload and
-            now - self.last_reload[file_path] < self.debounce_seconds):
+        if (
+            file_path in self.last_reload
+            and now - self.last_reload[file_path] < self.debounce_seconds
+        ):
             return
 
         self.last_reload[file_path] = now
@@ -107,10 +111,7 @@ class LSPServer:
         return {
             "capabilities": {
                 "textDocumentSync": 1,  # Full sync
-                "completionProvider": {
-                    "resolveProvider": True,
-                    "triggerCharacters": ["."]
-                },
+                "completionProvider": {"resolveProvider": True, "triggerCharacters": ["."]},
                 "hoverProvider": True,
                 "definitionProvider": True,
                 "referencesProvider": True,
@@ -119,14 +120,14 @@ class LSPServer:
                 "codeActionProvider": True,
                 "documentFormattingProvider": True,
                 "documentRangeFormattingProvider": True,
-                "renameProvider": True
+                "renameProvider": True,
             }
         }
 
     def analyze_document(self, file_path: Path) -> Dict[str, Any]:
         """Analyze a Python document for symbols and diagnostics."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
             tree = ast.parse(content, filename=str(file_path))
@@ -136,10 +137,7 @@ class LSPServer:
             self.symbols[str(file_path)] = symbols
             self.diagnostics[str(file_path)] = diagnostics
 
-            return {
-                "symbols": symbols,
-                "diagnostics": diagnostics
-            }
+            return {"symbols": symbols, "diagnostics": diagnostics}
 
         except Exception as e:
             return {
@@ -147,11 +145,14 @@ class LSPServer:
                 "symbols": [],
                 "diagnostics": [
                     {
-                        "range": {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 0}},
+                        "range": {
+                            "start": {"line": 0, "character": 0},
+                            "end": {"line": 0, "character": 0},
+                        },
                         "severity": 1,  # Error
-                        "message": f"Parse error: {e}"
+                        "message": f"Parse error: {e}",
                     }
-                ]
+                ],
             }
 
     def get_completions(self, file_path: Path, line: int, character: int) -> List[Dict[str, Any]]:
@@ -164,32 +165,32 @@ class LSPServer:
                 "label": "build_epub",
                 "kind": 3,  # Function
                 "detail": "Build EPUB from input file",
-                "documentation": "Convert DOCX/MD/HTML to EPUB format"
+                "documentation": "Convert DOCX/MD/HTML to EPUB format",
             },
             {
                 "label": "EpubMetadata",
                 "kind": 7,  # Class
                 "detail": "EPUB metadata container",
-                "documentation": "Manages EPUB metadata fields"
+                "documentation": "Manages EPUB metadata fields",
             },
             {
                 "label": "BasePlugin",
                 "kind": 7,  # Class
                 "detail": "Base class for plugins",
-                "documentation": "Inherit from this class to create custom plugins"
+                "documentation": "Inherit from this class to create custom plugins",
             },
             {
                 "label": "PreConvertHook",
                 "kind": 8,  # Interface
                 "detail": "Pre-conversion processing hook",
-                "documentation": "Process content before conversion"
+                "documentation": "Process content before conversion",
             },
             {
                 "label": "PostConvertHook",
                 "kind": 8,  # Interface
                 "detail": "Post-conversion processing hook",
-                "documentation": "Process content after conversion"
-            }
+                "documentation": "Process content after conversion",
+            },
         ]
 
         completions.extend(docx2shelf_completions)
@@ -201,27 +202,37 @@ class LSPServer:
 
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
-                symbols.append({
-                    "name": node.name,
-                    "kind": 12,  # Function
-                    "location": {
-                        "range": {
-                            "start": {"line": node.lineno - 1, "character": node.col_offset},
-                            "end": {"line": node.lineno - 1, "character": node.col_offset + len(node.name)}
-                        }
+                symbols.append(
+                    {
+                        "name": node.name,
+                        "kind": 12,  # Function
+                        "location": {
+                            "range": {
+                                "start": {"line": node.lineno - 1, "character": node.col_offset},
+                                "end": {
+                                    "line": node.lineno - 1,
+                                    "character": node.col_offset + len(node.name),
+                                },
+                            }
+                        },
                     }
-                })
+                )
             elif isinstance(node, ast.ClassDef):
-                symbols.append({
-                    "name": node.name,
-                    "kind": 5,  # Class
-                    "location": {
-                        "range": {
-                            "start": {"line": node.lineno - 1, "character": node.col_offset},
-                            "end": {"line": node.lineno - 1, "character": node.col_offset + len(node.name)}
-                        }
+                symbols.append(
+                    {
+                        "name": node.name,
+                        "kind": 5,  # Class
+                        "location": {
+                            "range": {
+                                "start": {"line": node.lineno - 1, "character": node.col_offset},
+                                "end": {
+                                    "line": node.lineno - 1,
+                                    "character": node.col_offset + len(node.name),
+                                },
+                            }
+                        },
                     }
-                })
+                )
 
         return symbols
 
@@ -230,30 +241,34 @@ class LSPServer:
         diagnostics = []
 
         # Simple linting checks
-        lines = content.split('\n')
+        lines = content.split("\n")
         for i, line in enumerate(lines):
             # Check for common issues
-            if 'print(' in line and 'debug' not in line.lower():
-                diagnostics.append({
-                    "range": {
-                        "start": {"line": i, "character": line.find('print(')},
-                        "end": {"line": i, "character": len(line)}
-                    },
-                    "severity": 2,  # Warning
-                    "message": "Consider using logging instead of print()",
-                    "source": "docx2shelf-lsp"
-                })
+            if "print(" in line and "debug" not in line.lower():
+                diagnostics.append(
+                    {
+                        "range": {
+                            "start": {"line": i, "character": line.find("print(")},
+                            "end": {"line": i, "character": len(line)},
+                        },
+                        "severity": 2,  # Warning
+                        "message": "Consider using logging instead of print()",
+                        "source": "docx2shelf-lsp",
+                    }
+                )
 
             if len(line) > 100:
-                diagnostics.append({
-                    "range": {
-                        "start": {"line": i, "character": 100},
-                        "end": {"line": i, "character": len(line)}
-                    },
-                    "severity": 3,  # Info
-                    "message": "Line length exceeds 100 characters",
-                    "source": "docx2shelf-lsp"
-                })
+                diagnostics.append(
+                    {
+                        "range": {
+                            "start": {"line": i, "character": 100},
+                            "end": {"line": i, "character": len(line)},
+                        },
+                        "severity": 3,  # Info
+                        "message": "Line length exceeds 100 characters",
+                        "source": "docx2shelf-lsp",
+                    }
+                )
 
         return diagnostics
 
@@ -276,16 +291,16 @@ class CodeGenerator:
         variables = {
             "plugin_name": plugin_name,
             "plugin_class": self._to_class_name(plugin_name),
-            "plugin_id": plugin_name.lower().replace('-', '_'),
+            "plugin_id": plugin_name.lower().replace("-", "_"),
             "creation_date": datetime.now().strftime("%Y-%m-%d"),
-            "year": datetime.now().year
+            "year": datetime.now().year,
         }
 
         for file_path, content in template.files.items():
             file_content = self._substitute_variables(content, variables)
             output_file = output_dir / file_path
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            output_file.write_text(file_content, encoding='utf-8')
+            output_file.write_text(file_content, encoding="utf-8")
 
         print(f"📦 Plugin template '{plugin_name}' created in {output_dir}")
         return output_dir
@@ -301,15 +316,15 @@ class CodeGenerator:
 
         variables = {
             "theme_name": theme_name,
-            "theme_id": theme_name.lower().replace('-', '_'),
-            "creation_date": datetime.now().strftime("%Y-%m-%d")
+            "theme_id": theme_name.lower().replace("-", "_"),
+            "creation_date": datetime.now().strftime("%Y-%m-%d"),
         }
 
         for file_path, content in template.files.items():
             file_content = self._substitute_variables(content, variables)
             output_file = output_dir / file_path
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            output_file.write_text(file_content, encoding='utf-8')
+            output_file.write_text(file_content, encoding="utf-8")
 
         print(f"🎨 Theme template '{theme_name}' created in {output_dir}")
         return output_dir
@@ -324,18 +339,18 @@ class CodeGenerator:
 
         variables = {
             "config_type": config_type,
-            "creation_date": datetime.now().strftime("%Y-%m-%d")
+            "creation_date": datetime.now().strftime("%Y-%m-%d"),
         }
 
         content = self._substitute_variables(template.files["config.yaml"], variables)
-        output_file.write_text(content, encoding='utf-8')
+        output_file.write_text(content, encoding="utf-8")
 
         print(f"⚙️ Configuration template '{config_type}' created: {output_file}")
         return output_file
 
     def _to_class_name(self, name: str) -> str:
         """Convert name to class name format."""
-        return ''.join(word.capitalize() for word in name.replace('-', '_').split('_'))
+        return "".join(word.capitalize() for word in name.replace("-", "_").split("_"))
 
     def _substitute_variables(self, content: str, variables: Dict[str, Any]) -> str:
         """Substitute template variables in content."""
@@ -388,7 +403,7 @@ class {{plugin_class}}PostHook(PostConvertHook):
         print(f"Transforming HTML with {{plugin_name}}")
         return html_content
 ''',
-                    "plugin.json": '''{
+                    "plugin.json": """{
     "name": "{{plugin_name}}",
     "version": "1.0.0",
     "description": "{{plugin_name}} plugin for Docx2Shelf",
@@ -398,8 +413,8 @@ class {{plugin_class}}PostHook(PostConvertHook):
     "dependencies": [],
     "category": "processing",
     "tags": ["custom", "processing"]
-}''',
-                    "README.md": '''# {{plugin_name}} Plugin
+}""",
+                    "README.md": """# {{plugin_name}} Plugin
 
 {{plugin_name}} plugin for Docx2Shelf.
 
@@ -420,15 +435,15 @@ No configuration required.
 ## Development
 
 Created: {{creation_date}}
-'''
-                }
+""",
+                },
             ),
             "theme_basic": CodeTemplate(
                 name="Basic Theme",
                 description="Basic CSS theme template",
                 category="theme",
                 files={
-                    "theme.css": '''/*
+                    "theme.css": """/*
  * {{theme_name}} Theme for Docx2Shelf
  * Created: {{creation_date}}
  */
@@ -514,8 +529,8 @@ blockquote {
     border-left: 4px solid #ddd;
     font-style: italic;
 }
-''',
-                    "theme.json": '''{
+""",
+                    "theme.json": """{
     "name": "{{theme_name}}",
     "version": "1.0.0",
     "description": "{{theme_name}} theme for Docx2Shelf",
@@ -528,15 +543,15 @@ blockquote {
         "line_height": "1.6",
         "justify_text": true
     }
-}'''
-                }
+}""",
+                },
             ),
             "config_development": CodeTemplate(
                 name="Development Configuration",
                 description="Development environment configuration",
                 category="config",
                 files={
-                    "config.yaml": '''# Docx2Shelf Development Configuration
+                    "config.yaml": """# Docx2Shelf Development Configuration
 # Created: {{creation_date}}
 
 # Development settings
@@ -582,9 +597,9 @@ testing:
   coverage_threshold: 80
   lint_command: "ruff check"
   format_command: "black"
-'''
-                }
-            )
+"""
+                },
+            ),
         }
 
 
@@ -636,11 +651,11 @@ class DevelopmentWorkflow:
         # Run appropriate actions based on file type
         path = Path(file_path)
 
-        if path.suffix == '.py':
+        if path.suffix == ".py":
             self._handle_python_change(path)
-        elif path.suffix == '.css':
+        elif path.suffix == ".css":
             self._handle_css_change(path)
-        elif path.suffix in ['.yaml', '.yml']:
+        elif path.suffix in [".yaml", ".yml"]:
             self._handle_config_change(path)
 
     def _handle_python_change(self, file_path: Path):
@@ -651,9 +666,7 @@ class DevelopmentWorkflow:
         if self.config.lint_command:
             try:
                 result = subprocess.run(
-                    [self.config.lint_command, str(file_path)],
-                    capture_output=True,
-                    text=True
+                    [self.config.lint_command, str(file_path)], capture_output=True, text=True
                 )
                 if result.returncode != 0:
                     print(f"⚠️  Linting issues: {result.stdout}")
@@ -662,7 +675,7 @@ class DevelopmentWorkflow:
 
         # Analyze with LSP
         analysis = self.lsp_server.analyze_document(file_path)
-        if analysis.get('diagnostics'):
+        if analysis.get("diagnostics"):
             print(f"📊 Found {len(analysis['diagnostics'])} issues")
 
     def _handle_css_change(self, file_path: Path):
@@ -677,9 +690,9 @@ class DevelopmentWorkflow:
 
     def _run_development_server(self, port: int):
         """Run the actual development server with hot-reload support."""
-        from http.server import BaseHTTPRequestHandler, HTTPServer
         import json
         import webbrowser
+        from http.server import BaseHTTPRequestHandler, HTTPServer
 
         class DevelopmentHandler(BaseHTTPRequestHandler):
             """HTTP handler for development server."""
@@ -690,21 +703,21 @@ class DevelopmentWorkflow:
 
             def do_GET(self):
                 """Handle GET requests."""
-                if self.path == '/' or self.path == '/index.html':
+                if self.path == "/" or self.path == "/index.html":
                     self._serve_dev_page()
-                elif self.path == '/api/status':
+                elif self.path == "/api/status":
                     self._serve_status()
-                elif self.path == '/api/config':
+                elif self.path == "/api/config":
                     self._serve_config()
                 else:
-                    self.send_error(404, 'Not Found')
+                    self.send_error(404, "Not Found")
 
             def do_POST(self):
                 """Handle POST requests."""
-                if self.path == '/api/reload':
+                if self.path == "/api/reload":
                     self._handle_reload()
                 else:
-                    self.send_error(404, 'Not Found')
+                    self.send_error(404, "Not Found")
 
             def _serve_dev_page(self):
                 """Serve development interface page."""
@@ -783,43 +796,43 @@ class DevelopmentWorkflow:
                 </html>
                 """
                 self.send_response(200)
-                self.send_header('Content-Type', 'text/html')
+                self.send_header("Content-Type", "text/html")
                 self.end_headers()
                 self.wfile.write(html.encode())
 
             def _serve_status(self):
                 """Serve server status as JSON."""
                 status = {
-                    'status': 'running',
-                    'port': self.server.server_port,
-                    'hot_reload': self.server.dev_tools.config.hot_reload_enabled,
-                    'debug_mode': self.server.dev_tools.config.debug_mode,
-                    'project_root': str(self.server.dev_tools.project_root),
-                    'timestamp': datetime.now().isoformat()
+                    "status": "running",
+                    "port": self.server.server_port,
+                    "hot_reload": self.server.dev_tools.config.hot_reload_enabled,
+                    "debug_mode": self.server.dev_tools.config.debug_mode,
+                    "project_root": str(self.server.dev_tools.project_root),
+                    "timestamp": datetime.now().isoformat(),
                 }
                 self._send_json(status)
 
             def _serve_config(self):
                 """Serve configuration as JSON."""
                 config = {
-                    'hot_reload_enabled': self.server.dev_tools.config.hot_reload_enabled,
-                    'auto_install_deps': self.server.dev_tools.config.auto_install_deps,
-                    'debug_mode': self.server.dev_tools.config.debug_mode,
-                    'watch_patterns': self.server.dev_tools.config.watch_patterns,
-                    'test_command': self.server.dev_tools.config.test_command,
-                    'lint_command': self.server.dev_tools.config.lint_command
+                    "hot_reload_enabled": self.server.dev_tools.config.hot_reload_enabled,
+                    "auto_install_deps": self.server.dev_tools.config.auto_install_deps,
+                    "debug_mode": self.server.dev_tools.config.debug_mode,
+                    "watch_patterns": self.server.dev_tools.config.watch_patterns,
+                    "test_command": self.server.dev_tools.config.test_command,
+                    "lint_command": self.server.dev_tools.config.lint_command,
                 }
                 self._send_json(config)
 
             def _handle_reload(self):
                 """Handle reload request."""
-                response = {'status': 'reloaded', 'timestamp': datetime.now().isoformat()}
+                response = {"status": "reloaded", "timestamp": datetime.now().isoformat()}
                 self._send_json(response)
 
             def _send_json(self, data):
                 """Send JSON response."""
                 self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
+                self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps(data).encode())
 
@@ -843,11 +856,7 @@ class DevelopmentWorkflow:
         except Exception:
             pass
 
-        server = DevelopmentServer(
-            ("localhost", port),
-            DevelopmentHandler,
-            dev_tools=self
-        )
+        server = DevelopmentServer(("localhost", port), DevelopmentHandler, dev_tools=self)
 
         try:
             server.serve_forever()
@@ -885,7 +894,7 @@ def setup_development_environment(project_root: Path) -> DevelopmentWorkflow:
         auto_install_deps=True,
         debug_mode=True,
         watch_patterns=["*.py", "*.css", "*.js", "*.yaml", "*.md"],
-        ignore_patterns=["__pycache__", "*.pyc", ".git", "node_modules", ".pytest_cache"]
+        ignore_patterns=["__pycache__", "*.pyc", ".git", "node_modules", ".pytest_cache"],
     )
 
     workflow = DevelopmentWorkflow(project_root, config)

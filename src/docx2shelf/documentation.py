@@ -17,6 +17,7 @@ from typing import Callable, List, Optional
 @dataclass
 class TutorialStep:
     """Single step in an interactive tutorial."""
+
     id: str
     title: str
     description: str
@@ -30,6 +31,7 @@ class TutorialStep:
 @dataclass
 class Tutorial:
     """Interactive tutorial with multiple steps."""
+
     id: str
     title: str
     description: str
@@ -44,6 +46,7 @@ class Tutorial:
 @dataclass
 class TroubleshootingCase:
     """Troubleshooting case with symptoms and solutions."""
+
     id: str
     title: str
     symptoms: List[str]
@@ -77,7 +80,7 @@ class InteractiveTutorial:
 
         print(f"\n📚 This tutorial has {len(self.tutorial.steps)} steps")
         response = input("Ready to start? (y/n): ").lower().strip()
-        return response in ['y', 'yes']
+        return response in ["y", "yes"]
 
     def run_step(self, step_index: int) -> bool:
         """Run a specific tutorial step."""
@@ -100,7 +103,7 @@ class InteractiveTutorial:
         while True:
             response = input("\nCompleted this step? (y/n/hint/skip): ").lower().strip()
 
-            if response in ['y', 'yes']:
+            if response in ["y", "yes"]:
                 if step.validation_func:
                     if step.validation_func():
                         self.completed_steps.add(step.id)
@@ -112,16 +115,16 @@ class InteractiveTutorial:
                     self.completed_steps.add(step.id)
                     return True
 
-            elif response in ['n', 'no']:
+            elif response in ["n", "no"]:
                 return False
 
-            elif response == 'hint':
+            elif response == "hint":
                 if step.hints:
                     print(f"\n💡 Hint: {step.hints[0]}")
                 else:
                     print("💭 No hints available for this step.")
 
-            elif response == 'skip':
+            elif response == "skip":
                 print("⏭️  Skipping step...")
                 return True
 
@@ -183,7 +186,7 @@ class TroubleshootingWizard:
             "4": "performance",
             "5": "plugins",
             "6": "enterprise",
-            "7": "other"
+            "7": "other",
         }
 
         category_name = category_map[category]
@@ -225,13 +228,14 @@ class TroubleshootingWizard:
                 return []
 
             try:
-                indices = [int(x.strip()) - 1 for x in response.split(',')]
+                indices = [int(x.strip()) - 1 for x in response.split(",")]
                 return [symptoms_list[i] for i in indices if 0 <= i < len(symptoms_list)]
             except (ValueError, IndexError):
                 print("❌ Invalid input. Please enter valid numbers separated by commas.")
 
-    def _find_matching_cases(self, cases: List[TroubleshootingCase],
-                           symptoms: List[str]) -> List[TroubleshootingCase]:
+    def _find_matching_cases(
+        self, cases: List[TroubleshootingCase], symptoms: List[str]
+    ) -> List[TroubleshootingCase]:
         """Find cases that match the symptoms."""
         if not symptoms:
             return []
@@ -274,73 +278,93 @@ class TroubleshootingWizard:
             TroubleshootingCase(
                 id="install_python_missing",
                 title="Python not found or version too old",
-                symptoms=["Command 'python' not found", "Python version is too old", "pipx not working"],
+                symptoms=[
+                    "Command 'python' not found",
+                    "Python version is too old",
+                    "pipx not working",
+                ],
                 common_causes=["Python not installed", "Old Python version", "PATH not configured"],
                 solutions=[
                     "Install Python 3.11 or newer from python.org",
                     "Add Python to your system PATH",
                     "Use 'py' command on Windows instead of 'python'",
-                    "Restart your terminal after installation"
+                    "Restart your terminal after installation",
                 ],
                 category="installation",
-                severity="high"
+                severity="high",
             ),
             TroubleshootingCase(
                 id="conversion_docx_corrupt",
                 title="DOCX file appears corrupted or invalid",
-                symptoms=["Error reading DOCX file", "ZIP file is corrupted", "Invalid DOCX structure"],
+                symptoms=[
+                    "Error reading DOCX file",
+                    "ZIP file is corrupted",
+                    "Invalid DOCX structure",
+                ],
                 common_causes=["Corrupted file", "Invalid DOCX format", "Unsupported Word version"],
                 solutions=[
                     "Try opening the file in Microsoft Word to verify it's valid",
                     "Save the file as a new DOCX from Word",
                     "Use pandoc conversion method: --converter pandoc",
-                    "Check if file was completely downloaded/copied"
+                    "Check if file was completely downloaded/copied",
                 ],
                 category="conversion",
-                severity="medium"
+                severity="medium",
             ),
             TroubleshootingCase(
                 id="output_poor_formatting",
                 title="EPUB has poor formatting or layout issues",
-                symptoms=["Text not formatted properly", "Images not displaying", "CSS not applied"],
+                symptoms=[
+                    "Text not formatted properly",
+                    "Images not displaying",
+                    "CSS not applied",
+                ],
                 common_causes=["Theme issues", "CSS conflicts", "Image processing problems"],
                 solutions=[
                     "Try a different theme: --theme serif/sans/printlike",
                     "Use --inspect to examine the generated HTML",
                     "Check image file formats (JPG/PNG work best)",
-                    "Validate with EPUBCheck: docx2shelf tools install epubcheck"
+                    "Validate with EPUBCheck: docx2shelf tools install epubcheck",
                 ],
                 category="output_quality",
-                severity="medium"
+                severity="medium",
             ),
             TroubleshootingCase(
                 id="performance_slow_conversion",
                 title="Conversion is very slow",
-                symptoms=["Takes much longer than expected", "High CPU usage", "Large memory usage"],
+                symptoms=[
+                    "Takes much longer than expected",
+                    "High CPU usage",
+                    "Large memory usage",
+                ],
                 common_causes=["Large images", "Complex document", "Insufficient resources"],
                 solutions=[
                     "Optimize images before conversion",
                     "Split large documents into smaller files",
                     "Increase available memory",
-                    "Use --max-image-width to limit image sizes"
+                    "Use --max-image-width to limit image sizes",
                 ],
                 category="performance",
-                severity="low"
+                severity="low",
             ),
             TroubleshootingCase(
                 id="plugin_not_loading",
                 title="Plugin fails to load or execute",
                 symptoms=["Plugin not found", "Import errors", "Plugin execution fails"],
-                common_causes=["Missing dependencies", "Plugin compatibility", "Installation issues"],
+                common_causes=[
+                    "Missing dependencies",
+                    "Plugin compatibility",
+                    "Installation issues",
+                ],
                 solutions=[
                     "Check plugin dependencies: docx2shelf plugins info plugin-name",
                     "Reinstall plugin: docx2shelf plugins marketplace install plugin-name",
                     "Check plugin compatibility with current version",
-                    "Review plugin logs for specific errors"
+                    "Review plugin logs for specific errors",
                 ],
                 category="plugins",
-                severity="medium"
-            )
+                severity="medium",
+            ),
         ]
 
 
@@ -360,7 +384,7 @@ class DocumentationManager:
                 cwd=self.docs_root.parent,
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             print("📚 Documentation built successfully!")
             return True
@@ -378,7 +402,7 @@ class DocumentationManager:
             subprocess.run(
                 ["mkdocs", "serve", "--dev-addr", f"localhost:{port}"],
                 cwd=self.docs_root.parent,
-                check=True
+                check=True,
             )
             return True
         except subprocess.CalledProcessError as e:
@@ -454,7 +478,10 @@ class DocumentationManager:
                         description="Install Docx2Shelf using pipx for best isolation",
                         code_example="pipx install docx2shelf",
                         expected_output="✅ Installed docx2shelf",
-                        hints=["If pipx is not installed: pip install pipx", "Windows users can use install.bat"]
+                        hints=[
+                            "If pipx is not installed: pip install pipx",
+                            "Windows users can use install.bat",
+                        ],
                     ),
                     TutorialStep(
                         id="first-conversion",
@@ -462,17 +489,23 @@ class DocumentationManager:
                         description="Convert a simple DOCX file to EPUB",
                         code_example='docx2shelf build --input sample.docx --title "My First Book" --author "Your Name"',
                         expected_output="📖 EPUB created successfully",
-                        hints=["Make sure you have a DOCX file ready", "Use quotes around titles with spaces"]
+                        hints=[
+                            "Make sure you have a DOCX file ready",
+                            "Use quotes around titles with spaces",
+                        ],
                     ),
                     TutorialStep(
                         id="customize-theme",
                         title="Customize the appearance",
                         description="Try different themes and styling options",
-                        code_example='docx2shelf build --input sample.docx --theme serif --justify on',
-                        hints=["Available themes: serif, sans, printlike", "Use --css to add custom styles"]
-                    )
+                        code_example="docx2shelf build --input sample.docx --theme serif --justify on",
+                        hints=[
+                            "Available themes: serif, sans, printlike",
+                            "Use --css to add custom styles",
+                        ],
+                    ),
                 ],
-                tags=["beginner", "conversion", "setup"]
+                tags=["beginner", "conversion", "setup"],
             ),
             Tutorial(
                 id="plugin-development",
@@ -488,24 +521,27 @@ class DocumentationManager:
                         title="Create plugin template",
                         description="Generate a new plugin template",
                         code_example="docx2shelf plugins create-template my-first-plugin",
-                        expected_output="📦 Plugin template created in ./my-first-plugin/"
+                        expected_output="📦 Plugin template created in ./my-first-plugin/",
                     ),
                     TutorialStep(
                         id="implement-hook",
                         title="Implement a processing hook",
                         description="Add functionality to process content",
                         code_example="# Edit plugin.py to add your processing logic",
-                        hints=["Use PreConvertHook for input processing", "Use PostConvertHook for output processing"]
+                        hints=[
+                            "Use PreConvertHook for input processing",
+                            "Use PostConvertHook for output processing",
+                        ],
                     ),
                     TutorialStep(
                         id="test-plugin",
                         title="Test your plugin",
                         description="Load and test the plugin",
                         code_example="docx2shelf plugins load my-first-plugin",
-                        hints=["Use --verbose to see detailed plugin loading information"]
-                    )
+                        hints=["Use --verbose to see detailed plugin loading information"],
+                    ),
                 ],
-                tags=["development", "plugins", "intermediate"]
+                tags=["development", "plugins", "intermediate"],
             ),
             Tutorial(
                 id="enterprise-deployment",
@@ -514,21 +550,31 @@ class DocumentationManager:
                 category="deployment",
                 difficulty="advanced",
                 estimated_time="45 minutes",
-                prerequisites=["Kubernetes knowledge", "Docker experience", "Production environment"],
+                prerequisites=[
+                    "Kubernetes knowledge",
+                    "Docker experience",
+                    "Production environment",
+                ],
                 steps=[
                     TutorialStep(
                         id="prepare-manifests",
                         title="Prepare Kubernetes manifests",
                         description="Review and customize the provided manifests",
                         code_example="kubectl apply -f k8s/",
-                        hints=["Check resource limits in deployment.yaml", "Configure persistent storage if needed"]
+                        hints=[
+                            "Check resource limits in deployment.yaml",
+                            "Configure persistent storage if needed",
+                        ],
                     ),
                     TutorialStep(
                         id="setup-monitoring",
                         title="Setup monitoring",
                         description="Configure Prometheus monitoring",
                         code_example="kubectl apply -f k8s/servicemonitor.yaml",
-                        hints=["Ensure Prometheus operator is installed", "Check metrics endpoint accessibility"]
+                        hints=[
+                            "Ensure Prometheus operator is installed",
+                            "Check metrics endpoint accessibility",
+                        ],
                     ),
                     TutorialStep(
                         id="test-api",
@@ -536,11 +582,13 @@ class DocumentationManager:
                         description="Verify the enterprise API is working",
                         code_example="curl http://your-cluster/health",
                         expected_output='{"status": "healthy"}',
-                        hints=["Use port-forward for local testing: kubectl port-forward svc/docx2shelf 8080:80"]
-                    )
+                        hints=[
+                            "Use port-forward for local testing: kubectl port-forward svc/docx2shelf 8080:80"
+                        ],
+                    ),
                 ],
-                tags=["deployment", "kubernetes", "enterprise", "advanced"]
-            )
+                tags=["deployment", "kubernetes", "enterprise", "advanced"],
+            ),
         ]
 
 
@@ -554,13 +602,13 @@ def create_interactive_cookbook():
                 "Use --profile kdp for KDP-specific optimizations",
                 "Set appropriate metadata with --isbn and --publisher",
                 "Include print ISBN and other required fields",
-                "Run validation: docx2shelf checklist --epub book.epub --store kdp"
+                "Run validation: docx2shelf checklist --epub book.epub --store kdp",
             ],
             "tips": [
                 "KDP prefers certain CSS properties - use built-in themes",
                 "Include proper copyright and metadata information",
-                "Test with Kindle Previewer if available"
-            ]
+                "Test with Kindle Previewer if available",
+            ],
         },
         {
             "title": "Multi-Book Series Management",
@@ -569,13 +617,13 @@ def create_interactive_cookbook():
                 "Build individual books: docx2shelf build --series 'Series Name' --series-index 1",
                 "Use series builder: docx2shelf series build --auto-also-by",
                 "Generate series metadata and navigation",
-                "Cross-reference between books in the series"
+                "Cross-reference between books in the series",
             ],
             "tips": [
                 "Maintain consistent metadata across series",
                 "Use --output-pattern for consistent naming",
-                "Consider anthology format for collections"
-            ]
+                "Consider anthology format for collections",
+            ],
         },
         {
             "title": "High-Quality Image Processing",
@@ -584,13 +632,13 @@ def create_interactive_cookbook():
                 "Use high-resolution source images (300 DPI minimum)",
                 "Set appropriate max width: --max-image-width 1200",
                 "Enable image optimization: --optimize-images",
-                "Consider WebP format for modern readers"
+                "Consider WebP format for modern readers",
             ],
             "tips": [
                 "Balance quality vs file size",
                 "Include alt text for accessibility",
-                "Test images on target devices"
-            ]
-        }
+                "Test images on target devices",
+            ],
+        },
     ]
     return cookbook_entries

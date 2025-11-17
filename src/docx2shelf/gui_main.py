@@ -6,9 +6,10 @@ This is the main entry point for the GUI-only version of Docx2Shelf.
 No CLI dependencies - pure GUI application.
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
+
 
 def main():
     """Main entry point for standalone GUI application."""
@@ -16,10 +17,10 @@ def main():
     # Ensure we can import our modules
     try:
         # Add the source directory to path if running from development
-        if hasattr(sys, '_MEIPASS'):
+        if hasattr(sys, "_MEIPASS"):
             # Running as PyInstaller bundle (legacy support)
             base_path = Path(sys._MEIPASS)
-        elif getattr(sys, 'frozen', False):
+        elif getattr(sys, "frozen", False):
             # Running as Nuitka compiled executable
             base_path = Path(sys.executable).parent
         else:
@@ -39,13 +40,14 @@ def main():
                 parent_dir = os.path.dirname(current_dir)
                 sys.path.insert(0, current_dir)
                 sys.path.insert(0, parent_dir)
-                sys.path.insert(0, os.path.join(parent_dir, 'src'))
+                sys.path.insert(0, os.path.join(parent_dir, "src"))
 
                 from docx2shelf.gui.modern_app import ModernDocx2ShelfApp
             except ImportError as e2:
                 # Try direct import
                 try:
                     import docx2shelf.gui.modern_app as modern_app_module
+
                     ModernDocx2ShelfApp = modern_app_module.ModernDocx2ShelfApp
                 except ImportError:
                     raise ImportError(f"Could not import ModernDocx2ShelfApp: {e2}")
@@ -58,9 +60,11 @@ def main():
             # If a file was passed as argument, load it
             if len(sys.argv) > 1:
                 file_path = sys.argv[1]
-                if os.path.exists(file_path) and file_path.lower().endswith(('.docx', '.md', '.txt', '.html', '.htm')):
+                if os.path.exists(file_path) and file_path.lower().endswith(
+                    (".docx", ".md", ".txt", ".html", ".htm")
+                ):
                     # Set the file in the GUI
-                    app.file_entry.delete(0, 'end')
+                    app.file_entry.delete(0, "end")
                     app.file_entry.insert(0, file_path)
                     app.current_file = file_path
 
@@ -78,7 +82,7 @@ def main():
                 messagebox.showerror(
                     "Docx2Shelf Error",
                     f"An error occurred while starting Docx2Shelf:\n\n{str(e)}\n\n"
-                    f"Please check that all dependencies are installed."
+                    f"Please check that all dependencies are installed.",
                 )
                 root.destroy()
             except Exception as e_dialog:
@@ -104,13 +108,13 @@ def main():
                     "Please install it with:\n"
                     "pip install customtkinter\n\n"
                     "Or download the complete installer from:\n"
-                    "https://github.com/LightWraith8268/Docx2Shelf/releases"
+                    "https://github.com/LightWraith8268/Docx2Shelf/releases",
                 )
             else:
                 messagebox.showerror(
                     "Import Error",
                     f"Failed to import required modules:\n\n{str(e)}\n\n"
-                    f"Please reinstall Docx2Shelf or contact support."
+                    f"Please reinstall Docx2Shelf or contact support.",
                 )
 
             root.destroy()
@@ -120,6 +124,7 @@ def main():
             print("Please ensure all dependencies are installed.")
 
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

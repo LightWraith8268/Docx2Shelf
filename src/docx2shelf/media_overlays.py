@@ -21,15 +21,17 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AudioClip:
     """Information about an audio clip."""
+
     src: str  # Audio file path
     clip_begin: Optional[str] = None  # Start time (e.g., "12.5s")
-    clip_end: Optional[str] = None    # End time (e.g., "15.2s")
+    clip_end: Optional[str] = None  # End time (e.g., "15.2s")
     duration: Optional[float] = None  # Duration in seconds
 
 
 @dataclass
 class TextFragment:
     """Information about a text fragment."""
+
     src: str  # XHTML file path
     fragment_id: str  # Element ID in XHTML file
     text_content: str = ""  # Actual text content
@@ -38,6 +40,7 @@ class TextFragment:
 @dataclass
 class SyncPoint:
     """Synchronization point between text and audio."""
+
     id: str
     text: TextFragment
     audio: AudioClip
@@ -47,6 +50,7 @@ class SyncPoint:
 @dataclass
 class MediaOverlayConfig:
     """Configuration for media overlay generation."""
+
     narrator: str = "TTS"  # Narrator name
     active_class: str = "epub-media-overlay-active"  # CSS class for highlighting
     playback_active_class: str = "epub-media-overlay-playing"
@@ -60,6 +64,7 @@ class MediaOverlayConfig:
 @dataclass
 class MediaOverlay:
     """Complete media overlay for a chapter/document."""
+
     id: str
     title: str
     text_src: str  # XHTML file path
@@ -81,7 +86,7 @@ class MediaOverlayProcessor:
         xhtml_path: Path,
         audio_path: Path,
         chapter_title: str = "",
-        timestamps: Optional[List[Tuple[str, float, float]]] = None
+        timestamps: Optional[List[Tuple[str, float, float]]] = None,
     ) -> MediaOverlay:
         """
         Create media overlay from XHTML and audio file.
@@ -101,7 +106,7 @@ class MediaOverlayProcessor:
             id=overlay_id,
             title=chapter_title or xhtml_path.stem,
             text_src=xhtml_path.name,
-            audio_src=audio_path.name
+            audio_src=audio_path.name,
         )
 
         # Parse XHTML to get text elements
@@ -114,9 +119,7 @@ class MediaOverlayProcessor:
             )
         else:
             # Auto-generate sync points
-            sync_points = self._auto_generate_sync_points(
-                text_elements, audio_path.name
-            )
+            sync_points = self._auto_generate_sync_points(text_elements, audio_path.name)
 
         overlay.sync_points = sync_points
 
@@ -134,39 +137,39 @@ class MediaOverlayProcessor:
         text_elements = []
 
         try:
-            with open(xhtml_path, 'r', encoding='utf-8') as f:
+            with open(xhtml_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # Parse with BeautifulSoup for better HTML handling
             try:
                 from bs4 import BeautifulSoup
-                soup = BeautifulSoup(content, 'html.parser')
+
+                soup = BeautifulSoup(content, "html.parser")
             except ImportError:
                 logger.warning("BeautifulSoup not available, using basic parsing")
                 return self._basic_parse_xhtml(content)
 
             # Find elements suitable for synchronization
-            sync_elements = soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'blockquote'])
+            sync_elements = soup.find_all(
+                ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote"]
+            )
 
             for i, elem in enumerate(sync_elements):
                 # Generate ID if not present
-                elem_id = elem.get('id')
+                elem_id = elem.get("id")
                 if not elem_id:
                     elem_id = f"sync_{i:04d}"
-                    elem['id'] = elem_id
+                    elem["id"] = elem_id
 
                 text_content = elem.get_text().strip()
                 if text_content:  # Only include elements with text
-                    text_elements.append({
-                        'id': elem_id,
-                        'text': text_content,
-                        'tag': elem.name,
-                        'element': elem
-                    })
+                    text_elements.append(
+                        {"id": elem_id, "text": text_content, "tag": elem.name, "element": elem}
+                    )
 
             # Update XHTML file with generated IDs
             updated_content = str(soup)
-            with open(xhtml_path, 'w', encoding='utf-8') as f:
+            with open(xhtml_path, "w", encoding="utf-8") as f:
                 f.write(updated_content)
 
         except Exception as e:
@@ -179,7 +182,7 @@ class MediaOverlayProcessor:
         text_elements = []
 
         # Simple regex-based extraction
-        element_pattern = r'<(p|h[1-6]|li|blockquote)([^>]*?)>(.*?)</\1>'
+        element_pattern = r"<(p|h[1-6]|li|blockquote)([^>]*?)>(.*?)</\1>"
         matches = re.finditer(element_pattern, content, re.DOTALL | re.IGNORECASE)
 
         for i, match in enumerate(matches):
@@ -190,15 +193,12 @@ class MediaOverlayProcessor:
             elem_id = id_match.group(1) if id_match else f"sync_{i:04d}"
 
             # Clean text content
-            text_content = re.sub(r'<[^>]+>', '', text_content).strip()
+            text_content = re.sub(r"<[^>]+>", "", text_content).strip()
 
             if text_content:
-                text_elements.append({
-                    'id': elem_id,
-                    'text': text_content,
-                    'tag': tag.lower(),
-                    'element': None
-                })
+                text_elements.append(
+                    {"id": elem_id, "text": text_content, "tag": tag.lower(), "element": None}
+                )
 
         return text_elements
 
@@ -206,36 +206,36 @@ class MediaOverlayProcessor:
         self,
         text_elements: List[Dict[str, Any]],
         audio_file: str,
-        timestamps: List[Tuple[str, float, float]]
+        timestamps: List[Tuple[str, float, float]],
     ) -> List[SyncPoint]:
         """Create sync points from provided timestamps."""
         sync_points = []
         timestamp_dict = {elem_id: (start, end) for elem_id, start, end in timestamps}
 
         for text_elem in text_elements:
-            elem_id = text_elem['id']
+            elem_id = text_elem["id"]
 
             if elem_id in timestamp_dict:
                 start_time, end_time = timestamp_dict[elem_id]
 
                 text_fragment = TextFragment(
-                    src=text_elem.get('src', ''),
+                    src=text_elem.get("src", ""),
                     fragment_id=elem_id,
-                    text_content=text_elem['text']
+                    text_content=text_elem["text"],
                 )
 
                 audio_clip = AudioClip(
                     src=audio_file,
                     clip_begin=f"{start_time}s",
                     clip_end=f"{end_time}s",
-                    duration=end_time - start_time
+                    duration=end_time - start_time,
                 )
 
                 sync_point = SyncPoint(
                     id=f"sync_{elem_id}",
                     text=text_fragment,
                     audio=audio_clip,
-                    duration=end_time - start_time
+                    duration=end_time - start_time,
                 )
 
                 sync_points.append(sync_point)
@@ -243,9 +243,7 @@ class MediaOverlayProcessor:
         return sync_points
 
     def _auto_generate_sync_points(
-        self,
-        text_elements: List[Dict[str, Any]],
-        audio_file: str
+        self, text_elements: List[Dict[str, Any]], audio_file: str
     ) -> List[SyncPoint]:
         """Auto-generate sync points based on text length."""
         sync_points = []
@@ -260,34 +258,34 @@ class MediaOverlayProcessor:
         current_time = 0.0
 
         for text_elem in text_elements:
-            text_content = text_elem['text']
+            text_content = text_elem["text"]
             word_count = len(text_content.split())
 
             # Estimate duration for this text segment
             estimated_duration = max(1.0, word_count / words_per_second)
 
             # Add pauses for headings and paragraph breaks
-            if text_elem['tag'] in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+            if text_elem["tag"] in ["h1", "h2", "h3", "h4", "h5", "h6"]:
                 estimated_duration += 0.5  # Extra pause for headings
 
             text_fragment = TextFragment(
                 src="",  # Will be set by caller
-                fragment_id=text_elem['id'],
-                text_content=text_content
+                fragment_id=text_elem["id"],
+                text_content=text_content,
             )
 
             audio_clip = AudioClip(
                 src=audio_file,
                 clip_begin=f"{current_time:.1f}s",
                 clip_end=f"{current_time + estimated_duration:.1f}s",
-                duration=estimated_duration
+                duration=estimated_duration,
             )
 
             sync_point = SyncPoint(
                 id=f"sync_{text_elem['id']}",
                 text=text_fragment,
                 audio=audio_clip,
-                duration=estimated_duration
+                duration=estimated_duration,
             )
 
             sync_points.append(sync_point)
@@ -299,59 +297,56 @@ class MediaOverlayProcessor:
         """Generate SMIL file for media overlay."""
 
         # Create SMIL XML structure
-        smil = ET.Element("smil", {
-            "xmlns": "http://www.w3.org/ns/SMIL",
-            "xmlns:epub": "http://www.idpf.org/2007/ops",
-            "version": "3.0"
-        })
+        smil = ET.Element(
+            "smil",
+            {
+                "xmlns": "http://www.w3.org/ns/SMIL",
+                "xmlns:epub": "http://www.idpf.org/2007/ops",
+                "version": "3.0",
+            },
+        )
 
         # Head section
         head = ET.SubElement(smil, "head")
 
         # Metadata
-        metadata = ET.SubElement(head, "metadata", {
-            "xmlns:dc": "http://purl.org/dc/elements/1.1/"
-        })
+        metadata = ET.SubElement(head, "metadata", {"xmlns:dc": "http://purl.org/dc/elements/1.1/"})
 
         if overlay.title:
             title = ET.SubElement(metadata, "dc:title")
             title.text = overlay.title
 
         if self.config.narrator:
-            narrator = ET.SubElement(metadata, "meta", {
-                "name": "narrator",
-                "content": self.config.narrator
-            })
+            narrator = ET.SubElement(
+                metadata, "meta", {"name": "narrator", "content": self.config.narrator}
+            )
 
         if overlay.duration:
-            duration = ET.SubElement(metadata, "meta", {
-                "name": "total-duration",
-                "content": overlay.duration
-            })
+            duration = ET.SubElement(
+                metadata, "meta", {"name": "total-duration", "content": overlay.duration}
+            )
 
         # CSS class for highlighting
-        highlight_class = ET.SubElement(metadata, "meta", {
-            "name": "active-class",
-            "content": self.config.active_class
-        })
+        highlight_class = ET.SubElement(
+            metadata, "meta", {"name": "active-class", "content": self.config.active_class}
+        )
 
         # Body section
         body = ET.SubElement(smil, "body")
 
         # Main sequence
-        main_seq = ET.SubElement(body, "seq", {
-            "id": "main_sequence",
-            "epub:textref": overlay.text_src
-        })
+        main_seq = ET.SubElement(
+            body, "seq", {"id": "main_sequence", "epub:textref": overlay.text_src}
+        )
 
         # Add sync points
         for sync_point in overlay.sync_points:
             par = ET.SubElement(main_seq, "par", {"id": sync_point.id})
 
             # Text element
-            text_elem = ET.SubElement(par, "text", {
-                "src": f"{overlay.text_src}#{sync_point.text.fragment_id}"
-            })
+            text_elem = ET.SubElement(
+                par, "text", {"src": f"{overlay.text_src}#{sync_point.text.fragment_id}"}
+            )
 
             # Audio element
             audio_attrs = {"src": sync_point.audio.src}
@@ -368,15 +363,15 @@ class MediaOverlayProcessor:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Pretty print XML
-        rough_string = ET.tostring(smil, encoding='unicode')
+        rough_string = ET.tostring(smil, encoding="unicode")
         reparsed = minidom.parseString(rough_string)
         pretty_xml = reparsed.toprettyxml(indent="  ")
 
         # Remove extra blank lines
-        lines = [line for line in pretty_xml.split('\n') if line.strip()]
-        final_xml = '\n'.join(lines)
+        lines = [line for line in pretty_xml.split("\n") if line.strip()]
+        final_xml = "\n".join(lines)
 
-        output_path.write_text(final_xml, encoding='utf-8')
+        output_path.write_text(final_xml, encoding="utf-8")
         logger.info(f"Generated SMIL file: {output_path}")
 
     def generate_overlay_css(self) -> str:
@@ -460,7 +455,7 @@ class MediaOverlayProcessor:
         for overlay in self.overlays:
             if overlay.duration:
                 # Parse duration string (e.g., "123.5s")
-                duration_str = overlay.duration.rstrip('s')
+                duration_str = overlay.duration.rstrip("s")
                 try:
                     total += float(duration_str)
                 except ValueError:
@@ -518,8 +513,8 @@ class MediaOverlayProcessor:
             # Check timing
             if sync_point.audio.clip_begin and sync_point.audio.clip_end:
                 try:
-                    begin = float(sync_point.audio.clip_begin.rstrip('s'))
-                    end = float(sync_point.audio.clip_end.rstrip('s'))
+                    begin = float(sync_point.audio.clip_begin.rstrip("s"))
+                    end = float(sync_point.audio.clip_end.rstrip("s"))
                     if begin >= end:
                         issues.append(f"Sync point {i} has invalid timing: begin >= end")
                 except ValueError:
@@ -534,7 +529,7 @@ def create_media_overlay(
     output_path: Path,
     chapter_title: str = "",
     timestamps: Optional[List[Tuple[str, float, float]]] = None,
-    config: Optional[MediaOverlayConfig] = None
+    config: Optional[MediaOverlayConfig] = None,
 ) -> MediaOverlay:
     """
     Create media overlay from XHTML and audio files.
@@ -551,8 +546,6 @@ def create_media_overlay(
         Generated MediaOverlay object
     """
     processor = MediaOverlayProcessor(config)
-    overlay = processor.create_overlay_from_audio(
-        xhtml_path, audio_path, chapter_title, timestamps
-    )
+    overlay = processor.create_overlay_from_audio(xhtml_path, audio_path, chapter_title, timestamps)
     processor.generate_smil_file(overlay, output_path)
     return overlay

@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StoryInfo:
     """Information about a story in an anthology."""
+
     title: str
     author: str
     source_file: Path
@@ -40,6 +41,7 @@ class StoryInfo:
 @dataclass
 class AnthologyConfig:
     """Configuration for anthology building."""
+
     title: str
     editor: str = ""
     publisher: str = ""
@@ -71,6 +73,7 @@ class AnthologyConfig:
 @dataclass
 class SeriesConfig:
     """Configuration for series building."""
+
     series_title: str
     author: str
     publisher: str = ""
@@ -106,7 +109,7 @@ class AnthologyBuilder:
         author: Optional[str] = None,
         summary: str = "",
         genre: str = "",
-        **kwargs
+        **kwargs,
     ) -> StoryInfo:
         """Add a story to the anthology."""
 
@@ -134,7 +137,7 @@ class AnthologyBuilder:
             word_count=word_count,
             genre=genre,
             summary=summary,
-            **kwargs
+            **kwargs,
         )
 
         self.stories.append(story)
@@ -146,7 +149,9 @@ class AnthologyBuilder:
         """Add author biography."""
         self.author_bios[author] = bio
 
-    def build_anthology(self, output_path: Path, build_options: Optional[BuildOptions] = None) -> Path:
+    def build_anthology(
+        self, output_path: Path, build_options: Optional[BuildOptions] = None
+    ) -> Path:
         """
         Build the complete anthology EPUB.
 
@@ -186,7 +191,7 @@ class AnthologyBuilder:
                 opts=build_opts,
                 html_chunks=combined_html_chunks,
                 resources=resources,
-                output_path=output_path
+                output_path=output_path,
             )
 
         logger.info(f"Anthology built successfully: {output_path}")
@@ -196,8 +201,9 @@ class AnthologyBuilder:
         """Extract title and author from source file."""
         try:
             # Try to extract from DOCX metadata first
-            if source_file.suffix.lower() == '.docx':
+            if source_file.suffix.lower() == ".docx":
                 from docx import Document
+
                 doc = Document(source_file)
 
                 title = doc.core_properties.title
@@ -210,8 +216,8 @@ class AnthologyBuilder:
             stem = source_file.stem
 
             # Look for common patterns like "Title - Author" or "Author - Title"
-            if ' - ' in stem:
-                parts = stem.split(' - ', 1)
+            if " - " in stem:
+                parts = stem.split(" - ", 1)
                 if len(parts) == 2:
                     # Guess which is title vs author based on capitalization
                     part1, part2 = parts
@@ -235,7 +241,7 @@ class AnthologyBuilder:
         total_words = 0
         for chunk in html_chunks:
             # Strip HTML tags and count words
-            text = re.sub(r'<[^>]+>', '', chunk)
+            text = re.sub(r"<[^>]+>", "", chunk)
             words = len(text.split())
             total_words += words
 
@@ -279,7 +285,7 @@ class AnthologyBuilder:
             description=self.config.description,
             publisher=self.config.publisher,
             subjects=[self.config.genre, "Anthology"],
-            pubdate=datetime.now().date()
+            pubdate=datetime.now().date(),
         )
 
     def _combine_story_content(self) -> List[str]:
@@ -306,7 +312,9 @@ class AnthologyBuilder:
                 combined_chunks.append(f"<h1>Stories by {author}</h1>")
 
                 if author in self.author_bios:
-                    combined_chunks.append(f"<div class='author-bio'>{self.author_bios[author]}</div>")
+                    combined_chunks.append(
+                        f"<div class='author-bio'>{self.author_bios[author]}</div>"
+                    )
 
                 for story in author_stories:
                     combined_chunks.extend(self._format_story_content(story))
@@ -415,7 +423,7 @@ class AnthologyBuilder:
                 # List their stories in this anthology
                 author_stories = [s.title for s in self.stories if s.author == author]
                 if len(author_stories) == 1:
-                    html += f"<p>{author} is the author of \"{author_stories[0]}\" in this anthology.</p>\n"
+                    html += f'<p>{author} is the author of "{author_stories[0]}" in this anthology.</p>\n'
                 else:
                     story_list = ", ".join(f'"{title}"' for title in author_stories[:-1])
                     story_list += f', and "{author_stories[-1]}"'
@@ -441,7 +449,7 @@ class AnthologyBuilder:
         # List stories with authors
         html += "<h2>Story Credits</h2>\n<ul>\n"
         for story in self.stories:
-            html += f"<li>\"{story.title}\" by {story.author}"
+            html += f'<li>"{story.title}" by {story.author}'
             if story.first_published:
                 html += f" (first published {story.first_published})"
             html += "</li>\n"
@@ -489,13 +497,13 @@ class AnthologyBuilder:
         """Extract resources from a single story file."""
         resources = []
 
-        if source_file.suffix.lower() == '.docx':
+        if source_file.suffix.lower() == ".docx":
             try:
                 import zipfile
 
-                with zipfile.ZipFile(source_file, 'r') as docx_zip:
+                with zipfile.ZipFile(source_file, "r") as docx_zip:
                     # Find media files
-                    media_files = [f for f in docx_zip.namelist() if f.startswith('word/media/')]
+                    media_files = [f for f in docx_zip.namelist() if f.startswith("word/media/")]
 
                     for media_file in media_files:
                         # Extract to temp directory
@@ -541,7 +549,9 @@ class SeriesBuilder:
         if not self.books:
             raise ValueError("No books added to series")
 
-        logger.info(f"Building series collection '{self.config.series_title}' with {len(self.books)} books")
+        logger.info(
+            f"Building series collection '{self.config.series_title}' with {len(self.books)} books"
+        )
 
         output_dir.mkdir(parents=True, exist_ok=True)
         updated_books = []
@@ -562,11 +572,7 @@ class SeriesBuilder:
             output_path = output_dir / f"{metadata.title.replace(' ', '_')}.epub"
 
             updated_path = self._update_epub_with_series_content(
-                epub_path,
-                output_path,
-                metadata,
-                also_by_content,
-                series_info_content
+                epub_path, output_path, metadata, also_by_content, series_info_content
             )
 
             updated_books.append(updated_path)
@@ -579,9 +585,7 @@ class SeriesBuilder:
         # This would parse the EPUB's OPF file to extract metadata
         # For now, create basic metadata from filename
         return EpubMetadata(
-            title=epub_path.stem.replace('_', ' '),
-            author=self.config.author,
-            language="en"
+            title=epub_path.stem.replace("_", " "), author=self.config.author, language="en"
         )
 
     def _sort_books(self) -> List[Tuple[Path, EpubMetadata]]:
@@ -649,7 +653,7 @@ class SeriesBuilder:
         output_epub: Path,
         metadata: EpubMetadata,
         also_by_content: str,
-        series_info_content: str
+        series_info_content: str,
     ) -> Path:
         """Update EPUB with series-specific content."""
 
@@ -670,7 +674,7 @@ def build_anthology(
     config: AnthologyConfig,
     story_files: List[Path],
     output_path: Path,
-    build_options: Optional[BuildOptions] = None
+    build_options: Optional[BuildOptions] = None,
 ) -> Path:
     """
     Build anthology from multiple story files.
@@ -693,9 +697,7 @@ def build_anthology(
 
 
 def build_series_collection(
-    config: SeriesConfig,
-    epub_files: List[Path],
-    output_dir: Path
+    config: SeriesConfig, epub_files: List[Path], output_dir: Path
 ) -> List[Path]:
     """
     Build series collection from existing EPUBs.

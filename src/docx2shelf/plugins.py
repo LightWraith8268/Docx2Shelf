@@ -103,9 +103,9 @@ class PluginManager:
     def __init__(self):
         self.plugins: List[BasePlugin] = []
         self.hooks: Dict[str, List[PluginHook]] = {
-            'pre_convert': [],
-            'post_convert': [],
-            'metadata_resolver': []
+            "pre_convert": [],
+            "post_convert": [],
+            "metadata_resolver": [],
         }
 
     def register_plugin(self, plugin: BasePlugin) -> None:
@@ -163,9 +163,7 @@ class PluginManager:
             # Look for plugin classes that inherit from BasePlugin
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
-                if (isinstance(attr, type) and
-                    issubclass(attr, BasePlugin) and
-                    attr != BasePlugin):
+                if isinstance(attr, type) and issubclass(attr, BasePlugin) and attr != BasePlugin:
 
                     plugin_instance = attr()
                     self.register_plugin(plugin_instance)
@@ -191,7 +189,7 @@ class PluginManager:
         """Execute all pre-convert hooks."""
         current_path = docx_path
 
-        for hook in self.hooks['pre_convert']:
+        for hook in self.hooks["pre_convert"]:
             if isinstance(hook, PreConvertHook):
                 try:
                     current_path = hook.process_docx(current_path, context)
@@ -205,7 +203,7 @@ class PluginManager:
         """Execute all post-convert hooks."""
         current_html = html_content
 
-        for hook in self.hooks['post_convert']:
+        for hook in self.hooks["post_convert"]:
             if isinstance(hook, PostConvertHook):
                 try:
                     current_html = hook.transform_html(current_html, context)
@@ -215,11 +213,13 @@ class PluginManager:
 
         return current_html
 
-    def execute_metadata_resolver_hooks(self, metadata: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_metadata_resolver_hooks(
+        self, metadata: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Execute all metadata resolver hooks."""
         current_metadata = metadata.copy()
 
-        for hook in self.hooks['metadata_resolver']:
+        for hook in self.hooks["metadata_resolver"]:
             if isinstance(hook, MetadataResolverHook):
                 try:
                     current_metadata = hook.resolve_metadata(current_metadata, context)
@@ -232,11 +232,7 @@ class PluginManager:
     def list_plugins(self) -> List[Dict[str, str]]:
         """List all registered plugins."""
         return [
-            {
-                'name': plugin.name,
-                'version': plugin.version,
-                'enabled': str(plugin.enabled)
-            }
+            {"name": plugin.name, "version": plugin.version, "enabled": str(plugin.enabled)}
             for plugin in self.plugins
         ]
 
@@ -278,7 +274,9 @@ def load_default_plugins() -> None:
     total_count = len(plugin_manager.plugins)
     user_count = total_count - core_count
 
-    logger.info(f"Loaded {core_count} core plugins + {user_count} user plugins ({total_count} total)")
+    logger.info(
+        f"Loaded {core_count} core plugins + {user_count} user plugins ({total_count} total)"
+    )
 
 
 def load_core_builtin_plugins() -> None:
@@ -293,7 +291,7 @@ def load_core_builtin_plugins() -> None:
     core_plugins = PluginClassification.get_core_plugins()
 
     for plugin_id in core_plugins:
-        if plugin_id == 'html_cleanup':
+        if plugin_id == "html_cleanup":
             continue  # Already registered above
 
         plugin_info = PluginClassification.get_plugin_info(plugin_id)
@@ -307,9 +305,9 @@ def load_core_builtin_plugins() -> None:
             logger.warning(f"Failed to load plugin {plugin_id}, registering as stub")
             stub_plugin = _create_stub_plugin(
                 plugin_id,
-                plugin_info['name'],
-                plugin_info['description'],
-                plugin_info.get('essential', False)
+                plugin_info["name"],
+                plugin_info["description"],
+                plugin_info.get("essential", False),
             )
             plugin_manager.register_plugin(stub_plugin)
 
@@ -317,8 +315,8 @@ def load_core_builtin_plugins() -> None:
 def _load_plugin_from_info(plugin_id: str, plugin_info: Dict[str, Any]) -> Optional[BasePlugin]:
     """Dynamically load a plugin from module information."""
     try:
-        module_name = plugin_info.get('module')
-        class_name = plugin_info.get('class')
+        module_name = plugin_info.get("module")
+        class_name = plugin_info.get("class")
 
         if not module_name or not class_name:
             logger.warning(f"Plugin {plugin_id} missing module or class information")
@@ -363,13 +361,13 @@ def _wrap_plugin(plugin: Any, plugin_id: str, plugin_info: Dict[str, Any]) -> Ba
         def __init__(self, wrapped_obj, wrapped_id, wrapped_info):
             super().__init__(wrapped_id, "1.0.0")
             self.wrapped = wrapped_obj
-            self.display_name = wrapped_info.get('name', wrapped_id)
-            self.description = wrapped_info.get('description', '')
-            self.essential = wrapped_info.get('essential', False)
+            self.display_name = wrapped_info.get("name", wrapped_id)
+            self.description = wrapped_info.get("description", "")
+            self.essential = wrapped_info.get("essential", False)
 
         def get_hooks(self) -> Dict[str, List[PluginHook]]:
             """Return hooks from wrapped plugin or empty dict."""
-            if hasattr(self.wrapped, 'get_hooks') and callable(self.wrapped.get_hooks):
+            if hasattr(self.wrapped, "get_hooks") and callable(self.wrapped.get_hooks):
                 try:
                     return self.wrapped.get_hooks()
                 except Exception as e:
@@ -379,7 +377,9 @@ def _wrap_plugin(plugin: Any, plugin_id: str, plugin_info: Dict[str, Any]) -> Ba
     return WrappedPlugin(plugin, plugin_id, plugin_info)
 
 
-def _create_stub_plugin(plugin_id: str, name: str, description: str, essential: bool = False) -> BasePlugin:
+def _create_stub_plugin(
+    plugin_id: str, name: str, description: str, essential: bool = False
+) -> BasePlugin:
     """Create a stub plugin when actual plugin cannot be loaded."""
 
     class StubPlugin(BasePlugin):
@@ -404,7 +404,7 @@ def discover_available_plugins() -> List[Dict[str, Any]]:
     discovery_locations = [
         get_user_data_dir() / "plugins",
         Path(__file__).parent / "plugins",
-        Path.cwd() / "plugins"
+        Path.cwd() / "plugins",
     ]
 
     for location in discovery_locations:
@@ -417,9 +417,11 @@ def discover_available_plugins() -> List[Dict[str, Any]]:
 
             plugin_info = _extract_plugin_info(plugin_file)
             if plugin_info:
-                plugin_info['location'] = str(location)
-                plugin_info['file_path'] = str(plugin_file)
-                plugin_info['loaded'] = any(p.name == plugin_info['name'] for p in plugin_manager.plugins)
+                plugin_info["location"] = str(location)
+                plugin_info["file_path"] = str(plugin_file)
+                plugin_info["loaded"] = any(
+                    p.name == plugin_info["name"] for p in plugin_manager.plugins
+                )
                 available_plugins.append(plugin_info)
 
     return available_plugins
@@ -428,11 +430,12 @@ def discover_available_plugins() -> List[Dict[str, Any]]:
 def _extract_plugin_info(plugin_file: Path) -> Optional[Dict[str, Any]]:
     """Extract basic plugin information without loading the module."""
     try:
-        with open(plugin_file, 'r', encoding='utf-8') as f:
+        with open(plugin_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Extract docstring
         import ast
+
         tree = ast.parse(content)
         docstring = ast.get_docstring(tree) or "No description available"
 
@@ -441,7 +444,7 @@ def _extract_plugin_info(plugin_file: Path) -> Optional[Dict[str, Any]]:
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
                 for base in node.bases:
-                    if isinstance(base, ast.Name) and base.id == 'BasePlugin':
+                    if isinstance(base, ast.Name) and base.id == "BasePlugin":
                         plugin_classes.append(node.name)
 
         if not plugin_classes:
@@ -452,13 +455,14 @@ def _extract_plugin_info(plugin_file: Path) -> Optional[Dict[str, Any]]:
         version = "unknown"
 
         for node in ast.walk(tree):
-            if (isinstance(node, ast.FunctionDef) and node.name == '__init__' and
-                len(node.body) > 0):
+            if isinstance(node, ast.FunctionDef) and node.name == "__init__" and len(node.body) > 0:
                 for stmt in node.body:
-                    if (isinstance(stmt, ast.Expr) and
-                        isinstance(stmt.value, ast.Call) and
-                        isinstance(stmt.value.func, ast.Attribute) and
-                        stmt.value.func.attr == '__init__'):
+                    if (
+                        isinstance(stmt, ast.Expr)
+                        and isinstance(stmt.value, ast.Call)
+                        and isinstance(stmt.value.func, ast.Attribute)
+                        and stmt.value.func.attr == "__init__"
+                    ):
                         # Extract name and version from super().__init__ call
                         args = stmt.value.args
                         if len(args) >= 1 and isinstance(args[0], ast.Constant):
@@ -467,11 +471,11 @@ def _extract_plugin_info(plugin_file: Path) -> Optional[Dict[str, Any]]:
                             version = args[1].value
 
         return {
-            'name': name,
-            'version': version,
-            'description': docstring.split('\n')[0] if docstring else "No description",
-            'classes': plugin_classes,
-            'file_name': plugin_file.name
+            "name": name,
+            "version": version,
+            "description": docstring.split("\n")[0] if docstring else "No description",
+            "classes": plugin_classes,
+            "file_name": plugin_file.name,
         }
 
     except Exception as e:
@@ -491,11 +495,11 @@ def get_plugin_info(plugin_name: str) -> Optional[Dict[str, Any]]:
         hooks_info[hook_type] = [hook.__class__.__name__ for hook in hooks]
 
     return {
-        'name': plugin.name,
-        'version': plugin.version,
-        'enabled': plugin.enabled,
-        'hooks': hooks_info,
-        'hook_count': sum(len(hooks) for hooks in plugin_hooks.values())
+        "name": plugin.name,
+        "version": plugin.version,
+        "enabled": plugin.enabled,
+        "hooks": hooks_info,
+        "hook_count": sum(len(hooks) for hooks in plugin_hooks.values()),
     }
 
 
@@ -507,9 +511,7 @@ class ExampleCleanupPlugin(BasePlugin):
         super().__init__("example_cleanup", "1.0.0")
 
     def get_hooks(self) -> Dict[str, List[PluginHook]]:
-        return {
-            'post_convert': [ExampleHTMLCleanupHook()]
-        }
+        return {"post_convert": [ExampleHTMLCleanupHook()]}
 
 
 class ExampleHTMLCleanupHook(PostConvertHook):
@@ -520,9 +522,9 @@ class ExampleHTMLCleanupHook(PostConvertHook):
         import re
 
         # Remove excessive whitespace
-        html_content = re.sub(r'\n\s*\n\s*\n', '\n\n', html_content)
+        html_content = re.sub(r"\n\s*\n\s*\n", "\n\n", html_content)
 
         # Normalize line endings
-        html_content = html_content.replace('\r\n', '\n').replace('\r', '\n')
+        html_content = html_content.replace("\r\n", "\n").replace("\r", "\n")
 
         return html_content

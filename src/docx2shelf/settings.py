@@ -19,19 +19,22 @@ except ImportError:
     # Fallback for systems without platformdirs
     def user_config_dir(appname: str, appauthor: str = None) -> str:
         import os
-        if os.name == 'nt':  # Windows
+
+        if os.name == "nt":  # Windows
             return os.path.expandvars(f"%APPDATA%\\{appname}")
-        elif os.name == 'posix':  # macOS/Linux
+        elif os.name == "posix":  # macOS/Linux
             return os.path.expanduser(f"~/.config/{appname}")
         return f".{appname}"
 
     def user_data_dir(appname: str, appauthor: str = None) -> str:
         import os
-        if os.name == 'nt':  # Windows
+
+        if os.name == "nt":  # Windows
             return os.path.expandvars(f"%LOCALAPPDATA%\\{appname}")
-        elif os.name == 'posix':  # macOS/Linux
+        elif os.name == "posix":  # macOS/Linux
             return os.path.expanduser(f"~/.local/share/{appname}")
         return f".{appname}"
+
 
 from .enterprise import EnterpriseConfig
 
@@ -41,6 +44,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ConversionDefaults:
     """Default settings for EPUB conversion."""
+
     css_theme: str = "serif"
     language: str = "en"
     validate_epub: bool = True
@@ -55,6 +59,7 @@ class ConversionDefaults:
 @dataclass
 class UIPreferences:
     """User interface preferences."""
+
     remember_last_directory: bool = True
     auto_fill_metadata: bool = True
     show_advanced_options: bool = False
@@ -68,6 +73,7 @@ class UIPreferences:
 @dataclass
 class FileDefaults:
     """Default file and directory settings."""
+
     last_input_directory: Optional[str] = None
     last_output_directory: Optional[str] = None
     default_output_directory: Optional[str] = None
@@ -79,6 +85,7 @@ class FileDefaults:
 @dataclass
 class AIDetectionSettings:
     """AI chapter detection settings."""
+
     # General AI settings
     confidence_threshold: float = 0.7
     min_chapter_length: int = 500
@@ -101,6 +108,7 @@ class AIDetectionSettings:
 @dataclass
 class AdvancedSettings:
     """Advanced application settings."""
+
     enable_logging: bool = True
     log_level: str = "INFO"
     max_log_files: int = 5
@@ -114,6 +122,7 @@ class AdvancedSettings:
 @dataclass
 class ApplicationSettings:
     """Complete application settings."""
+
     conversion_defaults: ConversionDefaults = field(default_factory=ConversionDefaults)
     ui_preferences: UIPreferences = field(default_factory=UIPreferences)
     file_defaults: FileDefaults = field(default_factory=FileDefaults)
@@ -154,22 +163,22 @@ class SettingsManager:
 
         if self.settings_file.exists():
             try:
-                with open(self.settings_file, 'r', encoding='utf-8') as f:
+                with open(self.settings_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
                 # Update settings with loaded data
-                if 'conversion_defaults' in data:
-                    settings.conversion_defaults = ConversionDefaults(**data['conversion_defaults'])
-                if 'ui_preferences' in data:
-                    settings.ui_preferences = UIPreferences(**data['ui_preferences'])
-                if 'file_defaults' in data:
-                    settings.file_defaults = FileDefaults(**data['file_defaults'])
-                if 'advanced_settings' in data:
-                    settings.advanced_settings = AdvancedSettings(**data['advanced_settings'])
-                if 'ai_detection' in data:
-                    settings.ai_detection = AIDetectionSettings(**data['ai_detection'])
-                if 'version' in data:
-                    settings.version = data['version']
+                if "conversion_defaults" in data:
+                    settings.conversion_defaults = ConversionDefaults(**data["conversion_defaults"])
+                if "ui_preferences" in data:
+                    settings.ui_preferences = UIPreferences(**data["ui_preferences"])
+                if "file_defaults" in data:
+                    settings.file_defaults = FileDefaults(**data["file_defaults"])
+                if "advanced_settings" in data:
+                    settings.advanced_settings = AdvancedSettings(**data["advanced_settings"])
+                if "ai_detection" in data:
+                    settings.ai_detection = AIDetectionSettings(**data["ai_detection"])
+                if "version" in data:
+                    settings.version = data["version"]
 
             except Exception as e:
                 logger.warning(f"Could not load settings: {e}")
@@ -177,7 +186,7 @@ class SettingsManager:
         # Load enterprise config if available
         if self.enterprise_file.exists():
             try:
-                with open(self.enterprise_file, 'r', encoding='utf-8') as f:
+                with open(self.enterprise_file, "r", encoding="utf-8") as f:
                     enterprise_data = json.load(f)
                 settings.enterprise_config = EnterpriseConfig(**enterprise_data)
             except Exception as e:
@@ -193,21 +202,21 @@ class SettingsManager:
         try:
             # Save main settings
             settings_data = {
-                'conversion_defaults': asdict(settings.conversion_defaults),
-                'ui_preferences': asdict(settings.ui_preferences),
-                'file_defaults': asdict(settings.file_defaults),
-                'advanced_settings': asdict(settings.advanced_settings),
-                'ai_detection': asdict(settings.ai_detection),
-                'version': settings.version
+                "conversion_defaults": asdict(settings.conversion_defaults),
+                "ui_preferences": asdict(settings.ui_preferences),
+                "file_defaults": asdict(settings.file_defaults),
+                "advanced_settings": asdict(settings.advanced_settings),
+                "ai_detection": asdict(settings.ai_detection),
+                "version": settings.version,
             }
 
-            with open(self.settings_file, 'w', encoding='utf-8') as f:
+            with open(self.settings_file, "w", encoding="utf-8") as f:
                 json.dump(settings_data, f, indent=2, ensure_ascii=False)
 
             # Save enterprise config separately if it exists
             if settings.enterprise_config:
                 enterprise_data = asdict(settings.enterprise_config)
-                with open(self.enterprise_file, 'w', encoding='utf-8') as f:
+                with open(self.enterprise_file, "w", encoding="utf-8") as f:
                     json.dump(enterprise_data, f, indent=2, ensure_ascii=False)
 
             # Notify callbacks
@@ -229,12 +238,12 @@ class SettingsManager:
     def export_settings(self, export_path: Path) -> None:
         """Export settings to a file."""
         settings_data = asdict(self.settings)
-        with open(export_path, 'w', encoding='utf-8') as f:
+        with open(export_path, "w", encoding="utf-8") as f:
             json.dump(settings_data, f, indent=2, ensure_ascii=False)
 
     def import_settings(self, import_path: Path, merge: bool = True) -> None:
         """Import settings from a file."""
-        with open(import_path, 'r', encoding='utf-8') as f:
+        with open(import_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         if merge:
@@ -269,20 +278,20 @@ class SettingsManager:
         """Convert dictionary to ApplicationSettings object."""
         settings = ApplicationSettings()
 
-        if 'conversion_defaults' in data:
-            settings.conversion_defaults = ConversionDefaults(**data['conversion_defaults'])
-        if 'ui_preferences' in data:
-            settings.ui_preferences = UIPreferences(**data['ui_preferences'])
-        if 'file_defaults' in data:
-            settings.file_defaults = FileDefaults(**data['file_defaults'])
-        if 'advanced_settings' in data:
-            settings.advanced_settings = AdvancedSettings(**data['advanced_settings'])
-        if 'ai_detection' in data:
-            settings.ai_detection = AIDetectionSettings(**data['ai_detection'])
-        if 'enterprise_config' in data and data['enterprise_config']:
-            settings.enterprise_config = EnterpriseConfig(**data['enterprise_config'])
-        if 'version' in data:
-            settings.version = data['version']
+        if "conversion_defaults" in data:
+            settings.conversion_defaults = ConversionDefaults(**data["conversion_defaults"])
+        if "ui_preferences" in data:
+            settings.ui_preferences = UIPreferences(**data["ui_preferences"])
+        if "file_defaults" in data:
+            settings.file_defaults = FileDefaults(**data["file_defaults"])
+        if "advanced_settings" in data:
+            settings.advanced_settings = AdvancedSettings(**data["advanced_settings"])
+        if "ai_detection" in data:
+            settings.ai_detection = AIDetectionSettings(**data["ai_detection"])
+        if "enterprise_config" in data and data["enterprise_config"]:
+            settings.enterprise_config = EnterpriseConfig(**data["enterprise_config"])
+        if "version" in data:
+            settings.version = data["version"]
 
         return settings
 

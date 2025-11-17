@@ -54,6 +54,7 @@ except ImportError:
 @dataclass
 class BatchJob:
     """Represents a batch conversion job."""
+
     id: str
     name: str
     input_pattern: str
@@ -81,6 +82,7 @@ class BatchJob:
 @dataclass
 class EnterpriseConfig:
     """Enterprise configuration settings."""
+
     max_concurrent_jobs: int = 4
     max_files_per_job: int = 1000
     job_timeout_hours: int = 24
@@ -97,6 +99,7 @@ class EnterpriseConfig:
 @dataclass
 class User:
     """Enterprise user account."""
+
     id: str
     username: str
     email: str
@@ -111,6 +114,7 @@ class User:
 @dataclass
 class JobStatistics:
     """Job execution statistics."""
+
     total_jobs: int = 0
     running_jobs: int = 0
     completed_jobs: int = 0
@@ -137,9 +141,7 @@ class BatchProcessor:
 
         if not logger.handlers:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
 
@@ -172,7 +174,9 @@ class BatchProcessor:
             total_files = len(input_items)
 
         if total_files > self.config.max_files_per_job:
-            raise ValueError(f"Too many files ({total_files}), max is {self.config.max_files_per_job}")
+            raise ValueError(
+                f"Too many files ({total_files}), max is {self.config.max_files_per_job}"
+            )
 
         job.total_items = len(input_items)
         job.total_files = total_files
@@ -183,13 +187,20 @@ class BatchProcessor:
         self.job_futures[job.id] = future
         self.running_jobs[job.id] = job
 
-        mode_desc = f"{len(input_items)} books" if job.processing_mode == "books" else f"{len(input_items)} files"
-        self.logger.info(f"Submitted batch job {job.id} with {mode_desc} ({total_files} total files)")
+        mode_desc = (
+            f"{len(input_items)} books"
+            if job.processing_mode == "books"
+            else f"{len(input_items)} files"
+        )
+        self.logger.info(
+            f"Submitted batch job {job.id} with {mode_desc} ({total_files} total files)"
+        )
         return job.id
 
     def _find_input_files(self, pattern: str) -> List[Path]:
         """Find files matching the input pattern."""
         from glob import glob
+
         files = []
 
         # Support both glob patterns and directory paths
@@ -252,9 +263,13 @@ class BatchProcessor:
                 self._send_webhook(job)
 
             if job.processing_mode == "books":
-                self.logger.info(f"Batch job {job.id} completed. Books processed: {job.processed_items}, Failed: {job.failed_items}")
+                self.logger.info(
+                    f"Batch job {job.id} completed. Books processed: {job.processed_items}, Failed: {job.failed_items}"
+                )
             else:
-                self.logger.info(f"Batch job {job.id} completed. Files processed: {job.processed_files}, Failed: {job.failed_files}")
+                self.logger.info(
+                    f"Batch job {job.id} completed. Files processed: {job.processed_files}, Failed: {job.failed_files}"
+                )
 
         except Exception as e:
             job.status = "failed"
@@ -270,7 +285,9 @@ class BatchProcessor:
             if job.id in self.job_futures:
                 del self.job_futures[job.id]
 
-    def _process_book_folders(self, job: BatchJob, book_folders: List[Path], output_dir: Path) -> None:
+    def _process_book_folders(
+        self, job: BatchJob, book_folders: List[Path], output_dir: Path
+    ) -> None:
         """Process book folders (each folder = one book)."""
         for i, book_folder in enumerate(book_folders):
             try:
@@ -285,7 +302,9 @@ class BatchProcessor:
                 book_output = output_dir / f"{book_name}.epub"
 
                 # Process the book folder
-                success, files_processed, files_failed = self._process_book_folder(book_folder, book_output, job.config)
+                success, files_processed, files_failed = self._process_book_folder(
+                    book_folder, book_output, job.config
+                )
 
                 # Update job statistics
                 job.processed_files += files_processed
@@ -298,7 +317,7 @@ class BatchProcessor:
                         "status": "success",
                         "output_file": str(book_output),
                         "files_processed": files_processed,
-                        "files_failed": files_failed
+                        "files_failed": files_failed,
                     }
                 else:
                     job.failed_items += 1
@@ -306,7 +325,7 @@ class BatchProcessor:
                     job.book_results[book_name] = {
                         "status": "failed",
                         "files_processed": files_processed,
-                        "files_failed": files_failed
+                        "files_failed": files_failed,
                     }
 
                 job.progress = int((i + 1) / len(book_folders) * 100)
@@ -316,12 +335,11 @@ class BatchProcessor:
                 error_msg = f"Error processing book {book_folder.name}: {str(e)}"
                 job.error_log.append(error_msg)
                 self.logger.error(error_msg)
-                job.book_results[book_folder.name] = {
-                    "status": "error",
-                    "error": str(e)
-                }
+                job.book_results[book_folder.name] = {"status": "error", "error": str(e)}
 
-    def _process_individual_files(self, job: BatchJob, input_files: List[Path], output_dir: Path) -> None:
+    def _process_individual_files(
+        self, job: BatchJob, input_files: List[Path], output_dir: Path
+    ) -> None:
         """Process individual files (original mode)."""
         for i, input_file in enumerate(input_files):
             try:
@@ -352,7 +370,9 @@ class BatchProcessor:
                 job.error_log.append(error_msg)
                 self.logger.error(error_msg)
 
-    def _process_book_folder(self, book_folder: Path, output_file: Path, config: Dict[str, Any]) -> tuple[bool, int, int]:
+    def _process_book_folder(
+        self, book_folder: Path, output_file: Path, config: Dict[str, Any]
+    ) -> tuple[bool, int, int]:
         """Process all files in a folder as a single book."""
         try:
             from .assemble import assemble_epub
@@ -376,7 +396,7 @@ class BatchProcessor:
                 description=config.get("description", f"Generated from {book_name}"),
                 publisher=config.get("publisher", ""),
                 subjects=config.get("subjects", []),
-                keywords=config.get("keywords", [])
+                keywords=config.get("keywords", []),
             )
 
             # Check for metadata.txt file in the book folder
@@ -384,6 +404,7 @@ class BatchProcessor:
             if metadata_file.exists():
                 try:
                     from .utils import parse_kv_file
+
                     book_metadata = parse_kv_file(metadata_file)
                     # Override with book-specific metadata
                     if "title" in book_metadata:
@@ -415,7 +436,7 @@ class BatchProcessor:
                 image_quality=config.get("image_quality", 85),
                 image_max_width=config.get("image_max_width", 1200),
                 image_max_height=config.get("image_max_height", 1600),
-                cover_path=str(cover_path) if cover_path else None
+                cover_path=str(cover_path) if cover_path else None,
             )
 
             # Convert and combine all files
@@ -429,11 +450,7 @@ class BatchProcessor:
                 for book_file in sorted_files:
                     try:
                         # Convert each file to HTML/XHTML
-                        converted_content = convert_document(
-                            book_file,
-                            temp_path,
-                            options.split_at
-                        )
+                        converted_content = convert_document(book_file, temp_path, options.split_at)
 
                         if converted_content:
                             combined_content.append(converted_content)
@@ -456,7 +473,7 @@ class BatchProcessor:
                         content_dir=temp_path,
                         output_path=output_file,
                         metadata=metadata,
-                        options=options
+                        options=options,
                     )
 
                     return output_file.exists(), files_processed, files_failed
@@ -467,48 +484,52 @@ class BatchProcessor:
             self.logger.error(f"Failed to process book folder {book_folder}: {str(e)}")
             return False, 0, len(self._find_files_in_folder(book_folder))
 
-    def _combine_book_content(self, temp_path: Path, content_list: List[str], source_files: List[Path]) -> None:
+    def _combine_book_content(
+        self, temp_path: Path, content_list: List[str], source_files: List[Path]
+    ) -> None:
         """Combine multiple converted files into a cohesive book structure."""
         try:
             # Create a single combined HTML file
             combined_html = []
-            combined_html.append('<!DOCTYPE html>')
+            combined_html.append("<!DOCTYPE html>")
             combined_html.append('<html xmlns="http://www.w3.org/1999/xhtml">')
-            combined_html.append('<head>')
+            combined_html.append("<head>")
             combined_html.append('<meta charset="utf-8"/>')
-            combined_html.append('<title>Combined Content</title>')
-            combined_html.append('</head>')
-            combined_html.append('<body>')
+            combined_html.append("<title>Combined Content</title>")
+            combined_html.append("</head>")
+            combined_html.append("<body>")
 
             for i, (content, source_file) in enumerate(zip(content_list, source_files)):
                 # Add a chapter separator
                 chapter_title = source_file.stem
                 combined_html.append(f'<div class="chapter" id="chapter-{i+1}">')
-                combined_html.append(f'<h1>{chapter_title}</h1>')
+                combined_html.append(f"<h1>{chapter_title}</h1>")
 
                 # Extract body content from the converted HTML
-                if '<body>' in content and '</body>' in content:
-                    start = content.find('<body>') + 6
-                    end = content.find('</body>')
+                if "<body>" in content and "</body>" in content:
+                    start = content.find("<body>") + 6
+                    end = content.find("</body>")
                     body_content = content[start:end]
                     combined_html.append(body_content)
                 else:
                     # Fallback: use the content as-is
                     combined_html.append(content)
 
-                combined_html.append('</div>')
+                combined_html.append("</div>")
 
-            combined_html.append('</body>')
-            combined_html.append('</html>')
+            combined_html.append("</body>")
+            combined_html.append("</html>")
 
             # Save the combined file
             combined_file = temp_path / "combined.html"
-            combined_file.write_text('\n'.join(combined_html), encoding='utf-8')
+            combined_file.write_text("\n".join(combined_html), encoding="utf-8")
 
         except Exception as e:
             self.logger.error(f"Error combining book content: {e}")
 
-    def _process_single_file(self, input_file: Path, output_dir: Path, config: Dict[str, Any]) -> bool:
+    def _process_single_file(
+        self, input_file: Path, output_dir: Path, config: Dict[str, Any]
+    ) -> bool:
         """Process a single file using docx2shelf."""
         try:
             from .assemble import assemble_epub
@@ -523,7 +544,7 @@ class BatchProcessor:
                 description=config.get("description", ""),
                 publisher=config.get("publisher", ""),
                 subjects=config.get("subjects", []),
-                keywords=config.get("keywords", [])
+                keywords=config.get("keywords", []),
             )
 
             # Create build options
@@ -535,7 +556,7 @@ class BatchProcessor:
                 justify=config.get("justify", True),
                 image_quality=config.get("image_quality", 85),
                 image_max_width=config.get("image_max_width", 1200),
-                image_max_height=config.get("image_max_height", 1600)
+                image_max_height=config.get("image_max_height", 1600),
             )
 
             # Generate output filename
@@ -546,18 +567,14 @@ class BatchProcessor:
                 temp_path = Path(temp_dir)
 
                 # Convert to HTML/XHTML
-                converted_content = convert_document(
-                    input_file,
-                    temp_path,
-                    options.split_at
-                )
+                converted_content = convert_document(input_file, temp_path, options.split_at)
 
                 # Assemble EPUB
                 assemble_epub(
                     content_dir=temp_path,
                     output_path=output_file,
                     metadata=metadata,
-                    options=options
+                    options=options,
                 )
 
             return output_file.exists()
@@ -581,14 +598,16 @@ class BatchProcessor:
                 "total_files": job.total_files,
                 "started_at": job.started_at,
                 "completed_at": job.completed_at,
-                "success_rate": (job.processed_files / job.total_files * 100) if job.total_files > 0 else 0
+                "success_rate": (
+                    (job.processed_files / job.total_files * 100) if job.total_files > 0 else 0
+                ),
             }
 
             response = requests.post(
                 job.webhook_url,
                 json=payload,
                 timeout=30,
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
 
             response.raise_for_status()
@@ -636,8 +655,11 @@ class BatchProcessor:
         jobs_to_remove = []
 
         for job_id, job in self.running_jobs.items():
-            if (job.status in ["completed", "failed", "cancelled"] and
-                job.completed_at and job.completed_at < cutoff_str):
+            if (
+                job.status in ["completed", "failed", "cancelled"]
+                and job.completed_at
+                and job.completed_at < cutoff_str
+            ):
                 jobs_to_remove.append(job_id)
 
         for job_id in jobs_to_remove:
@@ -676,10 +698,10 @@ class ConfigurationManager:
 
         try:
             if yaml:
-                with open(self.config_path, 'r', encoding='utf-8') as f:
+                with open(self.config_path, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f) or {}
             else:
-                with open(self.config_path, 'r', encoding='utf-8') as f:
+                with open(self.config_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
             return EnterpriseConfig(**data)
@@ -696,10 +718,10 @@ class ConfigurationManager:
 
         try:
             if yaml:
-                with open(self.config_path, 'w', encoding='utf-8') as f:
+                with open(self.config_path, "w", encoding="utf-8") as f:
                     yaml.dump(data, f, default_flow_style=False)
             else:
-                with open(self.config_path, 'w', encoding='utf-8') as f:
+                with open(self.config_path, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2)
         except Exception as e:
             print(f"Error saving config: {e}")
@@ -739,7 +761,8 @@ class UserManager:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS users (
                     id TEXT PRIMARY KEY,
                     username TEXT UNIQUE NOT NULL,
@@ -752,7 +775,8 @@ class UserManager:
                     api_key TEXT UNIQUE,
                     password_hash TEXT
                 )
-            """)
+            """
+            )
 
             # Create default admin user if none exists
             cursor = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
@@ -767,7 +791,7 @@ class UserManager:
             email="admin@localhost",
             role="admin",
             permissions=["*"],  # All permissions
-            api_key=self._generate_api_key()
+            api_key=self._generate_api_key(),
         )
 
         self._insert_user(conn, admin_user)
@@ -779,18 +803,29 @@ class UserManager:
 
     def _insert_user(self, conn: sqlite3.Connection, user: User) -> None:
         """Insert a user into the database."""
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO users (id, username, email, role, permissions, created_at,
                              last_login, active, api_key, password_hash)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            user.id, user.username, user.email, user.role,
-            json.dumps(user.permissions), user.created_at,
-            user.last_login, user.active, user.api_key, None
-        ))
+        """,
+            (
+                user.id,
+                user.username,
+                user.email,
+                user.role,
+                json.dumps(user.permissions),
+                user.created_at,
+                user.last_login,
+                user.active,
+                user.api_key,
+                None,
+            ),
+        )
 
-    def create_user(self, username: str, email: str, role: str = "user",
-                   permissions: Optional[List[str]] = None) -> User:
+    def create_user(
+        self, username: str, email: str, role: str = "user", permissions: Optional[List[str]] = None
+    ) -> User:
         """Create a new user."""
         if permissions is None:
             permissions = self._get_default_permissions(role)
@@ -801,7 +836,7 @@ class UserManager:
             email=email,
             role=role,
             permissions=permissions,
-            api_key=self._generate_api_key()
+            api_key=self._generate_api_key(),
         )
 
         with sqlite3.connect(self.db_path) as conn:
@@ -821,7 +856,7 @@ class UserManager:
         permissions_map = {
             "admin": ["*"],
             "user": ["batch:create", "batch:view", "convert:use"],
-            "viewer": ["batch:view", "convert:view"]
+            "viewer": ["batch:view", "convert:view"],
         }
         return permissions_map.get(role, ["convert:view"])
 
@@ -833,23 +868,37 @@ class UserManager:
 
             if row:
                 return User(
-                    id=row[0], username=row[1], email=row[2], role=row[3],
-                    permissions=json.loads(row[4]), created_at=row[5],
-                    last_login=row[6], active=bool(row[7]), api_key=row[8]
+                    id=row[0],
+                    username=row[1],
+                    email=row[2],
+                    role=row[3],
+                    permissions=json.loads(row[4]),
+                    created_at=row[5],
+                    last_login=row[6],
+                    active=bool(row[7]),
+                    api_key=row[8],
                 )
         return None
 
     def get_user_by_api_key(self, api_key: str) -> Optional[User]:
         """Get a user by API key."""
         with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("SELECT * FROM users WHERE api_key = ? AND active = 1", (api_key,))
+            cursor = conn.execute(
+                "SELECT * FROM users WHERE api_key = ? AND active = 1", (api_key,)
+            )
             row = cursor.fetchone()
 
             if row:
                 return User(
-                    id=row[0], username=row[1], email=row[2], role=row[3],
-                    permissions=json.loads(row[4]), created_at=row[5],
-                    last_login=row[6], active=bool(row[7]), api_key=row[8]
+                    id=row[0],
+                    username=row[1],
+                    email=row[2],
+                    role=row[3],
+                    permissions=json.loads(row[4]),
+                    created_at=row[5],
+                    last_login=row[6],
+                    active=bool(row[7]),
+                    api_key=row[8],
                 )
         return None
 
@@ -868,11 +917,19 @@ class UserManager:
             users = []
 
             for row in cursor.fetchall():
-                users.append(User(
-                    id=row[0], username=row[1], email=row[2], role=row[3],
-                    permissions=json.loads(row[4]), created_at=row[5],
-                    last_login=row[6], active=bool(row[7]), api_key=row[8]
-                ))
+                users.append(
+                    User(
+                        id=row[0],
+                        username=row[1],
+                        email=row[2],
+                        role=row[3],
+                        permissions=json.loads(row[4]),
+                        created_at=row[5],
+                        last_login=row[6],
+                        active=bool(row[7]),
+                        api_key=row[8],
+                    )
+                )
 
             return users
 

@@ -32,6 +32,7 @@ import psutil
 @dataclass
 class ResourceLimits:
     """Resource limits for plugin execution."""
+
     max_memory_mb: int = 256
     max_cpu_percent: float = 50.0
     max_execution_time_seconds: int = 30
@@ -43,6 +44,7 @@ class ResourceLimits:
 @dataclass
 class PluginExecutionContext:
     """Context information for plugin execution."""
+
     plugin_id: str
     temp_dir: Path
     resource_limits: ResourceLimits
@@ -54,6 +56,7 @@ class PluginExecutionContext:
 @dataclass
 class PluginMetrics:
     """Metrics collected during plugin execution."""
+
     plugin_id: str
     execution_count: int = 0
     total_execution_time: float = 0.0
@@ -66,11 +69,13 @@ class PluginMetrics:
 
 class SecurityViolationError(Exception):
     """Raised when plugin violates security constraints."""
+
     pass
 
 
 class ResourceExhaustedError(Exception):
     """Raised when plugin exceeds resource limits."""
+
     pass
 
 
@@ -123,7 +128,7 @@ class PluginSandbox:
         """Set up import restrictions for security."""
         # Handle different __builtins__ types across Python implementations
         if isinstance(__builtins__, dict):
-            self.original_import = __builtins__['__import__']
+            self.original_import = __builtins__["__import__"]
         else:
             self.original_import = __builtins__.__import__
 
@@ -133,15 +138,19 @@ class PluginSandbox:
                 raise SecurityViolationError(f"Import of module '{name}' is forbidden")
 
             # Check allowed modules (if whitelist is specified)
-            if (self.context.allowed_modules and
-                name not in self.context.allowed_modules and
-                not any(name.startswith(allowed + '.') for allowed in self.context.allowed_modules)):
+            if (
+                self.context.allowed_modules
+                and name not in self.context.allowed_modules
+                and not any(
+                    name.startswith(allowed + ".") for allowed in self.context.allowed_modules
+                )
+            ):
                 raise SecurityViolationError(f"Import of module '{name}' is not allowed")
 
             return self.original_import(name, globals, locals, fromlist, level)
 
         if isinstance(__builtins__, dict):
-            __builtins__['__import__'] = restricted_import
+            __builtins__["__import__"] = restricted_import
         else:
             __builtins__.__import__ = restricted_import
 
@@ -163,14 +172,15 @@ class PluginSandbox:
     def _cleanup_resources(self):
         """Clean up resources used during execution."""
         # Restore original import function
-        if hasattr(self, 'original_import'):
+        if hasattr(self, "original_import"):
             if isinstance(__builtins__, dict):
-                __builtins__['__import__'] = self.original_import
+                __builtins__["__import__"] = self.original_import
             else:
                 __builtins__.__import__ = self.original_import
 
         # Force garbage collection
         import gc
+
         gc.collect()
 
 
@@ -202,10 +212,11 @@ class PluginResourceMonitor:
         execution_time = time.time() - self.start_time if self.start_time else 0.0
 
         return {
-            'execution_time_seconds': execution_time,
-            'peak_memory_mb': self.peak_memory,
-            'memory_limit_exceeded': self.peak_memory > self.context.resource_limits.max_memory_mb,
-            'time_limit_exceeded': execution_time > self.context.resource_limits.max_execution_time_seconds
+            "execution_time_seconds": execution_time,
+            "peak_memory_mb": self.peak_memory,
+            "memory_limit_exceeded": self.peak_memory > self.context.resource_limits.max_memory_mb,
+            "time_limit_exceeded": execution_time
+            > self.context.resource_limits.max_execution_time_seconds,
         }
 
     def _monitor_loop(self):
@@ -225,7 +236,9 @@ class PluginResourceMonitor:
                 if self.start_time:
                     execution_time = time.time() - self.start_time
                     if execution_time > self.context.resource_limits.max_execution_time_seconds:
-                        raise ResourceExhaustedError(f"Execution time limit exceeded: {execution_time:.1f}s")
+                        raise ResourceExhaustedError(
+                            f"Execution time limit exceeded: {execution_time:.1f}s"
+                        )
 
                 time.sleep(0.1)  # Check every 100ms
 
@@ -255,20 +268,21 @@ class HotReloadablePlugin:
             current_modified = self.plugin_path.stat().st_mtime
 
             # Check if reload is needed
-            if (self.module is None or
-                self.last_modified is None or
-                current_modified > self.last_modified):
+            if (
+                self.module is None
+                or self.last_modified is None
+                or current_modified > self.last_modified
+            ):
 
                 # Unload existing module if it exists
-                if self.module and hasattr(self.module, '__name__'):
+                if self.module and hasattr(self.module, "__name__"):
                     module_name = self.module.__name__
                     if module_name in sys.modules:
                         del sys.modules[module_name]
 
                 # Load the module
                 spec = importlib.util.spec_from_file_location(
-                    f"plugin_{self.plugin_id}",
-                    self.plugin_path
+                    f"plugin_{self.plugin_id}", self.plugin_path
                 )
                 if spec and spec.loader:
                     self.module = importlib.util.module_from_spec(spec)
@@ -289,8 +303,7 @@ class HotReloadablePlugin:
             return False
 
         current_modified = self.plugin_path.stat().st_mtime
-        return (self.last_modified is None or
-                current_modified > self.last_modified)
+        return self.last_modified is None or current_modified > self.last_modified
 
     def get_plugin_function(self, function_name: str) -> Optional[Callable]:
         """Get a function from the plugin module."""
@@ -355,8 +368,7 @@ class AdvancedPluginManager:
         if plugin_id in self.plugins:
             del self.plugins[plugin_id]
 
-    def execute_plugin_function(self, plugin_id: str, function_name: str,
-                              *args, **kwargs) -> Any:
+    def execute_plugin_function(self, plugin_id: str, function_name: str, *args, **kwargs) -> Any:
         """Execute a function from a plugin with sandboxing."""
         if plugin_id not in self.plugins:
             raise ValueError(f"Plugin '{plugin_id}' not found")
@@ -386,14 +398,24 @@ class AdvancedPluginManager:
             plugin_id=plugin_id,
             temp_dir=temp_dir,
             resource_limits=self.default_limits,
-            sandbox_enabled=self.sandbox_enabled
+            sandbox_enabled=self.sandbox_enabled,
         )
 
         # Set up forbidden modules for security
-        context.forbidden_modules.update({
-            'os', 'subprocess', 'shutil', 'sys', 'importlib',
-            'socket', 'urllib', 'requests', 'ftplib', 'smtplib'
-        })
+        context.forbidden_modules.update(
+            {
+                "os",
+                "subprocess",
+                "shutil",
+                "sys",
+                "importlib",
+                "socket",
+                "urllib",
+                "requests",
+                "ftplib",
+                "smtplib",
+            }
+        )
 
         result = None
         error = None
@@ -417,8 +439,7 @@ class AdvancedPluginManager:
                     metrics.total_execution_time / metrics.execution_count
                 )
                 metrics.peak_memory_usage_mb = max(
-                    metrics.peak_memory_usage_mb,
-                    monitor_results['peak_memory_mb']
+                    metrics.peak_memory_usage_mb, monitor_results["peak_memory_mb"]
                 )
                 metrics.last_execution = datetime.now(timezone.utc)
 
@@ -432,6 +453,7 @@ class AdvancedPluginManager:
             # Cleanup temp directory
             try:
                 import shutil
+
                 shutil.rmtree(temp_dir, ignore_errors=True)
             except Exception as e_cleanup:
                 # Temp directory cleanup failed, but don't fail the entire operation
@@ -450,8 +472,7 @@ class AdvancedPluginManager:
     def _start_hot_reload_monitoring(self):
         """Start monitoring for plugin file changes."""
         self._monitoring_thread = threading.Thread(
-            target=self._hot_reload_monitor_loop,
-            daemon=True
+            target=self._hot_reload_monitor_loop, daemon=True
         )
         self._monitoring_thread.start()
 
@@ -480,21 +501,23 @@ class PluginPerformanceProfiler:
     def generate_performance_report(self) -> Dict[str, Any]:
         """Generate comprehensive performance report for all plugins."""
         report = {
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'total_plugins': len(self.plugin_manager.plugins),
-            'plugins': {}
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "total_plugins": len(self.plugin_manager.plugins),
+            "plugins": {},
         }
 
         for plugin_id, metrics in self.plugin_manager.plugin_metrics.items():
-            report['plugins'][plugin_id] = {
-                'execution_count': metrics.execution_count,
-                'total_execution_time': metrics.total_execution_time,
-                'average_execution_time': metrics.average_execution_time,
-                'peak_memory_usage_mb': metrics.peak_memory_usage_mb,
-                'error_count': metrics.error_count,
-                'error_rate': (metrics.error_count / max(metrics.execution_count, 1)) * 100,
-                'last_execution': metrics.last_execution.isoformat() if metrics.last_execution else None,
-                'last_error': metrics.last_error
+            report["plugins"][plugin_id] = {
+                "execution_count": metrics.execution_count,
+                "total_execution_time": metrics.total_execution_time,
+                "average_execution_time": metrics.average_execution_time,
+                "peak_memory_usage_mb": metrics.peak_memory_usage_mb,
+                "error_count": metrics.error_count,
+                "error_rate": (metrics.error_count / max(metrics.execution_count, 1)) * 100,
+                "last_execution": (
+                    metrics.last_execution.isoformat() if metrics.last_execution else None
+                ),
+                "last_error": metrics.last_error,
             }
 
         return report
@@ -504,14 +527,14 @@ class PluginPerformanceProfiler:
         plugins_data = []
 
         for plugin_id, metrics in self.plugin_manager.plugin_metrics.items():
-            plugins_data.append({
-                'plugin_id': plugin_id,
-                'total_execution_time': metrics.total_execution_time,
-                'peak_memory_usage_mb': metrics.peak_memory_usage_mb,
-                'execution_count': metrics.execution_count
-            })
+            plugins_data.append(
+                {
+                    "plugin_id": plugin_id,
+                    "total_execution_time": metrics.total_execution_time,
+                    "peak_memory_usage_mb": metrics.peak_memory_usage_mb,
+                    "execution_count": metrics.execution_count,
+                }
+            )
 
         # Sort by total execution time
-        return sorted(plugins_data,
-                     key=lambda x: x['total_execution_time'],
-                     reverse=True)[:limit]
+        return sorted(plugins_data, key=lambda x: x["total_execution_time"], reverse=True)[:limit]

@@ -12,20 +12,20 @@ BASIC_THEME_METADATA = {
         "name": "Classic Serif",
         "description": "Traditional serif fonts for classic literature",
         "genre": "general",
-        "features": ["serif", "traditional", "readable"]
+        "features": ["serif", "traditional", "readable"],
     },
     "sans": {
         "name": "Modern Sans",
         "description": "Clean sans-serif fonts for contemporary works",
         "genre": "general",
-        "features": ["sans-serif", "modern", "clean"]
+        "features": ["sans-serif", "modern", "clean"],
     },
     "printlike": {
         "name": "Print-like",
         "description": "Mimics traditional print book formatting",
         "genre": "general",
-        "features": ["print-style", "traditional", "formal"]
-    }
+        "features": ["print-style", "traditional", "formal"],
+    },
 }
 
 
@@ -49,21 +49,21 @@ def _parse_theme_metadata(css_content: str) -> Dict[str, str]:
     metadata = {}
 
     # Find the first comment block
-    comment_match = re.search(r'/\*\s*(.*?)\s*\*/', css_content, re.DOTALL)
+    comment_match = re.search(r"/\*\s*(.*?)\s*\*/", css_content, re.DOTALL)
     if not comment_match:
         return metadata
 
     comment_content = comment_match.group(1)
 
     # Parse key-value pairs
-    for line in comment_content.split('\n'):
+    for line in comment_content.split("\n"):
         line = line.strip()
-        if line.startswith('*'):
+        if line.startswith("*"):
             line = line[1:].strip()
 
-        if ':' in line:
-            key, value = line.split(':', 1)
-            key = key.strip().lower().replace(' ', '_').replace('-', '_')
+        if ":" in line:
+            key, value = line.split(":", 1)
+            key = key.strip().lower().replace(" ", "_").replace("-", "_")
             value = value.strip()
             if key and value:
                 metadata[key] = value
@@ -88,22 +88,22 @@ def _discover_themes() -> Dict[str, Dict]:
         theme_name = css_file.stem
 
         try:
-            css_content = css_file.read_text(encoding='utf-8')
+            css_content = css_file.read_text(encoding="utf-8")
             metadata = _parse_theme_metadata(css_content)
 
             # Convert to the expected format
             theme_info = {
-                "name": metadata.get('theme_name', theme_name.replace('_', ' ').title()),
-                "description": metadata.get('description', f"CSS theme for {theme_name}"),
-                "genre": metadata.get('genre', 'general').lower(),
+                "name": metadata.get("theme_name", theme_name.replace("_", " ").title()),
+                "description": metadata.get("description", f"CSS theme for {theme_name}"),
+                "genre": metadata.get("genre", "general").lower(),
                 "features": [
-                    f.strip() for f in metadata.get('features', 'standard styling').split(',')
-                ]
+                    f.strip() for f in metadata.get("features", "standard styling").split(",")
+                ],
             }
 
             # Add file path for reference
-            theme_info['file_path'] = str(css_file)
-            theme_info['file_name'] = css_file.name
+            theme_info["file_path"] = str(css_file)
+            theme_info["file_name"] = css_file.name
 
             themes[theme_name] = theme_info
 
@@ -153,7 +153,8 @@ def get_themes_by_genre(genre: str) -> List[str]:
     """Get themes filtered by genre."""
     themes = _get_theme_metadata_dict()
     return [
-        theme for theme, meta in themes.items()
+        theme
+        for theme, meta in themes.items()
         if meta["genre"] == genre.lower() or genre.lower() == "all"
     ]
 
@@ -201,8 +202,8 @@ def validate_theme(theme_name: str) -> bool:
     theme_meta = themes[theme_name]
 
     # If it has a file_path, check that
-    if 'file_path' in theme_meta:
-        return Path(theme_meta['file_path']).exists()
+    if "file_path" in theme_meta:
+        return Path(theme_meta["file_path"]).exists()
 
     # Otherwise check the assets directory
     try:
@@ -241,8 +242,8 @@ def get_theme_css_path(theme_name: str, custom_theme_dir: Optional[Path] = None)
         theme_meta = themes[theme_name]
 
         # If it has a file_path, use that
-        if 'file_path' in theme_meta:
-            theme_path = Path(theme_meta['file_path'])
+        if "file_path" in theme_meta:
+            theme_path = Path(theme_meta["file_path"])
             if theme_path.exists():
                 return theme_path
 
@@ -265,17 +266,13 @@ def create_theme_manifest(output_path: Path) -> None:
     clean_themes = {}
     for theme_name, theme_meta in themes.items():
         clean_meta = theme_meta.copy()
-        clean_meta.pop('file_path', None)
-        clean_meta.pop('file_name', None)
+        clean_meta.pop("file_path", None)
+        clean_meta.pop("file_name", None)
         clean_themes[theme_name] = clean_meta
 
-    manifest = {
-        "themes": clean_themes,
-        "version": "1.0",
-        "generated_by": "docx2shelf"
-    }
+    manifest = {"themes": clean_themes, "version": "1.0", "generated_by": "docx2shelf"}
 
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
 
 
@@ -313,6 +310,6 @@ def get_theme_css_content(theme_name: str, custom_theme_dir: Optional[Path] = No
         raise FileNotFoundError(f"Theme file not found for: {theme_name}")
 
     try:
-        return theme_path.read_text(encoding='utf-8')
+        return theme_path.read_text(encoding="utf-8")
     except Exception as e:
         raise ValueError(f"Error reading theme file {theme_path}: {e}")

@@ -23,8 +23,8 @@ BISAC_CATEGORIES = {
             "FIC009000": "Fiction / Fantasy",
             "FIC030000": "Fiction / Short Stories",
             "FIC031000": "Fiction / Suspense",
-            "FIC035000": "Fiction / War & Military"
-        }
+            "FIC035000": "Fiction / War & Military",
+        },
     },
     # Non-Fiction
     "BIO": {
@@ -33,8 +33,8 @@ BISAC_CATEGORIES = {
             "BIO000000": "Biography & Autobiography / General",
             "BIO026000": "Biography & Autobiography / Personal Memoirs",
             "BIO018000": "Biography & Autobiography / Literary",
-            "BIO001000": "Biography & Autobiography / Artists, Architects, Photographers"
-        }
+            "BIO001000": "Biography & Autobiography / Artists, Architects, Photographers",
+        },
     },
     "HIS": {
         "name": "History",
@@ -42,8 +42,8 @@ BISAC_CATEGORIES = {
             "HIS000000": "History / General",
             "HIS037070": "History / Modern",
             "HIS036000": "History / United States",
-            "HIS010000": "History / Europe"
-        }
+            "HIS010000": "History / Europe",
+        },
     },
     "SEL": {
         "name": "Self-Help",
@@ -51,16 +51,16 @@ BISAC_CATEGORIES = {
             "SEL000000": "Self-Help / General",
             "SEL031000": "Self-Help / Personal Growth",
             "SEL027000": "Self-Help / Success",
-            "SEL021000": "Self-Help / Motivational & Inspirational"
-        }
+            "SEL021000": "Self-Help / Motivational & Inspirational",
+        },
     },
     "REL": {
         "name": "Religion",
         "subcategories": {
             "REL000000": "Religion / General",
             "REL006000": "Religion / Biblical Studies",
-            "REL070000": "Religion / Christian Theology"
-        }
+            "REL070000": "Religion / Christian Theology",
+        },
     },
     "JUV": {
         "name": "Juvenile Fiction",
@@ -68,8 +68,8 @@ BISAC_CATEGORIES = {
             "JUV000000": "Juvenile Fiction / General",
             "JUV001000": "Juvenile Fiction / Action & Adventure",
             "JUV037000": "Juvenile Fiction / Fantasy & Magic",
-            "JUV039000": "Juvenile Fiction / Social Themes"
-        }
+            "JUV039000": "Juvenile Fiction / Social Themes",
+        },
     },
     "YAF": {
         "name": "Young Adult Fiction",
@@ -77,9 +77,9 @@ BISAC_CATEGORIES = {
             "YAF000000": "Young Adult Fiction / General",
             "YAF001000": "Young Adult Fiction / Action & Adventure",
             "YAF019000": "Young Adult Fiction / Fantasy",
-            "YAF058000": "Young Adult Fiction / Romance"
-        }
-    }
+            "YAF058000": "Young Adult Fiction / Romance",
+        },
+    },
 }
 
 # Age range mappings
@@ -89,7 +89,7 @@ AGE_RANGES = {
     "6-8": "Early Elementary",
     "9-12": "Middle Grade",
     "13-17": "Young Adult",
-    "18+": "Adult"
+    "18+": "Adult",
 }
 
 # Reading level mappings
@@ -109,7 +109,7 @@ READING_LEVELS = {
     "grade9": "Grade 9",
     "grade10": "Grade 10",
     "grade11": "Grade 11",
-    "grade12": "Grade 12"
+    "grade12": "Grade 12",
 }
 
 
@@ -125,8 +125,11 @@ def validate_bisac_code(code: str) -> Tuple[bool, str]:
     code = code.strip().upper()
 
     # Check format: 3 letters + 6 digits
-    if not re.match(r'^[A-Z]{3}\d{6}$', code):
-        return False, f"BISAC code '{code}' must be 3 letters followed by 6 digits (e.g., FIC000000)"
+    if not re.match(r"^[A-Z]{3}\d{6}$", code):
+        return (
+            False,
+            f"BISAC code '{code}' must be 3 letters followed by 6 digits (e.g., FIC000000)",
+        )
 
     # Check if category exists
     category = code[:3]
@@ -180,7 +183,7 @@ def suggest_bisac_codes(keywords: List[str], genre_hints: Optional[List[str]] = 
         "motivational": ["SEL021000"],
         "young adult": ["YAF000000"],
         "children": ["JUV000000"],
-        "juvenile": ["JUV000000"]
+        "juvenile": ["JUV000000"],
     }
 
     # Check keywords
@@ -223,9 +226,9 @@ def validate_age_range(age_range: str) -> Tuple[bool, str]:
 
     # Common patterns
     patterns = [
-        r'^\d+-\d+$',  # e.g., "8-12"
-        r'^\d+\+$',    # e.g., "18+"
-        r'^\d+$',      # e.g., "5"
+        r"^\d+-\d+$",  # e.g., "8-12"
+        r"^\d+\+$",  # e.g., "18+"
+        r"^\d+$",  # e.g., "5"
     ]
 
     for pattern in patterns:
@@ -236,7 +239,10 @@ def validate_age_range(age_range: str) -> Tuple[bool, str]:
     if age_range in AGE_RANGES:
         return True, ""
 
-    return False, f"Invalid age range format: '{age_range}'. Use formats like '8-12', '18+', or predefined ranges."
+    return (
+        False,
+        f"Invalid age range format: '{age_range}'. Use formats like '8-12', '18+', or predefined ranges.",
+    )
 
 
 def validate_reading_level(level: str) -> Tuple[bool, str]:
@@ -250,7 +256,7 @@ def validate_reading_level(level: str) -> Tuple[bool, str]:
         return True, ""
 
     # Check for grade level patterns
-    if re.match(r'^grade\s*\d{1,2}$', level_lower):
+    if re.match(r"^grade\s*\d{1,2}$", level_lower):
         return True, ""
 
     return False, f"Invalid reading level: '{level}'. Use predefined levels or 'Grade X' format."
@@ -277,7 +283,7 @@ def validate_isbn_format(isbn: str, isbn_type: str = "ISBN-13") -> Tuple[bool, s
         return True, ""  # Optional field
 
     # Remove hyphens and spaces
-    clean_isbn = re.sub(r'[-\s]', '', isbn)
+    clean_isbn = re.sub(r"[-\s]", "", isbn)
 
     if isbn_type == "ISBN-13":
         if len(clean_isbn) != 13:
@@ -301,7 +307,7 @@ def validate_isbn_format(isbn: str, isbn_type: str = "ISBN-13") -> Tuple[bool, s
             return False, f"ISBN-10 must be 10 characters, got {len(clean_isbn)}"
 
         # ISBN-10 can have X as last character
-        if not clean_isbn[:-1].isdigit() or (clean_isbn[-1] not in '0123456789X'):
+        if not clean_isbn[:-1].isdigit() or (clean_isbn[-1] not in "0123456789X"):
             return False, "Invalid ISBN-10 format"
 
     return True, ""
@@ -325,7 +331,7 @@ def generate_metadata_report(metadata) -> str:
         lines.append("✅ All required fields present")
 
     # BISAC validation
-    if hasattr(metadata, 'bisac_codes') and metadata.bisac_codes:
+    if hasattr(metadata, "bisac_codes") and metadata.bisac_codes:
         valid_codes, errors = normalize_bisac_codes(metadata.bisac_codes)
         lines.append(f"📚 BISAC Codes: {len(valid_codes)} valid, {len(errors)} errors")
 
@@ -336,7 +342,7 @@ def generate_metadata_report(metadata) -> str:
             lines.append(f"   ... and {len(errors) - 3} more errors")
 
     # ISBN validation
-    if hasattr(metadata, 'isbn') and metadata.isbn:
+    if hasattr(metadata, "isbn") and metadata.isbn:
         is_valid, error = validate_isbn_format(metadata.isbn)
         if is_valid:
             lines.append("✅ ISBN format valid")
@@ -344,7 +350,7 @@ def generate_metadata_report(metadata) -> str:
             lines.append(f"❌ ISBN error: {error}")
 
     # Age range validation
-    if hasattr(metadata, 'age_range') and metadata.age_range:
+    if hasattr(metadata, "age_range") and metadata.age_range:
         is_valid, error = validate_age_range(metadata.age_range)
         if is_valid:
             lines.append("✅ Age range valid")

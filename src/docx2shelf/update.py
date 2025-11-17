@@ -33,15 +33,32 @@ def perform_update():
 
                     # Try different update methods based on how it was installed
                     update_commands = [
-                        [sys.executable, "-m", "pip", "install", "--upgrade", "git+https://github.com/LightWraith8268/Docx2Shelf.git"],
+                        [
+                            sys.executable,
+                            "-m",
+                            "pip",
+                            "install",
+                            "--upgrade",
+                            "git+https://github.com/LightWraith8268/Docx2Shelf.git",
+                        ],
                         ["pipx", "upgrade", "docx2shelf"],
-                        [sys.executable, "-m", "pip", "install", "--user", "--upgrade", "git+https://github.com/LightWraith8268/Docx2Shelf.git"],
+                        [
+                            sys.executable,
+                            "-m",
+                            "pip",
+                            "install",
+                            "--user",
+                            "--upgrade",
+                            "git+https://github.com/LightWraith8268/Docx2Shelf.git",
+                        ],
                     ]
 
                     for cmd in update_commands:
                         try:
                             print(f"Trying: {' '.join(cmd)}")
-                            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                            result = subprocess.run(
+                                cmd, capture_output=True, text=True, timeout=300
+                            )
                             if result.returncode == 0:
                                 print("Update successful!")
                                 return True
@@ -73,6 +90,7 @@ def check_for_updates():
     """Check for updates and return structured data for GUI/CLI use."""
     try:
         from .version import get_version
+
         current_version = get_version()
     except Exception:
         try:
@@ -88,7 +106,9 @@ def check_for_updates():
 
                 if latest_version and _version_compare(latest_version, current_version) > 0:
                     # Get the appropriate download asset for this platform
-                    download_url, installer_name = _get_platform_download_url(data.get("assets", []))
+                    download_url, installer_name = _get_platform_download_url(
+                        data.get("assets", [])
+                    )
 
                     return {
                         "update_available": True,
@@ -97,32 +117,30 @@ def check_for_updates():
                         "download_url": download_url,
                         "installer_name": installer_name,
                         "changelog": data.get("body", "No changelog available."),
-                        "release_url": data.get("html_url", "")
+                        "release_url": data.get("html_url", ""),
                     }
                 else:
                     return {
                         "update_available": False,
                         "current_version": current_version,
                         "latest_version": latest_version,
-                        "message": "You are running the latest version."
+                        "message": "You are running the latest version.",
                     }
             else:
                 return {
                     "update_available": False,
-                    "error": f"Failed to check for updates (HTTP {response.status})"
+                    "error": f"Failed to check for updates (HTTP {response.status})",
                 }
     except Exception as e:
-        return {
-            "update_available": False,
-            "error": f"Failed to check for updates: {str(e)}"
-        }
+        return {"update_available": False, "error": f"Failed to check for updates: {str(e)}"}
+
 
 def _version_compare(version1: str, version2: str) -> int:
     """Compare two version strings. Returns 1 if version1 > version2, -1 if version1 < version2, 0 if equal."""
     try:
         # Split versions into parts and convert to integers for comparison
-        v1_parts = [int(x) for x in version1.split('.')]
-        v2_parts = [int(x) for x in version2.split('.')]
+        v1_parts = [int(x) for x in version1.split(".")]
+        v2_parts = [int(x) for x in version2.split(".")]
 
         # Pad shorter version with zeros
         max_length = max(len(v1_parts), len(v2_parts))
@@ -141,6 +159,7 @@ def _version_compare(version1: str, version2: str) -> int:
         # Fallback to string comparison
         return 1 if version1 > version2 else (-1 if version1 < version2 else 0)
 
+
 def _get_platform_download_url(assets: list) -> tuple[str, str]:
     """Get the appropriate download URL and installer name for the current platform."""
     system = platform.system().lower()
@@ -151,16 +170,28 @@ def _get_platform_download_url(assets: list) -> tuple[str, str]:
     platform_patterns = {
         "windows": [
             ("installer", ["docx2shelf-setup.exe", "setup.exe"]),  # Windows installer (preferred)
-            ("portable", ["docx2shelf-windows-portable.zip", "windows-portable.zip"])  # Windows portable
+            (
+                "portable",
+                ["docx2shelf-windows-portable.zip", "windows-portable.zip"],
+            ),  # Windows portable
         ],
         "darwin": [
-            ("installer", ["docx2shelf-installer.dmg", "installer.dmg"]),  # macOS DMG installer (preferred)
-            ("portable", ["docx2shelf-macos-portable.zip", "macos-portable.zip"])  # macOS portable
+            (
+                "installer",
+                ["docx2shelf-installer.dmg", "installer.dmg"],
+            ),  # macOS DMG installer (preferred)
+            ("portable", ["docx2shelf-macos-portable.zip", "macos-portable.zip"]),  # macOS portable
         ],
         "linux": [
-            ("installer", ["docx2shelf-x86_64.appimage", "x86_64.appimage"]),  # Linux AppImage (preferred)
-            ("portable", ["docx2shelf-linux-portable.tar.gz", "linux-portable.tar.gz"])  # Linux portable
-        ]
+            (
+                "installer",
+                ["docx2shelf-x86_64.appimage", "x86_64.appimage"],
+            ),  # Linux AppImage (preferred)
+            (
+                "portable",
+                ["docx2shelf-linux-portable.tar.gz", "linux-portable.tar.gz"],
+            ),  # Linux portable
+        ],
     }
 
     # Find the best matching asset for current platform
@@ -179,7 +210,7 @@ def _get_platform_download_url(assets: list) -> tuple[str, str]:
     fallback_patterns = {
         "windows": [".exe", "windows", "win"],
         "darwin": [".dmg", "macos", "darwin"],
-        "linux": [".appimage", "linux"]
+        "linux": [".appimage", "linux"],
     }
 
     if system in fallback_patterns:
@@ -205,6 +236,7 @@ def _get_platform_download_url(assets: list) -> tuple[str, str]:
 
     return "", "No installer available"
 
+
 def download_and_install_update(download_url: str, installer_name: str) -> bool:
     """Download and install the update."""
     try:
@@ -217,7 +249,7 @@ def download_and_install_update(download_url: str, installer_name: str) -> bool:
             print(f"Downloading {installer_name}...")
             with urllib.request.urlopen(download_url) as response:
                 if response.status == 200:
-                    with open(installer_path, 'wb') as f:
+                    with open(installer_path, "wb") as f:
                         f.write(response.read())
                 else:
                     print(f"Failed to download installer (HTTP {response.status})")
@@ -226,12 +258,13 @@ def download_and_install_update(download_url: str, installer_name: str) -> bool:
             # Install based on file type and platform
             system = platform.system().lower()
 
-            if installer_name.lower().endswith('.exe'):
+            if installer_name.lower().endswith(".exe"):
                 # Windows installer - run silently if possible
                 try:
                     # Try silent installation first
-                    result = subprocess.run([str(installer_path), '/S'],
-                                          capture_output=True, timeout=300)
+                    result = subprocess.run(
+                        [str(installer_path), "/S"], capture_output=True, timeout=300
+                    )
                     if result.returncode == 0:
                         return True
 
@@ -242,81 +275,83 @@ def download_and_install_update(download_url: str, installer_name: str) -> bool:
                     print("Installation timed out")
                     return False
 
-            elif installer_name.lower().endswith('.dmg'):
+            elif installer_name.lower().endswith(".dmg"):
                 # macOS DMG - mount and install
                 try:
                     # Mount the DMG
-                    mount_result = subprocess.run(['hdiutil', 'attach', str(installer_path)],
-                                                capture_output=True, text=True)
+                    mount_result = subprocess.run(
+                        ["hdiutil", "attach", str(installer_path)], capture_output=True, text=True
+                    )
                     if mount_result.returncode != 0:
                         # Fall back to opening DMG
-                        subprocess.run(['open', str(installer_path)], check=True)
+                        subprocess.run(["open", str(installer_path)], check=True)
                         return True
 
                     # Parse mount point
                     mount_point = None
                     for line in mount_result.stdout.splitlines():
-                        if '/Volumes/' in line:
-                            mount_point = line.split('\t')[-1].strip()
+                        if "/Volumes/" in line:
+                            mount_point = line.split("\t")[-1].strip()
                             break
 
                     if mount_point:
                         # Look for app bundle to copy
                         for item in Path(mount_point).iterdir():
-                            if item.suffix == '.app':
+                            if item.suffix == ".app":
                                 # Copy to Applications
-                                apps_dir = Path('/Applications')
+                                apps_dir = Path("/Applications")
                                 if apps_dir.exists():
-                                    subprocess.run(['cp', '-R', str(item), str(apps_dir)])
+                                    subprocess.run(["cp", "-R", str(item), str(apps_dir)])
                                     # Unmount DMG
-                                    subprocess.run(['hdiutil', 'detach', mount_point])
+                                    subprocess.run(["hdiutil", "detach", mount_point])
                                     return True
 
                         # Unmount if no app found
-                        subprocess.run(['hdiutil', 'detach', mount_point])
+                        subprocess.run(["hdiutil", "detach", mount_point])
 
                     # Fall back to opening DMG
-                    subprocess.run(['open', str(installer_path)], check=True)
+                    subprocess.run(["open", str(installer_path)], check=True)
                     return True
 
                 except Exception:
                     # Fall back to opening DMG
-                    subprocess.run(['open', str(installer_path)], check=True)
+                    subprocess.run(["open", str(installer_path)], check=True)
                     return True
 
-            elif installer_name.lower().endswith('.appimage'):
+            elif installer_name.lower().endswith(".appimage"):
                 # Linux AppImage - make executable and run
                 try:
                     # Make executable
-                    subprocess.run(['chmod', '+x', str(installer_path)], check=True)
+                    subprocess.run(["chmod", "+x", str(installer_path)], check=True)
 
                     # Move to a persistent location
-                    home_bin = Path.home() / 'bin'
+                    home_bin = Path.home() / "bin"
                     home_bin.mkdir(exist_ok=True)
 
-                    final_path = home_bin / 'Docx2Shelf'
-                    subprocess.run(['cp', str(installer_path), str(final_path)], check=True)
-                    subprocess.run(['chmod', '+x', str(final_path)], check=True)
+                    final_path = home_bin / "Docx2Shelf"
+                    subprocess.run(["cp", str(installer_path), str(final_path)], check=True)
+                    subprocess.run(["chmod", "+x", str(final_path)], check=True)
 
                     print(f"AppImage installed to {final_path}")
                     return True
 
                 except Exception:
                     # Fall back to making executable in temp location
-                    subprocess.run(['chmod', '+x', str(installer_path)], check=True)
+                    subprocess.run(["chmod", "+x", str(installer_path)], check=True)
                     print(f"AppImage ready at {installer_path}")
                     return True
 
-            elif installer_name.lower().endswith(('.zip', '.tar.gz')):
+            elif installer_name.lower().endswith((".zip", ".tar.gz")):
                 # Portable versions - extract and handle
                 extract_path = temp_path / "extracted"
 
-                if installer_name.lower().endswith('.zip'):
-                    with zipfile.ZipFile(installer_path, 'r') as zip_file:
+                if installer_name.lower().endswith(".zip"):
+                    with zipfile.ZipFile(installer_path, "r") as zip_file:
                         zip_file.extractall(extract_path)
-                elif installer_name.lower().endswith('.tar.gz'):
+                elif installer_name.lower().endswith(".tar.gz"):
                     import tarfile
-                    with tarfile.open(installer_path, 'r:gz') as tar_file:
+
+                    with tarfile.open(installer_path, "r:gz") as tar_file:
                         tar_file.extractall(extract_path)
 
                 # For portable versions, just inform user about extraction
@@ -326,11 +361,11 @@ def download_and_install_update(download_url: str, installer_name: str) -> bool:
                 # Try to open the extraction folder
                 try:
                     if system == "windows":
-                        subprocess.run(['explorer', str(extract_path)])
+                        subprocess.run(["explorer", str(extract_path)])
                     elif system == "darwin":
-                        subprocess.run(['open', str(extract_path)])
+                        subprocess.run(["open", str(extract_path)])
                     else:
-                        subprocess.run(['xdg-open', str(extract_path)])
+                        subprocess.run(["xdg-open", str(extract_path)])
                 except Exception:
                     pass
 
@@ -342,9 +377,9 @@ def download_and_install_update(download_url: str, installer_name: str) -> bool:
                     if system == "windows":
                         subprocess.run([str(installer_path)], check=True)
                     elif system == "darwin":
-                        subprocess.run(['open', str(installer_path)], check=True)
+                        subprocess.run(["open", str(installer_path)], check=True)
                     else:
-                        subprocess.run(['xdg-open', str(installer_path)], check=True)
+                        subprocess.run(["xdg-open", str(installer_path)], check=True)
                     return True
                 except Exception:
                     print(f"Downloaded to {installer_path}. Please install manually.")
@@ -353,6 +388,7 @@ def download_and_install_update(download_url: str, installer_name: str) -> bool:
     except Exception as e:
         print(f"Failed to install update: {e}")
         return False
+
 
 def check_for_updates_cli():
     """CLI version of update checking with print output."""
@@ -370,6 +406,7 @@ def check_for_updates_cli():
         )
     else:
         print(f"Already up to date (version {result.get('current_version', 'unknown')})")
+
 
 # Legacy function name for backwards compatibility
 def check_for_updates_legacy():

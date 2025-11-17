@@ -20,6 +20,7 @@ from .utils import prompt_select
 @dataclass
 class MetadataSuggestion:
     """A single metadata suggestion from AI analysis."""
+
     field: str
     value: str
     confidence: float
@@ -30,6 +31,7 @@ class MetadataSuggestion:
 @dataclass
 class EnhancedMetadata:
     """Enhanced metadata with AI suggestions."""
+
     original: EpubMetadata
     suggestions: List[MetadataSuggestion] = field(default_factory=list)
     ai_analysis: Dict[str, Any] = field(default_factory=dict)
@@ -66,10 +68,7 @@ class AIMetadataEnhancer:
         self.logger = logging.getLogger(__name__)
 
     def enhance_metadata(
-        self,
-        content: str,
-        original_metadata: EpubMetadata,
-        interactive: bool = False
+        self, content: str, original_metadata: EpubMetadata, interactive: bool = False
     ) -> EnhancedMetadata:
         """Enhance metadata using AI analysis.
 
@@ -92,8 +91,7 @@ class AIMetadataEnhancer:
         try:
             # Get AI analysis
             ai_result = self.ai_manager.enhance_metadata(
-                content,
-                self._metadata_to_dict(original_metadata)
+                content, self._metadata_to_dict(original_metadata)
             )
 
             if ai_result.success:
@@ -119,95 +117,109 @@ class AIMetadataEnhancer:
     def _metadata_to_dict(self, metadata: EpubMetadata) -> Dict[str, Any]:
         """Convert metadata to dictionary for AI analysis."""
         return {
-            'title': metadata.title,
-            'author': metadata.author,
-            'description': metadata.description,
-            'language': metadata.language,
-            'keywords': getattr(metadata, 'keywords', []),
-            'genre': getattr(metadata, 'genre', ''),
-            'series_name': getattr(metadata, 'series_name', ''),
-            'publication_date': getattr(metadata, 'publication_date', ''),
+            "title": metadata.title,
+            "author": metadata.author,
+            "description": metadata.description,
+            "language": metadata.language,
+            "keywords": getattr(metadata, "keywords", []),
+            "genre": getattr(metadata, "genre", ""),
+            "series_name": getattr(metadata, "series_name", ""),
+            "publication_date": getattr(metadata, "publication_date", ""),
         }
 
     def _process_ai_results(self, enhanced: EnhancedMetadata, ai_data: Dict[str, Any]):
         """Process AI analysis results into suggestions."""
         # Title suggestions
-        for title in ai_data.get('title_suggestions', []):
+        for title in ai_data.get("title_suggestions", []):
             if title and title != enhanced.original.title:
-                enhanced.suggestions.append(MetadataSuggestion(
-                    field='title',
-                    value=title,
-                    confidence=0.7,
-                    reasoning="AI analysis of content structure and narrative",
-                    source='ai'
-                ))
+                enhanced.suggestions.append(
+                    MetadataSuggestion(
+                        field="title",
+                        value=title,
+                        confidence=0.7,
+                        reasoning="AI analysis of content structure and narrative",
+                        source="ai",
+                    )
+                )
 
         # Description suggestions
-        for desc in ai_data.get('description_suggestions', []):
+        for desc in ai_data.get("description_suggestions", []):
             if desc and desc != enhanced.original.description:
-                enhanced.suggestions.append(MetadataSuggestion(
-                    field='description',
-                    value=desc,
-                    confidence=0.8,
-                    reasoning="Generated from content analysis",
-                    source='ai'
-                ))
+                enhanced.suggestions.append(
+                    MetadataSuggestion(
+                        field="description",
+                        value=desc,
+                        confidence=0.8,
+                        reasoning="Generated from content analysis",
+                        source="ai",
+                    )
+                )
 
         # Genre suggestions
-        for genre in ai_data.get('genre_suggestions', []):
+        for genre in ai_data.get("genre_suggestions", []):
             if genre:
-                enhanced.suggestions.append(MetadataSuggestion(
-                    field='genre',
-                    value=genre,
-                    confidence=0.6,
-                    reasoning="Detected from content themes and keywords",
-                    source='ai'
-                ))
+                enhanced.suggestions.append(
+                    MetadataSuggestion(
+                        field="genre",
+                        value=genre,
+                        confidence=0.6,
+                        reasoning="Detected from content themes and keywords",
+                        source="ai",
+                    )
+                )
 
         # Keyword suggestions
-        keywords = ai_data.get('keyword_suggestions', [])
+        keywords = ai_data.get("keyword_suggestions", [])
         if keywords:
             # Combine keywords into a comma-separated string
-            keyword_str = ', '.join(keywords[:10])  # Top 10 keywords
-            enhanced.suggestions.append(MetadataSuggestion(
-                field='keywords',
-                value=keyword_str,
-                confidence=0.7,
-                reasoning="Extracted from content analysis",
-                source='ai'
-            ))
+            keyword_str = ", ".join(keywords[:10])  # Top 10 keywords
+            enhanced.suggestions.append(
+                MetadataSuggestion(
+                    field="keywords",
+                    value=keyword_str,
+                    confidence=0.7,
+                    reasoning="Extracted from content analysis",
+                    source="ai",
+                )
+            )
 
         # Reading level and additional metadata
-        reading_level = ai_data.get('reading_level')
-        if reading_level and reading_level != 'unknown':
-            enhanced.suggestions.append(MetadataSuggestion(
-                field='reading_level',
-                value=reading_level,
-                confidence=0.8,
-                reasoning="Calculated from text complexity metrics",
-                source='ai'
-            ))
+        reading_level = ai_data.get("reading_level")
+        if reading_level and reading_level != "unknown":
+            enhanced.suggestions.append(
+                MetadataSuggestion(
+                    field="reading_level",
+                    value=reading_level,
+                    confidence=0.8,
+                    reasoning="Calculated from text complexity metrics",
+                    source="ai",
+                )
+            )
 
         # Word count and reading time
-        word_count = ai_data.get('word_count', 0)
+        word_count = ai_data.get("word_count", 0)
         if word_count > 0:
-            enhanced.suggestions.append(MetadataSuggestion(
-                field='word_count',
-                value=str(word_count),
-                confidence=0.9,
-                reasoning="Counted from document content",
-                source='ai'
-            ))
+            enhanced.suggestions.append(
+                MetadataSuggestion(
+                    field="word_count",
+                    value=str(word_count),
+                    confidence=0.9,
+                    reasoning="Counted from document content",
+                    source="ai",
+                )
+            )
 
-        reading_time = ai_data.get('estimated_reading_time', 0)
+        reading_time = ai_data.get("estimated_reading_time", 0)
         if reading_time > 0:
-            enhanced.suggestions.append(MetadataSuggestion(
-                field='estimated_reading_time',
-                value=f"{reading_time} minutes",
-                confidence=0.9,
-                reasoning="Estimated based on word count",
-                source='ai'
-            ))
+            enhanced.suggestions.append(
+                MetadataSuggestion(
+                    field="estimated_reading_time",
+                    value=f"{reading_time} minutes",
+                    confidence=0.9,
+                    reasoning="Estimated based on word count",
+                    source="ai",
+                )
+            )
 
     def _interactive_enhancement(self, enhanced: EnhancedMetadata):
         """Interactive metadata enhancement with user choices."""
@@ -224,14 +236,18 @@ class AIMetadataEnhancer:
         for field, suggestions in fields_with_suggestions.items():
             print(f"\n📋 {field.replace('_', ' ').title()}:")
 
-            current_value = getattr(enhanced.original, field, '')
+            current_value = getattr(enhanced.original, field, "")
             if current_value:
                 print(f"   Current: {current_value}")
 
             # Show suggestions
             options = []
             for i, suggestion in enumerate(suggestions):
-                confidence_icon = "🟢" if suggestion.confidence >= 0.8 else "🟡" if suggestion.confidence >= 0.6 else "🔴"
+                confidence_icon = (
+                    "🟢"
+                    if suggestion.confidence >= 0.8
+                    else "🟡" if suggestion.confidence >= 0.6 else "🔴"
+                )
                 print(f"   {i+1}. {confidence_icon} {suggestion.value}")
                 print(f"      Confidence: {suggestion.confidence:.1%}")
                 print(f"      Reason: {suggestion.reasoning}")
@@ -260,7 +276,7 @@ class AIMetadataEnhancer:
         for suggestion in enhanced.suggestions:
             # Only auto-apply very high confidence suggestions
             if suggestion.confidence >= 0.9:
-                current_value = getattr(enhanced.original, suggestion.field, '')
+                current_value = getattr(enhanced.original, suggestion.field, "")
 
                 # Don't overwrite existing values unless they're empty
                 if not current_value:
@@ -281,58 +297,103 @@ class AIMetadataEnhancer:
         estimated_reading_time = max(1, word_count // 250)
 
         # Add basic suggestions
-        enhanced.suggestions.append(MetadataSuggestion(
-            field='word_count',
-            value=str(word_count),
-            confidence=1.0,
-            reasoning="Counted from document content",
-            source='basic'
-        ))
+        enhanced.suggestions.append(
+            MetadataSuggestion(
+                field="word_count",
+                value=str(word_count),
+                confidence=1.0,
+                reasoning="Counted from document content",
+                source="basic",
+            )
+        )
 
-        enhanced.suggestions.append(MetadataSuggestion(
-            field='estimated_reading_time',
-            value=f"{estimated_reading_time} minutes",
-            confidence=1.0,
-            reasoning="Estimated based on average reading speed",
-            source='basic'
-        ))
+        enhanced.suggestions.append(
+            MetadataSuggestion(
+                field="estimated_reading_time",
+                value=f"{estimated_reading_time} minutes",
+                confidence=1.0,
+                reasoning="Estimated based on average reading speed",
+                source="basic",
+            )
+        )
 
         # Basic keyword extraction
         keywords = self._extract_basic_keywords(content)
         if keywords:
-            enhanced.suggestions.append(MetadataSuggestion(
-                field='keywords',
-                value=', '.join(keywords[:10]),
-                confidence=0.6,
-                reasoning="Extracted using frequency analysis",
-                source='basic'
-            ))
+            enhanced.suggestions.append(
+                MetadataSuggestion(
+                    field="keywords",
+                    value=", ".join(keywords[:10]),
+                    confidence=0.6,
+                    reasoning="Extracted using frequency analysis",
+                    source="basic",
+                )
+            )
 
         # Basic genre detection
         genres = self._detect_basic_genre(content)
         for genre in genres[:2]:  # Top 2 genres
-            enhanced.suggestions.append(MetadataSuggestion(
-                field='genre',
-                value=genre,
-                confidence=0.5,
-                reasoning="Detected using keyword patterns",
-                source='basic'
-            ))
+            enhanced.suggestions.append(
+                MetadataSuggestion(
+                    field="genre",
+                    value=genre,
+                    confidence=0.5,
+                    reasoning="Detected using keyword patterns",
+                    source="basic",
+                )
+            )
 
         return enhanced
 
     def _extract_basic_keywords(self, content: str) -> List[str]:
         """Basic keyword extraction using frequency analysis."""
         # Simple word frequency analysis
-        words = re.findall(r'\b[a-zA-Z]{4,}\b', content.lower())
+        words = re.findall(r"\b[a-zA-Z]{4,}\b", content.lower())
 
         # Common stop words to filter out
         stop_words = {
-            'this', 'that', 'with', 'have', 'will', 'from', 'they', 'know', 'want',
-            'been', 'good', 'much', 'some', 'time', 'very', 'when', 'come', 'here',
-            'would', 'there', 'could', 'other', 'make', 'what', 'only', 'over',
-            'think', 'also', 'back', 'after', 'first', 'well', 'year', 'work',
-            'such', 'where', 'most', 'take', 'than', 'many', 'even', 'more'
+            "this",
+            "that",
+            "with",
+            "have",
+            "will",
+            "from",
+            "they",
+            "know",
+            "want",
+            "been",
+            "good",
+            "much",
+            "some",
+            "time",
+            "very",
+            "when",
+            "come",
+            "here",
+            "would",
+            "there",
+            "could",
+            "other",
+            "make",
+            "what",
+            "only",
+            "over",
+            "think",
+            "also",
+            "back",
+            "after",
+            "first",
+            "well",
+            "year",
+            "work",
+            "such",
+            "where",
+            "most",
+            "take",
+            "than",
+            "many",
+            "even",
+            "more",
         }
 
         # Count word frequencies
@@ -351,14 +412,14 @@ class AIMetadataEnhancer:
     def _detect_basic_genre(self, content: str) -> List[str]:
         """Basic genre detection using keyword patterns."""
         genre_keywords = {
-            'Fantasy': ['magic', 'wizard', 'dragon', 'spell', 'enchanted', 'kingdom', 'quest'],
-            'Romance': ['love', 'heart', 'kiss', 'passion', 'romance', 'relationship'],
-            'Mystery': ['detective', 'murder', 'crime', 'investigation', 'suspect', 'clue'],
-            'Science Fiction': ['space', 'alien', 'robot', 'technology', 'future', 'planet'],
-            'Thriller': ['danger', 'chase', 'escape', 'suspense', 'threat', 'victim'],
-            'Horror': ['ghost', 'monster', 'vampire', 'demon', 'haunted', 'nightmare'],
-            'Historical': ['war', 'century', 'historical', 'period', 'ancient', 'medieval'],
-            'Literary Fiction': ['life', 'character', 'society', 'human', 'emotion', 'family']
+            "Fantasy": ["magic", "wizard", "dragon", "spell", "enchanted", "kingdom", "quest"],
+            "Romance": ["love", "heart", "kiss", "passion", "romance", "relationship"],
+            "Mystery": ["detective", "murder", "crime", "investigation", "suspect", "clue"],
+            "Science Fiction": ["space", "alien", "robot", "technology", "future", "planet"],
+            "Thriller": ["danger", "chase", "escape", "suspense", "threat", "victim"],
+            "Horror": ["ghost", "monster", "vampire", "demon", "haunted", "nightmare"],
+            "Historical": ["war", "century", "historical", "period", "ancient", "medieval"],
+            "Literary Fiction": ["life", "character", "society", "human", "emotion", "family"],
         }
 
         content_lower = content.lower()
@@ -392,7 +453,9 @@ class AIMetadataEnhancer:
             ai_data = enhanced.ai_analysis
             report.append("🤖 AI Analysis Results:")
             report.append(f"   Word Count: {ai_data.get('word_count', 'N/A')}")
-            report.append(f"   Reading Time: {ai_data.get('estimated_reading_time', 'N/A')} minutes")
+            report.append(
+                f"   Reading Time: {ai_data.get('estimated_reading_time', 'N/A')} minutes"
+            )
             report.append(f"   Reading Level: {ai_data.get('reading_level', 'N/A')}")
             report.append(f"   Model Used: {ai_data.get('model_used', 'N/A')}")
             report.append("")
@@ -409,9 +472,15 @@ class AIMetadataEnhancer:
             report.append(f"   {field.replace('_', ' ').title()}:")
             for suggestion in suggestions:
                 status = "✅ Applied" if field in enhanced.applied_suggestions else "⏳ Suggested"
-                confidence_icon = "🟢" if suggestion.confidence >= 0.8 else "🟡" if suggestion.confidence >= 0.6 else "🔴"
+                confidence_icon = (
+                    "🟢"
+                    if suggestion.confidence >= 0.8
+                    else "🟡" if suggestion.confidence >= 0.6 else "🔴"
+                )
                 report.append(f"     {status} {confidence_icon} {suggestion.value[:50]}...")
-                report.append(f"       Confidence: {suggestion.confidence:.1%} | Source: {suggestion.source}")
+                report.append(
+                    f"       Confidence: {suggestion.confidence:.1%} | Source: {suggestion.source}"
+                )
 
         report.append("")
         report.append(f"📈 Total Suggestions: {len(enhanced.suggestions)}")
@@ -421,9 +490,7 @@ class AIMetadataEnhancer:
 
 
 def enhance_metadata_with_ai(
-    content: str,
-    metadata: EpubMetadata,
-    interactive: bool = False
+    content: str, metadata: EpubMetadata, interactive: bool = False
 ) -> EnhancedMetadata:
     """Convenience function to enhance metadata with AI.
 
@@ -439,10 +506,7 @@ def enhance_metadata_with_ai(
     return enhancer.enhance_metadata(content, metadata, interactive)
 
 
-def suggest_metadata_improvements(
-    content: str,
-    metadata: EpubMetadata
-) -> List[MetadataSuggestion]:
+def suggest_metadata_improvements(content: str, metadata: EpubMetadata) -> List[MetadataSuggestion]:
     """Get metadata improvement suggestions.
 
     Args:

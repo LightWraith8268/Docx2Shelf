@@ -20,17 +20,19 @@ logger = logging.getLogger(__name__)
 
 class StoreProfile(Enum):
     """Supported store profiles."""
-    KDP = "kdp"              # Amazon Kindle Direct Publishing
-    APPLE = "apple"          # Apple Books
-    KOBO = "kobo"            # Kobo
-    GOOGLE = "google"        # Google Play Books
-    BARNES_NOBLE = "bn"      # Barnes & Noble
-    GENERIC = "generic"      # Generic EPUB 3 standard
+
+    KDP = "kdp"  # Amazon Kindle Direct Publishing
+    APPLE = "apple"  # Apple Books
+    KOBO = "kobo"  # Kobo
+    GOOGLE = "google"  # Google Play Books
+    BARNES_NOBLE = "bn"  # Barnes & Noble
+    GENERIC = "generic"  # Generic EPUB 3 standard
 
 
 @dataclass
 class ValidationRule:
     """Store-specific validation rule."""
+
     rule_id: str
     severity: str  # error, warning, info
     title: str
@@ -42,6 +44,7 @@ class ValidationRule:
 @dataclass
 class CSSRestriction:
     """CSS property restriction."""
+
     property: str
     allowed_values: Optional[List[str]] = None
     forbidden_values: Optional[List[str]] = None
@@ -53,6 +56,7 @@ class CSSRestriction:
 @dataclass
 class StoreRequirements:
     """Requirements for a specific store."""
+
     profile: StoreProfile
     name: str
     description: str
@@ -65,7 +69,9 @@ class StoreRequirements:
     # Image requirements
     max_image_width: Optional[int] = None
     max_image_height: Optional[int] = None
-    supported_image_formats: List[str] = field(default_factory=lambda: ["jpeg", "png", "gif", "svg"])
+    supported_image_formats: List[str] = field(
+        default_factory=lambda: ["jpeg", "png", "gif", "svg"]
+    )
     cover_required_width: Optional[int] = None
     cover_required_height: Optional[int] = None
     cover_aspect_ratio: Optional[str] = None  # "1.6:1" format
@@ -76,7 +82,9 @@ class StoreRequirements:
 
     # Font requirements
     max_embedded_fonts: Optional[int] = None
-    supported_font_formats: List[str] = field(default_factory=lambda: ["woff", "woff2", "ttf", "otf"])
+    supported_font_formats: List[str] = field(
+        default_factory=lambda: ["woff", "woff2", "ttf", "otf"]
+    )
 
     # Metadata requirements
     required_metadata_fields: List[str] = field(default_factory=list)
@@ -113,10 +121,8 @@ class StoreProfileManager:
             profile=StoreProfile.KDP,
             name="Amazon Kindle Direct Publishing",
             description="Requirements for Amazon KDP and Kindle devices",
-
             supported_epub_versions=["3.0", "3.1"],
             max_file_size_mb=650,  # 650MB limit
-
             # Image requirements
             max_image_width=4000,
             max_image_height=4000,
@@ -124,7 +130,6 @@ class StoreProfileManager:
             cover_required_width=1600,
             cover_required_height=2560,
             cover_aspect_ratio="1.6:1",
-
             # CSS restrictions for Kindle
             css_restrictions=[
                 CSSRestriction("position", forbidden_values=["fixed", "absolute"]),
@@ -134,23 +139,26 @@ class StoreProfileManager:
                 CSSRestriction("page-break-after", allowed_values=["auto", "always", "avoid"]),
                 CSSRestriction("text-align", allowed_values=["left", "right", "center", "justify"]),
             ],
-
             forbidden_css_properties=[
-                "transform", "transition", "animation", "filter", "backdrop-filter",
-                "clip-path", "mask", "mix-blend-mode", "@supports", "@media (prefers-color-scheme)"
+                "transform",
+                "transition",
+                "animation",
+                "filter",
+                "backdrop-filter",
+                "clip-path",
+                "mask",
+                "mix-blend-mode",
+                "@supports",
+                "@media (prefers-color-scheme)",
             ],
-
             # Font restrictions
             max_embedded_fonts=5,
             supported_font_formats=["ttf", "otf"],
-
             # Metadata requirements
             required_metadata_fields=["title", "author", "language", "isbn"],
             max_title_length=255,
             max_description_length=4000,
-
             max_toc_depth=3,
-
             validation_rules=[
                 ValidationRule(
                     "kdp_cover_dimensions",
@@ -158,7 +166,7 @@ class StoreProfileManager:
                     "Cover image dimensions",
                     "Cover must be at least 1600x2560 pixels with 1.6:1 aspect ratio",
                     "check_kdp_cover_dimensions",
-                    ["metadata"]
+                    ["metadata"],
                 ),
                 ValidationRule(
                     "kdp_css_positioning",
@@ -166,7 +174,7 @@ class StoreProfileManager:
                     "CSS positioning not supported",
                     "Absolute and fixed positioning may not work on Kindle devices",
                     "check_kdp_css_positioning",
-                    ["css"]
+                    ["css"],
                 ),
                 ValidationRule(
                     "kdp_file_size",
@@ -174,9 +182,9 @@ class StoreProfileManager:
                     "File size limit",
                     "EPUB file must be under 650MB",
                     "check_file_size",
-                    ["structure"]
+                    ["structure"],
                 ),
-            ]
+            ],
         )
 
     def _create_apple_profile(self) -> StoreRequirements:
@@ -185,32 +193,38 @@ class StoreProfileManager:
             profile=StoreProfile.APPLE,
             name="Apple Books",
             description="Requirements for Apple Books Store",
-
             supported_epub_versions=["3.0", "3.1", "3.2"],
             max_file_size_mb=2000,  # 2GB limit
-
             # Image requirements
             max_image_width=3840,  # 4K support
             max_image_height=2160,
             supported_image_formats=["jpeg", "png", "gif", "svg"],
             cover_required_width=1400,
             cover_required_height=1800,
-
             # CSS - Apple Books has excellent CSS support
             css_restrictions=[
-                CSSRestriction("position", allowed_values=["static", "relative", "absolute", "fixed"]),
-                CSSRestriction("display", allowed_values=["block", "inline", "inline-block", "flex", "grid", "table", "table-cell"]),
+                CSSRestriction(
+                    "position", allowed_values=["static", "relative", "absolute", "fixed"]
+                ),
+                CSSRestriction(
+                    "display",
+                    allowed_values=[
+                        "block",
+                        "inline",
+                        "inline-block",
+                        "flex",
+                        "grid",
+                        "table",
+                        "table-cell",
+                    ],
+                ),
             ],
-
             max_embedded_fonts=10,
             supported_font_formats=["woff", "woff2", "ttf", "otf"],
-
             required_metadata_fields=["title", "author", "language"],
             max_title_length=255,
             max_description_length=5000,
-
             max_toc_depth=6,
-
             validation_rules=[
                 ValidationRule(
                     "apple_epub_version",
@@ -218,7 +232,7 @@ class StoreProfileManager:
                     "EPUB version support",
                     "Apple Books supports EPUB 3.2 features",
                     "check_epub_version",
-                    ["structure"]
+                    ["structure"],
                 ),
                 ValidationRule(
                     "apple_css_support",
@@ -226,9 +240,9 @@ class StoreProfileManager:
                     "Advanced CSS features",
                     "Apple Books supports modern CSS including flexbox and grid",
                     "check_css_features",
-                    ["css"]
+                    ["css"],
                 ),
-            ]
+            ],
         )
 
     def _create_kobo_profile(self) -> StoreRequirements:
@@ -237,30 +251,23 @@ class StoreProfileManager:
             profile=StoreProfile.KOBO,
             name="Kobo",
             description="Requirements for Kobo Store and devices",
-
             supported_epub_versions=["3.0", "3.1"],
             max_file_size_mb=100,  # Conservative limit
-
             max_image_width=2048,
             max_image_height=2048,
             supported_image_formats=["jpeg", "png", "gif", "svg"],
             cover_required_width=1200,
             cover_required_height=1600,
-
             css_restrictions=[
                 CSSRestriction("position", forbidden_values=["fixed"]),
                 CSSRestriction("display", forbidden_values=["grid"]),  # Limited grid support
             ],
-
             max_embedded_fonts=8,
             supported_font_formats=["ttf", "otf", "woff"],
-
             required_metadata_fields=["title", "author", "language"],
             max_title_length=255,
             max_description_length=3000,
-
             max_toc_depth=4,
-
             validation_rules=[
                 ValidationRule(
                     "kobo_font_formats",
@@ -268,9 +275,9 @@ class StoreProfileManager:
                     "Font format support",
                     "Kobo has best support for TTF and OTF fonts",
                     "check_font_formats",
-                    ["content"]
+                    ["content"],
                 ),
-            ]
+            ],
         )
 
     def _create_google_profile(self) -> StoreRequirements:
@@ -279,25 +286,19 @@ class StoreProfileManager:
             profile=StoreProfile.GOOGLE,
             name="Google Play Books",
             description="Requirements for Google Play Books",
-
             supported_epub_versions=["3.0", "3.1", "3.2"],
             max_file_size_mb=100,
-
             max_image_width=2048,
             max_image_height=2048,
             supported_image_formats=["jpeg", "png", "gif", "svg"],
             cover_required_width=1200,
             cover_required_height=1600,
-
             max_embedded_fonts=10,
             supported_font_formats=["woff", "woff2", "ttf", "otf"],
-
             required_metadata_fields=["title", "author", "language", "isbn"],
             max_title_length=255,
             max_description_length=4000,
-
             max_toc_depth=5,
-
             validation_rules=[
                 ValidationRule(
                     "google_isbn_required",
@@ -305,9 +306,9 @@ class StoreProfileManager:
                     "ISBN required",
                     "Google Play Books requires ISBN for submission",
                     "check_isbn_present",
-                    ["metadata"]
+                    ["metadata"],
                 ),
-            ]
+            ],
         )
 
     def _create_bn_profile(self) -> StoreRequirements:
@@ -316,30 +317,23 @@ class StoreProfileManager:
             profile=StoreProfile.BARNES_NOBLE,
             name="Barnes & Noble",
             description="Requirements for Barnes & Noble NOOK",
-
             supported_epub_versions=["3.0", "3.1"],
             max_file_size_mb=20,  # Conservative limit for NOOK
-
             max_image_width=1600,
             max_image_height=2400,
             supported_image_formats=["jpeg", "png", "gif"],
             cover_required_width=1200,
             cover_required_height=1600,
-
             css_restrictions=[
                 CSSRestriction("position", forbidden_values=["fixed", "absolute"]),
                 CSSRestriction("display", forbidden_values=["flex", "grid"]),
             ],
-
             max_embedded_fonts=5,
             supported_font_formats=["ttf", "otf"],
-
             required_metadata_fields=["title", "author", "language"],
             max_title_length=255,
             max_description_length=2000,
-
             max_toc_depth=3,
-
             validation_rules=[
                 ValidationRule(
                     "bn_file_size",
@@ -347,9 +341,9 @@ class StoreProfileManager:
                     "File size recommendation",
                     "Keep file size under 20MB for optimal NOOK performance",
                     "check_file_size",
-                    ["structure"]
+                    ["structure"],
                 ),
-            ]
+            ],
         )
 
     def _create_generic_profile(self) -> StoreRequirements:
@@ -358,14 +352,10 @@ class StoreProfileManager:
             profile=StoreProfile.GENERIC,
             name="Generic EPUB 3",
             description="Standard EPUB 3 specification requirements",
-
             supported_epub_versions=["3.0", "3.1", "3.2"],
-
             supported_image_formats=["jpeg", "png", "gif", "svg"],
             supported_font_formats=["woff", "woff2", "ttf", "otf"],
-
             required_metadata_fields=["title", "author", "language"],
-
             validation_rules=[
                 ValidationRule(
                     "epub_validation",
@@ -373,16 +363,18 @@ class StoreProfileManager:
                     "EPUB validation",
                     "EPUB must pass EPUBCheck validation",
                     "check_epubcheck",
-                    ["structure"]
+                    ["structure"],
                 ),
-            ]
+            ],
         )
 
     def get_profile(self, profile_name: StoreProfile) -> StoreRequirements:
         """Get requirements for a specific store profile."""
         return self.profiles.get(profile_name, self.profiles[StoreProfile.GENERIC])
 
-    def validate_epub(self, profile_name: StoreProfile, epub_path: Path, metadata: EpubMetadata) -> List[Dict[str, Any]]:
+    def validate_epub(
+        self, profile_name: StoreProfile, epub_path: Path, metadata: EpubMetadata
+    ) -> List[Dict[str, Any]]:
         """
         Validate EPUB against store profile requirements.
 
@@ -402,7 +394,13 @@ class StoreProfileManager:
 
         return issues
 
-    def _run_validation_rule(self, rule: ValidationRule, profile: StoreRequirements, epub_path: Path, metadata: EpubMetadata) -> List[Dict[str, Any]]:
+    def _run_validation_rule(
+        self,
+        rule: ValidationRule,
+        profile: StoreRequirements,
+        epub_path: Path,
+        metadata: EpubMetadata,
+    ) -> List[Dict[str, Any]]:
         """Run a specific validation rule."""
         issues = []
 
@@ -426,50 +424,61 @@ class StoreProfileManager:
 
         return issues
 
-    def _check_kdp_cover_dimensions(self, metadata: EpubMetadata, profile: StoreRequirements) -> List[Dict[str, Any]]:
+    def _check_kdp_cover_dimensions(
+        self, metadata: EpubMetadata, profile: StoreRequirements
+    ) -> List[Dict[str, Any]]:
         """Check KDP cover image dimensions."""
         issues = []
 
         if not metadata.cover_path or not metadata.cover_path.exists():
-            issues.append({
-                "rule_id": "kdp_cover_dimensions",
-                "severity": "error",
-                "message": "Cover image file not found",
-                "location": "metadata.cover_path"
-            })
+            issues.append(
+                {
+                    "rule_id": "kdp_cover_dimensions",
+                    "severity": "error",
+                    "message": "Cover image file not found",
+                    "location": "metadata.cover_path",
+                }
+            )
             return issues
 
         try:
             from PIL import Image
+
             with Image.open(metadata.cover_path) as img:
                 width, height = img.size
 
                 if width < profile.cover_required_width or height < profile.cover_required_height:
-                    issues.append({
-                        "rule_id": "kdp_cover_dimensions",
-                        "severity": "error",
-                        "message": f"Cover image too small: {width}x{height}. Minimum: {profile.cover_required_width}x{profile.cover_required_height}",
-                        "location": str(metadata.cover_path)
-                    })
+                    issues.append(
+                        {
+                            "rule_id": "kdp_cover_dimensions",
+                            "severity": "error",
+                            "message": f"Cover image too small: {width}x{height}. Minimum: {profile.cover_required_width}x{profile.cover_required_height}",
+                            "location": str(metadata.cover_path),
+                        }
+                    )
 
                 # Check aspect ratio
                 aspect_ratio = width / height
                 expected_ratio = 1600 / 2560  # 0.625
                 if abs(aspect_ratio - expected_ratio) > 0.1:
-                    issues.append({
-                        "rule_id": "kdp_cover_dimensions",
-                        "severity": "warning",
-                        "message": f"Cover aspect ratio {aspect_ratio:.2f} differs from recommended 1.6:1 ({expected_ratio:.2f})",
-                        "location": str(metadata.cover_path)
-                    })
+                    issues.append(
+                        {
+                            "rule_id": "kdp_cover_dimensions",
+                            "severity": "warning",
+                            "message": f"Cover aspect ratio {aspect_ratio:.2f} differs from recommended 1.6:1 ({expected_ratio:.2f})",
+                            "location": str(metadata.cover_path),
+                        }
+                    )
 
         except Exception as e:
-            issues.append({
-                "rule_id": "kdp_cover_dimensions",
-                "severity": "error",
-                "message": f"Could not read cover image: {e}",
-                "location": str(metadata.cover_path)
-            })
+            issues.append(
+                {
+                    "rule_id": "kdp_cover_dimensions",
+                    "severity": "error",
+                    "message": f"Could not read cover image: {e}",
+                    "location": str(metadata.cover_path),
+                }
+            )
 
         return issues
 
@@ -483,12 +492,14 @@ class StoreProfileManager:
         file_size_mb = epub_path.stat().st_size / (1024 * 1024)
 
         if profile.max_file_size_mb and file_size_mb > profile.max_file_size_mb:
-            issues.append({
-                "rule_id": "file_size_limit",
-                "severity": "error",
-                "message": f"File size {file_size_mb:.1f}MB exceeds limit of {profile.max_file_size_mb}MB",
-                "location": str(epub_path)
-            })
+            issues.append(
+                {
+                    "rule_id": "file_size_limit",
+                    "severity": "error",
+                    "message": f"File size {file_size_mb:.1f}MB exceeds limit of {profile.max_file_size_mb}MB",
+                    "location": str(epub_path),
+                }
+            )
 
         return issues
 
@@ -497,12 +508,14 @@ class StoreProfileManager:
         issues = []
 
         if not metadata.isbn:
-            issues.append({
-                "rule_id": "isbn_required",
-                "severity": "error",
-                "message": "ISBN is required for this store",
-                "location": "metadata.isbn"
-            })
+            issues.append(
+                {
+                    "rule_id": "isbn_required",
+                    "severity": "error",
+                    "message": "ISBN is required for this store",
+                    "location": "metadata.isbn",
+                }
+            )
 
         return issues
 
@@ -512,13 +525,17 @@ class StoreProfileManager:
         # For now, return empty (would need actual EPUB parsing)
         return []
 
-    def _check_css_features(self, epub_path: Path, profile: StoreRequirements) -> List[Dict[str, Any]]:
+    def _check_css_features(
+        self, epub_path: Path, profile: StoreRequirements
+    ) -> List[Dict[str, Any]]:
         """Check CSS feature usage."""
         # This would parse CSS files in the EPUB
         # For now, return empty (would need CSS parsing)
         return []
 
-    def _check_font_formats(self, epub_path: Path, profile: StoreRequirements) -> List[Dict[str, Any]]:
+    def _check_font_formats(
+        self, epub_path: Path, profile: StoreRequirements
+    ) -> List[Dict[str, Any]]:
         """Check embedded font formats."""
         # This would check fonts in the EPUB
         # For now, return empty (would need EPUB parsing)
@@ -547,75 +564,85 @@ class StoreProfileManager:
         ]
 
         # Add base styles safe for all stores
-        css_parts.extend([
-            "/* Base typography */",
-            "body {",
-            "    font-family: Georgia, 'Times New Roman', Times, serif;",
-            "    line-height: 1.6;",
-            "    margin: 1.5em;",
-            "    text-align: left;",
-            "}",
-            "",
-            "h1, h2, h3, h4, h5, h6 {",
-            "    page-break-after: avoid;",
-            "    margin-top: 1.5em;",
-            "    margin-bottom: 0.75em;",
-            "}",
-            "",
-            "p {",
-            "    orphans: 2;",
-            "    widows: 2;",
-            "    margin: 0 0 1em 0;",
-            "}",
-            "",
-        ])
+        css_parts.extend(
+            [
+                "/* Base typography */",
+                "body {",
+                "    font-family: Georgia, 'Times New Roman', Times, serif;",
+                "    line-height: 1.6;",
+                "    margin: 1.5em;",
+                "    text-align: left;",
+                "}",
+                "",
+                "h1, h2, h3, h4, h5, h6 {",
+                "    page-break-after: avoid;",
+                "    margin-top: 1.5em;",
+                "    margin-bottom: 0.75em;",
+                "}",
+                "",
+                "p {",
+                "    orphans: 2;",
+                "    widows: 2;",
+                "    margin: 0 0 1em 0;",
+                "}",
+                "",
+            ]
+        )
 
         # Add store-specific optimizations
         if profile_name == StoreProfile.KDP:
-            css_parts.extend([
-                "/* Kindle-optimized styles */",
-                "/* Avoid problematic properties for Kindle */",
-                ".float-left, .float-right { /* Remove float */ }",
-                ".position-absolute, .position-fixed { /* Remove positioning */ }",
-                "",
-                "/* Kindle-safe text alignment */",
-                ".text-center { text-align: center; }",
-                ".text-left { text-align: left; }",
-                ".text-right { text-align: right; }",
-                "",
-            ])
+            css_parts.extend(
+                [
+                    "/* Kindle-optimized styles */",
+                    "/* Avoid problematic properties for Kindle */",
+                    ".float-left, .float-right { /* Remove float */ }",
+                    ".position-absolute, .position-fixed { /* Remove positioning */ }",
+                    "",
+                    "/* Kindle-safe text alignment */",
+                    ".text-center { text-align: center; }",
+                    ".text-left { text-align: left; }",
+                    ".text-right { text-align: right; }",
+                    "",
+                ]
+            )
 
         elif profile_name == StoreProfile.APPLE:
-            css_parts.extend([
-                "/* Apple Books enhanced styles */",
-                "/* Take advantage of modern CSS support */",
-                "@media (prefers-color-scheme: dark) {",
-                "    body { background: #1a1a1a; color: #e6e6e6; }",
-                "}",
-                "",
-                "/* Flexbox support for Apple Books */",
-                ".flex-container {",
-                "    display: flex;",
-                "    align-items: center;",
-                "    justify-content: space-between;",
-                "}",
-                "",
-            ])
+            css_parts.extend(
+                [
+                    "/* Apple Books enhanced styles */",
+                    "/* Take advantage of modern CSS support */",
+                    "@media (prefers-color-scheme: dark) {",
+                    "    body { background: #1a1a1a; color: #e6e6e6; }",
+                    "}",
+                    "",
+                    "/* Flexbox support for Apple Books */",
+                    ".flex-container {",
+                    "    display: flex;",
+                    "    align-items: center;",
+                    "    justify-content: space-between;",
+                    "}",
+                    "",
+                ]
+            )
 
         elif profile_name == StoreProfile.KOBO:
-            css_parts.extend([
-                "/* Kobo-optimized styles */",
-                "/* Conservative CSS for wide device compatibility */",
-                ".kobo-safe {",
-                "    display: block;",
-                "    position: relative;",
-                "}",
-                "",
-            ])
+            css_parts.extend(
+                [
+                    "/* Kobo-optimized styles */",
+                    "/* Conservative CSS for wide device compatibility */",
+                    ".kobo-safe {",
+                    "    display: block;",
+                    "    position: relative;",
+                    "}",
+                    "",
+                ]
+            )
 
         return "\n".join(css_parts)
 
-    def get_validation_summary(self, profile_name: StoreProfile, issues: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def get_validation_summary(
+        self, profile_name: StoreProfile, issues: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Generate validation summary for a profile."""
         profile = self.get_profile(profile_name)
 
@@ -635,14 +662,12 @@ class StoreProfileManager:
             "errors": error_count,
             "warnings": warning_count,
             "info": info_count,
-            "issues": issues
+            "issues": issues,
         }
 
 
 def validate_for_store(
-    profile_name: StoreProfile,
-    epub_path: Path,
-    metadata: EpubMetadata
+    profile_name: StoreProfile, epub_path: Path, metadata: EpubMetadata
 ) -> Dict[str, Any]:
     """
     Validate EPUB for specific store requirements.

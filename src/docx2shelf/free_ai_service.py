@@ -11,22 +11,24 @@ import hashlib
 import json
 import logging
 import time
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Union
-import platform
+from typing import Dict, Optional
 
 try:
     from platformdirs import user_cache_dir
 except ImportError:
+
     def user_cache_dir(appname: str) -> str:
         import os
-        if os.name == 'nt':  # Windows
+
+        if os.name == "nt":  # Windows
             return os.path.expandvars(f"%LOCALAPPDATA%\\{appname}\\Cache")
-        elif os.name == 'posix':  # macOS/Linux
+        elif os.name == "posix":  # macOS/Linux
             return os.path.expanduser(f"~/.cache/{appname}")
         return f".{appname}_cache"
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class APIUsage:
     """Track API usage for rate limiting."""
+
     requests_today: int = 0
     last_request: Optional[datetime] = None
     total_requests: int = 0
@@ -43,6 +46,7 @@ class APIUsage:
 @dataclass
 class FreeAPIConfig:
     """Configuration for free AI services."""
+
     daily_request_limit: int = 5
     max_words_per_request: int = 10000
     max_concurrent_requests: int = 1
@@ -74,7 +78,7 @@ class FreeAIService:
                 "model": "gpt-3.5-turbo",
                 "key": "demo-openai-key-1",  # Would be managed server-side
                 "daily_limit": 3,
-                "status": "active"
+                "status": "active",
             },
             "anthropic_free": {
                 "name": "Anthropic Free Tier",
@@ -82,7 +86,7 @@ class FreeAIService:
                 "model": "claude-3-haiku-20240307",
                 "key": "demo-anthropic-key-1",  # Would be managed server-side
                 "daily_limit": 2,
-                "status": "active"
+                "status": "active",
             },
             "local_fallback": {
                 "name": "Local Heuristic Analysis",
@@ -90,24 +94,24 @@ class FreeAIService:
                 "model": "heuristic",
                 "key": None,
                 "daily_limit": 999,
-                "status": "active"
-            }
+                "status": "active",
+            },
         }
 
     def _load_usage(self) -> APIUsage:
         """Load usage tracking from cache."""
         if self.usage_file.exists():
             try:
-                with open(self.usage_file, 'r') as f:
+                with open(self.usage_file, "r") as f:
                     data = json.load(f)
 
                 usage = APIUsage()
-                usage.requests_today = data.get('requests_today', 0)
-                usage.total_requests = data.get('total_requests', 0)
-                usage.total_words_processed = data.get('total_words_processed', 0)
+                usage.requests_today = data.get("requests_today", 0)
+                usage.total_requests = data.get("total_requests", 0)
+                usage.total_words_processed = data.get("total_words_processed", 0)
 
                 # Check if it's a new day
-                last_request_str = data.get('last_request')
+                last_request_str = data.get("last_request")
                 if last_request_str:
                     last_request = datetime.fromisoformat(last_request_str)
                     if last_request.date() != datetime.now().date():
@@ -124,13 +128,15 @@ class FreeAIService:
         """Save usage tracking to cache."""
         try:
             data = {
-                'requests_today': self.usage.requests_today,
-                'total_requests': self.usage.total_requests,
-                'total_words_processed': self.usage.total_words_processed,
-                'last_request': self.usage.last_request.isoformat() if self.usage.last_request else None
+                "requests_today": self.usage.requests_today,
+                "total_requests": self.usage.total_requests,
+                "total_words_processed": self.usage.total_words_processed,
+                "last_request": (
+                    self.usage.last_request.isoformat() if self.usage.last_request else None
+                ),
             }
 
-            with open(self.usage_file, 'w') as f:
+            with open(self.usage_file, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             logger.error(f"Could not save usage data: {e}")
@@ -155,11 +161,17 @@ class FreeAIService:
         """Check if a request can be made."""
         # Check daily limit
         if self.usage.requests_today >= self.config.daily_request_limit:
-            return False, f"Daily limit reached ({self.config.daily_request_limit} requests). Try again tomorrow."
+            return (
+                False,
+                f"Daily limit reached ({self.config.daily_request_limit} requests). Try again tomorrow.",
+            )
 
         # Check word count limit
         if word_count > self.config.max_words_per_request:
-            return False, f"Document too large ({word_count} words). Maximum: {self.config.max_words_per_request} words."
+            return (
+                False,
+                f"Document too large ({word_count} words). Maximum: {self.config.max_words_per_request} words.",
+            )
 
         # Check if service is available
         service = self.get_available_service()
@@ -175,12 +187,7 @@ class FreeAIService:
         # Check if request is allowed
         can_request, message = self.can_make_request(word_count)
         if not can_request:
-            return {
-                "success": False,
-                "error": message,
-                "boundaries": [],
-                "method": "error"
-            }
+            return {"success": False, "error": message, "boundaries": [], "method": "error"}
 
         # Check cache first
         if self.config.enable_caching:
@@ -215,19 +222,17 @@ class FreeAIService:
                 "success": False,
                 "error": f"Processing failed: {e}",
                 "boundaries": [],
-                "method": "error"
+                "method": "error",
             }
 
     def _local_analysis(self, content: str) -> Dict:
         """Perform local heuristic analysis."""
         try:
-            from .ai_chapter_detection import ChapterDetectionEngine, AIDetectionConfig
+            from .ai_chapter_detection import AIDetectionConfig, ChapterDetectionEngine
 
             # Configure for heuristic-only mode
             config = AIDetectionConfig(
-                use_free_api=False,
-                enable_heuristics=True,
-                combine_methods=False
+                use_free_api=False, enable_heuristics=True, combine_methods=False
             )
 
             engine = ChapterDetectionEngine(config)
@@ -240,11 +245,12 @@ class FreeAIService:
                         "position": b.position,
                         "title": b.title,
                         "confidence": b.confidence,
-                        "method": "local_heuristic"
-                    } for b in boundaries
+                        "method": "local_heuristic",
+                    }
+                    for b in boundaries
                 ],
                 "method": "local_heuristic",
-                "service": "Local Analysis"
+                "service": "Local Analysis",
             }
 
         except Exception as e:
@@ -252,7 +258,7 @@ class FreeAIService:
                 "success": False,
                 "error": f"Local analysis failed: {e}",
                 "boundaries": [],
-                "method": "error"
+                "method": "error",
             }
 
     def _simulate_ai_analysis(self, content: str, service: Dict) -> Dict:
@@ -261,7 +267,7 @@ class FreeAIService:
         import re
 
         boundaries = []
-        lines = content.split('\n')
+        lines = content.split("\n")
 
         # Enhanced pattern matching (simulates AI understanding)
         for i, line in enumerate(lines):
@@ -273,35 +279,37 @@ class FreeAIService:
             confidence = 0.0
 
             # Check for explicit chapter markers
-            if re.match(r'(chapter|chap\.?)\s+\d+', line, re.IGNORECASE):
+            if re.match(r"(chapter|chap\.?)\s+\d+", line, re.IGNORECASE):
                 confidence = 0.95
-            elif re.match(r'(part|book)\s+\d+', line, re.IGNORECASE):
+            elif re.match(r"(part|book)\s+\d+", line, re.IGNORECASE):
                 confidence = 0.90
-            elif re.match(r'^[A-Z][A-Z\s]{5,}$', line):  # ALL CAPS
+            elif re.match(r"^[A-Z][A-Z\s]{5,}$", line):  # ALL CAPS
                 confidence = 0.75
-            elif re.match(r'^\d+\.', line) and len(line) < 50:
+            elif re.match(r"^\d+\.", line) and len(line) < 50:
                 confidence = 0.70
             elif len(line) < 50 and line[0].isupper() and i > 0:
                 # Short line after break - could be chapter start
-                prev_line = lines[i-1].strip()
+                prev_line = lines[i - 1].strip()
                 if not prev_line:  # After blank line
                     confidence = 0.60
 
             if confidence > 0.5:
                 position = sum(len(l) + 1 for l in lines[:i])
-                boundaries.append({
-                    "position": position,
-                    "title": line[:50],
-                    "confidence": confidence,
-                    "method": "ai_simulated"
-                })
+                boundaries.append(
+                    {
+                        "position": position,
+                        "title": line[:50],
+                        "confidence": confidence,
+                        "method": "ai_simulated",
+                    }
+                )
 
         return {
             "success": True,
             "boundaries": boundaries,
             "method": "ai_simulated",
             "service": service["name"],
-            "model": service["model"]
+            "model": service["model"],
         }
 
     def _check_cache(self, content: str) -> Optional[Dict]:
@@ -314,7 +322,7 @@ class FreeAIService:
                 # Check cache age
                 cache_age = time.time() - cache_file.stat().st_mtime
                 if cache_age < (self.config.cache_duration_hours * 3600):
-                    with open(cache_file, 'r') as f:
+                    with open(cache_file, "r") as f:
                         result = json.load(f)
                     result["cached"] = True
                     return result
@@ -339,7 +347,7 @@ class FreeAIService:
             cache_data = result.copy()
             cache_data["cached_at"] = datetime.now().isoformat()
 
-            with open(cache_file, 'w') as f:
+            with open(cache_file, "w") as f:
                 json.dump(cache_data, f, indent=2)
 
         except Exception as e:
@@ -363,7 +371,9 @@ class FreeAIService:
             "remaining_today": remaining_requests,
             "total_requests": self.usage.total_requests,
             "total_words_processed": self.usage.total_words_processed,
-            "last_request": self.usage.last_request.isoformat() if self.usage.last_request else None
+            "last_request": (
+                self.usage.last_request.isoformat() if self.usage.last_request else None
+            ),
         }
 
     def get_service_status(self) -> Dict[str, str]:
@@ -391,11 +401,11 @@ class FreeAIService:
                 "Faster processing with dedicated resources",
                 "Priority support",
                 "Advanced document analysis features",
-                "Batch processing capabilities"
+                "Batch processing capabilities",
             ],
             "pricing": "Starting at $9.99/month",
             "trial": "7-day free trial available",
-            "contact": "Visit https://docx2shelf.com/premium for more information"
+            "contact": "Visit https://docx2shelf.com/premium for more information",
         }
 
 

@@ -25,6 +25,7 @@ from typing import Dict, List, Optional, Tuple
 
 class IndexEntryType(Enum):
     """Types of index entries."""
+
     MAIN = "main"
     SUB = "sub"
     SUB_SUB = "subsub"
@@ -42,11 +43,11 @@ class IndexEntry:
     entry_type: IndexEntryType = IndexEntryType.MAIN
 
     # Hierarchy
-    parent: Optional['IndexEntry'] = None
-    children: List['IndexEntry'] = field(default_factory=list)
+    parent: Optional["IndexEntry"] = None
+    children: List["IndexEntry"] = field(default_factory=list)
 
     # Occurrences
-    occurrences: List['IndexOccurrence'] = field(default_factory=list)
+    occurrences: List["IndexOccurrence"] = field(default_factory=list)
 
     # Cross-references
     see_refs: List[str] = field(default_factory=list)
@@ -123,10 +124,12 @@ class IndexGenerator:
             "xe_fields_found": 0,
             "entries_created": 0,
             "occurrences_found": 0,
-            "cross_refs_resolved": 0
+            "cross_refs_resolved": 0,
         }
 
-    def process_content(self, html_chunks: List[str], chunk_files: List[str]) -> Tuple[str, Dict[str, List[str]]]:
+    def process_content(
+        self, html_chunks: List[str], chunk_files: List[str]
+    ) -> Tuple[str, Dict[str, List[str]]]:
         """
         Process HTML content to extract index entries and generate index page.
 
@@ -169,7 +172,7 @@ class IndexGenerator:
             # Custom index markers
             r'<index-entry[^>]*entry\s*=\s*"([^"]+)"[^>]*(?:\s*/\s*>|>(.*?)</index-entry>)',
             # Hidden index spans
-            r'<span[^>]*class\s*=\s*"[^"]*index-marker[^"]*"[^>]*data-entry\s*=\s*"([^"]+)"[^>]*>'
+            r'<span[^>]*class\s*=\s*"[^"]*index-marker[^"]*"[^>]*data-entry\s*=\s*"([^"]+)"[^>]*>',
         ]
 
         entry_id = 1
@@ -178,24 +181,24 @@ class IndexGenerator:
             for pattern in xe_patterns:
                 for match in re.finditer(pattern, chunk, re.IGNORECASE | re.DOTALL):
                     entry_text = match.group(1)
-                    context = match.group(2) if match.lastindex >= 2 else ""
+                    context = match.group(2) if match.lastindex and match.lastindex >= 2 else ""
 
                     # Extract surrounding text for context
                     start_pos = max(0, match.start() - self.config.max_surrounding_context)
                     end_pos = min(len(chunk), match.end() + self.config.max_surrounding_context)
                     surrounding = chunk[start_pos:end_pos]
-                    surrounding = re.sub(r'<[^>]+>', ' ', surrounding)
-                    surrounding = ' '.join(surrounding.split())
+                    surrounding = re.sub(r"<[^>]+>", " ", surrounding)
+                    surrounding = " ".join(surrounding.split())
 
                     # Create raw entry
                     raw_entry = {
-                        'id': f"idx_{entry_id}",
-                        'text': entry_text,
-                        'file': filename,
-                        'position': match.start(),
-                        'context': context,
-                        'surrounding': surrounding,
-                        'anchor_id': f"idx_occurrence_{entry_id}"
+                        "id": f"idx_{entry_id}",
+                        "text": entry_text,
+                        "file": filename,
+                        "position": match.start(),
+                        "context": context,
+                        "surrounding": surrounding,
+                        "anchor_id": f"idx_occurrence_{entry_id}",
                     }
 
                     self.raw_entries.append(raw_entry)
@@ -208,92 +211,100 @@ class IndexGenerator:
 
         for raw_entry in self.raw_entries:
             # Parse entry text for hierarchy and cross-references
-            parsed = self._parse_entry_text(raw_entry['text'])
+            parsed = self._parse_entry_text(raw_entry["text"])
 
             # Create or update index entry
-            entry_key = self._normalize_entry_key(parsed['main_text'])
+            entry_key = self._normalize_entry_key(parsed["main_text"])
 
             if entry_key not in self.entries:
                 self.entries[entry_key] = IndexEntry(
-                    text=parsed['main_text'],
-                    sort_key=self._generate_sort_key(parsed['main_text']),
+                    text=parsed["main_text"],
+                    sort_key=self._generate_sort_key(parsed["main_text"]),
                     entry_type=IndexEntryType.MAIN,
-                    emphasis=parsed.get('emphasis', False)
+                    emphasis=parsed.get("emphasis", False),
                 )
 
             # Create occurrence
             occurrence = IndexOccurrence(
-                file_path=raw_entry['file'],
-                anchor_id=raw_entry['anchor_id'],
-                position=raw_entry['position'],
-                surrounding_text=raw_entry['surrounding'],
-                is_primary=parsed.get('primary', False)
+                file_path=raw_entry["file"],
+                anchor_id=raw_entry["anchor_id"],
+                position=raw_entry["position"],
+                surrounding_text=raw_entry["surrounding"],
+                is_primary=parsed.get("primary", False),
             )
 
             self.entries[entry_key].occurrences.append(occurrence)
 
             # Handle sub-entries
-            if parsed.get('sub_entries'):
-                for sub_text in parsed['sub_entries']:
+            if parsed.get("sub_entries"):
+                for sub_text in parsed["sub_entries"]:
                     self._add_sub_entry(self.entries[entry_key], sub_text, occurrence)
 
             # Handle cross-references
-            if parsed.get('see_refs'):
-                self.entries[entry_key].see_refs.extend(parsed['see_refs'])
+            if parsed.get("see_refs"):
+                self.entries[entry_key].see_refs.extend(parsed["see_refs"])
 
-            if parsed.get('see_also_refs'):
-                self.entries[entry_key].see_also_refs.extend(parsed['see_also_refs'])
+            if parsed.get("see_also_refs"):
+                self.entries[entry_key].see_also_refs.extend(parsed["see_also_refs"])
 
         self._stats["entries_created"] = len(self.entries)
-        self._stats["occurrences_found"] = sum(len(entry.occurrences) for entry in self.entries.values())
+        self._stats["occurrences_found"] = sum(
+            len(entry.occurrences) for entry in self.entries.values()
+        )
 
     def _parse_entry_text(self, entry_text: str) -> Dict:
         """Parse index entry text for hierarchy and formatting."""
 
         result = {
-            'main_text': entry_text,
-            'sub_entries': [],
-            'see_refs': [],
-            'see_also_refs': [],
-            'emphasis': False,
-            'primary': False
+            "main_text": entry_text,
+            "sub_entries": [],
+            "see_refs": [],
+            "see_also_refs": [],
+            "emphasis": False,
+            "primary": False,
         }
 
         # Handle sub-entries (separated by colons or semicolons)
-        if ':' in entry_text:
-            parts = entry_text.split(':')
-            result['main_text'] = parts[0].strip()
-            result['sub_entries'] = [part.strip() for part in parts[1:] if part.strip()]
+        if ":" in entry_text:
+            parts = entry_text.split(":")
+            result["main_text"] = parts[0].strip()
+            result["sub_entries"] = [part.strip() for part in parts[1:] if part.strip()]
 
         # Handle see references
-        see_pattern = r'\bsee\s+([^;,]+)'
+        see_pattern = r"\bsee\s+([^;,]+)"
         see_matches = re.findall(see_pattern, entry_text, re.IGNORECASE)
         if see_matches:
-            result['see_refs'] = [ref.strip() for ref in see_matches]
+            result["see_refs"] = [ref.strip() for ref in see_matches]
             # Remove see references from main text
-            result['main_text'] = re.sub(see_pattern, '', result['main_text'], flags=re.IGNORECASE).strip()
+            result["main_text"] = re.sub(
+                see_pattern, "", result["main_text"], count=0, flags=re.IGNORECASE
+            ).strip()
 
         # Handle see also references
-        see_also_pattern = r'\bsee\s+also\s+([^;,]+)'
+        see_also_pattern = r"\bsee\s+also\s+([^;,]+)"
         see_also_matches = re.findall(see_also_pattern, entry_text, re.IGNORECASE)
         if see_also_matches:
-            result['see_also_refs'] = [ref.strip() for ref in see_also_matches]
+            result["see_also_refs"] = [ref.strip() for ref in see_also_matches]
             # Remove see also references from main text
-            result['main_text'] = re.sub(see_also_pattern, '', result['main_text'], flags=re.IGNORECASE).strip()
+            result["main_text"] = re.sub(
+                see_also_pattern, "", result["main_text"], count=0, flags=re.IGNORECASE
+            ).strip()
 
         # Check for emphasis markers
-        if entry_text.startswith('*') or entry_text.endswith('*'):
-            result['emphasis'] = True
-            result['main_text'] = result['main_text'].strip('*')
+        if entry_text.startswith("*") or entry_text.endswith("*"):
+            result["emphasis"] = True
+            result["main_text"] = result["main_text"].strip("*")
 
         # Check for primary occurrence marker
-        if '**' in entry_text:
-            result['primary'] = True
-            result['main_text'] = result['main_text'].replace('**', '')
+        if "**" in entry_text:
+            result["primary"] = True
+            result["main_text"] = result["main_text"].replace("**", "")
 
         return result
 
-    def _add_sub_entry(self, parent_entry: IndexEntry, sub_text: str, occurrence: IndexOccurrence) -> None:
+    def _add_sub_entry(
+        self, parent_entry: IndexEntry, sub_text: str, occurrence: IndexOccurrence
+    ) -> None:
         """Add a sub-entry to a parent entry."""
 
         # Find or create sub-entry
@@ -308,7 +319,7 @@ class IndexGenerator:
                 text=sub_text,
                 sort_key=self._generate_sort_key(sub_text),
                 entry_type=IndexEntryType.SUB,
-                parent=parent_entry
+                parent=parent_entry,
             )
             parent_entry.children.append(sub_entry)
 
@@ -321,8 +332,8 @@ class IndexGenerator:
 
         # Remove leading articles if configured
         for article in self.config.ignore_articles:
-            if text.lower().startswith(article.lower() + ' '):
-                text = text[len(article):].strip()
+            if text.lower().startswith(article.lower() + " "):
+                text = text[len(article) :].strip()
                 break
 
         return text
@@ -331,18 +342,18 @@ class IndexGenerator:
         """Generate sort key for alphabetical ordering."""
 
         # Normalize Unicode characters
-        normalized = unicodedata.normalize('NFD', text)
+        normalized = unicodedata.normalize("NFD", text)
 
         # Remove diacritics
-        ascii_text = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+        ascii_text = "".join(c for c in normalized if unicodedata.category(c) != "Mn")
 
         # Convert to lowercase for sorting
         sort_key = ascii_text.lower()
 
         # Remove leading articles
         for article in self.config.ignore_articles:
-            if sort_key.startswith(article.lower() + ' '):
-                sort_key = sort_key[len(article):].strip()
+            if sort_key.startswith(article.lower() + " "):
+                sort_key = sort_key[len(article) :].strip()
                 break
 
         return sort_key
@@ -404,7 +415,8 @@ class IndexGenerator:
         html_parts = []
 
         # HTML header
-        html_parts.append('''<?xml version="1.0" encoding="UTF-8"?>
+        html_parts.append(
+            """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
@@ -414,31 +426,40 @@ class IndexGenerator:
 </head>
 <body>
     <div class="index-page">
-        <h1 class="index-title">{title}</h1>'''.format(title=self.config.index_title))
+        <h1 class="index-title">{title}</h1>""".format(
+                title=self.config.index_title
+            )
+        )
 
         # Generate index sections
         for section in sections:
             if section.entries:
-                html_parts.append(f'\n        <div class="index-section" id="index-{section.letter.lower()}">')
+                html_parts.append(
+                    f'\n        <div class="index-section" id="index-{section.letter.lower()}">'
+                )
 
                 if self.config.show_letter_headers:
-                    html_parts.append(f'            <h2 class="index-letter-header">{section.letter}</h2>')
+                    html_parts.append(
+                        f'            <h2 class="index-letter-header">{section.letter}</h2>'
+                    )
 
                 html_parts.append('            <dl class="index-entries">')
 
                 for entry in section.entries:
                     html_parts.append(self._render_entry_html(entry))
 
-                html_parts.append('            </dl>')
-                html_parts.append('        </div>')
+                html_parts.append("            </dl>")
+                html_parts.append("        </div>")
 
         # HTML footer
-        html_parts.append('''
+        html_parts.append(
+            """
     </div>
 </body>
-</html>''')
+</html>"""
+        )
 
-        return '\n'.join(html_parts)
+        return "\n".join(html_parts)
 
     def _group_entries_by_letter(self) -> List[IndexSection]:
         """Group index entries by first letter."""
@@ -446,11 +467,11 @@ class IndexGenerator:
         sections = {}
 
         for entry in self.entries.values():
-            first_char = entry.sort_key[0].upper() if entry.sort_key else 'A'
+            first_char = entry.sort_key[0].upper() if entry.sort_key else "A"
 
             # Handle numbers and symbols
             if not first_char.isalpha():
-                first_char = '#'
+                first_char = "#"
 
             if first_char not in sections:
                 sections[first_char] = IndexSection(letter=first_char)
@@ -461,31 +482,31 @@ class IndexGenerator:
         # Sort sections alphabetically
         sorted_sections = []
         for letter in sorted(sections.keys()):
-            if letter == '#':
+            if letter == "#":
                 continue  # Add symbols section at the end
             sorted_sections.append(sections[letter])
 
         # Add symbols section if it exists
-        if '#' in sections:
-            sorted_sections.append(sections['#'])
+        if "#" in sections:
+            sorted_sections.append(sections["#"])
 
         return sorted_sections
 
     def _render_entry_html(self, entry: IndexEntry, level: int = 0) -> str:
         """Render a single index entry as HTML."""
 
-        indent = '    ' * level
+        indent = "    " * level
         html_parts = []
 
         # Main entry
         html_parts.append(f'{indent}                <dt class="index-entry level-{level}">')
 
         if entry.emphasis:
-            html_parts.append(f'<strong>{entry.text}</strong>')
+            html_parts.append(f"<strong>{entry.text}</strong>")
         else:
             html_parts.append(entry.text)
 
-        html_parts.append('</dt>')
+        html_parts.append("</dt>")
 
         # Entry content (occurrences and cross-references)
         html_parts.append(f'{indent}                <dd class="index-content">')
@@ -502,23 +523,31 @@ class IndexGenerator:
 
         # Render see references
         if entry.see_refs:
-            see_links = [f'<a href="#index-{self._normalize_entry_key(ref)}" class="index-see">{ref}</a>'
-                        for ref in entry.see_refs]
-            html_parts.append(f'{indent}                    <span class="see-refs">See {", ".join(see_links)}</span>')
+            see_links = [
+                f'<a href="#index-{self._normalize_entry_key(ref)}" class="index-see">{ref}</a>'
+                for ref in entry.see_refs
+            ]
+            html_parts.append(
+                f'{indent}                    <span class="see-refs">See {", ".join(see_links)}</span>'
+            )
 
         # Render see also references
         if entry.see_also_refs:
-            see_also_links = [f'<a href="#index-{self._normalize_entry_key(ref)}" class="index-see-also">{ref}</a>'
-                             for ref in entry.see_also_refs]
-            html_parts.append(f'{indent}                    <span class="see-also-refs">See also {", ".join(see_also_links)}</span>')
+            see_also_links = [
+                f'<a href="#index-{self._normalize_entry_key(ref)}" class="index-see-also">{ref}</a>'
+                for ref in entry.see_also_refs
+            ]
+            html_parts.append(
+                f'{indent}                    <span class="see-also-refs">See also {", ".join(see_also_links)}</span>'
+            )
 
-        html_parts.append(f'{indent}                </dd>')
+        html_parts.append(f"{indent}                </dd>")
 
         # Render sub-entries
         for child in entry.children:
             html_parts.append(self._render_entry_html(child, level + 1))
 
-        return '\n'.join(html_parts)
+        return "\n".join(html_parts)
 
     def _create_occurrence_mapping(self) -> Dict[str, List[str]]:
         """Create mapping of index entries to their occurrence files."""
@@ -576,5 +605,5 @@ def create_scholarly_index_config() -> IndexConfig:
         process_see_also_refs=True,
         show_occurrence_count=True,
         max_entries_per_letter=2000,
-        case_sensitive=False
+        case_sensitive=False,
     )

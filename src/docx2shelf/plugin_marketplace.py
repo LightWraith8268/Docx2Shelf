@@ -23,6 +23,7 @@ import requests
 @dataclass
 class PluginInfo:
     """Information about a plugin."""
+
     name: str
     version: str
     description: str
@@ -42,49 +43,50 @@ class PluginInfo:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
-            'name': self.name,
-            'version': self.version,
-            'description': self.description,
-            'author': self.author,
-            'homepage': self.homepage,
-            'license': self.license,
-            'tags': self.tags,
-            'dependencies': self.dependencies,
-            'docx2shelf_version': self.docx2shelf_version,
-            'entry_point': self.entry_point,
-            'install_url': self.install_url,
-            'checksum': self.checksum,
-            'installed': self.installed,
-            'enabled': self.enabled,
-            'install_path': str(self.install_path) if self.install_path else None
+            "name": self.name,
+            "version": self.version,
+            "description": self.description,
+            "author": self.author,
+            "homepage": self.homepage,
+            "license": self.license,
+            "tags": self.tags,
+            "dependencies": self.dependencies,
+            "docx2shelf_version": self.docx2shelf_version,
+            "entry_point": self.entry_point,
+            "install_url": self.install_url,
+            "checksum": self.checksum,
+            "installed": self.installed,
+            "enabled": self.enabled,
+            "install_path": str(self.install_path) if self.install_path else None,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'PluginInfo':
+    def from_dict(cls, data: Dict[str, Any]) -> "PluginInfo":
         """Create from dictionary."""
-        install_path = Path(data['install_path']) if data.get('install_path') else None
+        install_path = Path(data["install_path"]) if data.get("install_path") else None
         return cls(
-            name=data['name'],
-            version=data['version'],
-            description=data['description'],
-            author=data['author'],
-            homepage=data.get('homepage', ''),
-            license=data.get('license', ''),
-            tags=data.get('tags', []),
-            dependencies=data.get('dependencies', []),
-            docx2shelf_version=data.get('docx2shelf_version', ''),
-            entry_point=data.get('entry_point', ''),
-            install_url=data.get('install_url', ''),
-            checksum=data.get('checksum', ''),
-            installed=data.get('installed', False),
-            enabled=data.get('enabled', True),
-            install_path=install_path
+            name=data["name"],
+            version=data["version"],
+            description=data["description"],
+            author=data["author"],
+            homepage=data.get("homepage", ""),
+            license=data.get("license", ""),
+            tags=data.get("tags", []),
+            dependencies=data.get("dependencies", []),
+            docx2shelf_version=data.get("docx2shelf_version", ""),
+            entry_point=data.get("entry_point", ""),
+            install_url=data.get("install_url", ""),
+            checksum=data.get("checksum", ""),
+            installed=data.get("installed", False),
+            enabled=data.get("enabled", True),
+            install_path=install_path,
         )
 
 
 @dataclass
 class MarketplaceConfig:
     """Configuration for plugin marketplace."""
+
     marketplace_url: str = "https://plugins.docx2shelf.org/api/v1"
     cache_duration: int = 3600  # 1 hour
     verify_checksums: bool = True
@@ -118,23 +120,19 @@ class PluginMarketplace:
         """Load information about installed plugins."""
         if self.installed_file.exists():
             try:
-                with open(self.installed_file, 'r', encoding='utf-8') as f:
+                with open(self.installed_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     self._installed_plugins = {
-                        name: PluginInfo.from_dict(info)
-                        for name, info in data.items()
+                        name: PluginInfo.from_dict(info) for name, info in data.items()
                     }
             except (json.JSONDecodeError, KeyError):
                 self._installed_plugins = {}
 
     def save_installed_plugins(self):
         """Save information about installed plugins."""
-        data = {
-            name: plugin.to_dict()
-            for name, plugin in self._installed_plugins.items()
-        }
+        data = {name: plugin.to_dict() for name, plugin in self._installed_plugins.items()}
 
-        with open(self.installed_file, 'w', encoding='utf-8') as f:
+        with open(self.installed_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
     def refresh_marketplace(self) -> bool:
@@ -150,17 +148,14 @@ class PluginMarketplace:
                 return True
 
             # Fetch from marketplace
-            response = requests.get(
-                f"{self.config.marketplace_url}/plugins",
-                timeout=30
-            )
+            response = requests.get(f"{self.config.marketplace_url}/plugins", timeout=30)
             response.raise_for_status()
 
             plugins_data = response.json()
 
             # Parse plugin information
             self._marketplace_cache = {}
-            for plugin_data in plugins_data.get('plugins', []):
+            for plugin_data in plugins_data.get("plugins", []):
                 try:
                     plugin = PluginInfo.from_dict(plugin_data)
 
@@ -169,13 +164,15 @@ class PluginMarketplace:
                         continue
 
                     # Skip prerelease if not allowed
-                    if not self.config.allow_prerelease and 'prerelease' in plugin.tags:
+                    if not self.config.allow_prerelease and "prerelease" in plugin.tags:
                         continue
 
                     self._marketplace_cache[plugin.name] = plugin
 
                 except (KeyError, ValueError) as e:
-                    print(f"Warning: Invalid plugin data for {plugin_data.get('name', 'unknown')}: {e}")
+                    print(
+                        f"Warning: Invalid plugin data for {plugin_data.get('name', 'unknown')}: {e}"
+                    )
 
             # Save cache
             self._save_cache()
@@ -194,29 +191,26 @@ class PluginMarketplace:
             return False
 
         import time
+
         cache_age = time.time() - self.cache_file.stat().st_mtime
         return cache_age < self.config.cache_duration
 
     def _load_cache(self):
         """Load marketplace cache from file."""
         try:
-            with open(self.cache_file, 'r', encoding='utf-8') as f:
+            with open(self.cache_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 self._marketplace_cache = {
-                    name: PluginInfo.from_dict(info)
-                    for name, info in data.items()
+                    name: PluginInfo.from_dict(info) for name, info in data.items()
                 }
         except (json.JSONDecodeError, KeyError):
             self._marketplace_cache = {}
 
     def _save_cache(self):
         """Save marketplace cache to file."""
-        data = {
-            name: plugin.to_dict()
-            for name, plugin in self._marketplace_cache.items()
-        }
+        data = {name: plugin.to_dict() for name, plugin in self._marketplace_cache.items()}
 
-        with open(self.cache_file, 'w', encoding='utf-8') as f:
+        with open(self.cache_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
     def search_plugins(self, query: str = "", tags: List[str] | None = None) -> List[PluginInfo]:
@@ -238,9 +232,9 @@ class PluginMarketplace:
         for plugin in self._marketplace_cache.values():
             # Text search
             if query and not (
-                query_lower in plugin.name.lower() or
-                query_lower in plugin.description.lower() or
-                query_lower in plugin.author.lower()
+                query_lower in plugin.name.lower()
+                or query_lower in plugin.description.lower()
+                or query_lower in plugin.author.lower()
             ):
                 continue
 
@@ -322,8 +316,8 @@ class PluginMarketplace:
 
             # Extract plugin
             print(f"Installing {plugin.name}...")
-            if plugin.install_url.endswith('.zip'):
-                with zipfile.ZipFile(temp_file, 'r') as zip_file:
+            if plugin.install_url.endswith(".zip"):
+                with zipfile.ZipFile(temp_file, "r") as zip_file:
                     zip_file.extractall(install_dir)
             else:
                 # Single file plugin
@@ -351,13 +345,13 @@ class PluginMarketplace:
         except Exception as e:
             print(f"Failed to install plugin {name}: {e}")
             # Clean up on failure
-            if 'install_dir' in locals() and install_dir.exists():
+            if "install_dir" in locals() and install_dir.exists():
                 shutil.rmtree(install_dir)
             return False
 
         finally:
             # Clean up temp file
-            if 'temp_file' in locals():
+            if "temp_file" in locals():
                 try:
                     Path(temp_file).unlink()
                 except OSError as e:
@@ -367,14 +361,14 @@ class PluginMarketplace:
         """Verify file checksum."""
         import hashlib
 
-        hash_algo, expected_hash = expected_checksum.split(':', 1)
+        hash_algo, expected_hash = expected_checksum.split(":", 1)
 
         hasher = getattr(hashlib, hash_algo.lower(), None)
         if not hasher:
             print(f"Unknown hash algorithm: {hash_algo}")
             return False
 
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             file_hash = hasher(f.read()).hexdigest()
 
         return file_hash == expected_hash
@@ -383,9 +377,9 @@ class PluginMarketplace:
         """Install a plugin dependency."""
         try:
             # Try to install as PyPI package first
-            subprocess.check_call([
-                sys.executable, '-m', 'pip', 'install', dependency
-            ], capture_output=True)
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", dependency], capture_output=True
+            )
             return True
         except subprocess.CalledProcessError:
             # Try to install as plugin
@@ -525,15 +519,16 @@ class PluginMarketplace:
         popular_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:10]
 
         return {
-            'marketplace_plugins': total_marketplace,
-            'installed_plugins': total_installed,
-            'enabled_plugins': enabled_count,
-            'disabled_plugins': total_installed - enabled_count,
-            'popular_tags': popular_tags,
-            'cache_age_hours': (
+            "marketplace_plugins": total_marketplace,
+            "installed_plugins": total_installed,
+            "enabled_plugins": enabled_count,
+            "disabled_plugins": total_installed - enabled_count,
+            "popular_tags": popular_tags,
+            "cache_age_hours": (
                 (Path(self.cache_file).stat().st_mtime - Path.stat().st_mtime) / 3600
-                if self.cache_file.exists() else 0
-            )
+                if self.cache_file.exists()
+                else 0
+            ),
         }
 
     def create_plugin_template(self, name: str, output_dir: Path) -> bool:
@@ -602,28 +597,30 @@ def create_plugin():
     return {name.title()}Plugin()
 '''
 
-        plugin_file.write_text(plugin_template, encoding='utf-8')
+        plugin_file.write_text(plugin_template, encoding="utf-8")
 
         # Create plugin metadata file
         metadata_file = plugin_dir / "plugin.json"
-        metadata = {{
-            "name": name,
-            "version": "1.0.0",
-            "description": "A template plugin for Docx2Shelf",
-            "author": "Your Name",
-            "license": "MIT",
-            "homepage": "",
-            "tags": ["template", "example"],
-            "dependencies": [],
-            "docx2shelf_version": ">=1.2.4",
-            "entry_point": f"{name}.create_plugin"
-        }}
+        metadata = {
+            {
+                "name": name,
+                "version": "1.0.0",
+                "description": "A template plugin for Docx2Shelf",
+                "author": "Your Name",
+                "license": "MIT",
+                "homepage": "",
+                "tags": ["template", "example"],
+                "dependencies": [],
+                "docx2shelf_version": ">=1.2.4",
+                "entry_point": f"{name}.create_plugin",
+            }
+        }
 
-        metadata_file.write_text(json.dumps(metadata, indent=2), encoding='utf-8')
+        metadata_file.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
         # Create README
         readme_file = plugin_dir / "README.md"
-        readme_content = f'''# {name.title()} Plugin
+        readme_content = f"""# {name.title()} Plugin
 
 A template plugin for Docx2Shelf.
 
@@ -647,9 +644,9 @@ To modify this plugin:
 ## License
 
 MIT License
-'''
+"""
 
-        readme_file.write_text(readme_content, encoding='utf-8')
+        readme_file.write_text(readme_content, encoding="utf-8")
 
         print(f"Plugin template created in {plugin_dir}")
         return True

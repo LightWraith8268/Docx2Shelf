@@ -12,11 +12,11 @@ def get_version() -> str:
     try:
         pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
         if pyproject_path.exists():
-            content = pyproject_path.read_text(encoding='utf-8')
+            content = pyproject_path.read_text(encoding="utf-8")
             for line in content.splitlines():
-                if line.strip().startswith('version = '):
+                if line.strip().startswith("version = "):
                     # Extract version from 'version = "1.6.3"'
-                    version = line.split('=')[1].strip().strip('"\'')
+                    version = line.split("=")[1].strip().strip("\"'")
                     return version
     except Exception:
         pass
@@ -36,28 +36,29 @@ def get_version_info() -> dict[str, str]:
     version = get_version()
 
     # Try to get additional info
-    info = {
-        "version": version,
-        "package": "docx2shelf"
-    }
+    info = {"version": version, "package": "docx2shelf"}
 
     try:
         # Get package metadata if available
         metadata = importlib.metadata.metadata("docx2shelf")
-        info.update({
-            "description": metadata.get("Summary", ""),
-            "author": metadata.get("Author", ""),
-            "license": metadata.get("License", ""),
-            "python_requires": metadata.get("Requires-Python", ""),
-        })
+        info.update(
+            {
+                "description": metadata["Summary"] if "Summary" in metadata else "",
+                "author": metadata["Author"] if "Author" in metadata else "",
+                "license": metadata["License"] if "License" in metadata else "",
+                "python_requires": metadata["Requires-Python"] if "Requires-Python" in metadata else "",
+            }
+        )
     except (importlib.metadata.PackageNotFoundError, Exception):
         # Running from source
-        info.update({
-            "description": "Offline CLI to convert DOCX manuscripts into valid EPUB 3",
-            "author": "Docx2Shelf Contributors",
-            "license": "MIT",
-            "python_requires": ">=3.11",
-        })
+        info.update(
+            {
+                "description": "Offline CLI to convert DOCX manuscripts into valid EPUB 3",
+                "author": "Docx2Shelf Contributors",
+                "license": "MIT",
+                "python_requires": ">=3.11",
+            }
+        )
 
     return info
 

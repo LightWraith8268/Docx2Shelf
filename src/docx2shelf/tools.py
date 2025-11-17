@@ -18,16 +18,13 @@ DEFAULT_EPUBCHECK_VERSION = "5.1.0"
 VERSION_PIN_SETS = {
     "stable": {
         "pandoc": "3.1.11",  # Known stable version
-        "epubcheck": "5.0.1"  # Known stable version
+        "epubcheck": "5.0.1",  # Known stable version
     },
     "latest": {
         "pandoc": "3.1.12",  # Latest tested version
-        "epubcheck": "5.1.0"  # Latest tested version
+        "epubcheck": "5.1.0",  # Latest tested version
     },
-    "bleeding": {
-        "pandoc": None,  # Use latest available
-        "epubcheck": None  # Use latest available
-    }
+    "bleeding": {"pandoc": None, "epubcheck": None},  # Use latest available  # Use latest available
 }
 
 
@@ -35,6 +32,7 @@ def tools_dir() -> Path:
     """Get the tools directory using platformdirs for cross-platform compatibility."""
     try:
         from .path_utils import get_user_data_dir
+
         p = get_user_data_dir("docx2shelf") / "bin"
     except ImportError:
         # Fallback if path_utils not available
@@ -56,8 +54,15 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def _download(url: str, dest: Path, *, attempts: int = 3, expect_sha256: str | None = None,
-              gpg_signature_url: str | None = None, trusted_keys: list[str] | None = None) -> None:
+def _download(
+    url: str,
+    dest: Path,
+    *,
+    attempts: int = 3,
+    expect_sha256: str | None = None,
+    gpg_signature_url: str | None = None,
+    trusted_keys: list[str] | None = None,
+) -> None:
     """Download a file with optional SHA-256 and GPG verification."""
     last_err: Exception | None = None
     for i in range(1, attempts + 1):
@@ -114,23 +119,30 @@ def _verify_gpg_signature(file_path: Path, signature_url: str, trusted_keys: lis
             # Import trusted keys if provided
             for key in trusted_keys:
                 try:
-                    result = subprocess.run([
-                        "gpg", "--quiet", "--batch", "--import", "-"
-                    ], input=key, text=True, capture_output=True)
+                    result = subprocess.run(
+                        ["gpg", "--quiet", "--batch", "--import", "-"],
+                        input=key,
+                        text=True,
+                        capture_output=True,
+                    )
                     if result.returncode != 0:
                         print(f"Warning: Failed to import GPG key: {result.stderr}")
                 except Exception as e:
                     print(f"Warning: Error importing GPG key: {e}")
 
             # Verify signature
-            result = subprocess.run([
-                "gpg", "--quiet", "--batch", "--verify", str(signature_file), str(file_path)
-            ], capture_output=True, text=True)
+            result = subprocess.run(
+                ["gpg", "--quiet", "--batch", "--verify", str(signature_file), str(file_path)],
+                capture_output=True,
+                text=True,
+            )
 
             if result.returncode == 0:
                 print(f"[OK] GPG signature verified for {file_path.name}")
             else:
-                print(f"Warning: GPG signature verification failed for {file_path.name}: {result.stderr}")
+                print(
+                    f"Warning: GPG signature verification failed for {file_path.name}: {result.stderr}"
+                )
                 # Don't fail the download, just warn
 
         except Exception as e:
@@ -167,30 +179,39 @@ def check_pandoc_availability() -> tuple[bool, str, Optional[str]]:
     # Check if pandoc binary exists
     pandoc_binary = pandoc_path()
     if not pandoc_binary:
-        return False, "Pandoc binary not found. Install with 'docx2shelf tools install pandoc'", None
+        return (
+            False,
+            "Pandoc binary not found. Install with 'docx2shelf tools install pandoc'",
+            None,
+        )
 
     # Check if binary is executable
     try:
         result = subprocess.run(
-            [str(pandoc_binary), "--version"],
-            capture_output=True,
-            text=True,
-            timeout=10
+            [str(pandoc_binary), "--version"], capture_output=True, text=True, timeout=10
         )
 
         if result.returncode != 0:
             return False, f"Pandoc binary exists but failed to run: {result.stderr}", None
 
         # Extract version from output
-        version_line = result.stdout.split('\n')[0] if result.stdout else "Unknown"
-        version = version_line.replace("pandoc ", "").split()[0] if "pandoc " in version_line else "Unknown"
+        version_line = result.stdout.split("\n")[0] if result.stdout else "Unknown"
+        version = (
+            version_line.replace("pandoc ", "").split()[0]
+            if "pandoc " in version_line
+            else "Unknown"
+        )
 
         # Check minimum version (Pandoc 2.0+)
         if version != "Unknown":
             try:
-                major_version = int(version.split('.')[0])
+                major_version = int(version.split(".")[0])
                 if major_version < 2:
-                    return False, f"Pandoc {version} is too old (requires 2.0+). Update with 'docx2shelf tools install pandoc'", version
+                    return (
+                        False,
+                        f"Pandoc {version} is too old (requires 2.0+). Update with 'docx2shelf tools install pandoc'",
+                        version,
+                    )
             except (ValueError, IndexError):
                 pass  # Continue with unknown version
 
@@ -238,14 +259,11 @@ def get_pandoc_status() -> dict[str, any]:
             "available": pandoc_available,
             "message": pandoc_msg,
             "version": pandoc_version,
-            "path": str(pandoc_path()) if pandoc_path() else None
+            "path": str(pandoc_path()) if pandoc_path() else None,
         },
-        "pypandoc_library": {
-            "available": pypandoc_available,
-            "message": pypandoc_msg
-        },
+        "pypandoc_library": {"available": pypandoc_available, "message": pypandoc_msg},
         "overall_available": pandoc_available and pypandoc_available,
-        "fallback_needed": not (pandoc_available and pypandoc_available)
+        "fallback_needed": not (pandoc_available and pypandoc_available),
     }
 
 
@@ -436,7 +454,8 @@ def load_version_pins() -> dict:
 
     try:
         import json
-        with open(config_file, 'r') as f:
+
+        with open(config_file, "r") as f:
             return json.load(f)
     except Exception:
         return {"preset": "latest"}
@@ -446,7 +465,8 @@ def save_version_pins(config: dict) -> None:
     """Save version pin configuration."""
     config_file = get_version_pin_config()
     import json
-    with open(config_file, 'w') as f:
+
+    with open(config_file, "w") as f:
         json.dump(config, f, indent=2)
 
 
@@ -555,8 +575,9 @@ def tools_doctor() -> int:
     if epubcheck_cmd_list:
         print(f"  [OK] Found at: {epubcheck_cmd_list[0]}")
         try:
-            result = subprocess.run(epubcheck_cmd_list + ["--version"],
-                                  capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                epubcheck_cmd_list + ["--version"], capture_output=True, text=True, timeout=5
+            )
             if result.returncode == 0:
                 version_info = result.stdout.strip() if result.stdout else result.stderr.strip()
                 print(f"  [OK] Version: {version_info}")
@@ -579,10 +600,9 @@ def tools_doctor() -> int:
     # Check Java (for EPUBCheck)
     print("\n[JAVA] Java Status:")
     try:
-        result = subprocess.run(["java", "-version"],
-                              capture_output=True, text=True, timeout=5)
+        result = subprocess.run(["java", "-version"], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
-            java_version = result.stderr.split('\n')[0] if result.stderr else "Unknown"
+            java_version = result.stderr.split("\n")[0] if result.stderr else "Unknown"
             print(f"  [OK] Java available: {java_version}")
         else:
             print("  [ERROR] Java not working properly")
@@ -665,7 +685,9 @@ def setup_offline_bundle(bundle_dir: Path) -> None:
             print(f"Would download EPUBCheck {epubcheck_version} to {epubcheck_cache}")
 
         # Create offline installation script
-        install_script = bundle_dir / ("install_offline.bat" if os.name == "nt" else "install_offline.sh")
+        install_script = bundle_dir / (
+            "install_offline.bat" if os.name == "nt" else "install_offline.sh"
+        )
         script_content = f"""#!/bin/bash
 # Offline installation script for Docx2Shelf tools
 # Bundle created: {time.strftime('%Y-%m-%d %H:%M:%S')}

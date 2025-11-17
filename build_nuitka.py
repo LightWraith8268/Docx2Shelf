@@ -7,6 +7,7 @@ Replaces PyInstaller with native compilation for better AV compatibility.
 import os
 import sys
 import subprocess
+import shutil
 from pathlib import Path
 
 def build_with_nuitka():
@@ -117,6 +118,24 @@ def build_with_nuitka():
         rc = process.poll()
         if rc == 0:
             print("Nuitka build successful!")
+
+            # Reorganize output to match expected structure for installers
+            # Nuitka creates: dist/gui_main.dist/
+            # Expected by installers: dist/Docx2Shelf/
+            nuitka_output = Path("dist/gui_main.dist")
+            expected_output = Path("dist/Docx2Shelf")
+
+            if nuitka_output.exists():
+                print(f"Reorganizing output from {nuitka_output} to {expected_output}")
+
+                # Remove old expected output if it exists
+                if expected_output.exists():
+                    shutil.rmtree(expected_output)
+
+                # Copy Nuitka output to expected location
+                shutil.copytree(nuitka_output, expected_output)
+                print(f"Output reorganized successfully")
+
             return True
         else:
             print(f"Nuitka build failed with exit code {rc}")

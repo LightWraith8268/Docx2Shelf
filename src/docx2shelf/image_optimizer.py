@@ -28,6 +28,7 @@ from typing import Dict, List, Optional, Tuple
 
 class ImageFormat(Enum):
     """Supported image formats."""
+
     JPEG = "jpeg"
     PNG = "png"
     WEBP = "webp"
@@ -38,6 +39,7 @@ class ImageFormat(Enum):
 
 class OptimizationLevel(Enum):
     """Image optimization levels."""
+
     NONE = "none"
     BASIC = "basic"
     STANDARD = "standard"
@@ -90,6 +92,7 @@ class ImageOptimizationConfig:
 @dataclass
 class ImageInfo:
     """Information about an image."""
+
     path: Path
     original_size: int
     optimized_size: int
@@ -107,6 +110,7 @@ class ImageInfo:
 @dataclass
 class OptimizationResult:
     """Result of image optimization."""
+
     original_path: Path
     optimized_path: Path
     original_size: int
@@ -132,12 +136,15 @@ class ImageOptimizer:
             "optimized_files": 0,
             "total_savings_bytes": 0,
             "total_processing_time": 0.0,
-            "errors": []
+            "errors": [],
         }
 
-    def optimize_image(self, input_path: Path, output_path: Optional[Path] = None) -> OptimizationResult:
+    def optimize_image(
+        self, input_path: Path, output_path: Optional[Path] = None
+    ) -> OptimizationResult:
         """Optimize a single image."""
         import time
+
         start_time = time.time()
 
         if output_path is None:
@@ -159,7 +166,9 @@ class ImageOptimizer:
             optimized_path = self._optimize_single_image(input_path, output_path, image_info)
 
             # Calculate results
-            optimized_size = optimized_path.stat().st_size if optimized_path.exists() else original_size
+            optimized_size = (
+                optimized_path.stat().st_size if optimized_path.exists() else original_size
+            )
             savings_bytes = original_size - optimized_size
             savings_percent = (savings_bytes / original_size) * 100 if original_size > 0 else 0
             processing_time = time.time() - start_time
@@ -175,7 +184,7 @@ class ImageOptimizer:
                 original_format=image_info.format.value,
                 final_format=self.config.preferred_format.value,
                 processing_time=processing_time,
-                success=True
+                success=True,
             )
 
         except Exception as e:
@@ -192,7 +201,7 @@ class ImageOptimizer:
                 final_format="unknown",
                 processing_time=processing_time,
                 success=False,
-                errors=[str(e)]
+                errors=[str(e)],
             )
 
     def _analyze_image(self, image_path: Path) -> ImageInfo:
@@ -203,12 +212,12 @@ class ImageOptimizer:
         # Detect format from extension
         ext = image_path.suffix.lower()
         format_map = {
-            '.jpg': ImageFormat.JPEG,
-            '.jpeg': ImageFormat.JPEG,
-            '.png': ImageFormat.PNG,
-            '.webp': ImageFormat.WEBP,
-            '.gif': ImageFormat.GIF,
-            '.svg': ImageFormat.SVG
+            ".jpg": ImageFormat.JPEG,
+            ".jpeg": ImageFormat.JPEG,
+            ".png": ImageFormat.PNG,
+            ".webp": ImageFormat.WEBP,
+            ".gif": ImageFormat.GIF,
+            ".svg": ImageFormat.SVG,
         }
 
         detected_format = format_map.get(ext, ImageFormat.JPEG)
@@ -227,13 +236,13 @@ class ImageOptimizer:
             has_transparency=has_transparency,
             color_space="sRGB",
             compression_ratio=1.0,
-            processing_time=0.0
+            processing_time=0.0,
         )
 
     def _get_image_dimensions(self, image_path: Path, format: ImageFormat) -> Tuple[int, int, bool]:
         """Get image dimensions without external dependencies."""
         try:
-            with open(image_path, 'rb') as f:
+            with open(image_path, "rb") as f:
                 # Read file headers to get dimensions
                 if format == ImageFormat.JPEG:
                     return self._get_jpeg_dimensions(f)
@@ -255,7 +264,7 @@ class ImageOptimizer:
         f.seek(0)
 
         # Check JPEG signature
-        if f.read(2) != b'\xff\xd8':
+        if f.read(2) != b"\xff\xd8":
             return 1200, 800, False
 
         while True:
@@ -263,20 +272,33 @@ class ImageOptimizer:
             if not marker:
                 break
 
-            if marker[0] != 0xff:
+            if marker[0] != 0xFF:
                 break
 
             # SOF (Start of Frame) markers
-            if marker[1] in [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7,
-                           0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]:
-                length = int.from_bytes(f.read(2), 'big')
+            if marker[1] in [
+                0xC0,
+                0xC1,
+                0xC2,
+                0xC3,
+                0xC5,
+                0xC6,
+                0xC7,
+                0xC9,
+                0xCA,
+                0xCB,
+                0xCD,
+                0xCE,
+                0xCF,
+            ]:
+                length = int.from_bytes(f.read(2), "big")
                 f.read(1)  # precision
-                height = int.from_bytes(f.read(2), 'big')
-                width = int.from_bytes(f.read(2), 'big')
+                height = int.from_bytes(f.read(2), "big")
+                width = int.from_bytes(f.read(2), "big")
                 return width, height, False
             else:
                 # Skip this segment
-                length = int.from_bytes(f.read(2), 'big')
+                length = int.from_bytes(f.read(2), "big")
                 f.seek(length - 2, 1)
 
         return 1200, 800, False
@@ -286,16 +308,16 @@ class ImageOptimizer:
         f.seek(0)
 
         # Check PNG signature
-        if f.read(8) != b'\x89PNG\r\n\x1a\n':
+        if f.read(8) != b"\x89PNG\r\n\x1a\n":
             return 1200, 800, True
 
         # Read IHDR chunk
         f.read(4)  # chunk length
-        if f.read(4) != b'IHDR':
+        if f.read(4) != b"IHDR":
             return 1200, 800, True
 
-        width = int.from_bytes(f.read(4), 'big')
-        height = int.from_bytes(f.read(4), 'big')
+        width = int.from_bytes(f.read(4), "big")
+        height = int.from_bytes(f.read(4), "big")
         bit_depth = f.read(1)[0]
         color_type = f.read(1)[0]
 
@@ -310,11 +332,11 @@ class ImageOptimizer:
 
         # Check GIF signature
         signature = f.read(6)
-        if not signature.startswith(b'GIF'):
+        if not signature.startswith(b"GIF"):
             return 1200, 800, True
 
-        width = int.from_bytes(f.read(2), 'little')
-        height = int.from_bytes(f.read(2), 'little')
+        width = int.from_bytes(f.read(2), "little")
+        height = int.from_bytes(f.read(2), "little")
 
         return width, height, True  # GIF supports transparency
 
@@ -323,36 +345,38 @@ class ImageOptimizer:
         f.seek(0)
 
         # Check WebP signature
-        if f.read(4) != b'RIFF':
+        if f.read(4) != b"RIFF":
             return 1200, 800, True
 
         f.read(4)  # file size
-        if f.read(4) != b'WEBP':
+        if f.read(4) != b"WEBP":
             return 1200, 800, True
 
         # Read format
         format_chunk = f.read(4)
         f.read(4)  # chunk size
 
-        if format_chunk == b'VP8 ':
+        if format_chunk == b"VP8 ":
             # Lossy WebP
             f.read(6)  # skip frame tag and sync code
             data = f.read(4)
-            width = (int.from_bytes(data[0:2], 'little') & 0x3fff) + 1
-            height = (int.from_bytes(data[2:4], 'little') & 0x3fff) + 1
+            width = (int.from_bytes(data[0:2], "little") & 0x3FFF) + 1
+            height = (int.from_bytes(data[2:4], "little") & 0x3FFF) + 1
             return width, height, False
-        elif format_chunk == b'VP8L':
+        elif format_chunk == b"VP8L":
             # Lossless WebP
             f.read(1)  # signature
             data = f.read(4)
-            bits = int.from_bytes(data, 'little')
-            width = (bits & 0x3fff) + 1
-            height = ((bits >> 14) & 0x3fff) + 1
+            bits = int.from_bytes(data, "little")
+            width = (bits & 0x3FFF) + 1
+            height = ((bits >> 14) & 0x3FFF) + 1
             return width, height, True
         else:
             return 1200, 800, True
 
-    def _optimize_single_image(self, input_path: Path, output_path: Path, image_info: ImageInfo) -> Path:
+    def _optimize_single_image(
+        self, input_path: Path, output_path: Path, image_info: ImageInfo
+    ) -> Path:
         """Optimize a single image file."""
 
         # For now, implement basic optimization without external dependencies
@@ -378,7 +402,9 @@ class ImageOptimizer:
             # Apply light optimization
             return self._apply_light_optimization(input_path, output_path, image_info)
 
-    def _compress_large_image(self, input_path: Path, output_path: Path, image_info: ImageInfo) -> Path:
+    def _compress_large_image(
+        self, input_path: Path, output_path: Path, image_info: ImageInfo
+    ) -> Path:
         """Compress large images."""
         # Real implementation: Check if we need to resize based on dimensions
         if image_info.width > self.config.max_width or image_info.height > self.config.max_height:
@@ -388,11 +414,14 @@ class ImageOptimizer:
             return output_path
 
         # If just file size is large, apply compression
-        if image_info.format == ImageFormat.PNG and image_info.original_size > self.config.max_file_size:
+        if (
+            image_info.format == ImageFormat.PNG
+            and image_info.original_size > self.config.max_file_size
+        ):
             # Convert PNG to JPEG if it doesn't need transparency
             if not image_info.has_transparency and self.config.preferred_format == ImageFormat.JPEG:
                 # Would convert here in full implementation
-                new_path = output_path.with_suffix('.jpg')
+                new_path = output_path.with_suffix(".jpg")
                 shutil.copy2(input_path, new_path)
                 return new_path
 
@@ -418,10 +447,10 @@ class ImageOptimizer:
         # For basic conversion, just copy and rename
         if target_format != image_info.format:
             ext_map = {
-                ImageFormat.JPEG: '.jpg',
-                ImageFormat.PNG: '.png',
-                ImageFormat.WEBP: '.webp',
-                ImageFormat.GIF: '.gif'
+                ImageFormat.JPEG: ".jpg",
+                ImageFormat.PNG: ".png",
+                ImageFormat.WEBP: ".webp",
+                ImageFormat.GIF: ".gif",
             }
 
             new_ext = ext_map.get(target_format, input_path.suffix)
@@ -432,13 +461,18 @@ class ImageOptimizer:
         shutil.copy2(input_path, output_path)
         return output_path
 
-    def _apply_light_optimization(self, input_path: Path, output_path: Path, image_info: ImageInfo) -> Path:
+    def _apply_light_optimization(
+        self, input_path: Path, output_path: Path, image_info: ImageInfo
+    ) -> Path:
         """Apply light optimization."""
         # Real optimization based on file format
 
         if image_info.format == ImageFormat.JPEG:
             # For JPEG, we could strip EXIF data and optimize
-            if self.config.optimization_level in [OptimizationLevel.STANDARD, OptimizationLevel.AGGRESSIVE]:
+            if self.config.optimization_level in [
+                OptimizationLevel.STANDARD,
+                OptimizationLevel.AGGRESSIVE,
+            ]:
                 # Would use actual JPEG optimization here
                 # For now, just copy
                 shutil.copy2(input_path, output_path)
@@ -495,7 +529,7 @@ class ImageOptimizer:
                             final_format="unknown",
                             processing_time=0,
                             success=False,
-                            errors=[f"Parallel processing error: {str(e)}"]
+                            errors=[f"Parallel processing error: {str(e)}"],
                         )
                         results.append(failed_result)
         else:
@@ -557,13 +591,13 @@ Errors: {len(stats["errors"])}
             "optimized_files": 0,
             "total_savings_bytes": 0,
             "total_processing_time": 0.0,
-            "errors": []
+            "errors": [],
         }
 
 
 def find_images_in_directory(directory: Path, recursive: bool = True) -> List[Path]:
     """Find all image files in a directory."""
-    image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.svg'}
+    image_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"}
 
     if recursive:
         pattern = "**/*"
@@ -593,7 +627,7 @@ def create_optimization_config_for_epub() -> ImageOptimizationConfig:
         preserve_metadata=False,
         strip_exif=True,
         generate_responsive=False,  # Not typically needed for EPUB
-        use_parallel_processing=True
+        use_parallel_processing=True,
     )
 
 
@@ -608,7 +642,7 @@ def create_high_quality_config() -> ImageOptimizationConfig:
         optimization_level=OptimizationLevel.BASIC,
         preserve_metadata=True,
         preserve_color_profile=True,
-        strip_exif=False
+        strip_exif=False,
     )
 
 
@@ -624,7 +658,7 @@ def create_aggressive_config() -> ImageOptimizationConfig:
         preserve_metadata=False,
         strip_exif=True,
         progressive_jpeg=False,  # Smaller files
-        use_parallel_processing=True
+        use_parallel_processing=True,
     )
 
 
@@ -638,15 +672,17 @@ def validate_image_for_epub(image_path: Path) -> Tuple[bool, List[str]]:
     # Check file size
     file_size = image_path.stat().st_size
     if file_size > 10 * 1024 * 1024:  # 10MB
-        issues.append(f"File size too large: {file_size / (1024*1024):.1f}MB (max 10MB recommended)")
+        issues.append(
+            f"File size too large: {file_size / (1024*1024):.1f}MB (max 10MB recommended)"
+        )
 
     # Check format
     ext = image_path.suffix.lower()
-    if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']:
+    if ext not in [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp"]:
         issues.append(f"Unsupported format: {ext}")
 
     # Check filename
-    if ' ' in image_path.name:
+    if " " in image_path.name:
         issues.append("Filename contains spaces (may cause issues in some readers)")
 
     return len(issues) == 0, issues
@@ -667,8 +703,8 @@ def generate_image_manifest(image_paths: List[Path], base_dir: Path) -> Dict[str
             "path": str(relative_path),
             "size": str(file_size),
             "mime_type": mime_type or "application/octet-stream",
-            "format": image_path.suffix.lower().lstrip('.'),
-            "hash": _calculate_file_hash(image_path)
+            "format": image_path.suffix.lower().lstrip("."),
+            "hash": _calculate_file_hash(image_path),
         }
 
     return manifest

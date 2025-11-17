@@ -20,7 +20,8 @@ class InteractiveCLI:
     def clear_screen(self):
         """Clear the terminal screen."""
         import os
-        os.system('cls' if os.name == 'nt' else 'clear')
+
+        os.system("cls" if os.name == "nt" else "clear")
 
     def print_header(self):
         """Print the application header."""
@@ -48,10 +49,10 @@ class InteractiveCLI:
         while True:
             try:
                 choice = input("Select option: ").strip().lower()
-                if choice == 'q':
-                    return 'q'
-                if choice == 'b' and self.history:
-                    return 'b'
+                if choice == "q":
+                    return "q"
+                if choice == "b" and self.history:
+                    return "b"
                 if choice.isdigit():
                     num = int(choice)
                     if 1 <= num <= max_options:
@@ -59,7 +60,7 @@ class InteractiveCLI:
                 print("Invalid choice. Please try again.")
             except (KeyboardInterrupt, EOFError):
                 print("\nExiting...")
-                return 'q'
+                return "q"
 
     def safe_execute(self, func, *args, **kwargs):
         """Safely execute a function with error handling."""
@@ -97,17 +98,29 @@ class InteractiveCLI:
         self.print_menu("Main Menu", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b' and self.history:
+        elif choice == "b" and self.history:
             self.current_menu = self.history.pop()
         else:
             menu_map = {
-                '1': 'build', '2': 'validate', '3': 'quality', '4': 'convert',
-                '5': 'doctor', '6': 'tools', '7': 'wizard', '8': 'themes',
-                '9': 'ai', '10': 'batch', '11': 'plugins', '12': 'connectors',
-                '13': 'checklist', '14': 'enterprise', '15': 'update',
-                '16': 'settings', '17': 'about'
+                "1": "build",
+                "2": "validate",
+                "3": "quality",
+                "4": "convert",
+                "5": "doctor",
+                "6": "tools",
+                "7": "wizard",
+                "8": "themes",
+                "9": "ai",
+                "10": "batch",
+                "11": "plugins",
+                "12": "connectors",
+                "13": "checklist",
+                "14": "enterprise",
+                "15": "update",
+                "16": "settings",
+                "17": "about",
             }
             if choice in menu_map:
                 self.history.append(self.current_menu)
@@ -126,9 +139,9 @@ class InteractiveCLI:
         self.print_menu("Build EPUB", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_build_command(choice)
@@ -146,9 +159,9 @@ class InteractiveCLI:
         self.print_menu("EPUB Validation", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_validate_command(choice)
@@ -167,9 +180,9 @@ class InteractiveCLI:
         self.print_menu("Tools Management", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_tools_command(choice)
@@ -187,9 +200,9 @@ class InteractiveCLI:
         self.print_menu("AI Features", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_ai_command(choice)
@@ -207,9 +220,9 @@ class InteractiveCLI:
         self.print_menu("Theme Management", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_themes_command(choice)
@@ -227,9 +240,9 @@ class InteractiveCLI:
         self.print_menu("Plugin Management", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_plugins_command(choice)
@@ -254,15 +267,15 @@ class InteractiveCLI:
         """Execute build command based on choice."""
         print(f"\n[EXECUTING BUILD COMMAND: {choice}]")
 
-        if choice == '1':  # Quick build
+        if choice == "1":  # Quick build
             self.run_quick_build()
-        elif choice == '2':  # Advanced build
+        elif choice == "2":  # Advanced build
             self.run_advanced_build()
-        elif choice == '3':  # From metadata
+        elif choice == "3":  # From metadata
             self.run_metadata_build()
-        elif choice == '4':  # Preview
+        elif choice == "4":  # Preview
             self.run_preview_build()
-        elif choice == '5':  # Inspect
+        elif choice == "5":  # Inspect
             self.run_inspect_build()
 
         input("\nPress Enter to continue...")
@@ -272,23 +285,23 @@ class InteractiveCLI:
         """Execute validation command based on choice."""
         print(f"\n[EXECUTING VALIDATE COMMAND: {choice}]")
 
-        if choice == '1':  # Validate file
+        if choice == "1":  # Validate file
             epub_path = input("Enter EPUB file path: ").strip()
             if epub_path:
                 self.run_epub_validation(epub_path)
-        elif choice == '2':  # Validate directory
+        elif choice == "2":  # Validate directory
             dir_path = input("Enter directory path: ").strip()
             if dir_path:
                 self.run_directory_validation(dir_path)
-        elif choice == '3':  # Quick validation
+        elif choice == "3":  # Quick validation
             epub_path = input("Enter EPUB file path: ").strip()
             if epub_path:
                 self.run_quick_validation(epub_path)
-        elif choice == '4':  # Full validation
+        elif choice == "4":  # Full validation
             epub_path = input("Enter EPUB file path: ").strip()
             if epub_path:
                 self.run_full_validation(epub_path)
-        elif choice == '5':  # Golden-file tests
+        elif choice == "5":  # Golden-file tests
             self.run_golden_file_tests()
 
         input("\nPress Enter to continue...")
@@ -298,17 +311,17 @@ class InteractiveCLI:
         """Execute tools command based on choice."""
         print(f"\n[EXECUTING TOOLS COMMAND: {choice}]")
 
-        if choice == '1':  # Status
+        if choice == "1":  # Status
             self.run_tools_status()
-        elif choice == '2':  # Install Pandoc
+        elif choice == "2":  # Install Pandoc
             self.run_install_pandoc()
-        elif choice == '3':  # Install EPUBCheck
+        elif choice == "3":  # Install EPUBCheck
             self.run_install_epubcheck()
-        elif choice == '4':  # Locations
+        elif choice == "4":  # Locations
             self.run_tools_locations()
-        elif choice == '5':  # Doctor
+        elif choice == "5":  # Doctor
             self.run_tools_doctor()
-        elif choice == '6':  # Bundle
+        elif choice == "6":  # Bundle
             self.run_create_bundle()
 
         input("\nPress Enter to continue...")
@@ -318,21 +331,21 @@ class InteractiveCLI:
         """Execute AI command based on choice."""
         print(f"\n[EXECUTING AI COMMAND: {choice}]")
 
-        if choice == '1':  # Metadata
+        if choice == "1":  # Metadata
             doc_path = input("Enter document path: ").strip()
             if doc_path:
                 self.run_ai_metadata(doc_path)
-        elif choice == '2':  # Genre
+        elif choice == "2":  # Genre
             doc_path = input("Enter document path: ").strip()
             if doc_path:
                 self.run_ai_genre(doc_path)
-        elif choice == '3':  # Alt text
+        elif choice == "3":  # Alt text
             image_path = input("Enter image path or document with images: ").strip()
             if image_path:
                 self.run_ai_alt_text(image_path)
-        elif choice == '4':  # Config
+        elif choice == "4":  # Config
             self.run_ai_config()
-        elif choice == '5':  # Status
+        elif choice == "5":  # Status
             self.run_ai_status()
 
         input("\nPress Enter to continue...")
@@ -342,17 +355,17 @@ class InteractiveCLI:
         """Execute themes command based on choice."""
         print(f"\n[EXECUTING THEMES COMMAND: {choice}]")
 
-        if choice == '1':  # List
+        if choice == "1":  # List
             self.run_list_themes()
-        elif choice == '2':  # Preview
+        elif choice == "2":  # Preview
             self.run_preview_themes()
-        elif choice == '3':  # Editor
+        elif choice == "3":  # Editor
             self.run_theme_editor()
-        elif choice == '4':  # Install
+        elif choice == "4":  # Install
             theme_path = input("Enter theme file path: ").strip()
             if theme_path:
                 self.run_install_theme(theme_path)
-        elif choice == '5':  # Store Profiles
+        elif choice == "5":  # Store Profiles
             self.run_store_profiles()
 
         input("\nPress Enter to continue...")
@@ -362,17 +375,17 @@ class InteractiveCLI:
         """Execute plugins command based on choice."""
         print(f"\n[EXECUTING PLUGINS COMMAND: {choice}]")
 
-        if choice == '1':  # List
+        if choice == "1":  # List
             self.run_list_plugins()
-        elif choice == '2':  # Marketplace
+        elif choice == "2":  # Marketplace
             self.run_plugin_marketplace()
-        elif choice == '3':  # Install
+        elif choice == "3":  # Install
             plugin_path = input("Enter plugin file path: ").strip()
             if plugin_path:
                 self.run_install_plugin(plugin_path)
-        elif choice == '4':  # Enable/disable
+        elif choice == "4":  # Enable/disable
             self.run_manage_plugins()
-        elif choice == '5':  # Create
+        elif choice == "5":  # Create
             self.run_create_plugin()
 
         input("\nPress Enter to continue...")
@@ -386,7 +399,7 @@ class InteractiveCLI:
         print("Starting interactive build wizard...")
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'wizard']
+            sys.argv = ["docx2shelf", "wizard"]
             cli_main()
         except SystemExit:
             pass
@@ -411,21 +424,21 @@ class InteractiveCLI:
         # Build command
         from .cli import main as cli_main
 
-        cmd = ['docx2shelf', 'build', '--input', input_file]
+        cmd = ["docx2shelf", "build", "--input", input_file]
         if title:
-            cmd.extend(['--title', title])
+            cmd.extend(["--title", title])
         if author:
-            cmd.extend(['--author', author])
+            cmd.extend(["--author", author])
         if cover:
-            cmd.extend(['--cover', cover])
+            cmd.extend(["--cover", cover])
 
         # Ask for enhanced images
-        if input("Use enhanced image processing? (y/n): ").strip().lower() == 'y':
-            cmd.append('--enhanced-images')
+        if input("Use enhanced image processing? (y/n): ").strip().lower() == "y":
+            cmd.append("--enhanced-images")
 
         # Ask for EPUBCheck validation
-        if input("Run EPUBCheck validation? (y/n): ").strip().lower() == 'y':
-            cmd.extend(['--epubcheck', 'on'])
+        if input("Run EPUBCheck validation? (y/n): ").strip().lower() == "y":
+            cmd.extend(["--epubcheck", "on"])
 
         old_argv = sys.argv
         try:
@@ -447,7 +460,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'build', '--metadata', metadata_file]
+            sys.argv = ["docx2shelf", "build", "--metadata", metadata_file]
             cli_main()
         except SystemExit:
             pass
@@ -465,7 +478,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'build', '--input', input_file, '--preview']
+            sys.argv = ["docx2shelf", "build", "--input", input_file, "--preview"]
             cli_main()
         except SystemExit:
             pass
@@ -483,7 +496,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'build', '--input', input_file, '--inspect']
+            sys.argv = ["docx2shelf", "build", "--input", input_file, "--inspect"]
             cli_main()
         except SystemExit:
             pass
@@ -496,7 +509,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'validate', epub_path, '--verbose']
+            sys.argv = ["docx2shelf", "validate", epub_path, "--verbose"]
             cli_main()
         except SystemExit:
             pass
@@ -527,7 +540,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'validate', epub_path, '--skip-epubcheck']
+            sys.argv = ["docx2shelf", "validate", epub_path, "--skip-epubcheck"]
             cli_main()
         except SystemExit:
             pass
@@ -540,7 +553,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'validate', epub_path, '--verbose']
+            sys.argv = ["docx2shelf", "validate", epub_path, "--verbose"]
             cli_main()
         except SystemExit:
             pass
@@ -553,7 +566,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'tools', 'where']
+            sys.argv = ["docx2shelf", "tools", "where"]
             cli_main()
         except SystemExit:
             pass
@@ -566,7 +579,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'tools', 'install', 'pandoc']
+            sys.argv = ["docx2shelf", "tools", "install", "pandoc"]
             cli_main()
         except SystemExit:
             pass
@@ -579,7 +592,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'tools', 'install', 'epubcheck']
+            sys.argv = ["docx2shelf", "tools", "install", "epubcheck"]
             cli_main()
         except SystemExit:
             pass
@@ -592,7 +605,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'tools', 'where']
+            sys.argv = ["docx2shelf", "tools", "where"]
             cli_main()
         except SystemExit:
             pass
@@ -605,7 +618,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'tools', 'doctor']
+            sys.argv = ["docx2shelf", "tools", "doctor"]
             cli_main()
         except SystemExit:
             pass
@@ -618,7 +631,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'tools', 'bundle']
+            sys.argv = ["docx2shelf", "tools", "bundle"]
             cli_main()
         except SystemExit:
             pass
@@ -631,7 +644,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'ai', 'metadata', doc_path, '--interactive']
+            sys.argv = ["docx2shelf", "ai", "metadata", doc_path, "--interactive"]
             cli_main()
         except SystemExit:
             pass
@@ -644,7 +657,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'ai', 'genre', doc_path]
+            sys.argv = ["docx2shelf", "ai", "genre", doc_path]
             cli_main()
         except SystemExit:
             pass
@@ -657,7 +670,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'ai', 'alt-text', image_path, '--interactive']
+            sys.argv = ["docx2shelf", "ai", "alt-text", image_path, "--interactive"]
             cli_main()
         except SystemExit:
             pass
@@ -666,7 +679,7 @@ class InteractiveCLI:
 
     def run_ai_config(self):
         """Configure AI settings interactively."""
-        from .utils import prompt, prompt_choice, prompt_bool
+        from .utils import prompt, prompt_bool, prompt_choice
 
         print("🔧 AI Configuration Settings")
         print("=" * 40)
@@ -694,14 +707,18 @@ class InteractiveCLI:
             choice = prompt("Select option", default="7")
 
             if choice == "1":
-                api_key = prompt("Enter OpenAI API Key (leave empty to clear)", default="", allow_empty=True)
+                api_key = prompt(
+                    "Enter OpenAI API Key (leave empty to clear)", default="", allow_empty=True
+                )
                 if api_key:
                     print("✓ OpenAI API Key configured (not displayed for security)")
                 else:
                     print("✓ OpenAI API Key cleared")
 
             elif choice == "2":
-                model_type = prompt_choice("Choose model type", ["local", "openai"], default="local")
+                model_type = prompt_choice(
+                    "Choose model type", ["local", "openai"], default="local"
+                )
                 print(f"✓ Model type set to: {model_type}")
 
             elif choice == "3":
@@ -713,7 +730,11 @@ class InteractiveCLI:
                 print(f"✓ Cache {'enabled' if cache_enabled else 'disabled'}")
 
             elif choice == "5":
-                cache_dir = prompt("Enter cache directory path (leave empty for default)", default="", allow_empty=True)
+                cache_dir = prompt(
+                    "Enter cache directory path (leave empty for default)",
+                    default="",
+                    allow_empty=True,
+                )
                 if cache_dir:
                     print(f"✓ Cache directory set to: {cache_dir}")
                 else:
@@ -739,6 +760,7 @@ class InteractiveCLI:
         """Check AI availability."""
         try:
             from .ai_integration import AIManager
+
             ai_manager = AIManager()
             if ai_manager.is_available():
                 print("AI features are available and configured.")
@@ -755,7 +777,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'list-themes']
+            sys.argv = ["docx2shelf", "list-themes"]
             cli_main()
         except SystemExit:
             pass
@@ -768,7 +790,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'preview-themes']
+            sys.argv = ["docx2shelf", "preview-themes"]
             cli_main()
         except SystemExit:
             pass
@@ -781,7 +803,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'theme-editor']
+            sys.argv = ["docx2shelf", "theme-editor"]
             cli_main()
         except SystemExit:
             pass
@@ -820,7 +842,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'plugins', 'list']
+            sys.argv = ["docx2shelf", "plugins", "list"]
             cli_main()
         except SystemExit:
             pass
@@ -833,7 +855,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'plugins', 'marketplace']
+            sys.argv = ["docx2shelf", "plugins", "marketplace"]
             cli_main()
         except SystemExit:
             pass
@@ -846,7 +868,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'plugins', 'load', plugin_path]
+            sys.argv = ["docx2shelf", "plugins", "load", plugin_path]
             cli_main()
         except SystemExit:
             pass
@@ -861,7 +883,7 @@ class InteractiveCLI:
         print("Current plugins:")
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'plugins', 'list']
+            sys.argv = ["docx2shelf", "plugins", "list"]
             cli_main()
         except SystemExit:
             pass
@@ -872,17 +894,17 @@ class InteractiveCLI:
         action = input("\nEnable or disable? (e/d): ").strip().lower()
         plugin_name = input("Plugin name: ").strip()
 
-        if action == 'e' and plugin_name:
+        if action == "e" and plugin_name:
             try:
-                sys.argv = ['docx2shelf', 'plugins', 'enable', plugin_name]
+                sys.argv = ["docx2shelf", "plugins", "enable", plugin_name]
                 cli_main()
             except SystemExit:
                 pass
             finally:
                 sys.argv = old_argv
-        elif action == 'd' and plugin_name:
+        elif action == "d" and plugin_name:
             try:
-                sys.argv = ['docx2shelf', 'plugins', 'disable', plugin_name]
+                sys.argv = ["docx2shelf", "plugins", "disable", plugin_name]
                 cli_main()
             except SystemExit:
                 pass
@@ -895,7 +917,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'plugins', 'create']
+            sys.argv = ["docx2shelf", "plugins", "create"]
             cli_main()
         except SystemExit:
             pass
@@ -978,26 +1000,26 @@ class InteractiveCLI:
 
         choice = input("\nSelect test option (1-6): ").strip()
 
-        if choice == '1':  # Status
-            self.run_golden_test_command('--status')
-        elif choice == '2':  # Generate
+        if choice == "1":  # Status
+            self.run_golden_test_command("--status")
+        elif choice == "2":  # Generate
             print("\n[GENERATING GOLDEN FIXTURES]")
             print("This will create test DOCX files and convert them to golden EPUB fixtures.")
             confirm = input("Continue? (y/N): ").strip().lower()
-            if confirm in ['y', 'yes']:
-                self.run_golden_test_command('--generate')
-        elif choice == '3':  # Structure tests
-            self.run_golden_test_command('--test', 'structure')
-        elif choice == '4':  # Regression tests
-            self.run_golden_test_command('--test', 'regression')
-        elif choice == '5':  # Validate
-            self.run_golden_test_command('--validate')
-        elif choice == '6':  # Cleanup
+            if confirm in ["y", "yes"]:
+                self.run_golden_test_command("--generate")
+        elif choice == "3":  # Structure tests
+            self.run_golden_test_command("--test", "structure")
+        elif choice == "4":  # Regression tests
+            self.run_golden_test_command("--test", "regression")
+        elif choice == "5":  # Validate
+            self.run_golden_test_command("--validate")
+        elif choice == "6":  # Cleanup
             print("\n[CLEANING UP TEST FILES]")
             print("This will delete generated test fixtures.")
             confirm = input("Continue? (y/N): ").strip().lower()
-            if confirm in ['y', 'yes']:
-                self.run_golden_test_command('--cleanup')
+            if confirm in ["y", "yes"]:
+                self.run_golden_test_command("--cleanup")
         else:
             print("Invalid choice.")
 
@@ -1020,7 +1042,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'doctor']
+            sys.argv = ["docx2shelf", "doctor"]
             cli_main()
         except SystemExit:
             pass
@@ -1037,7 +1059,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'wizard']
+            sys.argv = ["docx2shelf", "wizard"]
             cli_main()
         except SystemExit:
             pass
@@ -1060,7 +1082,7 @@ class InteractiveCLI:
 
             old_argv = sys.argv
             try:
-                sys.argv = ['docx2shelf', 'batch', '--input', input_dir, '--output', output_dir]
+                sys.argv = ["docx2shelf", "batch", "--input", input_dir, "--output", output_dir]
                 cli_main()
             except SystemExit:
                 pass
@@ -1101,9 +1123,9 @@ class InteractiveCLI:
         self.print_menu("Quality Analysis", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_quality_command(choice)
@@ -1121,9 +1143,9 @@ class InteractiveCLI:
         self.print_menu("Format Conversion", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_convert_command(choice)
@@ -1141,9 +1163,9 @@ class InteractiveCLI:
         self.print_menu("Document Connectors", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_connectors_command(choice)
@@ -1161,9 +1183,9 @@ class InteractiveCLI:
         self.print_menu("Publishing Checklists", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = self.history.pop()
         else:
             self.execute_checklist_command(choice)
@@ -1172,23 +1194,23 @@ class InteractiveCLI:
         """Execute quality analysis command."""
         print(f"\n[EXECUTING QUALITY COMMAND: {choice}]")
 
-        if choice == '1':  # Analyze
+        if choice == "1":  # Analyze
             epub_path = input("Enter EPUB file path: ").strip()
             if epub_path:
                 self.run_quality_analysis(epub_path)
-        elif choice == '2':  # Score
+        elif choice == "2":  # Score
             epub_path = input("Enter EPUB file path: ").strip()
             if epub_path:
                 self.run_quality_scoring(epub_path)
-        elif choice == '3':  # Accessibility
+        elif choice == "3":  # Accessibility
             epub_path = input("Enter EPUB file path: ").strip()
             if epub_path:
                 self.run_accessibility_audit(epub_path)
-        elif choice == '4':  # Readability
+        elif choice == "4":  # Readability
             epub_path = input("Enter EPUB file path: ").strip()
             if epub_path:
                 self.run_readability_analysis(epub_path)
-        elif choice == '5':  # Metadata
+        elif choice == "5":  # Metadata
             epub_path = input("Enter EPUB file path: ").strip()
             if epub_path:
                 self.run_metadata_check(epub_path)
@@ -1207,15 +1229,15 @@ class InteractiveCLI:
             self.current_menu = self.history.pop()
             return
 
-        if choice == '1':  # PDF
+        if choice == "1":  # PDF
             self.run_epub_to_pdf(epub_path)
-        elif choice == '2':  # MOBI
+        elif choice == "2":  # MOBI
             self.run_epub_to_mobi(epub_path)
-        elif choice == '3':  # AZW3
+        elif choice == "3":  # AZW3
             self.run_epub_to_azw3(epub_path)
-        elif choice == '4':  # Web
+        elif choice == "4":  # Web
             self.run_epub_to_web(epub_path)
-        elif choice == '5':  # Text
+        elif choice == "5":  # Text
             self.run_epub_to_text(epub_path)
 
         input("\nPress Enter to continue...")
@@ -1225,21 +1247,21 @@ class InteractiveCLI:
         """Execute connectors command."""
         print(f"\n[EXECUTING CONNECTORS COMMAND: {choice}]")
 
-        if choice == '1':  # List
+        if choice == "1":  # List
             self.run_connectors_list()
-        elif choice == '2':  # Enable
+        elif choice == "2":  # Enable
             connector = input("Enter connector name: ").strip()
             if connector:
                 self.run_connector_enable(connector)
-        elif choice == '3':  # Disable
+        elif choice == "3":  # Disable
             connector = input("Enter connector name: ").strip()
             if connector:
                 self.run_connector_disable(connector)
-        elif choice == '4':  # Auth
+        elif choice == "4":  # Auth
             connector = input("Enter connector name: ").strip()
             if connector:
                 self.run_connector_auth(connector)
-        elif choice == '5':  # Fetch
+        elif choice == "5":  # Fetch
             connector = input("Enter connector name: ").strip()
             doc_id = input("Enter document ID: ").strip()
             if connector and doc_id:
@@ -1259,15 +1281,15 @@ class InteractiveCLI:
             self.current_menu = self.history.pop()
             return
 
-        if choice == '1':  # KDP
+        if choice == "1":  # KDP
             self.run_kdp_checklist(epub_path)
-        elif choice == '2':  # Apple
+        elif choice == "2":  # Apple
             self.run_apple_checklist(epub_path)
-        elif choice == '3':  # Kobo
+        elif choice == "3":  # Kobo
             self.run_kobo_checklist(epub_path)
-        elif choice == '4':  # Google
+        elif choice == "4":  # Google
             self.run_google_checklist(epub_path)
-        elif choice == '5':  # All
+        elif choice == "5":  # All
             self.run_all_checklists(epub_path)
 
         input("\nPress Enter to continue...")
@@ -1282,7 +1304,7 @@ class InteractiveCLI:
 
         old_argv = sys.argv
         try:
-            sys.argv = ['docx2shelf', 'update']
+            sys.argv = ["docx2shelf", "update"]
             cli_main()
         except SystemExit:
             pass
@@ -1425,9 +1447,9 @@ class InteractiveCLI:
         self.print_menu("Batch Processing", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = "main"
         elif choice.isdigit():
             option_key = options[int(choice) - 1][0]
@@ -1457,9 +1479,9 @@ class InteractiveCLI:
         self.print_menu("Enterprise Features", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = "main"
         elif choice.isdigit():
             option_key = options[int(choice) - 1][0]
@@ -1491,9 +1513,9 @@ class InteractiveCLI:
         self.print_menu("Application Settings", options)
         choice = self.get_user_choice(len(options))
 
-        if choice == 'q':
+        if choice == "q":
             self.running = False
-        elif choice == 'b':
+        elif choice == "b":
             self.current_menu = "main"
         elif choice.isdigit():
             option_key = options[int(choice) - 1][0]
@@ -1584,13 +1606,18 @@ class InteractiveCLI:
 
         # Detect platform and set appropriate installer URL
         import platform
+
         system = platform.system().lower()
 
         if system == "windows":
-            installer_url = "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat"
+            installer_url = (
+                "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.bat"
+            )
             installer_suffix = ".bat"
         else:
-            installer_url = "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh"
+            installer_url = (
+                "https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh"
+            )
             installer_suffix = ".sh"
 
         print(f"Platform detected: {system}")
@@ -1602,15 +1629,16 @@ class InteractiveCLI:
         print()
 
         confirm = input("Do you want to proceed with the update? (y/N): ").strip().lower()
-        if confirm in ['y', 'yes']:
-            print(f"\nDownloading and running installer from GitHub...")
+        if confirm in ["y", "yes"]:
+            print("\nDownloading and running installer from GitHub...")
             print("Please wait while the update completes...")
 
             # Import subprocess here to avoid import at module level
             import subprocess
             import tempfile
-            import requests
             from pathlib import Path
+
+            import requests
 
             try:
                 # Download the installer
@@ -1619,13 +1647,16 @@ class InteractiveCLI:
                 response.raise_for_status()
 
                 # Save to temp file and execute
-                with tempfile.NamedTemporaryFile(mode='w', suffix=installer_suffix, delete=False) as f:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=installer_suffix, delete=False
+                ) as f:
                     f.write(response.text)
                     temp_installer = f.name
 
                 # Make executable on Unix systems
                 if system != "windows":
                     import os
+
                     os.chmod(temp_installer, 0o755)
 
                 print(f"Executing installer: {temp_installer}")
@@ -1639,14 +1670,18 @@ class InteractiveCLI:
                 Path(temp_installer).unlink(missing_ok=True)
 
                 print("\nUpdate process completed!")
-                print("If an update was installed, please restart docx2shelf to use the new version.")
+                print(
+                    "If an update was installed, please restart docx2shelf to use the new version."
+                )
 
             except Exception as e:
                 print(f"\nUpdate failed: {e}")
                 print("Please download and run the installer manually:")
                 print(f"  {installer_url}")
                 if system != "windows":
-                    print("Or use: curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh | bash")
+                    print(
+                        "Or use: curl -sSL https://github.com/LightWraith8268/Docx2Shelf/releases/latest/download/install.sh | bash"
+                    )
         else:
             print("\nUpdate cancelled.")
 
@@ -1656,6 +1691,7 @@ class InteractiveCLI:
     def get_version_info(self):
         """Get version information."""
         from .version import get_version_info
+
         return get_version_info()
 
     # Build submenu methods
@@ -2154,7 +2190,7 @@ class InteractiveCLI:
 
     def run_enterprise_config(self):
         """Configure enterprise license and settings interactively."""
-        from .utils import prompt, prompt_choice, prompt_bool
+        from .utils import prompt, prompt_bool, prompt_choice
 
         print("🏢 Enterprise License Configuration")
         print("=" * 40)
@@ -2198,7 +2234,9 @@ class InteractiveCLI:
 
             elif choice == "3":
                 max_users = prompt("Maximum concurrent users", default="unlimited")
-                auth_type = prompt_choice("Authentication type", ["local", "ldap", "saml"], default="local")
+                auth_type = prompt_choice(
+                    "Authentication type", ["local", "ldap", "saml"], default="local"
+                )
                 print(f"✓ Max users: {max_users}")
                 print(f"✓ Authentication: {auth_type}")
 
@@ -2290,8 +2328,9 @@ class InteractiveCLI:
 
     def export_settings(self):
         """Export settings."""
-        from .settings import get_settings_manager
         import os
+
+        from .settings import get_settings_manager
 
         settings_manager = get_settings_manager()
 
@@ -2305,6 +2344,7 @@ class InteractiveCLI:
 
         try:
             from pathlib import Path
+
             settings_manager.export_settings(Path(export_path))
             print(f"\n✓ Settings exported successfully to: {export_path}")
         except Exception as e:
@@ -2315,8 +2355,9 @@ class InteractiveCLI:
 
     def import_settings(self):
         """Import settings."""
-        from .settings import get_settings_manager
         import os
+
+        from .settings import get_settings_manager
 
         settings_manager = get_settings_manager()
 
@@ -2331,10 +2372,11 @@ class InteractiveCLI:
             input("Press Enter to continue...")
             return
 
-        merge = input("Merge with existing settings? (y/N): ").strip().lower() == 'y'
+        merge = input("Merge with existing settings? (y/N): ").strip().lower() == "y"
 
         try:
             from pathlib import Path
+
             settings_manager.import_settings(Path(import_path), merge=merge)
             action = "merged" if merge else "imported"
             print(f"\n✓ Settings {action} successfully!")
@@ -2382,7 +2424,9 @@ class InteractiveCLI:
             print(f"2. Language: {settings.conversion_defaults.language}")
             print(f"3. Validate EPUB: {settings.conversion_defaults.validate_epub}")
             print(f"4. Max Image Width: {settings.conversion_defaults.image_max_width}")
-            print(f"5. Accessibility Features: {settings.conversion_defaults.accessibility_features}")
+            print(
+                f"5. Accessibility Features: {settings.conversion_defaults.accessibility_features}"
+            )
             print(f"6. Chapter Detection: {settings.conversion_defaults.chapter_detection}")
             print("7. Return to main menu")
             print()
@@ -2392,23 +2436,31 @@ class InteractiveCLI:
             if choice == "1":
                 themes = ["serif", "sans", "printlike", "dyslexic"]
                 print(f"\nAvailable themes: {', '.join(themes)}")
-                new_theme = input(f"Enter theme [{settings.conversion_defaults.css_theme}]: ").strip()
+                new_theme = input(
+                    f"Enter theme [{settings.conversion_defaults.css_theme}]: "
+                ).strip()
                 if new_theme and new_theme in themes:
                     settings.conversion_defaults.css_theme = new_theme
             elif choice == "2":
                 languages = ["en", "es", "fr", "de", "it", "pt", "nl", "ru", "zh", "ja"]
                 print(f"\nAvailable languages: {', '.join(languages)}")
-                new_lang = input(f"Enter language [{settings.conversion_defaults.language}]: ").strip()
+                new_lang = input(
+                    f"Enter language [{settings.conversion_defaults.language}]: "
+                ).strip()
                 if new_lang and new_lang in languages:
                     settings.conversion_defaults.language = new_lang
             elif choice == "3":
                 current = settings.conversion_defaults.validate_epub
-                new_validate = input(f"Validate EPUB (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_validate in ['y', 'n']:
-                    settings.conversion_defaults.validate_epub = new_validate == 'y'
+                new_validate = (
+                    input(f"Validate EPUB (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                )
+                if new_validate in ["y", "n"]:
+                    settings.conversion_defaults.validate_epub = new_validate == "y"
             elif choice == "4":
                 try:
-                    new_width = input(f"Max image width [{settings.conversion_defaults.image_max_width}]: ").strip()
+                    new_width = input(
+                        f"Max image width [{settings.conversion_defaults.image_max_width}]: "
+                    ).strip()
                     if new_width:
                         settings.conversion_defaults.image_max_width = int(new_width)
                 except ValueError:
@@ -2416,13 +2468,19 @@ class InteractiveCLI:
                     input("Press Enter to continue...")
             elif choice == "5":
                 current = settings.conversion_defaults.accessibility_features
-                new_a11y = input(f"Enable accessibility (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_a11y in ['y', 'n']:
-                    settings.conversion_defaults.accessibility_features = new_a11y == 'y'
+                new_a11y = (
+                    input(f"Enable accessibility (y/n) [{('y' if current else 'n')}]: ")
+                    .strip()
+                    .lower()
+                )
+                if new_a11y in ["y", "n"]:
+                    settings.conversion_defaults.accessibility_features = new_a11y == "y"
             elif choice == "6":
                 detections = ["auto", "h1", "h2", "pagebreak"]
                 print(f"\nAvailable methods: {', '.join(detections)}")
-                new_detection = input(f"Chapter detection [{settings.conversion_defaults.chapter_detection}]: ").strip()
+                new_detection = input(
+                    f"Chapter detection [{settings.conversion_defaults.chapter_detection}]: "
+                ).strip()
                 if new_detection and new_detection in detections:
                     settings.conversion_defaults.chapter_detection = new_detection
             elif choice == "7":
@@ -2452,19 +2510,31 @@ class InteractiveCLI:
 
             if choice == "1":
                 current = settings.ui_preferences.remember_last_directory
-                new_val = input(f"Remember last directory (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.ui_preferences.remember_last_directory = new_val == 'y'
+                new_val = (
+                    input(f"Remember last directory (y/n) [{('y' if current else 'n')}]: ")
+                    .strip()
+                    .lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.ui_preferences.remember_last_directory = new_val == "y"
             elif choice == "2":
                 current = settings.ui_preferences.auto_fill_metadata
-                new_val = input(f"Auto-fill metadata (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.ui_preferences.auto_fill_metadata = new_val == 'y'
+                new_val = (
+                    input(f"Auto-fill metadata (y/n) [{('y' if current else 'n')}]: ")
+                    .strip()
+                    .lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.ui_preferences.auto_fill_metadata = new_val == "y"
             elif choice == "3":
                 current = settings.ui_preferences.show_advanced_options
-                new_val = input(f"Show advanced options (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.ui_preferences.show_advanced_options = new_val == 'y'
+                new_val = (
+                    input(f"Show advanced options (y/n) [{('y' if current else 'n')}]: ")
+                    .strip()
+                    .lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.ui_preferences.show_advanced_options = new_val == "y"
             elif choice == "4":
                 themes = ["light", "dark", "system"]
                 print(f"\nAvailable themes: {', '.join(themes)}")
@@ -2479,9 +2549,13 @@ class InteractiveCLI:
                     settings.ui_preferences.font_size = new_size
             elif choice == "6":
                 current = settings.ui_preferences.confirm_overwrite
-                new_val = input(f"Confirm before overwrite (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.ui_preferences.confirm_overwrite = new_val == 'y'
+                new_val = (
+                    input(f"Confirm before overwrite (y/n) [{('y' if current else 'n')}]: ")
+                    .strip()
+                    .lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.ui_preferences.confirm_overwrite = new_val == "y"
             elif choice == "7":
                 break
             else:
@@ -2496,10 +2570,16 @@ class InteractiveCLI:
             print("           File & Directory Settings")
             print("=" * 60)
             print()
-            print(f"1. Default Output Directory: {settings.file_defaults.default_output_directory or '(not set)'}")
-            print(f"2. Auto-generate Output Name: {settings.file_defaults.auto_generate_output_name}")
+            print(
+                f"1. Default Output Directory: {settings.file_defaults.default_output_directory or '(not set)'}"
+            )
+            print(
+                f"2. Auto-generate Output Name: {settings.file_defaults.auto_generate_output_name}"
+            )
             print(f"3. Backup Original Files: {settings.file_defaults.backup_original}")
-            print(f"4. Temporary Directory: {settings.file_defaults.temp_directory or '(system default)'}")
+            print(
+                f"4. Temporary Directory: {settings.file_defaults.temp_directory or '(system default)'}"
+            )
             print("5. Return to main menu")
             print()
 
@@ -2511,14 +2591,22 @@ class InteractiveCLI:
                 settings.file_defaults.default_output_directory = new_dir or None
             elif choice == "2":
                 current = settings.file_defaults.auto_generate_output_name
-                new_val = input(f"Auto-generate output name (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.file_defaults.auto_generate_output_name = new_val == 'y'
+                new_val = (
+                    input(f"Auto-generate output name (y/n) [{('y' if current else 'n')}]: ")
+                    .strip()
+                    .lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.file_defaults.auto_generate_output_name = new_val == "y"
             elif choice == "3":
                 current = settings.file_defaults.backup_original
-                new_val = input(f"Backup original files (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.file_defaults.backup_original = new_val == 'y'
+                new_val = (
+                    input(f"Backup original files (y/n) [{('y' if current else 'n')}]: ")
+                    .strip()
+                    .lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.file_defaults.backup_original = new_val == "y"
             elif choice == "4":
                 current = settings.file_defaults.temp_directory or ""
                 new_dir = input(f"Temporary directory [{current}]: ").strip()
@@ -2550,18 +2638,24 @@ class InteractiveCLI:
 
             if choice == "1":
                 current = settings.advanced_settings.enable_logging
-                new_val = input(f"Enable logging (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.advanced_settings.enable_logging = new_val == 'y'
+                new_val = (
+                    input(f"Enable logging (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.advanced_settings.enable_logging = new_val == "y"
             elif choice == "2":
                 levels = ["DEBUG", "INFO", "WARNING", "ERROR"]
                 print(f"\nAvailable levels: {', '.join(levels)}")
-                new_level = input(f"Log level [{settings.advanced_settings.log_level}]: ").strip().upper()
+                new_level = (
+                    input(f"Log level [{settings.advanced_settings.log_level}]: ").strip().upper()
+                )
                 if new_level and new_level in levels:
                     settings.advanced_settings.log_level = new_level
             elif choice == "3":
                 try:
-                    new_jobs = input(f"Concurrent jobs [{settings.advanced_settings.concurrent_jobs}]: ").strip()
+                    new_jobs = input(
+                        f"Concurrent jobs [{settings.advanced_settings.concurrent_jobs}]: "
+                    ).strip()
                     if new_jobs:
                         settings.advanced_settings.concurrent_jobs = int(new_jobs)
                 except ValueError:
@@ -2569,19 +2663,29 @@ class InteractiveCLI:
                     input("Press Enter to continue...")
             elif choice == "4":
                 current = settings.advanced_settings.check_for_updates
-                new_val = input(f"Check for updates (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.advanced_settings.check_for_updates = new_val == 'y'
+                new_val = (
+                    input(f"Check for updates (y/n) [{('y' if current else 'n')}]: ")
+                    .strip()
+                    .lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.advanced_settings.check_for_updates = new_val == "y"
             elif choice == "5":
                 current = settings.advanced_settings.enable_crash_reporting
-                new_val = input(f"Enable crash reporting (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.advanced_settings.enable_crash_reporting = new_val == 'y'
+                new_val = (
+                    input(f"Enable crash reporting (y/n) [{('y' if current else 'n')}]: ")
+                    .strip()
+                    .lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.advanced_settings.enable_crash_reporting = new_val == "y"
             elif choice == "6":
                 current = settings.advanced_settings.enable_telemetry
-                new_val = input(f"Enable telemetry (y/n) [{('y' if current else 'n')}]: ").strip().lower()
-                if new_val in ['y', 'n']:
-                    settings.advanced_settings.enable_telemetry = new_val == 'y'
+                new_val = (
+                    input(f"Enable telemetry (y/n) [{('y' if current else 'n')}]: ").strip().lower()
+                )
+                if new_val in ["y", "n"]:
+                    settings.advanced_settings.enable_telemetry = new_val == "y"
             elif choice == "7":
                 break
             else:
