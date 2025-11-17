@@ -12,6 +12,7 @@ from .enterprise import (
     run_enterprise_webhooks,
 )
 from .prompts import _prompt_missing
+from .quality import run_checklist, run_doctor, run_quality_assessment
 from .utils import (
     apply_metadata_dict,
     print_checklist,
@@ -32,6 +33,9 @@ __all__ = [
     "run_enterprise_users",
     "run_enterprise_webhooks",
     "_prompt_missing",
+    "run_checklist",
+    "run_doctor",
+    "run_quality_assessment",
     "apply_metadata_dict",
     "print_checklist",
     "print_metadata_summary",
