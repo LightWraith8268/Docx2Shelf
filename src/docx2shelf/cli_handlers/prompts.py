@@ -41,8 +41,8 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
             md_dir = input_path.parent if input_path.is_file() else input_path
             mfile = md_dir / "metadata.txt"
             if mfile.exists():
-                from ..cli import _apply_metadata_dict
-                _apply_metadata_dict(args, parse_kv_file(mfile), md_dir)
+                from .utils import apply_metadata_dict
+                apply_metadata_dict(args, parse_kv_file(mfile), md_dir)
                 md_loaded = True
         except Exception:
             pass
@@ -51,8 +51,8 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
         mfile = Path.cwd() / "metadata.txt"
         if mfile.exists():
             md = parse_kv_file(mfile)
-            from ..cli import _apply_metadata_dict
-            _apply_metadata_dict(args, md, Path.cwd())
+            from .utils import apply_metadata_dict
+            apply_metadata_dict(args, md, Path.cwd())
             # If input now set, and a different dir holds another metadata.txt, merge it
             if args.input:
                 d = Path(args.input).expanduser().resolve().parent
@@ -80,8 +80,8 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
             args.cover = prompt_select("Select cover image:", cover_candidates, default_index=1)
 
     if interactive:
-        from ..cli import _print_checklist
-        _print_checklist(args)
+        from .utils import print_checklist
+        print_checklist(args)
 
     if not args.cover and interactive:
         # Offer a numeric pick of images in the folder, else prompt

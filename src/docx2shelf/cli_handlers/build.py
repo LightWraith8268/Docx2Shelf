@@ -57,12 +57,12 @@ def run_build(args: argparse.Namespace) -> int:
     from ..tools import pandoc_path, install_pandoc, epubcheck_cmd, install_epubcheck
     from ..prompts import prompt_bool
     from ..ai_features import get_ai_manager, enhance_metadata_with_ai, detect_genre_with_ai
-    from ..cli import (
-        _apply_metadata_dict,
-        _print_checklist,
-        _print_metadata_summary,
-        _run_preview_mode,
-        _read_document_content,
+    from .utils import (
+        apply_metadata_dict,
+        print_checklist,
+        print_metadata_summary,
+        read_document_content,
+        run_preview_mode,
     )
 
     # Initialize performance monitoring for the entire build process
@@ -242,7 +242,7 @@ def run_build(args: argparse.Namespace) -> int:
         if ai_manager.is_available():
             try:
                 # Read document content for AI analysis
-                content = _read_document_content(input_path)
+                content = read_document_content(input_path)
                 if content:
                     # AI metadata enhancement
                     if getattr(args, "ai_enhance", False):
@@ -445,7 +445,7 @@ def run_build(args: argparse.Namespace) -> int:
         html_chunks = split_html_mixed(combined, mixed_pattern)
 
     plan = plan_build(meta, opts, html_chunks, resources)
-    _print_metadata_summary(meta, opts, None if not args.output else Path(args.output))
+    print_metadata_summary(meta, opts, None if not args.output else Path(args.output))
 
     if args.dry_run:
         print("-- Dry Run: Planned manifest/spine --")
@@ -455,7 +455,7 @@ def run_build(args: argparse.Namespace) -> int:
 
     # Handle preview mode
     if args.preview:
-        return _run_preview_mode(meta, opts, html_chunks, resources, args)
+        return run_preview_mode(meta, opts, html_chunks, resources, args)
 
     # Confirm to proceed if interactive
     interactive = (not getattr(args, "no_prompt", False)) and sys.stdin.isatty()
