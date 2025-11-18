@@ -1,5 +1,6 @@
 """CLI command handlers - extracted from cli.py for modularity."""
 
+from .ai import run_ai_alt_text, run_ai_command, run_ai_config, run_ai_genre, run_ai_metadata
 from .build import run_build
 from .enterprise import (
     run_enterprise,
@@ -34,6 +35,11 @@ __all__ = [
     "run_enterprise_users",
     "run_enterprise_webhooks",
     "_prompt_missing",
+    "run_ai_alt_text",
+    "run_ai_command",
+    "run_ai_config",
+    "run_ai_genre",
+    "run_ai_metadata",
     "run_checklist",
     "run_connectors",
     "run_doctor",
