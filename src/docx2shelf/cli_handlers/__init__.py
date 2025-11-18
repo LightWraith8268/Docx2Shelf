@@ -2,6 +2,7 @@
 
 from .ai import run_ai_alt_text, run_ai_command, run_ai_config, run_ai_genre, run_ai_metadata
 from .build import run_build
+from .conversion import run_convert, run_init_metadata
 from .enterprise import (
     run_enterprise,
     run_enterprise_api,
@@ -26,6 +27,7 @@ from .utils import (
 
 __all__ = [
     "run_build",
+    "run_convert",
     "run_enterprise",
     "run_enterprise_api",
     "run_enterprise_batch",
@@ -41,6 +43,7 @@ __all__ = [
     "run_ai_genre",
     "run_ai_metadata",
     "run_checklist",
+    "run_init_metadata",
     "run_connectors",
     "run_doctor",
     "run_plugins",
