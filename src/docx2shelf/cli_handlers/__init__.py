@@ -15,6 +15,7 @@ from .enterprise import (
     run_enterprise_webhooks,
 )
 from .plugins import run_connectors, run_plugins
+from .profiles import run_list_profiles
 from .prompts import _prompt_missing
 from .quality import run_checklist, run_doctor, run_quality_assessment
 from .themes import run_list_themes, run_preview_themes, run_theme_editor
@@ -48,6 +49,7 @@ __all__ = [
     "run_ai_metadata",
     "run_checklist",
     "run_init_metadata",
+    "run_list_profiles",
     "run_list_themes",
     "run_connectors",
     "run_doctor",
