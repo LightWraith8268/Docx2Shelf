@@ -1,6 +1,7 @@
 """CLI command handlers - extracted from cli.py for modularity."""
 
 from .ai import run_ai_alt_text, run_ai_command, run_ai_config, run_ai_genre, run_ai_metadata
+from .batch import run_batch_mode, run_wizard
 from .build import run_build
 from .conversion import run_convert, run_init_metadata
 from .enterprise import (
@@ -28,6 +29,7 @@ from .utils import (
 )
 
 __all__ = [
+    "run_batch_mode",
     "run_build",
     "run_convert",
     "run_enterprise",
@@ -56,6 +58,7 @@ __all__ = [
     "run_tools",
     "run_update",
     "run_validate",
+    "run_wizard",
     "apply_metadata_dict",
     "print_checklist",
     "print_metadata_summary",
