@@ -17,6 +17,7 @@ from .plugins import run_connectors, run_plugins
 from .prompts import _prompt_missing
 from .quality import run_checklist, run_doctor, run_quality_assessment
 from .themes import run_list_themes, run_preview_themes, run_theme_editor
+from .tools import run_tools, run_update, run_validate
 from .utils import (
     apply_metadata_dict,
     print_checklist,
@@ -52,6 +53,9 @@ __all__ = [
     "run_preview_themes",
     "run_quality_assessment",
     "run_theme_editor",
+    "run_tools",
+    "run_update",
+    "run_validate",
     "apply_metadata_dict",
     "print_checklist",
     "print_metadata_summary",
