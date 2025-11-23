@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.2.0] - 2025-11-23
+### Enhanced Interactive CLI with Rich Terminal UI
+
+#### Added
+- **Rich terminal UI library**: Added `rich>=13.0.0` dependency for beautiful cross-platform terminal interfaces
+- **terminal_ui.py module**: Comprehensive terminal UI utilities with color support, formatted tables, progress bars, panels, and status indicators
+- **Enhanced menu system**: Interactive CLI now features emoji icons, color-coded options, and improved visual hierarchy
+- **Breadcrumb navigation**: Clear visual indicator showing current location in menu hierarchy
+- **Status indicators**: Real-time display of tool installation status, AI availability, and system health
+- **Better help system**: Context-sensitive help panels with keyboard shortcuts and usage tips
+- **Welcome screen**: Friendly introduction on first launch with usage instructions
+- **Goodbye message**: Polite exit message when quitting the application
+
+#### Improved
+- **User experience**: Dramatically improved readability and visual appeal of all interactive menus
+- **Error handling**: Better error messages with styled formatting and clear visual indicators (✓/✗)
+- **Input validation**: Enhanced prompts with validation and helpful error feedback
+- **Progress tracking**: Added spinner and progress bar support for long-running operations
+- **Cross-platform compatibility**: All terminal features work across Windows, macOS, and Linux with automatic fallback for non-color terminals
+- **Code organization**: Reduced interactive CLI complexity by separating UI utilities into dedicated module
+
+#### Technical Details
+- Completely rewritten interactive_cli.py with data-driven menu system (reduced duplication, improved maintainability)
+- Terminal UI abstraction layer supports all common terminal emulators
+- Graceful degradation for terminals without color support
+- Preserved all existing CLI functionality while enhancing presentation
+- Menu definitions now use emoji icons and structured help text
+- Original interactive_cli.py backed up as interactive_cli.py.backup
+
 ## [2.1.9] - 2025-11-17
 ### Major Code Refactoring - Modular EPUB Assembly Architecture
 
