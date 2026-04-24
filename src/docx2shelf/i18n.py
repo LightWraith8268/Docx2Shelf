@@ -78,7 +78,7 @@ class LanguageConfig:
     normalization_form: str = "NFC"  # NFC, NFD, NFKC, NFKD
 
     # Quotation marks
-    primary_quotes: Tuple[str, str] = """, """
+    primary_quotes: Tuple[str, str] = ("“", "”")
     secondary_quotes: Tuple[str, str] = ("'", "'")
 
     # Number formatting
@@ -99,8 +99,8 @@ LANGUAGE_CONFIGS = {
         direction=WritingDirection.LTR,
         script=ScriptType.LATIN,
         primary_fonts=["Georgia", "Times New Roman", "serif"],
-        primary_quotes=(""", """),
-        secondary_quotes=("'", "'"),
+        primary_quotes=("“", "”"),
+        secondary_quotes=("‘", "’"),
     ),
     "ar": LanguageConfig(
         code="ar",
@@ -184,9 +184,7 @@ LANGUAGE_CONFIGS = {
         script=ScriptType.CYRILLIC,
         primary_fonts=["Times New Roman", "serif"],
         primary_quotes=("«", "»"),
-        secondary_quotes=(
-            "„",
-            """)
+        secondary_quotes=("„", "“"),
     ),
     "de": LanguageConfig(
         code="de",
@@ -195,8 +193,7 @@ LANGUAGE_CONFIGS = {
         direction=WritingDirection.LTR,
         script=ScriptType.LATIN,
         primary_fonts=["Georgia", "Times New Roman", "serif"],
-        primary_quotes=("„", """,
-        ),
+        primary_quotes=("„", "“"),
         secondary_quotes=("‚", "'"),
     ),
     "fr": LanguageConfig(

@@ -58,7 +58,7 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
             if args.input:
                 d = Path(args.input).expanduser().resolve().parent
                 if d != Path.cwd() and (d / "metadata.txt").exists():
-                    _apply_metadata_dict(args, parse_kv_file(d / "metadata.txt"), d)
+                    apply_metadata_dict(args, parse_kv_file(d / "metadata.txt"), d)
 
     # After potential docx selection, attempt to auto-detect or pick common cover file name
     if not args.cover and args.input:
