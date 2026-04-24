@@ -595,9 +595,9 @@ def docx_to_html_optimized(
     """
     from .performance import MemoryOptimizer
 
-    # Initialize memory optimizer
+    # MemoryOptimizer exposes only @staticmethod helpers; there's no
+    # instance-level monitoring/cleanup lifecycle to drive here.
     optimizer = MemoryOptimizer()
-    optimizer.start_monitoring()
 
     try:
         # Try Pandoc first (fastest for most documents)
@@ -647,7 +647,8 @@ def docx_to_html_optimized(
             return _docx_to_html_streaming(docx_path, image_processor, monitor, optimizer)
 
     finally:
-        optimizer.cleanup()
+        # MemoryOptimizer has no cleanup() lifecycle method.
+        pass
 
 
 def _docx_to_html_streaming(

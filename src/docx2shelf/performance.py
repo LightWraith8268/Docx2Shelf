@@ -15,6 +15,7 @@ import json
 import multiprocessing
 import pstats
 import sqlite3
+import tempfile
 import time
 import tracemalloc
 from collections import defaultdict
@@ -513,8 +514,19 @@ class ParallelImageProcessor:
             print(f"Failed to process image {filename}: {e}")
             return None
 
-    def process_images(self, docx_path: Path) -> List[Path]:
+    def process_images(
+        self,
+        docx_path: Path,
+        output_dir: Optional[Path] = None,
+        max_width: int = 1200,
+        quality: int = 85,
+    ) -> List[Path]:
         """Extract and process images from DOCX file."""
+        if output_dir is None:
+            output_dir = Path(tempfile.mkdtemp(prefix="docx2shelf_images_"))
+        else:
+            output_dir.mkdir(parents=True, exist_ok=True)
+
         try:
             with ZipFile(docx_path, "r") as zip_file:
                 image_files = [
@@ -532,7 +544,11 @@ class ParallelImageProcessor:
                     try:
                         image_data = zip_file.read(image_file)
                         processed_path = self._process_single_image(
-                            image_data, Path(image_file).name
+                            Path(image_file).name,
+                            image_data,
+                            output_dir,
+                            max_width,
+                            quality,
                         )
                         if processed_path:
                             processed_images.append(processed_path)
@@ -544,13 +560,26 @@ class ParallelImageProcessor:
             print(f"Failed to extract images from {docx_path}: {e}")
             return []
 
-    def process_image_data(self, image_data_list: List[Tuple[str, bytes]]) -> List[Path]:
+    def process_image_data(
+        self,
+        image_data_list: List[Tuple[str, bytes]],
+        output_dir: Optional[Path] = None,
+        max_width: int = 1200,
+        quality: int = 85,
+    ) -> List[Path]:
         """Process a list of image data tuples (filename, data)."""
+        if output_dir is None:
+            output_dir = Path(tempfile.mkdtemp(prefix="docx2shelf_images_"))
+        else:
+            output_dir.mkdir(parents=True, exist_ok=True)
+
         processed_images = []
 
         for filename, data in image_data_list:
             try:
-                processed_path = self._process_single_image(data, filename)
+                processed_path = self._process_single_image(
+                    filename, data, output_dir, max_width, quality
+                )
                 if processed_path:
                     processed_images.append(processed_path)
             except Exception as e:
