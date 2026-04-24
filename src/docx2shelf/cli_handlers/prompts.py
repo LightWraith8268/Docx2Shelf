@@ -24,7 +24,8 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
         prompt_bool,
         prompt_select,
     )
-    from ..metadata import parse_kv_file, build_output_filename
+    from ..metadata import build_output_filename
+    from ..utils import parse_kv_file
     import sys as _sys
 
     interactive = (not getattr(args, "no_prompt", False)) and _sys.stdin.isatty()
