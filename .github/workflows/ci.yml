@@ -65,28 +65,7 @@ jobs:
             python scripts/run_tests.py --mode full --coverage
           elif [ "${{ matrix.test-scope }}" = "performance" ]; then
             python scripts/run_tests.py --mode ci --verbose
-            # Run performance benchmarks
-            python -c "
-            import time
-            from docx2shelf.convert import convert_file_to_html
-            from pathlib import Path
-
-            # Create test content
-            test_content = '<h1>Chapter 1</h1>' + '<p>Test paragraph.</p>' * 1000
-            test_file = Path('benchmark_test.html')
-            test_file.write_text(test_content)
-
-            # Benchmark conversion
-            start = time.time()
-            result = convert_file_to_html(test_file)
-            duration = time.time() - start
-
-            print(f'Performance: Converted {len(test_content)} chars in {duration:.2f}s')
-            print(f'Throughput: {len(test_content)/duration:.0f} chars/sec')
-
-            # Cleanup
-            test_file.unlink()
-            "
+            python scripts/bench_conversion.py
           else
             python scripts/run_tests.py --mode ci --coverage
           fi
