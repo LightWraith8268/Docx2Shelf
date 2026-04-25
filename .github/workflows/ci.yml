@@ -143,7 +143,13 @@ jobs:
         run: |
           python -m docx2shelf plugins discover
 
-      - name: Test plugin listing
+      - name: Test plugin creation
         run: |
+          python -m docx2shelf plugins create test_plugin --template basic
+          ls -la test_plugin.py
+
+      - name: Test plugin loading
+        run: |
+          python -m docx2shelf plugins load test_plugin.py
           python -m docx2shelf plugins list
 
