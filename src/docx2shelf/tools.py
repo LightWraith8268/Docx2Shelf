@@ -280,11 +280,15 @@ def epubcheck_cmd() -> Optional[list[str]]:
     wrapper = td / ("epubcheck.bat" if os.name == "nt" else "epubcheck")
     if wrapper.exists():
         return [str(wrapper)]
-    jar = td / "epubcheck.jar"
-    if jar.exists():
-        java = shutil.which("java")
-        if java:
-            return [java, "-jar", str(jar)]
+    # Look for an extracted epubcheck-<version>/epubcheck.jar (preferred — keeps lib/)
+    candidates = sorted(td.glob("epubcheck-*/epubcheck.jar"), reverse=True)
+    candidates.extend([td / "epubcheck.jar"])
+    for jar in candidates:
+        if jar.exists():
+            java = shutil.which("java")
+            if java:
+                return [java, "-jar", str(jar)]
+            break
     which_cmd = shutil.which("epubcheck")
     if which_cmd:
         return [which_cmd]
@@ -413,31 +417,68 @@ def _fetch_epubcheck_checksum(version: str, archive_name: str) -> str | None:
 
 def install_epubcheck(version: str = DEFAULT_EPUBCHECK_VERSION) -> Path:
     td = tools_dir()
-    jar = td / "epubcheck.jar"
-    if jar.exists():
+    extract_root = td / f"epubcheck-{version}"
+    jar = extract_root / "epubcheck.jar"
+    legacy_jar = td / "epubcheck.jar"
+
+    # If we already have a fully-extracted install (jar + lib/), reuse it.
+    if jar.exists() and (extract_root / "lib").is_dir():
         return jar
+
+    # Migrate / replace stale bare-jar installs that lack the lib/ deps.
+    if legacy_jar.exists():
+        try:
+            legacy_jar.unlink()
+        except Exception:
+            pass
+
     base = f"https://github.com/w3c/epubcheck/releases/download/v{version}"
     arc = f"epubcheck-{version}.zip"
     url = f"{base}/{arc}"
     tmp = td / arc
     expect = _fetch_epubcheck_checksum(version, arc)
     _download(url, tmp, attempts=3, expect_sha256=expect)
+
+    extract_root.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(tmp) as z:
-        member = next((m for m in z.namelist() if m.endswith("/epubcheck.jar")), None)
-        if not member:
-            # sometimes jar is at root
-            member = next((m for m in z.namelist() if m.endswith("epubcheck.jar")), None)
-        if not member:
-            raise RuntimeError("epubcheck.jar not found in archive")
-        with z.open(member) as src, open(jar, "wb") as dst:
-            shutil.copyfileobj(src, dst)
-    # Create a wrapper for convenience
+        # Find the top-level directory inside the archive (e.g. "epubcheck-5.1.0/").
+        top_levels = {n.split("/", 1)[0] for n in z.namelist() if "/" in n}
+        prefix: str | None = None
+        if len(top_levels) == 1:
+            only = next(iter(top_levels))
+            if any(n == f"{only}/epubcheck.jar" for n in z.namelist()):
+                prefix = f"{only}/"
+        for member in z.namelist():
+            if member.endswith("/"):
+                continue
+            rel = member[len(prefix):] if prefix and member.startswith(prefix) else member
+            if not rel:
+                continue
+            target = extract_root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with z.open(member) as src, open(target, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+
+    if not jar.exists():
+        raise RuntimeError(
+            f"epubcheck.jar not found after extracting {arc} into {extract_root}"
+        )
+    if not (extract_root / "lib").is_dir():
+        raise RuntimeError(
+            f"epubcheck lib/ directory missing after extraction; "
+            f"runtime classpath would be incomplete (got: "
+            f"{[p.name for p in extract_root.iterdir()]})"
+        )
+
+    # Wrapper invokes the extracted jar so the manifest's Class-Path resolves
+    # against the sibling lib/ directory.
     wrapper = td / ("epubcheck.bat" if os.name == "nt" else "epubcheck")
     if os.name == "nt":
         wrapper.write_text(f'@echo off\njava -jar "{jar}" %*\n', encoding="utf-8")
     else:
-        # Use single-quoted f-string to avoid escaping inner double quotes
-        wrapper.write_text(f'#!/usr/bin/env sh\nexec java -jar "{jar}" "$@"\n', encoding="utf-8")
+        wrapper.write_text(
+            f'#!/usr/bin/env sh\nexec java -jar "{jar}" "$@"\n', encoding="utf-8"
+        )
         try:
             wrapper.chmod(0o755)
         except Exception:

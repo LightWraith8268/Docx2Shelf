@@ -100,11 +100,19 @@ def main(argv: Optional[list[str]] = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
-    # Perform a quick update check in a background thread if not running update command
-    if not (argv and "update" in argv[0]):
+    # Perform a quick update check in a background thread if not running update command.
+    # Skip entirely in offline mode (env var DOCX2SHELF_OFFLINE=1 or --offline flag) so
+    # automated/airgapped runs make zero network calls.
+    import os
+
+    offline_mode = (
+        os.environ.get("DOCX2SHELF_OFFLINE", "").strip() not in ("", "0", "false", "False")
+        or "--offline" in argv
+    )
+    if not offline_mode and not (argv and "update" in argv[0]):
         import threading
 
-        update_thread = threading.Thread(target=check_for_updates)
+        update_thread = threading.Thread(target=check_for_updates, daemon=True)
         update_thread.start()
 
     if not argv:
@@ -118,6 +126,16 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     if args.command == "build":
         args = _prompt_missing(args)
+        if getattr(args, "offline", False):
+            from .cli_handlers.watch import offline_preflight
+
+            rc = offline_preflight(args)
+            if rc != 0:
+                return rc
+        if getattr(args, "watch", False):
+            from .cli_handlers.watch import run_build_watch
+
+            return run_build_watch(args, run_build)
         return run_build(args)
     if args.command == "docx":
         return run_docx(args)
