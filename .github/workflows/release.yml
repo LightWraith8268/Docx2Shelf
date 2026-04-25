@@ -31,12 +31,12 @@ jobs:
       tag:      ${{ steps.plan.outputs.tag }}
       released: ${{ steps.plan.outputs.released }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -83,11 +83,11 @@ jobs:
     if: needs.bump.outputs.released == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.bump.outputs.tag }}
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -170,12 +170,12 @@ jobs:
       APP_TAG:     ${{ needs.bump.outputs.tag }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         ref: ${{ needs.bump.outputs.tag }}
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.11'
         architecture: 'x64'
@@ -338,7 +338,7 @@ jobs:
       APP_TAG:     ${{ needs.bump.outputs.tag }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         ref: ${{ needs.bump.outputs.tag }}
 
@@ -595,7 +595,7 @@ jobs:
       APP_TAG:     ${{ needs.bump.outputs.tag }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         ref: ${{ needs.bump.outputs.tag }}
 
@@ -649,7 +649,7 @@ jobs:
         md5sum * > MD5SUMS.txt
 
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ needs.bump.outputs.tag }}
         name: ${{ needs.bump.outputs.tag }}
