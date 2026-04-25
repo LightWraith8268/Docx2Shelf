@@ -26,7 +26,11 @@ from typing import Any, Dict, Generator, List, Optional, Tuple
 from zipfile import ZipFile
 
 import psutil
-from PIL import Image
+
+try:
+    from PIL import Image
+except ImportError:  # Pillow is optional; image-processing paths gate on this.
+    Image = None  # type: ignore[assignment]
 
 from .metadata import BuildOptions
 
@@ -441,6 +445,9 @@ class ParallelImageProcessor:
         self, filename: str, image_data: bytes, output_dir: Path, max_width: int, quality: int
     ) -> Optional[Path]:
         """Process a single image."""
+        if Image is None:
+            print(f"Skipping image {filename}: Pillow not installed")
+            return None
         try:
             # Calculate hash for caching
             image_hash = hashlib.sha256(image_data).hexdigest()

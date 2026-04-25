@@ -32,14 +32,17 @@ def build_pytest_args(mode: str, coverage: bool, verbose: bool) -> list[str]:
     if mode == "ci":
         # Skip slow/property-heavy tests, keep core unit + integration coverage.
         args += ["-m", "not slow and not perf", "--maxfail=10"]
-        for path in CI_IGNORE_TESTS:
-            args += [f"--ignore={path}"]
     elif mode == "full":
         args += ["--maxfail=20"]
     elif mode == "performance":
         args += ["-m", "perf or slow"]
     else:
         raise SystemExit(f"unknown --mode: {mode!r}")
+
+    # Phase-5-stale tests are unconditionally ignored; reintroduce when
+    # underlying APIs are restored.
+    for path in CI_IGNORE_TESTS:
+        args += [f"--ignore={path}"]
 
     if coverage:
         args += [
