@@ -131,6 +131,7 @@ docx2shelf = [
   "assets/css/*.css",
   "templates/*.xhtml",
   "templates/*.xml",
+  "plugin_templates/*.py",
 ]
 
 [tool.black]

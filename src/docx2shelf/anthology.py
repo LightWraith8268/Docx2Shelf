@@ -97,8 +97,8 @@ class SeriesConfig:
 class AnthologyBuilder:
     """Builds anthologies from multiple manuscript sources."""
 
-    def __init__(self, config: AnthologyConfig):
-        self.config = config
+    def __init__(self, config: Optional[AnthologyConfig] = None):
+        self.config = config or AnthologyConfig(title="Untitled Anthology")
         self.stories: List[StoryInfo] = []
         self.author_bios: Dict[str, str] = {}
 
@@ -521,8 +521,8 @@ class AnthologyBuilder:
 class SeriesBuilder:
     """Builds series collections with cross-references."""
 
-    def __init__(self, config: SeriesConfig):
-        self.config = config
+    def __init__(self, config: Optional[SeriesConfig] = None):
+        self.config = config or SeriesConfig(series_title="Untitled Series", author="")
         self.books: List[Tuple[Path, EpubMetadata]] = []
 
     def add_book(self, epub_path: Path, metadata: Optional[EpubMetadata] = None) -> None:

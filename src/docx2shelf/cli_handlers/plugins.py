@@ -149,6 +149,8 @@ def run_plugins(args) -> int:
 
     elif args.plugin_cmd == "create":
         # Create a new plugin from template
+        from importlib import resources
+
         output_dir = Path(args.output) if args.output else Path.cwd()
         plugin_file = output_dir / f"{args.name}.py"
 
@@ -156,44 +158,40 @@ def run_plugins(args) -> int:
             print(f"Error: Plugin file already exists: {plugin_file}")
             return 1
 
-        # Get template content
-        template_path = Path(__file__).parent.parent.parent / "docs" / "plugins" / "examples"
-
-        if args.template == "basic":
-            template_file = template_path / "basic_template.py"
-        elif args.template == "html-cleaner":
-            template_file = template_path / "html_cleaner.py"
-        elif args.template == "metadata-enhancer":
-            template_file = template_path / "metadata_enhancer.py"
-
-        if not template_file.exists():
-            print(f"Error: Template not found: {template_file}")
+        template_map = {
+            "basic": "basic_template.py",
+            "html-cleaner": "html_cleaner.py",
+            "metadata-enhancer": "metadata_enhancer.py",
+        }
+        template_filename = template_map.get(args.template)
+        if not template_filename:
+            print(
+                f"Error: Unknown template {args.template!r}. "
+                f"Valid templates: {sorted(template_map)}"
+            )
             return 1
 
-        # Copy and customize template
-        shutil.copy2(template_file, plugin_file)
+        try:
+            template_resource = resources.files("docx2shelf.plugin_templates").joinpath(
+                template_filename
+            )
+            content = template_resource.read_text(encoding="utf-8")
+        except (FileNotFoundError, ModuleNotFoundError) as exc:
+            print(f"Error: Template not found in package: {template_filename} ({exc})")
+            return 1
 
         # Replace placeholder names in the basic template
         if args.template == "basic":
-            with open(plugin_file, "r") as f:
-                content = f.read()
-
+            class_prefix = args.name.title().replace("_", "")
             content = content.replace("basic_template", args.name)
+            content = content.replace("BasicTemplatePlugin", f"{class_prefix}Plugin")
+            content = content.replace("BasicPreProcessor", f"{class_prefix}PreProcessor")
+            content = content.replace("BasicPostProcessor", f"{class_prefix}PostProcessor")
             content = content.replace(
-                "BasicTemplatePlugin", f"{args.name.title().replace('_', '')}Plugin"
-            )
-            content = content.replace(
-                "BasicPreProcessor", f"{args.name.title().replace('_', '')}PreProcessor"
-            )
-            content = content.replace(
-                "BasicPostProcessor", f"{args.name.title().replace('_', '')}PostProcessor"
-            )
-            content = content.replace(
-                "BasicMetadataResolver", f"{args.name.title().replace('_', '')}MetadataResolver"
+                "BasicMetadataResolver", f"{class_prefix}MetadataResolver"
             )
 
-            with open(plugin_file, "w") as f:
-                f.write(content)
+        plugin_file.write_text(content, encoding="utf-8")
 
         print(f"✓ Created plugin: {plugin_file}")
         print(f"Template: {args.template}")

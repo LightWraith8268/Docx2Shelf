@@ -13,7 +13,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -101,8 +101,11 @@ class HotReloadHandler(FileSystemEventHandler):
 class LSPServer:
     """Language Server Protocol support for Docx2Shelf development."""
 
-    def __init__(self, project_root: Path):
-        self.project_root = project_root
+    def __init__(self, project_root: Optional[Path] = None):
+        # Tests inspect `workspace_root` and expect None when no root is given;
+        # internal callers fall back to cwd via project_root.
+        self.workspace_root = project_root
+        self.project_root = project_root or Path.cwd()
         self.symbols = {}
         self.diagnostics = {}
 
@@ -606,11 +609,15 @@ testing:
 class DevelopmentWorkflow:
     """Manages development workflow with hot-reload and debugging."""
 
-    def __init__(self, project_root: Path, config: DevelopmentConfig):
-        self.project_root = project_root
-        self.config = config
+    def __init__(
+        self,
+        project_root: Optional[Path] = None,
+        config: Optional[DevelopmentConfig] = None,
+    ):
+        self.project_root = project_root or Path.cwd()
+        self.config = config or DevelopmentConfig()
         self.observer = None
-        self.lsp_server = LSPServer(project_root)
+        self.lsp_server = LSPServer(self.project_root)
         self.code_generator = CodeGenerator()
 
     def start_development_server(self, port: int = 3000):
