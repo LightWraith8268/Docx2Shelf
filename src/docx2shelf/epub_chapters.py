@@ -253,7 +253,7 @@ def process_chapters(
         raise RuntimeError("ebooklib is required to assemble EPUB. Install 'ebooklib'.") from e
 
     # Import the HTML item creator from epub_pages
-    from .epub_pages import create_html_item
+    from .epub_pages import create_html_item, link_chapter_stylesheet
 
     chapters = []
     chapter_links = []
@@ -278,7 +278,7 @@ def process_chapters(
                 )
                 chap_fn = f"text/chap_{chap_num:03d}.xhtml"
                 chap = create_html_item(chapter_title, chap_fn, chunk2, meta.language)
-                chap.add_item(style_item)
+                link_chapter_stylesheet(chap, style_item)
                 book.add_item(chap)
                 chapters.append(chap)
                 # Build links for TOC using custom title
@@ -299,7 +299,7 @@ def process_chapters(
             chunk2, h1_id, subs = inject_heading_ids(chunk, chap_num, opts.toc_depth)
             chap_fn = f"text/chap_{chap_num:03d}.xhtml"
             chap = create_html_item(f"Chapter {chap_num}", chap_fn, chunk2, meta.language)
-            chap.add_item(style_item)
+            link_chapter_stylesheet(chap, style_item)
             book.add_item(chap)
             chapters.append(chap)
             chap_link = epub.Link(
@@ -324,7 +324,7 @@ def process_chapters(
             chunk2, h1_id, subs = inject_heading_ids(chunk_with_figures, i, opts.toc_depth)
             chap_fn = f"text/chap_{i:03d}.xhtml"
             chap = create_html_item(f"Chapter {i}", chap_fn, chunk2, meta.language)
-            chap.add_item(style_item)
+            link_chapter_stylesheet(chap, style_item)
             book.add_item(chap)
             chapters.append(chap)
             # Build links for TOC

@@ -219,27 +219,29 @@ class EPUBValidator:
                 continue
 
             # Parse line format: SEVERITY(location): message
-            severity = None
-            message = line
-            location = None
+            # Match only the structured EPUBCheck diagnostic prefix to avoid
+            # capturing summary lines like "No errors or warnings detected."
+            # or "Messages: 0 fatals / 0 errors / ...".
+            import re as _re
 
-            if "ERROR" in line.upper():
+            diag_match = _re.match(
+                r"^\s*(ERROR|WARNING|INFO|FATAL|USAGE)\(([^)]+)\):\s*(.*)$", line
+            )
+            if not diag_match:
+                continue
+
+            kind = diag_match.group(1).upper()
+            if kind in ("ERROR", "FATAL"):
                 severity = "error"
-            elif "WARNING" in line.upper():
+            elif kind == "WARNING":
                 severity = "warning"
-            elif "INFO" in line.upper():
+            elif kind == "INFO":
                 severity = "info"
             else:
                 continue
 
-            # Try to extract location and message
-            if "(" in line and "):" in line:
-                parts = line.split("(", 1)
-                if len(parts) == 2:
-                    location_part = parts[1].split("):", 1)[0]
-                    message_part = parts[1].split("):", 1)[1].strip()
-                    location = location_part
-                    message = message_part
+            location = diag_match.group(2)
+            message = diag_match.group(3).strip()
 
             issue = ValidationIssue(
                 severity=severity, message=message, location=location, rule="epubcheck_text_parse"

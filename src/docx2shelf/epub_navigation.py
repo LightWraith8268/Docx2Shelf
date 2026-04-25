@@ -64,16 +64,19 @@ def determine_reader_start_link(chapter_links: list, opts: BuildOptions) -> str:
     Returns:
         str: Link to the start of main content
     """
-    start_reading_link = "text/chap_001.xhtml#ch001"  # Default start
+    # Default: first chapter's actual href (which carries the real fragment id
+    # injected by inject_heading_ids — Pandoc-generated ids like
+    # "chapter-1-the-beginning" do not match the legacy "ch001" placeholder).
+    if chapter_links:
+        first = chapter_links[0]
+        start_reading_link = getattr(first, "href", "") or "text/chap_001.xhtml"
+    else:
+        start_reading_link = "text/chap_001.xhtml"
 
     if opts.reader_start_chapter:
-        # Find the chapter that matches the start pattern
-        for i, chap_link in enumerate(chapter_links):
+        for chap_link in chapter_links:
             if opts.reader_start_chapter.lower() in chap_link.title.lower():
-                # Extract chapter number from the link href
-                match = re.search(r"chap_(\d+)\.xhtml#(ch\d+)", chap_link.href)
-                if match:
-                    start_reading_link = chap_link.href
+                start_reading_link = chap_link.href
                 break
 
     return start_reading_link

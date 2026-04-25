@@ -220,7 +220,9 @@ class FigureProcessor:
         html = f'<h1>{self.config.list_of_figures_title}</h1>\n<ol class="list-of-figures">\n'
 
         for figure in self.figures:
-            chapter_link = f"../{figure.chapter_id}.xhtml" if figure.chapter_id else ""
+            # LOF and chapter files both live under EPUB/text/, so use a
+            # same-directory relative link (no leading "../").
+            chapter_link = f"{figure.chapter_id}.xhtml" if figure.chapter_id else ""
             figure_link = f"{chapter_link}#{figure.id}" if chapter_link else f"#{figure.id}"
 
             html += f'  <li><a href="{figure_link}">'
@@ -246,7 +248,9 @@ class FigureProcessor:
         html = f'<h1>{self.config.list_of_tables_title}</h1>\n<ol class="list-of-tables">\n'
 
         for table in self.tables:
-            chapter_link = f"../{table.chapter_id}.xhtml" if table.chapter_id else ""
+            # LOT and chapter files both live under EPUB/text/, so use a
+            # same-directory relative link (no leading "../").
+            chapter_link = f"{table.chapter_id}.xhtml" if table.chapter_id else ""
             table_link = f"{chapter_link}#{table.id}" if chapter_link else f"#{table.id}"
 
             html += f'  <li><a href="{table_link}">'
@@ -278,6 +282,10 @@ class FigureProcessor:
         self.table_counter = 0
         self.figures.clear()
         self.tables.clear()
+
+
+# Alias for plugin loader (plugin_types.py expects `FiguresProcessor`).
+FiguresProcessor = FigureProcessor
 
 
 def process_figures_and_tables(

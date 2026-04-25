@@ -117,8 +117,8 @@ class CrossRefConfig:
 class CrossRefProcessor:
     """Processes cross-references and generates stable anchors."""
 
-    def __init__(self, config: CrossRefConfig):
-        self.config = config
+    def __init__(self, config: Optional[CrossRefConfig] = None):
+        self.config = config or create_default_crossref_config()
         self.targets: Dict[str, AnchorTarget] = {}
         self.references: List[CrossReference] = []
         self.id_registry: Set[str] = set()

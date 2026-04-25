@@ -133,8 +133,8 @@ class ChapterNotes:
 class NotesProcessor:
     """Processes notes and generates proper back-references."""
 
-    def __init__(self, config: NotesConfig):
-        self.config = config
+    def __init__(self, config: Optional[NotesConfig] = None):
+        self.config = config or create_default_notes_config()
         self.notes: Dict[str, Note] = {}
         self.calls: Dict[str, NoteCall] = {}
         self.chapters: List[ChapterNotes] = []
