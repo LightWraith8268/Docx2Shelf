@@ -47,21 +47,31 @@ def _run_epubcheck_validation(epub_path: Path, quiet: bool = False) -> None:
 
         output = (proc.stdout or "") + "\n" + (proc.stderr or "")
 
-        # Parse output for issues
-        errors = []
-        warnings = []
-        info_messages = []
+        # Parse output for issues. EPUBCheck emits diagnostic lines that begin
+        # with one of: ERROR(...), WARNING(...), INFO(...), or FATAL(...).
+        # A naive substring match catches summary lines like "No errors or
+        # warnings detected." and "Messages: 0 fatals / 0 errors / ..." as
+        # errors. Match only the structured diagnostic prefix.
+        import re as _re
+
+        errors: list[str] = []
+        warnings: list[str] = []
+        info_messages: list[str] = []
+        diag_re = _re.compile(r"^\s*(ERROR|WARNING|INFO|FATAL|USAGE)\(")
 
         for line in output.splitlines():
             line = line.strip()
             if not line:
                 continue
-
-            if "ERROR" in line.upper():
+            m = diag_re.match(line)
+            if not m:
+                continue
+            kind = m.group(1).upper()
+            if kind in ("ERROR", "FATAL"):
                 errors.append(line)
-            elif "WARNING" in line.upper():
+            elif kind == "WARNING":
                 warnings.append(line)
-            elif "INFO" in line.upper():
+            elif kind == "INFO":
                 info_messages.append(line)
 
         # Generate summary

@@ -116,8 +116,8 @@ class IndexSection:
 class IndexGenerator:
     """Generates index from Word XE fields and document content."""
 
-    def __init__(self, config: IndexConfig):
-        self.config = config
+    def __init__(self, config: Optional[IndexConfig] = None):
+        self.config = config or create_default_index_config()
         self.entries: Dict[str, IndexEntry] = {}
         self.raw_entries: List[Dict] = []
         self._stats = {

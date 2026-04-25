@@ -28,6 +28,26 @@ def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def link_chapter_stylesheet(chap, style_item) -> None:
+    """Attach a stylesheet link to a chapter using a path relative to the chapter file.
+
+    ebooklib's `EpubHtml.add_item` calls `add_link(href=style.get_name(), ...)` with
+    the style item's manifest name (EPUB-root-relative). When the chapter lives in a
+    subdirectory like `text/`, that produces `<link href="style/base.css">` which a
+    browser/EPUBCheck resolves as `text/style/base.css` and rejects (RSC-007).
+
+    This helper computes the correct relative path from the chapter to the
+    stylesheet and registers a manual link, avoiding the broken default.
+    """
+    import posixpath
+
+    chap_name = getattr(chap, "file_name", "") or ""
+    style_name = getattr(style_item, "file_name", "") or style_item.get_name()
+    chap_dir = posixpath.dirname(chap_name)
+    rel = posixpath.relpath(style_name, chap_dir) if chap_dir else style_name
+    chap.add_link(href=rel, rel="stylesheet", type="text/css")
+
+
 def create_html_item(title: str, file_name: str, content: str, lang: str) -> object:
     """Create an EPUB HTML item.
 
@@ -180,26 +200,46 @@ def create_landmarks_page(
         EpubHtml | None: Landmarks item if successful, None on error
     """
     try:
-        # Build landmarks based on actual spine content
+        # Build landmarks based on actual spine content.
+        # The landmarks page lives at EPUB/text/landmarks.xhtml, so all hrefs
+        # must be expressed relative to that location.
+        import posixpath
+
+        landmarks_dir = "text"
+
+        def _rel_href(target: str) -> str:
+            """Convert an EPUB-root-relative path to landmarks-relative."""
+            if not target:
+                return target
+            # Anchors only: leave as-is.
+            if target.startswith("#"):
+                return target
+            # Split off fragment.
+            href, _, fragment = target.partition("#")
+            rel = posixpath.relpath(href, landmarks_dir)
+            return f"{rel}#{fragment}" if fragment else rel
+
         landmark_entries = []
 
-        # Cover is special - always first if present
-        if meta.cover_path and meta.cover_path.exists():
-            landmark_entries.append("<li><a epub:type='cover' href='cover.xhtml'>Cover</a></li>")
+        # Cover is intentionally omitted: ebooklib's set_cover registers
+        # cover.xhtml in the manifest but not the spine, and EPUBCheck's
+        # RSC-011 rule rejects landmarks references to non-spine resources.
+        # Cover discovery happens via the OPF metadata cover element.
+        _ = meta.cover_path  # cover handling lives in epub_metadata.set_cover
 
         # Title page
         landmark_entries.append(
-            "<li><a epub:type='titlepage' href='text/title.xhtml'>Title Page</a></li>"
+            f"<li><a epub:type='titlepage' href='{_rel_href('text/title.xhtml')}'>Title Page</a></li>"
         )
 
         # Table of contents
         landmark_entries.append(
-            "<li><a epub:type='toc' href='nav.xhtml'>Table of Contents</a></li>"
+            f"<li><a epub:type='toc' href='{_rel_href('nav.xhtml')}'>Table of Contents</a></li>"
         )
 
         # Copyright page
         landmark_entries.append(
-            "<li><a epub:type='copyright-page' href='text/copyright.xhtml'>Copyright</a></li>"
+            f"<li><a epub:type='copyright-page' href='{_rel_href('text/copyright.xhtml')}'>Copyright</a></li>"
         )
 
         # Add other front matter items if they exist
@@ -217,7 +257,7 @@ def create_landmarks_page(
                 else:
                     epub_type = "frontmatter"
                 landmark_entries.append(
-                    f"<li><a epub:type='{epub_type}' href='{item.file_name}'>{item.title}</a></li>"
+                    f"<li><a epub:type='{epub_type}' href='{_rel_href(item.file_name)}'>{item.title}</a></li>"
                 )
 
         # Add list items if present
@@ -231,13 +271,13 @@ def create_landmarks_page(
                     else "frontmatter"
                 )
                 landmark_entries.append(
-                    f"<li><a epub:type='{epub_type}' href='{item.file_name}'>{item.title}</a></li>"
+                    f"<li><a epub:type='{epub_type}' href='{_rel_href(item.file_name)}'>{item.title}</a></li>"
                 )
 
         # Start of main content
         if chapters:
             landmark_entries.append(
-                f"<li><a epub:type='bodymatter' href='{start_reading_link}'>Start Reading</a></li>"
+                f"<li><a epub:type='bodymatter' href='{_rel_href(start_reading_link)}'>Start Reading</a></li>"
             )
 
         landmarks_html = (

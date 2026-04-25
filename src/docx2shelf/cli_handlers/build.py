@@ -431,18 +431,33 @@ def run_build(args: argparse.Namespace) -> int:
         except Exception as e:
             print(f"EPUBCheck install failed: {e}", file=sys.stderr)
 
-    # Apply split strategy if needed
+    # Apply split strategy if needed.
+    # convert_file_to_html wraps each input file's HTML in a single outer
+    # <section> for cleanliness. When re-splitting, that wrapper would land
+    # in the pre-first-heading chunk and produce an empty leading XHTML file
+    # (with a NCX fragment that doesn't exist). Strip outer <section> tags
+    # before re-splitting so the splitter sees raw HTML.
+    import re as _re
+
+    def _unwrap_outer_section(parts: list[str]) -> str:
+        joined_parts: list[str] = []
+        for chunk in parts:
+            stripped = chunk.strip()
+            m = _re.match(r"^<section>(.*)</section>\s*$", stripped, _re.DOTALL)
+            joined_parts.append(m.group(1) if m else chunk)
+        return "".join(joined_parts)
+
     if args.split_at in {"h1", "h2"}:
-        combined = "".join(html_chunks)
+        combined = _unwrap_outer_section(html_chunks)
         html_chunks = split_html_by_heading(combined, level=args.split_at)
     elif args.split_at in {"h3", "h4", "h5", "h6"}:
-        combined = "".join(html_chunks)
+        combined = _unwrap_outer_section(html_chunks)
         html_chunks = split_html_by_heading_level(combined, level=args.split_at)
     elif args.split_at == "pagebreak":
-        combined = "".join(html_chunks)
+        combined = _unwrap_outer_section(html_chunks)
         html_chunks = split_html_by_pagebreak(combined)
     elif args.split_at == "mixed":
-        combined = "".join(html_chunks)
+        combined = _unwrap_outer_section(html_chunks)
         mixed_pattern = getattr(args, "mixed_split_pattern", None)
         html_chunks = split_html_mixed(combined, mixed_pattern)
 
