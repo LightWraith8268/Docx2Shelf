@@ -231,7 +231,14 @@ def check_pypandoc_availability() -> tuple[bool, str]:
         (is_available, status_message)
     """
     try:
+        import os
+
         import pypandoc
+
+        # Point pypandoc at the docx2shelf-managed pandoc binary if present
+        managed = pandoc_path()
+        if managed and not os.environ.get("PYPANDOC_PANDOC"):
+            os.environ["PYPANDOC_PANDOC"] = str(managed)
 
         # Check if pypandoc can find pandoc
         try:
