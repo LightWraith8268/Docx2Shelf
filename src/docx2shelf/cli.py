@@ -59,6 +59,7 @@ from .cli_handlers import (
     run_connectors,
     run_convert,
     run_doctor,
+    run_docx,
     run_enterprise,
     run_init_metadata,
     run_list_profiles,
@@ -118,6 +119,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     if args.command == "build":
         args = _prompt_missing(args)
         return run_build(args)
+    if args.command == "docx":
+        return run_docx(args)
     if args.command == "init-metadata":
         return run_init_metadata(args)
     if args.command == "wizard":

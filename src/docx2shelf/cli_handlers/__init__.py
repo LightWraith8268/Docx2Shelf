@@ -4,6 +4,7 @@ from .ai import run_ai_alt_text, run_ai_command, run_ai_config, run_ai_genre, ru
 from .batch import run_batch_mode, run_wizard
 from .build import run_build
 from .conversion import run_convert, run_init_metadata
+from .docx import run_docx
 from .enterprise import (
     run_enterprise,
     run_enterprise_api,
@@ -33,6 +34,7 @@ __all__ = [
     "run_batch_mode",
     "run_build",
     "run_convert",
+    "run_docx",
     "run_enterprise",
     "run_enterprise_api",
     "run_enterprise_batch",

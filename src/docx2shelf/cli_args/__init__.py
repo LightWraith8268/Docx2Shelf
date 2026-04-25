@@ -17,6 +17,7 @@ import argparse
 from .ai import add_ai_parser
 from .build import add_build_parser
 from .connectors import add_connectors_parser
+from .docx import add_docx_parser
 from .misc import add_misc_parsers
 from .plugins import add_plugins_parser
 from .themes import add_themes_parser
@@ -47,6 +48,7 @@ def _arg_parser() -> argparse.ArgumentParser:
 
     # Add all subcommand parsers
     add_build_parser(sub)
+    add_docx_parser(sub)
     add_tools_parser(sub)
     add_plugins_parser(sub)
     add_connectors_parser(sub)
