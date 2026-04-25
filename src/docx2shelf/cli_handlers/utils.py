@@ -229,8 +229,8 @@ def print_metadata_summary(meta: EpubMetadata, opts: BuildOptions, output: Path 
     print(f" {mark(meta.publisher)} Publisher: {meta.publisher or '—'}")
     print(f" {mark(meta.description)} Description: {meta.description or '—'}")
     print(f" {mark(meta.isbn)} ISBN: {meta.isbn or '—'}")
-    print(f" {mark(meta.series_name)} Series: {meta.series_name or '—'}")
-    if meta.series_name and meta.series_index:
+    print(f" {mark(meta.series)} Series: {meta.series or '—'}")
+    if meta.series and meta.series_index:
         print(f"                 Index: {meta.series_index}")
     print("\n== Build Options ==")
     print(f" Split at: {opts.split_at}")
@@ -276,8 +276,8 @@ def save_metadata_to_file(metadata: EpubMetadata, output_path: Path):
         lines.append(f"description: {metadata.description}")
     if metadata.isbn:
         lines.append(f"isbn: {metadata.isbn}")
-    if metadata.series_name:
-        lines.append(f"series: {metadata.series_name}")
+    if metadata.series:
+        lines.append(f"series: {metadata.series}")
     if metadata.series_index:
         lines.append(f"series_index: {metadata.series_index}")
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

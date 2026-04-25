@@ -46,17 +46,19 @@ def run_build(args: argparse.Namespace) -> int:
         validate_lang_code,
         build_output_filename,
     )
-    from ..security import (
+    from ..path_utils import (
         normalize_path,
         is_safe_path,
         safe_filename,
-        sanitize_filename,
         ensure_unicode_path,
     )
-    from ..error_handling import handle_error
+    from ..utils import sanitize_filename
+    from ..error_handler import handle_error
     from ..tools import pandoc_path, install_pandoc, epubcheck_cmd, install_epubcheck
     from ..prompts import prompt_bool
-    from ..ai_features import get_ai_manager, enhance_metadata_with_ai, detect_genre_with_ai
+    from ..ai_integration import get_ai_manager
+    from ..ai_metadata import enhance_metadata_with_ai
+    from ..ai_genre_detection import detect_genre_with_ai
     from .utils import (
         apply_metadata_dict,
         print_checklist,
@@ -514,7 +516,7 @@ def run_build(args: argparse.Namespace) -> int:
 
     # EPUB validation phase
     if getattr(args, "epubcheck", "on") == "on" and output.exists():
-        from .validation import print_validation_report, validate_epub
+        from ..validation import print_validation_report, validate_epub
 
         if not getattr(args, "quiet", False):
             print("\n[VALIDATION] Validating EPUB quality...")

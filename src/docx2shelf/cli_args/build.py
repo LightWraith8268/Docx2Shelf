@@ -211,3 +211,20 @@ def add_build_parser(subparsers: argparse._SubParsersAction) -> None:
     )
     b.add_argument("--quiet", action="store_true", help="Reduce output (errors only)")
     b.add_argument("--verbose", action="store_true", help="Increase output (extra diagnostics)")
+    b.add_argument(
+        "--watch",
+        action="store_true",
+        help="Watch input + metadata + cover; rebuild on change. Offline-only polling loop.",
+    )
+    b.add_argument(
+        "--watch-interval",
+        dest="watch_interval",
+        type=float,
+        default=2.0,
+        help="Seconds between watch polls (default: 2.0)",
+    )
+    b.add_argument(
+        "--offline",
+        action="store_true",
+        help="Refuse to run if any tool fetch would need network (preflight pandoc + epubcheck).",
+    )

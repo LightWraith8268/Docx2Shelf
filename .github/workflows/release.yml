@@ -68,8 +68,9 @@ jobs:
           else
             echo "pyproject.toml already at target; creating tag only"
           fi
-          git tag "$NEW_TAG"
-          git push origin HEAD:main --follow-tags
+          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
+          git push origin HEAD:main
+          git push origin "$NEW_TAG"
 
       - name: Dry-run summary
         if: steps.plan.outputs.released == 'true' && github.event.inputs.dry_run == 'true'

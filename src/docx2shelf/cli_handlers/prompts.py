@@ -34,31 +34,40 @@ def _prompt_missing(args: argparse.Namespace) -> argparse.Namespace:
     if not args.input and interactive:
         args.input = prompt("Path to manuscript file or folder", allow_empty=False)
 
-    # Attempt to pre-load metadata from metadata.txt
+    def _find_metadata_file(folder: Path) -> Path | None:
+        for name in ("metadata.txt", "metadata.md"):
+            p = folder / name
+            if p.exists():
+                return p
+        return None
+
+    # Attempt to pre-load metadata from metadata.txt or metadata.md
     md_loaded = False
     if args.input:
         try:
             input_path = Path(args.input).expanduser()
             md_dir = input_path.parent if input_path.is_file() else input_path
-            mfile = md_dir / "metadata.txt"
-            if mfile.exists():
+            mfile = _find_metadata_file(md_dir)
+            if mfile is not None:
                 from .utils import apply_metadata_dict
                 apply_metadata_dict(args, parse_kv_file(mfile), md_dir)
                 md_loaded = True
         except Exception:
             pass
-    # If no input yet, try CWD metadata.txt and let it specify input
+    # If no input yet, try CWD metadata file and let it specify input
     if not md_loaded:
-        mfile = Path.cwd() / "metadata.txt"
-        if mfile.exists():
+        mfile = _find_metadata_file(Path.cwd())
+        if mfile is not None:
             md = parse_kv_file(mfile)
             from .utils import apply_metadata_dict
             apply_metadata_dict(args, md, Path.cwd())
-            # If input now set, and a different dir holds another metadata.txt, merge it
+            # If input now set, and a different dir holds another metadata file, merge it
             if args.input:
                 d = Path(args.input).expanduser().resolve().parent
-                if d != Path.cwd() and (d / "metadata.txt").exists():
-                    _apply_metadata_dict(args, parse_kv_file(d / "metadata.txt"), d)
+                if d != Path.cwd():
+                    other = _find_metadata_file(d)
+                    if other is not None:
+                        apply_metadata_dict(args, parse_kv_file(other), d)
 
     # After potential docx selection, attempt to auto-detect or pick common cover file name
     if not args.cover and args.input:

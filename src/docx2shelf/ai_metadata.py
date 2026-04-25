@@ -123,7 +123,7 @@ class AIMetadataEnhancer:
             "language": metadata.language,
             "keywords": getattr(metadata, "keywords", []),
             "genre": getattr(metadata, "genre", ""),
-            "series_name": getattr(metadata, "series_name", ""),
+            "series_name": getattr(metadata, "series", ""),
             "publication_date": getattr(metadata, "publication_date", ""),
         }
 
