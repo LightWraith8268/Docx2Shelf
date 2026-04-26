@@ -707,8 +707,22 @@ class DevelopmentWorkflow:
             return
         handler = HotReloadHandler(callback or (lambda _path: None), self.config)
         self.observer = Observer()
+        # Watchdog's Observer is a non-daemon Thread by default; if the
+        # process exits without stop_hot_reload() being called (e.g. pytest
+        # crash, abrupt shutdown), the interpreter would block forever
+        # waiting for it. Mark as daemon so the runtime can reap it.
+        try:
+            self.observer.daemon = True
+        except AttributeError:
+            pass
         self.observer.schedule(handler, str(self.project_root), recursive=True)
-        self.observer.start()
+        try:
+            self.observer.start()
+        except Exception:
+            # Some sandboxed CI runners refuse inotify/fsevents; fall back to
+            # tracking state without a live watcher rather than blocking the
+            # whole test suite.
+            self.observer = None
         self._hot_reload_active = True
 
     def stop_hot_reload(self) -> None:
