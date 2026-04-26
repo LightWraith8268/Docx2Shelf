@@ -24,6 +24,12 @@ CI_IGNORE_TESTS: tuple[str, ...] = ()
 def build_pytest_args(mode: str, coverage: bool, verbose: bool) -> list[str]:
     args = [sys.executable, "-m", "pytest"]
 
+    # Hard cap each individual test at 120s so a hung browser/inotify call
+    # cannot stall the whole suite (CI runners give no useful feedback when
+    # a job hangs for 60+ minutes). Requires pytest-timeout (declared in
+    # [project.optional-dependencies].dev).
+    args += ["--timeout=120", "--timeout-method=thread"]
+
     if mode == "ci":
         # Skip slow/property-heavy tests, keep core unit + integration coverage.
         args += ["-m", "not slow and not perf", "--maxfail=10"]
