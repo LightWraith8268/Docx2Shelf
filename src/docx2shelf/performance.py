@@ -215,13 +215,19 @@ class BuildCache:
 
     def get_options_hash(self, options: BuildOptions) -> str:
         """Calculate hash of build options."""
-        # Convert options to JSON for consistent hashing
+        # Hash only fields that affect cacheable build output. Use getattr with
+        # defaults so older option names referenced by tests/scripts (e.g.
+        # `css_options`, `split_on`) don't blow up after API drift.
         options_dict = {
-            "theme": options.theme,
-            "css_options": options.css_options,
-            "split_on": options.split_on,
-            "max_toc_depth": options.max_toc_depth,
-            "include_pagebreaks": options.include_pagebreaks,
+            "theme": getattr(options, "theme", ""),
+            "split_at": getattr(options, "split_at", getattr(options, "split_on", "")),
+            "toc_depth": getattr(options, "toc_depth", getattr(options, "max_toc_depth", 2)),
+            "page_list": getattr(options, "page_list", False),
+            "image_format": getattr(options, "image_format", ""),
+            "image_quality": getattr(options, "image_quality", 0),
+            "epub_version": getattr(options, "epub_version", "3"),
+            "hyphenate": getattr(options, "hyphenate", True),
+            "justify": getattr(options, "justify", True),
         }
 
         options_json = json.dumps(options_dict, sort_keys=True)

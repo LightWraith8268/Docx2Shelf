@@ -10,6 +10,7 @@ import shutil
 import tempfile
 import threading
 import time
+import zipfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -45,7 +46,7 @@ class TestAnthologyBuilder:
     def teardown_method(self):
         """Clean up test environment."""
         if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_anthology_config_creation(self):
         """Test creating anthology configuration."""
@@ -177,7 +178,7 @@ class TestSeriesBuilder:
     def teardown_method(self):
         """Clean up test environment."""
         if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_series_config_creation(self):
         """Test creating series configuration."""
@@ -264,7 +265,7 @@ class TestPerformanceOptimizations:
     def teardown_method(self):
         """Clean up test environment."""
         if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_performance_monitor(self):
         """Test performance monitoring."""
@@ -388,7 +389,7 @@ class TestPluginMarketplace:
     def teardown_method(self):
         """Clean up test environment."""
         if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_plugin_info_serialization(self):
         """Test plugin info serialization/deserialization."""
@@ -540,7 +541,7 @@ class TestWebBuilder:
     def teardown_method(self):
         """Clean up test environment."""
         if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_web_builder_initialization(self):
         """Test web builder initialization."""
@@ -559,7 +560,7 @@ class TestWebBuilder:
         assert server.builder == builder
         assert hasattr(server, 'httpd')
 
-    @patch('http.server.HTTPServer')
+    @patch('src.docx2shelf.web_builder.HTTPServer')
     def test_web_server_startup(self, mock_server):
         """Test web server startup process."""
         builder = WebBuilder(work_dir=self.temp_dir)
@@ -639,7 +640,7 @@ class TestIntegrationV124:
     def teardown_method(self):
         """Clean up test environment."""
         if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
+            shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_performance_with_anthology(self):
         """Test performance optimizations work with anthology building."""

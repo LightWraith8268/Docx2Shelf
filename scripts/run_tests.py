@@ -14,15 +14,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
-CI_IGNORE_TESTS = (
-    # Version-specific feature tests still lagging behind post-Phase-5 API
-    # drift. v125 and v126 were re-enabled after restoring optional config
-    # defaults and tolerating Windows-specific sqlite teardown locks.
-    # v124 (anthology/series/web builder API drift) and v127 (LSP/doc-platform
-    # internals diverged) remain ignored until those modules are re-stabilized.
-    "tests/test_v124_features.py",
-    "tests/test_v127_features.py",
-)
+CI_IGNORE_TESTS: tuple[str, ...] = ()
+# All v12x version-specific feature tests are now collected. The previous
+# generation of refactor-stale exclusions (v124-v127) has been restored by
+# realigning anthology / series / web builder / docs / dev-tools APIs with
+# their tests and tolerating Windows-only sqlite teardown locks.
 
 
 def build_pytest_args(mode: str, coverage: bool, verbose: bool) -> list[str]:

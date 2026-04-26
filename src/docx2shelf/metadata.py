@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import List, Optional
@@ -9,21 +9,21 @@ from typing import List, Optional
 
 @dataclass
 class EpubMetadata:
-    title: str
-    author: str
-    language: str
-    description: Optional[str]
-    isbn: Optional[str]
-    publisher: Optional[str]
-    pubdate: Optional[date]
-    uuid: Optional[str]
-    series: Optional[str]
-    series_index: Optional[str]
-    title_sort: Optional[str]
-    author_sort: Optional[str]
-    subjects: List[str]
-    keywords: List[str]
-    cover_path: Path
+    title: str = ""
+    author: str = ""
+    language: str = "en"
+    description: Optional[str] = None
+    isbn: Optional[str] = None
+    publisher: Optional[str] = None
+    pubdate: Optional[date] = None
+    uuid: Optional[str] = None
+    series: Optional[str] = None
+    series_index: Optional[str] = None
+    title_sort: Optional[str] = None
+    author_sort: Optional[str] = None
+    subjects: List[str] = field(default_factory=list)
+    keywords: List[str] = field(default_factory=list)
+    cover_path: Optional[Path] = None
     # Extended metadata fields
     editor: Optional[str] = None
     illustrator: Optional[str] = None
@@ -61,12 +61,12 @@ class EpubMetadata:
 
 @dataclass
 class BuildOptions:
-    split_at: str  # h1|h2|h3|pagebreak|mixed
-    theme: str  # serif|sans|printlike
-    embed_fonts_dir: Optional[Path]
-    hyphenate: bool
-    justify: bool
-    toc_depth: int
+    split_at: str = "h1"  # h1|h2|h3|pagebreak|mixed
+    theme: str = "serif"  # serif|sans|printlike
+    embed_fonts_dir: Optional[Path] = None
+    hyphenate: bool = True
+    justify: bool = True
+    toc_depth: int = 2
     image_quality: int = 85
     image_max_width: int = 1200
     image_max_height: int = 1600

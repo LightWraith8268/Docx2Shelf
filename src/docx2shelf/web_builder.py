@@ -17,7 +17,7 @@ import webbrowser
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -364,20 +364,33 @@ class WebBuilderHandler(BaseHTTPRequestHandler):
 class WebBuilderServer:
     """Web builder server with project management."""
 
-    def __init__(self, host="localhost", port=0):
-        self.host = host
-        self.port = port
+    def __init__(self, builder: Optional["WebBuilder"] = None, host="localhost", port=0):
+        # Accept either a positional WebBuilder (preferred — tests pass one in
+        # and inspect `server.builder`) or fall back to host/port construction.
+        if isinstance(builder, WebBuilder):
+            self.builder = builder
+            self.web_builder = builder
+            self.host = builder.host
+            self.port = builder.port
+        else:
+            self.builder = None
+            self.web_builder = None
+            self.host = host
+            self.port = port
         self.server = None
-        self.web_builder = None
+        self.httpd = None
         self.running = False
 
     def start(self, open_browser=True):
         """Start the web server."""
-        self.web_builder = WebBuilder()
+        if self.web_builder is None:
+            self.web_builder = WebBuilder()
+            self.builder = self.web_builder
 
         # Create server
         handler = lambda *args: WebBuilderHandler(*args)
         self.server = HTTPServer((self.host, self.port), handler)
+        self.httpd = self.server
         self.server.web_builder = self.web_builder
 
         # Get actual port if port was 0 (auto-assign)
@@ -415,9 +428,43 @@ class WebBuilderServer:
 class WebBuilder:
     """Main web builder application logic."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        work_dir: Optional[Path] = None,
+        host: str = "localhost",
+        port: int = 8080,
+    ):
         self.projects: Dict[str, Dict[str, Any]] = {}
-        self.temp_dir = Path(tempfile.mkdtemp(prefix="docx2shelf_web_"))
+        self.host = host
+        self.port = port
+        if work_dir is not None:
+            self.work_dir = Path(work_dir)
+            self.work_dir.mkdir(parents=True, exist_ok=True)
+            self.temp_dir = self.work_dir
+        else:
+            self.temp_dir = Path(tempfile.mkdtemp(prefix="docx2shelf_web_"))
+            self.work_dir = self.temp_dir
+
+    def create_project(self, name: str, project_type: str = "single") -> str:
+        """Create a new project entry and return its id."""
+        import uuid as _uuid
+
+        project_id = _uuid.uuid4().hex[:12]
+        self.projects[project_id] = {
+            "id": project_id,
+            "name": name,
+            "type": project_type,
+            "created_at": datetime.now().isoformat(),
+        }
+        return project_id
+
+    def get_project(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """Return project metadata by id, or None if missing."""
+        return self.projects.get(project_id)
+
+    def delete_project(self, project_id: str) -> bool:
+        """Remove a project from the registry."""
+        return self.projects.pop(project_id, None) is not None
 
     def get_main_page_html(self) -> str:
         """Generate the main page HTML."""

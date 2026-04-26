@@ -48,10 +48,14 @@ class DevelopmentConfig:
 class HotReloadHandler(FileSystemEventHandler):
     """File system event handler for hot-reload functionality."""
 
-    def __init__(self, reload_callback: Callable[[str], None], config: DevelopmentConfig):
+    def __init__(
+        self,
+        reload_callback: Callable[[str], None],
+        config: Optional[DevelopmentConfig] = None,
+    ):
         super().__init__()
         self.reload_callback = reload_callback
-        self.config = config
+        self.config = config or DevelopmentConfig()
         self.last_reload = {}
         self.debounce_seconds = 1.0
 
@@ -108,6 +112,38 @@ class LSPServer:
         self.project_root = project_root or Path.cwd()
         self.symbols = {}
         self.diagnostics = {}
+
+    def extract_symbols(self, code: str) -> List[Dict[str, Any]]:
+        """Parse Python source and return a flat list of top-level symbols.
+
+        Each symbol dict carries `name`, `kind` (function|class), and `line`.
+        Nested definitions are reported under their enclosing parent via
+        a dotted name so consumers can build a tree if they want to.
+        """
+        import ast
+
+        try:
+            tree = ast.parse(code)
+        except SyntaxError:
+            return []
+
+        symbols: List[Dict[str, Any]] = []
+
+        def walk(node, prefix=""):
+            for child in getattr(node, "body", []):
+                if isinstance(child, ast.FunctionDef):
+                    name = f"{prefix}{child.name}" if prefix else child.name
+                    symbols.append({"name": name, "kind": "function", "line": child.lineno})
+                elif isinstance(child, ast.AsyncFunctionDef):
+                    name = f"{prefix}{child.name}" if prefix else child.name
+                    symbols.append({"name": name, "kind": "function", "line": child.lineno})
+                elif isinstance(child, ast.ClassDef):
+                    name = f"{prefix}{child.name}" if prefix else child.name
+                    symbols.append({"name": name, "kind": "class", "line": child.lineno})
+                    walk(child, prefix=f"{name}.")
+
+        walk(tree)
+        return symbols
 
     def initialize(self) -> Dict[str, Any]:
         """Initialize LSP server capabilities."""
@@ -282,78 +318,102 @@ class CodeGenerator:
     def __init__(self):
         self.templates = self._load_templates()
 
-    def generate_plugin_template(self, plugin_name: str, plugin_type: str = "basic") -> Path:
-        """Generate a plugin template."""
-        template = self.templates.get(f"plugin_{plugin_type}")
-        if not template:
-            raise ValueError(f"Unknown plugin type: {plugin_type}")
+    def generate_plugin_template(
+        self,
+        name: str,
+        description: str = "",
+        hooks: Optional[List[str]] = None,
+    ) -> str:
+        """Return Python source for a plugin template.
 
-        output_dir = Path.cwd() / plugin_name
-        output_dir.mkdir(exist_ok=True)
+        Tests and CLI scaffolding both call this with `name`, `description`,
+        and an optional `hooks` list. The output string is also written to
+        disk by the caller when desired.
+        """
+        class_name = self._to_class_name(name)
+        hooks = hooks or ["post_convert"]
 
-        variables = {
-            "plugin_name": plugin_name,
-            "plugin_class": self._to_class_name(plugin_name),
-            "plugin_id": plugin_name.lower().replace("-", "_"),
-            "creation_date": datetime.now().strftime("%Y-%m-%d"),
-            "year": datetime.now().year,
+        hook_methods: List[str] = []
+        hook_returns: Dict[str, str] = {
+            "pre_convert": "return docx_path",
+            "post_convert": "return html_content",
+            "metadata_resolver": "return metadata",
         }
-
-        for file_path, content in template.files.items():
-            file_content = self._substitute_variables(content, variables)
-            output_file = output_dir / file_path
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            output_file.write_text(file_content, encoding="utf-8")
-
-        print(f"📦 Plugin template '{plugin_name}' created in {output_dir}")
-        return output_dir
-
-    def generate_theme_template(self, theme_name: str) -> Path:
-        """Generate a theme template."""
-        template = self.templates.get("theme_basic")
-        if not template:
-            raise ValueError("Theme template not found")
-
-        output_dir = Path.cwd() / f"{theme_name}-theme"
-        output_dir.mkdir(exist_ok=True)
-
-        variables = {
-            "theme_name": theme_name,
-            "theme_id": theme_name.lower().replace("-", "_"),
-            "creation_date": datetime.now().strftime("%Y-%m-%d"),
+        method_signatures: Dict[str, str] = {
+            "pre_convert": "def process_docx(self, docx_path, context):",
+            "post_convert": "def transform_html(self, html_content, context):",
+            "metadata_resolver": "def resolve_metadata(self, metadata, context):",
         }
+        for hook in hooks:
+            sig = method_signatures.get(hook, f"def {hook}(self, *args, **kwargs):")
+            ret = hook_returns.get(hook, "return None")
+            hook_methods.append(f"    # hook: {hook}\n    {sig}\n        {ret}")
 
-        for file_path, content in template.files.items():
-            file_content = self._substitute_variables(content, variables)
-            output_file = output_dir / file_path
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            output_file.write_text(file_content, encoding="utf-8")
+        return (
+            f'"""{description or f"{class_name} plugin"}."""\n\n'
+            f"class {class_name}:\n"
+            f"    name = {name!r}\n"
+            f"    version = '0.1.0'\n\n"
+            + "\n\n".join(hook_methods)
+            + "\n"
+        )
 
-        print(f"🎨 Theme template '{theme_name}' created in {output_dir}")
-        return output_dir
+    def generate_theme_template(
+        self,
+        name: str,
+        base_theme: str = "serif",
+        custom_fonts: Optional[List[str]] = None,
+    ) -> str:
+        """Return CSS for a theme template named after `name`."""
+        custom_fonts = custom_fonts or []
+        font_stack = ", ".join(f"'{f}'" for f in custom_fonts) if custom_fonts else "serif"
+        font_imports = "\n".join(
+            f"@import url('https://fonts.googleapis.com/css2?family={f.replace(' ', '+')}');"
+            for f in custom_fonts
+        )
+        return (
+            f"/* {name} — extends {base_theme} */\n"
+            f"{font_imports}\n\n"
+            f"body {{\n"
+            f"    font-family: {font_stack};\n"
+            f"}}\n"
+        )
 
-    def generate_config_template(self, config_type: str = "development") -> Path:
-        """Generate configuration template."""
-        template = self.templates.get(f"config_{config_type}")
-        if not template:
-            raise ValueError(f"Unknown config type: {config_type}")
-
-        output_file = Path.cwd() / f"docx2shelf-{config_type}.yaml"
-
-        variables = {
-            "config_type": config_type,
-            "creation_date": datetime.now().strftime("%Y-%m-%d"),
+    def generate_config_template(
+        self,
+        project_type: str = "novel",
+        target_stores: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Return a config dict shaped for `project_type` and `target_stores`."""
+        target_stores = target_stores or ["generic"]
+        return {
+            "project_type": project_type,
+            "metadata": {
+                "title": "",
+                "author": "",
+                "language": "en",
+                "publisher": "",
+            },
+            "build_options": {
+                "split_at": "h1",
+                "theme": "serif",
+                "toc_depth": 2,
+                "hyphenate": True,
+                "justify": True,
+            },
+            "target_stores": list(target_stores),
         }
-
-        content = self._substitute_variables(template.files["config.yaml"], variables)
-        output_file.write_text(content, encoding="utf-8")
-
-        print(f"⚙️ Configuration template '{config_type}' created: {output_file}")
-        return output_file
 
     def _to_class_name(self, name: str) -> str:
-        """Convert name to class name format."""
-        return "".join(word.capitalize() for word in name.replace("-", "_").split("_"))
+        """Convert name to class name format.
+
+        Preserves existing case in CamelCase / PascalCase inputs while still
+        capitalizing the first letter of snake_case / kebab-case segments.
+        """
+        if "_" in name or "-" in name or name.islower():
+            return "".join(part.capitalize() for part in name.replace("-", "_").split("_") if part)
+        # Already mixed-case (e.g. TestPlugin); just ensure leading char is upper.
+        return name[:1].upper() + name[1:] if name else ""
 
     def _substitute_variables(self, content: str, variables: Dict[str, Any]) -> str:
         """Substitute template variables in content."""
@@ -615,10 +675,42 @@ class DevelopmentWorkflow:
         config: Optional[DevelopmentConfig] = None,
     ):
         self.project_root = project_root or Path.cwd()
+        # Tests refer to `project_dir` as a kwarg-style alias.
+        self.project_dir = self.project_root
         self.config = config or DevelopmentConfig()
         self.observer = None
         self.lsp_server = LSPServer(self.project_root)
         self.code_generator = CodeGenerator()
+        self._hot_reload_active = False
+
+    @property
+    def is_running(self) -> bool:
+        return self._hot_reload_active
+
+    @property
+    def watcher(self):
+        return self.observer
+
+    def start_hot_reload(self, callback: Optional[Callable[[str], None]] = None) -> None:
+        """Begin watching `project_root` for changes."""
+        if self._hot_reload_active:
+            return
+        handler = HotReloadHandler(callback or (lambda _path: None), self.config)
+        self.observer = Observer()
+        self.observer.schedule(handler, str(self.project_root), recursive=True)
+        self.observer.start()
+        self._hot_reload_active = True
+
+    def stop_hot_reload(self) -> None:
+        """Stop watching for changes."""
+        if self.observer is not None:
+            try:
+                self.observer.stop()
+                self.observer.join(timeout=1.0)
+            except Exception:
+                pass
+            self.observer = None
+        self._hot_reload_active = False
 
     def start_development_server(self, port: int = 3000):
         """Start development server with hot-reload."""
