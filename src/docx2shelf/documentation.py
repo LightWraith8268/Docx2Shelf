@@ -35,9 +35,9 @@ class Tutorial:
     id: str
     title: str
     description: str
-    category: str
-    difficulty: str  # beginner, intermediate, advanced
-    estimated_time: str
+    category: str = "general"
+    difficulty: str = "beginner"  # beginner, intermediate, advanced
+    estimated_time: str = "5 minutes"
     steps: List[TutorialStep] = field(default_factory=list)
     prerequisites: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
@@ -151,6 +151,40 @@ class TroubleshootingWizard:
     def __init__(self):
         self.cases = self._load_troubleshooting_cases()
         self.current_symptoms = []
+
+    def diagnose_issue(self, issue_text: str) -> dict:
+        """Match free-form issue text against known troubleshooting cases.
+
+        Returns a dict with `problem` (matched case title or general fallback)
+        and `solutions` (list of suggested remedies).
+        """
+        text = (issue_text or "").lower().strip()
+        if not text:
+            return {
+                "problem": "general troubleshooting needed",
+                "solutions": [],
+            }
+
+        for case in self.cases:
+            keywords = [case.title.lower(), *(s.lower() for s in case.symptoms)]
+            # Match only on full phrases (title or symptom) found verbatim in
+            # the issue text. Per-token matching produces false positives for
+            # common words like "error", "type", "issue".
+            if any(kw and kw in text for kw in keywords):
+                return {
+                    "problem": case.title,
+                    "solutions": list(case.solutions),
+                    "common_causes": list(case.common_causes),
+                    "category": case.category,
+                }
+
+        return {
+            "problem": "general troubleshooting required",
+            "solutions": [
+                "Run `docx2shelf doctor` to inspect the environment.",
+                "Check the logs near the failure for the originating exception.",
+            ],
+        }
 
     def start(self):
         """Start the troubleshooting wizard."""
@@ -371,10 +405,26 @@ class TroubleshootingWizard:
 class DocumentationManager:
     """Manages the comprehensive documentation platform."""
 
-    def __init__(self, docs_root: Path):
-        self.docs_root = docs_root
+    def __init__(self, docs_root: Optional[Path] = None):
+        if docs_root is not None:
+            self.docs_root = Path(docs_root)
+        else:
+            try:
+                self.docs_root = Path.cwd() / "docs"
+            except (FileNotFoundError, OSError):
+                self.docs_root = Path("/tmp/docs")
+        # Tests inspect `docs_dir` as an alias for backward compatibility.
+        self.docs_dir = self.docs_root
+        try:
+            self.docs_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
         self.tutorials = self._load_tutorials()
         self.wizard = TroubleshootingWizard()
+
+    def get_built_in_tutorials(self) -> List[Tutorial]:
+        """Return the bundled tutorial set (alias for direct .tutorials access)."""
+        return list(self.tutorials.values()) if isinstance(self.tutorials, dict) else list(self.tutorials)
 
     def build_docs(self) -> bool:
         """Build the documentation site."""

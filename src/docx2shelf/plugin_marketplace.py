@@ -11,6 +11,7 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -525,7 +526,7 @@ class PluginMarketplace:
             "disabled_plugins": total_installed - enabled_count,
             "popular_tags": popular_tags,
             "cache_age_hours": (
-                (Path(self.cache_file).stat().st_mtime - Path.stat().st_mtime) / 3600
+                (time.time() - Path(self.cache_file).stat().st_mtime) / 3600
                 if self.cache_file.exists()
                 else 0
             ),
@@ -602,18 +603,16 @@ def create_plugin():
         # Create plugin metadata file
         metadata_file = plugin_dir / "plugin.json"
         metadata = {
-            {
-                "name": name,
-                "version": "1.0.0",
-                "description": "A template plugin for Docx2Shelf",
-                "author": "Your Name",
-                "license": "MIT",
-                "homepage": "",
-                "tags": ["template", "example"],
-                "dependencies": [],
-                "docx2shelf_version": ">=1.2.4",
-                "entry_point": f"{name}.create_plugin",
-            }
+            "name": name,
+            "version": "1.0.0",
+            "description": "A template plugin for Docx2Shelf",
+            "author": "Your Name",
+            "license": "MIT",
+            "homepage": "",
+            "tags": ["template", "example"],
+            "dependencies": [],
+            "docx2shelf_version": ">=1.2.4",
+            "entry_point": f"{name}.create_plugin",
         }
 
         metadata_file.write_text(json.dumps(metadata, indent=2), encoding="utf-8")

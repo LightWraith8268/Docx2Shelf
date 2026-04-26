@@ -58,12 +58,17 @@ def _download(
     url: str,
     dest: Path,
     *,
-    attempts: int = 3,
+    attempts: int = 5,
     expect_sha256: str | None = None,
     gpg_signature_url: str | None = None,
     trusted_keys: list[str] | None = None,
 ) -> None:
-    """Download a file with optional SHA-256 and GPG verification."""
+    """Download a file with optional SHA-256 and GPG verification.
+
+    Uses exponential backoff (1.5s, 3s, 6s, 12s, 24s) so transient upstream
+    5xx storms (we routinely see 502 Bad Gateway from github.com release
+    asset CDN edges) don't fail CI on the first quick burst of retries.
+    """
     last_err: Exception | None = None
     for i in range(1, attempts + 1):
         try:
@@ -92,7 +97,9 @@ def _download(
                 dest.unlink(missing_ok=True)
             except Exception:
                 pass
-            time.sleep(0.8 * i)
+            # Exponential backoff: 1.5, 3, 6, 12, 24s — covers brief CDN
+            # incidents without blowing past CI step timeouts.
+            time.sleep(1.5 * (2 ** (i - 1)))
     assert last_err is not None
     raise last_err
 
@@ -362,7 +369,7 @@ def install_pandoc(version: str = DEFAULT_PANDOC_VERSION) -> Path:
     url = f"{base}/{arc}"
     tmp = td / arc
     expect = _fetch_pandoc_checksum(version, arc)
-    _download(url, tmp, attempts=3, expect_sha256=expect)
+    _download(url, tmp, attempts=5, expect_sha256=expect)
     # Extract binary
     if tmp.suffix == ".zip":
         with zipfile.ZipFile(tmp) as z:
@@ -437,7 +444,7 @@ def install_epubcheck(version: str = DEFAULT_EPUBCHECK_VERSION) -> Path:
     url = f"{base}/{arc}"
     tmp = td / arc
     expect = _fetch_epubcheck_checksum(version, arc)
-    _download(url, tmp, attempts=3, expect_sha256=expect)
+    _download(url, tmp, attempts=5, expect_sha256=expect)
 
     extract_root.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(tmp) as z:

@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from .assemble import assemble_epub
-from .convert import docx_to_html_chunks
+from .convert import convert_file_to_html, docx_to_html_chunks  # noqa: F401
 from .metadata import BuildOptions, EpubMetadata
 
 logger = logging.getLogger(__name__)
@@ -24,11 +24,17 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class StoryInfo:
-    """Information about a story in an anthology."""
+    """Information about a story in an anthology.
 
-    title: str
-    author: str
-    source_file: Path
+    Field order is `file_path, title, author` to match the historical positional
+    constructor. `source_file` is a real init kwarg too; whichever is supplied
+    is mirrored to the other so callers can use either name.
+    """
+
+    file_path: Optional[Path] = None
+    title: str = ""
+    author: str = ""
+    source_file: Optional[Path] = None
     html_chunks: List[str] = field(default_factory=list)
     metadata: Optional[EpubMetadata] = None
     word_count: Optional[int] = None
@@ -37,12 +43,21 @@ class StoryInfo:
     first_published: Optional[str] = None
     awards: List[str] = field(default_factory=list)
 
+    def __post_init__(self) -> None:
+        if self.file_path is None and self.source_file is not None:
+            self.file_path = self.source_file
+        elif self.source_file is None and self.file_path is not None:
+            self.source_file = self.file_path
+        if self.file_path is None:
+            raise TypeError("StoryInfo requires file_path or source_file")
+
 
 @dataclass
 class AnthologyConfig:
     """Configuration for anthology building."""
 
     title: str
+    author: str = ""  # Alternative to `editor`; both populate the credits page.
     editor: str = ""
     publisher: str = ""
     description: str = ""
@@ -69,15 +84,34 @@ class AnthologyConfig:
     auto_link_author_names: bool = True
     generate_author_index: bool = True
 
+    # Backward-compat aliases for older callers/tests.
+    @property
+    def sort_by(self) -> str:
+        return self.sort_stories_by
+
+    @sort_by.setter
+    def sort_by(self, value: str) -> None:
+        self.sort_stories_by = value
+
+    @property
+    def include_toc(self) -> bool:
+        return self.generate_contents_page
+
+    @include_toc.setter
+    def include_toc(self, value: bool) -> None:
+        self.generate_contents_page = value
+
 
 @dataclass
 class SeriesConfig:
     """Configuration for series building."""
 
-    series_title: str
-    author: str
+    series_title: str = ""
+    series_name: str = ""  # Alias kwarg; mirrored to series_title in __post_init__.
+    author: str = ""
     publisher: str = ""
     series_description: str = ""
+    description: str = ""  # Alias for series_description.
 
     # Series organization
     sort_books_by: str = "series_index"  # series_index, title, date
@@ -93,6 +127,26 @@ class SeriesConfig:
     enforce_consistent_metadata: bool = True
     auto_update_series_info: bool = True
 
+    def __post_init__(self) -> None:
+        # Allow callers to pass either series_title or series_name.
+        if self.series_name and not self.series_title:
+            self.series_title = self.series_name
+        elif self.series_title and not self.series_name:
+            self.series_name = self.series_title
+        # Same for description / series_description.
+        if self.description and not self.series_description:
+            self.series_description = self.description
+        elif self.series_description and not self.description:
+            self.description = self.series_description
+
+    @property
+    def auto_also_by(self) -> bool:
+        return self.generate_also_by_pages
+
+    @auto_also_by.setter
+    def auto_also_by(self, value: bool) -> None:
+        self.generate_also_by_pages = value
+
 
 class AnthologyBuilder:
     """Builds anthologies from multiple manuscript sources."""
@@ -104,14 +158,39 @@ class AnthologyBuilder:
 
     def add_story(
         self,
-        source_file: Path,
+        source_file,
         title: Optional[str] = None,
         author: Optional[str] = None,
         summary: str = "",
         genre: str = "",
         **kwargs,
     ) -> StoryInfo:
-        """Add a story to the anthology."""
+        """Add a story to the anthology.
+
+        Accepts either a `StoryInfo` (appended directly, including any html
+        chunks the caller pre-populated) or a `Path` to a source document
+        (read + converted now).
+        """
+
+        if isinstance(source_file, StoryInfo):
+            # Populate html_chunks via Pandoc if the caller didn't pre-supply
+            # them. Goes through the module-level `convert_file_to_html`
+            # symbol so tests can patch it cleanly.
+            if not source_file.html_chunks and source_file.file_path:
+                try:
+                    chunks, _resources, _title = convert_file_to_html(source_file.file_path)
+                    source_file.html_chunks = list(chunks) if chunks else []
+                except Exception as exc:
+                    logger.warning(
+                        f"convert_file_to_html failed for {source_file.file_path}: {exc}"
+                    )
+            if source_file.word_count is None:
+                source_file.word_count = self._calculate_word_count(source_file.html_chunks)
+            self.stories.append(source_file)
+            logger.info(
+                f"Added story: {source_file.title} ({source_file.word_count or 0} words)"
+            )
+            return source_file
 
         if not source_file.exists():
             raise FileNotFoundError(f"Source file not found: {source_file}")
@@ -186,13 +265,16 @@ class AnthologyBuilder:
             # Build EPUB
             build_opts = build_options or BuildOptions()
 
-            assemble_epub(
+            assembled = assemble_epub(
                 meta=anthology_metadata,
                 opts=build_opts,
                 html_chunks=combined_html_chunks,
                 resources=resources,
                 output_path=output_path,
             )
+            # assemble_epub may return its own path (or be mocked); prefer it.
+            if assembled:
+                output_path = Path(assembled)
 
         logger.info(f"Anthology built successfully: {output_path}")
         return output_path
@@ -247,16 +329,42 @@ class AnthologyBuilder:
 
         return total_words
 
-    def _sort_stories(self) -> None:
-        """Sort stories according to configuration."""
-        if self.config.sort_stories_by == "title":
+    def _sort_stories(self, sort_key: Optional[str] = None) -> List[StoryInfo]:
+        """Sort stories according to configuration or an explicit key.
+
+        Returns the sorted list (also mutating self.stories in place) so
+        callers and tests can inspect the result.
+        """
+        key = sort_key or self.config.sort_stories_by
+        if key == "title":
             self.stories.sort(key=lambda s: s.title.lower())
-        elif self.config.sort_stories_by == "author":
+        elif key == "author":
             self.stories.sort(key=lambda s: (s.author.lower(), s.title.lower()))
-        elif self.config.sort_stories_by == "word_count":
+        elif key == "word_count":
             self.stories.sort(key=lambda s: s.word_count or 0, reverse=True)
-        elif self.config.sort_stories_by == "date":
+        elif key == "date":
             self.stories.sort(key=lambda s: s.first_published or "")
+        return list(self.stories)
+
+    def _create_anthology_toc(self) -> str:
+        """Render an HTML table of contents for the anthology."""
+        if not self.stories:
+            return '<nav epub:type="toc"><h2>Contents</h2><ol></ol></nav>'
+        rows = "\n".join(
+            f'<li><a href="#story-{i+1}">{s.title}</a> '
+            f'<span class="by">by {s.author}</span></li>'
+            for i, s in enumerate(self.stories)
+        )
+        return (
+            '<nav epub:type="toc">'
+            "<h2>Contents</h2>\n"
+            f"<ol>\n{rows}\n</ol>"
+            "</nav>"
+        )
+
+    def configure(self, config: AnthologyConfig) -> None:
+        """Replace the active anthology configuration."""
+        self.config = config
 
     def _create_anthology_metadata(self) -> EpubMetadata:
         """Create metadata for the anthology."""
@@ -535,6 +643,40 @@ class SeriesBuilder:
 
         self.books.append((epub_path, metadata))
         logger.info(f"Added book to series: {metadata.title}")
+
+    def _sort_books_by_index(self) -> List[Tuple[Path, EpubMetadata]]:
+        """Return books sorted by numeric series_index (in place + returned)."""
+
+        def index_key(item: Tuple[Path, EpubMetadata]) -> int:
+            raw = item[1].series_index
+            if raw is None:
+                return 1 << 30
+            if isinstance(raw, int):
+                return raw
+            try:
+                return int(str(raw).strip())
+            except (TypeError, ValueError):
+                return 1 << 30  # push unparseable indices to the end
+
+        self.books.sort(key=index_key)
+        return list(self.books)
+
+    def _create_also_by_page(self) -> str:
+        """Render an 'Also By This Author' HTML fragment for the series."""
+        heading = "Also By This Author"
+        if not self.books:
+            return f"<section><h2>{heading}</h2><ul></ul></section>"
+        sorted_books = self._sort_books_by_index()
+        items = "\n".join(
+            f"<li><strong>{meta.title}</strong>"
+            + (f" (Book {meta.series_index})" if meta.series_index else "")
+            + "</li>"
+            for _, meta in sorted_books
+        )
+        author_attr = f" data-author=\"{self.config.author}\"" if self.config.author else ""
+        return (
+            f"<section{author_attr}><h2>{heading}</h2>\n<ul>\n{items}\n</ul></section>"
+        )
 
     def build_series_collection(self, output_dir: Path) -> List[Path]:
         """
