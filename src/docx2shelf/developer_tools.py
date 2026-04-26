@@ -109,7 +109,13 @@ class LSPServer:
         # Tests inspect `workspace_root` and expect None when no root is given;
         # internal callers fall back to cwd via project_root.
         self.workspace_root = project_root
-        self.project_root = project_root or Path.cwd()
+        # Tolerate a deleted cwd (happens when a previous test's
+        # TemporaryDirectory was the current dir at the time it cleaned up).
+        try:
+            cwd_fallback = Path.cwd()
+        except (FileNotFoundError, OSError):
+            cwd_fallback = Path("/")
+        self.project_root = project_root or cwd_fallback
         self.symbols = {}
         self.diagnostics = {}
 
@@ -674,7 +680,11 @@ class DevelopmentWorkflow:
         project_root: Optional[Path] = None,
         config: Optional[DevelopmentConfig] = None,
     ):
-        self.project_root = project_root or Path.cwd()
+        try:
+            cwd_fallback = Path.cwd()
+        except (FileNotFoundError, OSError):
+            cwd_fallback = Path("/")
+        self.project_root = project_root or cwd_fallback
         # Tests refer to `project_dir` as a kwarg-style alias.
         self.project_dir = self.project_root
         self.config = config or DevelopmentConfig()

@@ -406,7 +406,13 @@ class DocumentationManager:
     """Manages the comprehensive documentation platform."""
 
     def __init__(self, docs_root: Optional[Path] = None):
-        self.docs_root = Path(docs_root) if docs_root else Path.cwd() / "docs"
+        if docs_root is not None:
+            self.docs_root = Path(docs_root)
+        else:
+            try:
+                self.docs_root = Path.cwd() / "docs"
+            except (FileNotFoundError, OSError):
+                self.docs_root = Path("/tmp/docs")
         # Tests inspect `docs_dir` as an alias for backward compatibility.
         self.docs_dir = self.docs_root
         try:

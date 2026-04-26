@@ -839,7 +839,11 @@ class ConversionAnalytics:
         # System information
         benchmarks["system"] = {
             "cpu_count": psutil.cpu_count(),
-            "cpu_freq_mhz": psutil.cpu_freq().current if psutil.cpu_freq() else None,
+            "cpu_freq_mhz": (
+                psutil.cpu_freq().current
+                if hasattr(psutil, "cpu_freq") and psutil.cpu_freq()
+                else None
+            ),
             "memory_total_gb": psutil.virtual_memory().total / (1024**3),
             "disk_type": "unknown",  # Would need platform-specific detection
         }
