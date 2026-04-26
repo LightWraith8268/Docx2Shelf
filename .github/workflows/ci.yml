@@ -14,18 +14,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.11', '3.12', '3.13']
-        include:
-          # Coverage upload runs against ubuntu-3.11 only.
-          - os: ubuntu-latest
-            python-version: '3.11'
-            coverage: true
-        # Note: the prior `test-scope: full` and `test-scope: performance`
-        # matrix entries were removed because they routinely OOM'd or hung
-        # on Linux runners (MemoryError around the 46% mark of full mode).
-        # The base matrix already exercises every supported (os, python)
-        # combination with the `ci` profile, which skips slow/property-heavy
-        # tests; restore the extra scopes only after profiling the offending
-        # tests and bringing peak RSS under the 7 GB GH-hosted runner cap.
+        # Note: the prior matrix `include` entries (full scope, performance
+        # scope, coverage on ubuntu-3.11) all triggered MemoryError around
+        # the 46% mark on Linux runners. The instrumentation that coverage's
+        # tracer adds on top of hypothesis-generated examples pushed peak
+        # RSS past the 7 GB GH-hosted runner cap. The base 3-OS × 3-Python
+        # matrix below covers every supported combination cleanly without
+        # coverage; restore coverage upload only after the offending test(s)
+        # are profiled and bounded.
 
     steps:
       - uses: actions/checkout@v5
@@ -59,27 +55,10 @@ jobs:
           mypy src/docx2shelf/ --ignore-missing-imports || true
 
       - name: Run comprehensive tests
-        run: |
-          if [ "${{ matrix.test-scope }}" = "full" ]; then
-            python scripts/run_tests.py --mode full --coverage
-          elif [ "${{ matrix.test-scope }}" = "performance" ]; then
-            python scripts/run_tests.py --mode ci --verbose
-            python scripts/bench_conversion.py
-          else
-            python scripts/run_tests.py --mode ci --coverage
-          fi
+        run: python scripts/run_tests.py --mode ci
         shell: bash
         env:
           HYPOTHESIS_PROFILE: ci
-
-      - name: Upload coverage to Codecov
-        if: matrix.coverage
-        uses: codecov/codecov-action@v5
-        with:
-          files: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
 
   test-tools:
     runs-on: ubuntu-latest
